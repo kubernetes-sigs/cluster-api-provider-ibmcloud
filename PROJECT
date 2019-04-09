@@ -1,0 +1,3 @@
+version: "1"
+domain: cluster.k8s.io
+repo: sigs.k8s.io/cluster-api-provider-ibmcloud
