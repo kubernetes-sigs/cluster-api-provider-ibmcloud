@@ -2,6 +2,10 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 
+# goang dep tools
+DEP = github.com/golang/dep/cmd/dep
+DEP_CHECK := $(shell command -v dep 2> /dev/null)
+
 all: test manager
 
 # Run tests
@@ -25,7 +29,7 @@ deploy: manifests
 	cat provider-components.yaml | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests:
+manifests: depend
 	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go crd
 	kustomize build config/default/ > provider-components.yaml
 	echo "---" >> provider-components.yaml
@@ -40,11 +44,24 @@ vet:
 	go vet ./pkg/... ./cmd/...
 
 # Generate code
-generate:
+generate: depend
 ifndef GOPATH
 	$(error GOPATH not defined, please define GOPATH. Run "go help gopath" to learn more about GOPATH)
 endif
 	go generate ./pkg/... ./cmd/...
+
+# Get dependencies
+depend: depend.tools
+	dep ensure -v
+
+# Install the dep tool
+depend.tools:
+ifndef DEP_CHECK
+	echo "No dep in path, install dep..."
+	go get -v $(DEP)
+else
+	echo "Found dep in path."
+endif
 
 # Build the docker image
 docker-build: test
