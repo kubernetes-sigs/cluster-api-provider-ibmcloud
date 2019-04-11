@@ -40,11 +40,19 @@ vet:
 	go vet ./pkg/... ./cmd/...
 
 # Generate code
-generate:
+generate: depend
 ifndef GOPATH
 	$(error GOPATH not defined, please define GOPATH. Run "go help gopath" to learn more about GOPATH)
 endif
 	go generate ./pkg/... ./cmd/...
+
+# Get dependencies
+depend: depend.tools
+	dep ensure
+
+# Install the dep tool
+dpend.tools:
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
 # Build the docker image
 docker-build: test
