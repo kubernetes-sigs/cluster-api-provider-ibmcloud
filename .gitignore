@@ -139,3 +139,6 @@ zz_generated.openapi.go
 
 # test coverage out
 cover.out
+
+# Generated file
+provider-components.yaml
