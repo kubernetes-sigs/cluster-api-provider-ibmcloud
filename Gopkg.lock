@@ -368,6 +368,14 @@
   revision = "ea9eea63887261e4d8ed8315f4078e88d540c725"
 
 [[projects]]
+  branch = "master"
+  digest = "1:01b399ffbfd2d1a6fe38bce37a8f257a128b8b8643ed82286ef0f96f666821d7"
+  name = "github.com/renier/xmlrpc"
+  packages = ["."]
+  pruneopts = "T"
+  revision = "ce4a1a486c03a3c6e1816df25b8c559d1879d380"
+
+[[projects]]
   digest = "1:5e2ebcff4614ac5a6d9abbbaaa6df76082658d797621f2a25e54c5e5e4203161"
   name = "github.com/rogpeppe/go-internal"
   packages = [
@@ -378,6 +386,20 @@
   pruneopts = "T"
   revision = "438578804ca6f31be148c27683afc419ce47c06e"
   version = "v1.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:bffcfa30553995bbe99765f6ede6ba3979363f29b0349b006d189261b71a04d9"
+  name = "github.com/softlayer/softlayer-go"
+  packages = [
+    "config",
+    "datatypes",
+    "services",
+    "session",
+    "sl",
+  ]
+  pruneopts = "T"
+  revision = "205c6f3fd34edf41f9c66b04702815a0f2f2ba48"
 
 [[projects]]
   digest = "1:dee0cc3252ce6fcc3334c9529abd32925f2aaf072c90336a5a38254953564aa5"
@@ -951,6 +973,10 @@
     "github.com/emicklei/go-restful",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
+    "github.com/softlayer/softlayer-go/datatypes",
+    "github.com/softlayer/softlayer-go/services",
+    "github.com/softlayer/softlayer-go/session",
+    "github.com/softlayer/softlayer-go/sl",
     "golang.org/x/net/context",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
