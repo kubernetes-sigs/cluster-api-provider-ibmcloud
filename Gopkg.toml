@@ -34,6 +34,10 @@ required = [
   name="github.com/softlayer/softlayer-go"
   branch="master"
 
+[[constraint]]
+  name = "sigs.k8s.io/cluster-api"
+  version = "0.1.0"
+
 # For dependency below: Refer to issue https://github.com/golang/dep/issues/1799
 [[override]]
 name = "gopkg.in/fsnotify.v1"
