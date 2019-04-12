@@ -18,15 +18,35 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/softlayer/softlayer-go/datatypes"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // IbmcloudMachineProviderSpecSpec defines the desired state of IbmcloudMachineProviderSpec
+// +k8s:openapi-gen=true
 type IbmcloudMachineProviderSpecSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	metav1.TypeMeta   `json:",inline"`
+        metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Hostname  string     `json:"hostname,omitempty"`
+
+	Domain	 string	  `json:"domain,omitempty"`
+
+	MaxMemory int	  `json:"maxMemory,omitempty"`
+	StartCpus int	  `json:"startCpus,omitempty"`
+
+	Datacenter	datatypes.Location	`json:"dataCenter,omitempty"`
+
+	OSReferenceCode string	`json:"osReferenceCode,omitempty"`
+
+	LocalDiskFlag	bool	`json:"localDiskFlag,omitempty"`
+
+	HourlyBillingFlag bool	`json:"hourlyBillingFlag,omitempty"`
+
 }
 
 // IbmcloudMachineProviderSpecStatus defines the observed state of IbmcloudMachineProviderSpec
