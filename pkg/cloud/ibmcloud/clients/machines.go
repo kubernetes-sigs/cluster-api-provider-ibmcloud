@@ -17,7 +17,7 @@ limitations under the License.
 package clients
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -36,18 +36,20 @@ func NewGuestService(sess *session.Session) GuestService {
 
 func (gs *GuestService) guestWaitReady(Id int) {
 	// Wait for transactions to finish
-	fmt.Printf("Waiting for transactions to complete before destroying.")
+	log.Printf("Waiting for transactions to complete before destroying.")
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
 
 	// Delay to allow transactions to be registered
 	time.Sleep(5 * time.Second)
 
 	for transactions, _ := s.GetActiveTransactions(); len(transactions) > 0; {
-		fmt.Print(".")
+		log.Print(".")
+		// TODO(gyliu513) make it configurable or use the notification mechanism to optimize
+		// the process instead of hardcoded waiting.
 		time.Sleep(5 * time.Second)
 		transactions, _ = s.GetActiveTransactions()
 	}
-	fmt.Println("wait done")
+	log.Println("wait done")
 }
 
 func (gs *GuestService) GuestCreate(clusterName string, name string) {
@@ -55,7 +57,7 @@ func (gs *GuestService) GuestCreate(clusterName string, name string) {
 
 	// Create a Virtual_Guest instance as a template
 	vGuestTemplate := datatypes.Virtual_Guest{
-		Hostname:                     sl.String("sample"),
+		Hostname:                     sl.String(name),
 		Domain:                       sl.String("example.com"),
 		MaxMemory:                    sl.Int(4096),
 		StartCpus:                    sl.Int(1),
@@ -67,15 +69,15 @@ func (gs *GuestService) GuestCreate(clusterName string, name string) {
 
 	vGuest, err := s.Mask("id;domain").CreateObject(&vGuestTemplate)
 	if err != nil {
-		fmt.Printf("%s\n", err)
+		log.Printf("%s\n", err)
 		return
 	} else {
-		fmt.Printf("\nNew Virtual Guest created with ID %d\n", *vGuest.Id)
-		fmt.Printf("Domain: %s\n", *vGuest.Domain)
+		log.Printf("\nNew Virtual Guest created with ID %d\n", *vGuest.Id)
+		log.Printf("Domain: %s\n", *vGuest.Domain)
 	}
 
 	// Wait for transactions to finish
-	fmt.Printf("Waiting for transactions to complete before destroying.")
+	log.Printf("Waiting for transactions to complete before destroying.")
 	gs.guestWaitReady(*vGuest.Id)
 }
 
@@ -84,10 +86,10 @@ func (gs *GuestService) GuestDelete(Id int) {
 
 	success, err := s.DeleteObject()
 	if err != nil {
-		fmt.Printf("Error deleting virtual guest: %s", err)
+		log.Printf("Error deleting virtual guest: %s", err)
 	} else if success == false {
-		fmt.Printf("Error deleting virtual guest")
+		log.Printf("Error deleting virtual guest")
 	} else {
-		fmt.Printf("Virtual Guest deleted successfully")
+		log.Printf("Virtual Guest deleted successfully")
 	}
 }
