@@ -22,7 +22,6 @@ import (
 	"github.com/softlayer/softlayer-go/datatypes"
 )
 
-
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -30,23 +29,22 @@ import (
 // +k8s:openapi-gen=true
 type IbmcloudMachineProviderSpecSpec struct {
 	metav1.TypeMeta   `json:",inline"`
-        metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Hostname  string     `json:"hostname,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
 
-	Domain	 string	  `json:"domain,omitempty"`
+	Domain string `json:"domain,omitempty"`
 
-	MaxMemory int	  `json:"maxMemory,omitempty"`
-	StartCpus int	  `json:"startCpus,omitempty"`
+	MaxMemory int `json:"maxMemory,omitempty"`
+	StartCpus int `json:"startCpus,omitempty"`
 
-	Datacenter	datatypes.Location	`json:"dataCenter,omitempty"`
+	Datacenter datatypes.Location `json:"dataCenter,omitempty"`
 
-	OSReferenceCode string	`json:"osReferenceCode,omitempty"`
+	OSReferenceCode string `json:"osReferenceCode,omitempty"`
 
-	LocalDiskFlag	bool	`json:"localDiskFlag,omitempty"`
+	LocalDiskFlag bool `json:"localDiskFlag,omitempty"`
 
-	HourlyBillingFlag bool	`json:"hourlyBillingFlag,omitempty"`
-
+	HourlyBillingFlag bool `json:"hourlyBillingFlag,omitempty"`
 }
 
 // IbmcloudMachineProviderSpecStatus defines the observed state of IbmcloudMachineProviderSpec
