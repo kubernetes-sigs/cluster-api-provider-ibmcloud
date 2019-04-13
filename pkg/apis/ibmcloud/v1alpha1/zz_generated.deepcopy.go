@@ -275,7 +275,6 @@ func (in *IbmcloudMachineProviderSpecSpec) DeepCopyInto(out *IbmcloudMachineProv
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	in.Datacenter.DeepCopyInto(&out.Datacenter)
 	return
 }
 

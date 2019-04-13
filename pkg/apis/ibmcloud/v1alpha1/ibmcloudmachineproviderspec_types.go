@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/softlayer/softlayer-go/datatypes"
 )
 
 // +genclient
@@ -38,7 +36,7 @@ type IbmcloudMachineProviderSpecSpec struct {
 	MaxMemory int `json:"maxMemory,omitempty"`
 	StartCpus int `json:"startCpus,omitempty"`
 
-	Datacenter datatypes.Location `json:"dataCenter,omitempty"`
+	Datacenter string `json:"dataCenter,omitempty"`
 
 	OSReferenceCode string `json:"osReferenceCode,omitempty"`
 
