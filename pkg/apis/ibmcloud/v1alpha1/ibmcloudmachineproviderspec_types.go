@@ -23,9 +23,9 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IbmcloudMachineProviderSpecSpec defines the desired state of IbmcloudMachineProviderSpec
+// IbmcloudMachineProviderSpec defines the desired state of IbmcloudMachineProvider
 // +k8s:openapi-gen=true
-type IbmcloudMachineProviderSpecSpec struct {
+type IbmcloudMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -43,25 +43,6 @@ type IbmcloudMachineProviderSpecSpec struct {
 	LocalDiskFlag bool `json:"localDiskFlag,omitempty"`
 
 	HourlyBillingFlag bool `json:"hourlyBillingFlag,omitempty"`
-}
-
-// IbmcloudMachineProviderSpecStatus defines the observed state of IbmcloudMachineProviderSpec
-type IbmcloudMachineProviderSpecStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// IbmcloudMachineProviderSpec is the Schema for the ibmcloudmachineproviderspecs API
-// +k8s:openapi-gen=true
-type IbmcloudMachineProviderSpec struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   IbmcloudMachineProviderSpecSpec   `json:"spec,omitempty"`
-	Status IbmcloudMachineProviderSpecStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
