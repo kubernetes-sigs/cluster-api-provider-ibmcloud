@@ -18,16 +18,14 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/softlayer/softlayer-go/datatypes"
 )
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IbmcloudMachineProviderSpecSpec defines the desired state of IbmcloudMachineProviderSpec
+// IbmcloudMachineProviderSpec defines the desired state of IbmcloudMachineProvider
 // +k8s:openapi-gen=true
-type IbmcloudMachineProviderSpecSpec struct {
+type IbmcloudMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -38,32 +36,13 @@ type IbmcloudMachineProviderSpecSpec struct {
 	MaxMemory int `json:"maxMemory,omitempty"`
 	StartCpus int `json:"startCpus,omitempty"`
 
-	Datacenter datatypes.Location `json:"dataCenter,omitempty"`
+	Datacenter string `json:"dataCenter,omitempty"`
 
 	OSReferenceCode string `json:"osReferenceCode,omitempty"`
 
 	LocalDiskFlag bool `json:"localDiskFlag,omitempty"`
 
 	HourlyBillingFlag bool `json:"hourlyBillingFlag,omitempty"`
-}
-
-// IbmcloudMachineProviderSpecStatus defines the observed state of IbmcloudMachineProviderSpec
-type IbmcloudMachineProviderSpecStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// IbmcloudMachineProviderSpec is the Schema for the ibmcloudmachineproviderspecs API
-// +k8s:openapi-gen=true
-type IbmcloudMachineProviderSpec struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   IbmcloudMachineProviderSpecSpec   `json:"spec,omitempty"`
-	Status IbmcloudMachineProviderSpecStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
