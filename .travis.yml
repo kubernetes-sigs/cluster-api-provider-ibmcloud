@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - "1.11.2"
+
+dist: xenial
+
+services:
+  - docker
+
+before_install:
+  - bash ./hack/verify-docfiles.sh && DOC_ONLY=true && echo "Only doc files have changed!" || test true
+
+script:
+  - test $DOC_ONLY && echo "Skipped!" || bash -x ./scripts/pre-commit.sh
+
+after_success:
+  - test $DOC_ONLY && echo "Skipped!" || bash -x ./scripts/build-images.sh
