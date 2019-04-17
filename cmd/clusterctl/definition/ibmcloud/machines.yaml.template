@@ -1,0 +1,44 @@
+items:
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    generateName: ibmcloud-master-
+    labels:
+      set: master
+  spec:
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudproviderconfig/v1alpha1"
+        kind: "IbmcloudMachineProviderSpec"
+        hostname: <host name>
+        domain: <domain name>
+        maxMemory: 4096
+        startCpus: 1
+        dataCenter: <datacenter name>
+        osReferenceCode: <the operating system selection>
+        localDiskFlag: true
+        hourlyBillingFlag: true
+    versions:
+      kubelet: 1.14.0
+      controlPlane: 1.14.0
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    generateName: ibmcloud-node-
+    labels:
+      set: node
+  spec:
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudproviderconfig/v1alpha1"
+        kind: "IbmcloudMachineProviderSpec"
+        hostname: <host name>
+        domain: <domain name>
+        maxMemory: 4096
+        startCpus: 1
+        dataCenter: <datacenter name>
+        osReferenceCode: <the operating system selection>
+        localDiskFlag: true
+        hourlyBillingFlag: true
+    versions:
+      kubelet: 1.14.0
