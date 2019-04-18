@@ -21,53 +21,53 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/softlayer/softlayer-go/datatypes"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
+	ibmcloudclients "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/clients"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
-	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
 
 const (
-	ProviderName = "solas"
+	ProviderName = "ibmcloud"
 )
 
 // Actuator is responsible for performing machine reconciliation
-type Actuator struct {
-	machinesGetter client.MachinesGetter
-}
-
-// ActuatorParams holds parameter information for Actuator
-type ActuatorParams struct {
-	MachinesGetter client.MachinesGetter
+type IbmCloudClient struct {
+	params ibmcloud.ActuatorParams
 }
 
 // NewActuator creates a new Actuator
-func NewActuator(params ActuatorParams) (*Actuator, error) {
-	return &Actuator{
-		machinesGetter: params.MachinesGetter,
+func NewActuator(params ibmcloud.ActuatorParams) (*IbmCloudClient, error) {
+	return &IbmCloudClient{
+		params: params,
 	}, nil
 }
 
 // Create creates a machine and is invoked by the Machine Controller
-func (a *Actuator) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	log.Printf("Creating machine %v for cluster %v.", machine.Name, cluster.Name)
 	return fmt.Errorf("TODO: Not yet implemented")
 }
 
 // Delete deletes a machine and is invoked by the Machine Controller
-func (a *Actuator) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	log.Printf("Deleting machine %v for cluster %v.", machine.Name, cluster.Name)
 	return fmt.Errorf("TODO: Not yet implemented")
 }
 
 // Update updates a machine and is invoked by the Machine Controller
-func (a *Actuator) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
+func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	log.Printf("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
 	return fmt.Errorf("TODO: Not yet implemented")
 }
 
 // Exists test for the existance of a machine and is invoked by the Machine Controller
-func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	log.Printf("Checking if machine %v for cluster %v exists.", machine.Name, cluster.Name)
-	return false, fmt.Errorf("TODO: Not yet implemented")
+func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
+	guest, err := ic.guestExists(machine)
+	if err != nil {
+		return false, err
+	}
+	return guest != nil, err
 }
 
 // The Machine Actuator interface must implement GetIP and GetKubeConfig functions as a workaround for issues
@@ -75,13 +75,26 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 // (https://github.com/kubernetes-sigs/cluster-api/issues/160).
 
 // GetIP returns IP address of the machine in the cluster.
-func (a *Actuator) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
+func (ic *IbmCloudClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	log.Printf("Getting IP of machine %v for cluster %v.", machine.Name, cluster.Name)
 	return "", fmt.Errorf("TODO: Not yet implemented")
 }
 
 // GetKubeConfig gets a kubeconfig from the master.
-func (a *Actuator) GetKubeConfig(cluster *clusterv1.Cluster, master *clusterv1.Machine) (string, error) {
+func (ic *IbmCloudClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clusterv1.Machine) (string, error) {
 	log.Printf("Getting IP of machine %v for cluster %v.", master.Name, cluster.Name)
 	return "", fmt.Errorf("TODO: Not yet implemented")
+}
+
+func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (guest *datatypes.Virtual_Guest, err error) {
+	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
+	if err != nil {
+		return nil, err
+	}
+
+	guestGet, err := machineService.GuestGet(machine.Name)
+	if err != nil {
+		return nil, err
+	}
+	return guestGet, nil
 }

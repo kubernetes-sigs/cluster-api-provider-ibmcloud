@@ -26,6 +26,11 @@ import (
 func init() {
 	// AddToManagerFuncs is a list of functions to create controllers and add them to a manager.
 	AddToManagerFuncs = append(AddToManagerFuncs, func(m manager.Manager) error {
-		return capimachine.AddWithActuator(m, &machine.Actuator{})
+		params := getActuatorParams(m)
+		machineActuator, err := machine.NewActuator(params)
+		if err != nil {
+			return err
+		}
+		return capimachine.AddWithActuator(m, machineActuator)
 	})
 }

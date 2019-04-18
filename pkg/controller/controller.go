@@ -17,6 +17,10 @@ limitations under the License.
 package controller
 
 import (
+	"k8s.io/klog"
+
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -31,4 +35,18 @@ func AddToManager(m manager.Manager) error {
 		}
 	}
 	return nil
+}
+
+func getActuatorParams(mgr manager.Manager) ibmcloud.ActuatorParams {
+	config := mgr.GetConfig()
+
+	kubeClient, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		klog.Fatalf("Could not create kubernetes client to talk to the apiserver: %v", err)
+	}
+
+	return ibmcloud.ActuatorParams{
+		KubeClient: kubeClient,
+	}
+
 }

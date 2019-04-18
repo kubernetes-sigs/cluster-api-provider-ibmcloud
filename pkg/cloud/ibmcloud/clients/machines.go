@@ -17,13 +17,17 @@ limitations under the License.
 package clients
 
 import (
+	"fmt"
 	"log"
 	"time"
+
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 	"github.com/softlayer/softlayer-go/sl"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 type GuestService struct {
@@ -32,6 +36,12 @@ type GuestService struct {
 
 func NewGuestService(sess *session.Session) GuestService {
 	return GuestService{sess: sess}
+}
+
+// TODO: store info into secret later and use kubeclient to get it, now let's use ibmcloud default configuration
+func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clusterv1.Machine) (GuestService, error) {
+	sess := session.New()
+	return NewGuestService(sess), nil
 }
 
 func (gs *GuestService) guestWaitReady(Id int) {
@@ -117,6 +127,25 @@ func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
 		return []datatypes.Virtual_Guest{}, err
 	}
 	return guests, nil
+}
+
+// FIXME: use API layer query instead of query all then compare here
+func (gs *GuestService) GuestGet(name string) (*datatypes.Virtual_Guest, error) {
+	var vg *datatypes.Virtual_Guest
+	guests, err := gs.GuestList()
+
+	if err != nil {
+		return vg, err
+	}
+
+	for _, guest := range guests {
+		// FIXME: how to unique identify one guest
+		if *guest.Hostname == name {
+			log.Printf("Found guest with Id %d for %s", *guest.Id, name)
+			return &guest, nil
+		}
+	}
+	return vg, fmt.Errorf("unable to find guest with name %s", name)
 }
 
 func getSshKey(sess *session.Session, name string) int {
