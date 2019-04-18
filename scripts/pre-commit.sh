@@ -19,16 +19,21 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source "$(dirname "${BASH_SOURCE}")/util.sh"
 ROOT_DIR="$(cd "$(dirname "$0")/.." ; pwd)"
 MAKE_CMD="make -C ${ROOT_DIR}"
-NUM_CLUSTERS="${NUM_CLUSTERS:-2}"
-JOIN_CLUSTERS="${JOIN_CLUSTERS:-}"
 DOWNLOAD_BINARIES="${DOWNLOAD_BINARIES:-}"
-CONTAINER_REGISTRY_HOST="${CONTAINER_REGISTRY_HOST:-172.17.0.1:5000}"
+COMMON_TEST_CMD="go test -v"
 
 function build-binaries() {
   ${MAKE_CMD} manager
+}
+
+function download-dependencies() {
+  if [[ -z "${DOWNLOAD_BINARIES}" ]]; then
+    return
+  fi
+
+  ./scripts/download-binaries.sh
 }
 
 function run-unit-tests() {
@@ -63,14 +68,20 @@ cd "$ROOT_DIR" || {
 
 export PATH=${ROOT_DIR}/bin:${PATH}
 
+echo "Downloading test dependencies"
+download-dependencies
+
 echo "Checking initial state of working tree"
 check-git-state
 
 echo "Verifying Gofmt"
 ./hack/go-tools/verify-gofmt.sh
 
-echo "Checking that correct Error Package is used."
-./hack/verify-errpkg.sh
+echo "Verifying Golint"
+./hack/go-tools/verify-golint.sh
+
+# echo "Checking that correct Error Package is used."
+# ./hack/verify-errpkg.sh
 
 echo "Checking that 'make generate' is up-to-date"
 check-make-generate-output
