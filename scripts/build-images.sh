@@ -20,3 +20,41 @@ set -o nounset
 set -o pipefail
 
 
+base_dir="$(cd "$(dirname "$0")/.." ; pwd)"
+
+echo "travis tag: ${TRAVIS_TAG}"
+echo "travis branch:${TRAVIS_BRANCH}"
+if [[ "${TRAVIS_TAG}" =~ ^v([0-9]\.)+([0-9])[-a-zA-Z0-9]*([.0-9])* ]]; then
+   echo "Using tag: '${TRAVIS_TAG}' and 'latest' ."
+    TAG="${TRAVIS_TAG}"
+    LATEST="latest"
+elif [[ "${TRAVIS_BRANCH}" == "master" ]]; then
+   echo "Using tag: 'canary'."
+    TAG="canary"
+    LATEST=""
+else
+    echo "Nothing to deploy. Image build skipped." >&2
+    exit 0
+fi
+
+echo "Starting image build"
+export REGISTRY=docker.io/
+export REPO=multicloudlab
+
+echo "Logging into registry ${REGISTRY///}"
+docker login -u "${DOCKER_USERNAME}" -p "${DOCKER_PASSWORD}"
+
+echo "Building controller docker image"
+cd ${base_dir}
+make container IMG=${REGISTRY}${REPO}/cluster-api-provider-ibmcloud-controller:${TAG}
+cd -
+
+echo "Pushing image with tag '${TAG}'."
+docker push ${REGISTRY}${REPO}/cluster-api-provider-ibmcloud-controller:${TAG}
+
+if [ "$LATEST" == "latest" ]; then
+
+   docker tag ${REGISTRY}${REPO}/cluster-api-provider-ibmcloud-controller:${TAG} ${REGISTRY}${REPO}/cluster-api-provider-ibmcloud-controller:${LATEST}
+   echo "Pushing image with tag '${LATEST}'."
+   docker push ${REGISTRY}${REPO}/cluster-api-provider-ibmcloud-controller:${LATEST}
+fi
