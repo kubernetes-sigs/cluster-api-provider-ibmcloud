@@ -93,3 +93,14 @@ func (gs *GuestService) GuestDelete(Id int) {
 		log.Printf("Virtual Guest deleted successfully")
 	}
 }
+
+func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
+	s := services.GetAccountService(gs.sess)
+
+	guests, err := s.GetVirtualGuests()
+	if err != nil {
+		log.Printf("Error listinging virtual guest: %s", err)
+		return []datatypes.Virtual_Guest{}, err
+	}
+	return guests, nil
+}
