@@ -25,7 +25,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/json"
+	"sigs.k8s.io/yaml"
+
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/scheme"
 )
 
@@ -43,4 +50,61 @@ var (
 // Resource is required by pkg/client/listers/...
 func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
+}
+
+// ClusterConfigFromProviderSpec unmarshals a provider config into an Ibmcloud Cluster type
+func ClusterSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*IbmcloudClusterProviderSpec, error) {
+	if providerSpec.Value == nil {
+		return nil, errors.New("no such providerSpec found in manifest")
+	}
+
+	var config IbmcloudClusterProviderSpec
+	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+// ClusterStatusFromProviderStatus unmarshals a provider status into an Ibmcloud Cluster Status type
+func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*IbmcloudClusterProviderStatus, error) {
+	if extension == nil {
+		return &IbmcloudClusterProviderStatus{}, nil
+	}
+
+	status := new(IbmcloudClusterProviderStatus)
+	if err := yaml.Unmarshal(extension.Raw, status); err != nil {
+		return nil, err
+	}
+
+	return status, nil
+}
+
+func MachineSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*IbmcloudMachineProviderSpec, error) {
+	if providerSpec.Value == nil {
+		return nil, errors.New("no such providerSpec found in manifest")
+	}
+
+	var config IbmcloudMachineProviderSpec
+	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
+}
+
+func EncodeClusterStatus(status *IbmcloudClusterProviderStatus) (*runtime.RawExtension, error) {
+	if status == nil {
+		return &runtime.RawExtension{}, nil
+	}
+
+	var rawBytes []byte
+	var err error
+
+	//  TODO: use apimachinery conversion https://godoc.org/k8s.io/apimachinery/pkg/runtime#Convert_runtime_Object_To_runtime_RawExtension
+	if rawBytes, err = json.Marshal(status); err != nil {
+		return nil, err
+	}
+
+	return &runtime.RawExtension{
+		Raw: rawBytes,
+	}, nil
 }
