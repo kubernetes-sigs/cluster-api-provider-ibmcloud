@@ -23,12 +23,10 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/cluster"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/machine"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 	"sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
 	capicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
-	capimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -65,13 +63,6 @@ func main() {
 		panic(err)
 	}
 
-	machineActuator, err := machine.NewActuator(machine.ActuatorParams{
-		MachinesGetter: cs.ClusterV1alpha1(),
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	// Register our cluster deployer (the interface is in clusterctl and we define the Deployer interface on the actuator)
 	common.RegisterClusterProvisioner("ibmcloud", clusterActuator)
 
@@ -82,8 +73,6 @@ func main() {
 	if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
 		panic(err)
 	}
-
-	capimachine.AddWithActuator(mgr, machineActuator)
 
 	capicluster.AddWithActuator(mgr, clusterActuator)
 
