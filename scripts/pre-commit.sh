@@ -29,6 +29,9 @@ function build-binaries() {
 }
 
 function download-dependencies() {
+  # this should be installed for lint script
+  go get -u golang.org/x/lint/golint
+
   if [[ -z "${DOWNLOAD_BINARIES}" ]]; then
     return
   fi
@@ -37,7 +40,7 @@ function download-dependencies() {
 }
 
 function run-unit-tests() {
-  ${MAKE_CMD} test
+  KUBEBUILDER_ASSETS=`pwd`/bin/ ${MAKE_CMD} test
 }
 
 function check-make-generate-output() {
@@ -75,10 +78,10 @@ echo "Checking initial state of working tree"
 check-git-state
 
 echo "Verifying Gofmt"
-./hack/go-tools/verify-gofmt.sh
+./hack/verify-gofmt.sh
 
 echo "Verifying Golint"
-./hack/go-tools/verify-golint.sh
+./hack/verify-golint.sh
 
 # echo "Checking that correct Error Package is used."
 # ./hack/verify-errpkg.sh
