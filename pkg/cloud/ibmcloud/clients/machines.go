@@ -55,6 +55,18 @@ func (gs *GuestService) guestWaitReady(Id int) {
 func (gs *GuestService) GuestCreate(clusterName string, name string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
+	// TODO: use customized value instead of hardcoded in code
+	keyId := getSshKey(gs.sess, "cluster-api-ibmcloud")
+	if keyId == 0 {
+		log.Printf("Cannot retrieving specific SSH key. Stop creating VM instance\n")
+		return
+	}
+	sshKeys := []datatypes.Security_Ssh_Key{
+		{
+			Id: sl.Int(keyId),
+		},
+	}
+
 	// Create a Virtual_Guest instance as a template
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     sl.String(name),
@@ -65,6 +77,8 @@ func (gs *GuestService) GuestCreate(clusterName string, name string) {
 		OperatingSystemReferenceCode: sl.String("UBUNTU_LATEST"),
 		LocalDiskFlag:                sl.Bool(true),
 		HourlyBillingFlag:            sl.Bool(true),
+		SshKeyCount:                  sl.Uint(1),
+		SshKeys:                      sshKeys,
 	}
 
 	vGuest, err := s.Mask("id;domain").CreateObject(&vGuestTemplate)
@@ -103,4 +117,26 @@ func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
 		return []datatypes.Virtual_Guest{}, err
 	}
 	return guests, nil
+}
+
+func getSshKey(sess *session.Session, name string) int {
+	id := 0
+
+	service := services.GetAccountService(sess)
+	keys, err := service.GetSshKeys()
+	if err != nil {
+		log.Printf("Error retrieving ssh keys from Account: %s\n", err)
+		return id
+	}
+
+	for _, key := range keys {
+		if *key.Label == name {
+			id = *key.Id
+			log.Printf("Get SSH key for %q with value %d\n", *key.Label, *key.Id)
+			break
+		}
+	}
+
+	return id
+
 }
