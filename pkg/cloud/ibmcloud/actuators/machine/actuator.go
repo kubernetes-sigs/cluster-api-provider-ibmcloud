@@ -76,8 +76,16 @@ func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 
 // GetIP returns IP address of the machine in the cluster.
 func (ic *IbmCloudClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	log.Printf("Getting IP of machine %v for cluster %v.", machine.Name, cluster.Name)
-	return "", fmt.Errorf("TODO: Not yet implemented")
+	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
+	if err != nil {
+		return "", err
+	}
+
+	guestGet, err := machineService.GuestGet(machine.Name)
+	if err != nil {
+		return "", err
+	}
+	return *guestGet.PrimaryIpAddress, nil
 }
 
 // GetKubeConfig gets a kubeconfig from the master.
