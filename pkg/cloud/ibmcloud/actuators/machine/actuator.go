@@ -20,11 +20,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/softlayer/softlayer-go/datatypes"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 	ibmcloudclients "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/clients"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
+	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 const (
@@ -90,8 +93,33 @@ func (ic *IbmCloudClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.M
 
 // GetKubeConfig gets a kubeconfig from the master.
 func (ic *IbmCloudClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clusterv1.Machine) (string, error) {
-	log.Printf("Getting IP of machine %v for cluster %v.", master.Name, cluster.Name)
-	return "", fmt.Errorf("TODO: Not yet implemented")
+	ip, err := ic.GetIP(cluster, master)
+	if err != nil {
+		return "", err
+	}
+
+	homeDir, ok := os.LookupEnv("HOME")
+	if !ok {
+		return "", fmt.Errorf("unable to use HOME environment variable to find SSH key: %v", err)
+	}
+
+	// FIXME: use ssh user defined in machine spec name later
+	sshUserName := "ubuntu"
+	// FIXME: use other predefined ssh keyname or make this global definition
+	privateKey := "cluster-api-provider-ibmcloud"
+
+	result := strings.TrimSpace(util.ExecCommand(
+		"ssh", "-i", homeDir+"/.ssh/"+privateKey,
+		"-o", "StrictHostKeyChecking no",
+		"-o", "UserKnownHostsFile /dev/null",
+		"-o", "BatchMode=yes",
+		fmt.Sprintf("%s@%s", sshUserName, ip),
+		"echo STARTFILE; sudo cat /etc/kubernetes/admin.conf"))
+	parts := strings.Split(result, "STARTFILE")
+	if len(parts) != 2 {
+		return "", nil
+	}
+	return strings.TrimSpace(parts[1]), nil
 }
 
 func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (guest *datatypes.Virtual_Guest, err error) {
