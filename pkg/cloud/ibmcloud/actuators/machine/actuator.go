@@ -51,8 +51,27 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 
 // Delete deletes a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Printf("Deleting machine %v for cluster %v.", machine.Name, cluster.Name)
-	return fmt.Errorf("TODO: Not yet implemented")
+	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
+	if err != nil {
+		return err
+	}
+
+	guestGet, err := ic.guestExists(machine)
+	if err != nil {
+		return err
+	}
+
+	if guestGet == nil {
+		log.Printf("Skipped deleting %s that is already deleted.\n", machine.Name)
+		return nil
+	}
+
+	err = machineService.GuestDelete(*guestGet.Id)
+	if err != nil {
+		return fmt.Errorf("Guest delete failed %s", err)
+	}
+
+	return nil
 }
 
 // Update updates a machine and is invoked by the Machine Controller

@@ -105,7 +105,7 @@ func (gs *GuestService) GuestCreate(clusterName string, name string) {
 	gs.guestWaitReady(*vGuest.Id)
 }
 
-func (gs *GuestService) GuestDelete(Id int) {
+func (gs *GuestService) GuestDelete(Id int) error {
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
 
 	success, err := s.DeleteObject()
@@ -113,9 +113,11 @@ func (gs *GuestService) GuestDelete(Id int) {
 		log.Printf("Error deleting virtual guest: %s", err)
 	} else if success == false {
 		log.Printf("Error deleting virtual guest")
+		err = fmt.Errorf("Error delete virtual guest")
 	} else {
 		log.Printf("Virtual Guest deleted successfully")
 	}
+	return err
 }
 
 func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
