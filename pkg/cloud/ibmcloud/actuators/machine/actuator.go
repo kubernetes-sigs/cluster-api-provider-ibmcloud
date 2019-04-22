@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/softlayer/softlayer-go/datatypes"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
@@ -73,7 +74,45 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return nil
 	}
 
-	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec.SshKeyName)
+	var userData []byte
+	if providerSpec.UserDataSecret != nil {
+		namespace := providerSpec.UserDataSecret.Namespace
+		if namespace == "" {
+			namespace = machine.Namespace
+		}
+
+		if providerSpec.UserDataSecret.Name == "" {
+			return fmt.Errorf("UserDataSecret name must be provided")
+		}
+
+		userDataSecret, err := kubeClient.CoreV1().Secrets(namespace).Get(providerSpec.UserDataSecret.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		var ok bool
+		userData, ok = userDataSecret.Data[UserDataKey]
+		if !ok {
+			return fmt.Errorf("Machine's userdata secret %v in namespace %v did not contain key %v", providerSpec.UserDataSecret.Name, namespace, UserDataKey)
+		}
+	}
+
+	var userScriptRendered string
+	if len(userData) > 0 {
+		if util.IsControlPlaneMachine(machine) {
+			userScriptRendered, err = masterStartupScript(cluster, machine, string(userData))
+		} else {
+			token := "abcdef.0123456789abcdef" // TODO: use customized/generated token
+			userScriptRendered, err = nodeStartupScript(cluster, machine, token, string(userData))
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	// TODO: execute userScriptRendered
+	// after merge previous
+	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec.SshKeyName, userScriptRendered)
 
 	return nil
 

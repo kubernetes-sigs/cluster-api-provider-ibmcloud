@@ -62,7 +62,7 @@ func (gs *GuestService) guestWaitReady(Id int) {
 	log.Println("wait done")
 }
 
-func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName string) {
+func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScript string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
 	// TODO: use customized value instead of hardcoded in code
