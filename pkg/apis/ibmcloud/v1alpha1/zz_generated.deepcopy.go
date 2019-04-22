@@ -20,6 +20,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -146,6 +147,11 @@ func (in *IbmcloudMachineProviderSpec) DeepCopyInto(out *IbmcloudMachineProvider
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	if in.UserDataSecret != nil {
+		in, out := &in.UserDataSecret, &out.UserDataSecret
+		*out = new(v1.SecretReference)
+		**out = **in
+	}
 	return
 }
 
