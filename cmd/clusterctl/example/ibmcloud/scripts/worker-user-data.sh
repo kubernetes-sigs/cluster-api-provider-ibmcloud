@@ -2,24 +2,17 @@
 set -e
 set -x
 (
-#KUBELET_VERSION={{ .Machine.Spec.Versions.Kubelet }}
-KUBELET_VERSION=1.14.0
-#TOKEN={{ .Token }}
-TOKEN=abcdef.0123456789abcdef
-#MASTER={{ call .GetMasterEndpoint }}
-MASTER=119.81.172.59:443 # TODO: not hardcoded
+KUBELET_VERSION={{ .Machine.Spec.Versions.Kubelet }}
+TOKEN={{ .Token }}
+MASTER={{ call .GetMasterEndpoint }}
 #NAMESPACE={{ .Machine.ObjectMeta.Namespace }}
 NAMESPACE=ibmcloud
 MACHINE=$NAMESPACE
 MACHINE+="/"
-#MACHINE+={{ .Machine.ObjectMeta.Name }}
-MACHINE+=node
-#CLUSTER_DNS_DOMAIN={{ .Cluster.Spec.ClusterNetwork.ServiceDomain }}
-CLUSTER_DNS_DOMAIN=cluster.local
-#POD_CIDR={{ .PodCIDR }}
-POD_CIDR=192.168.0.0/16
-#SERVICE_CIDR={{ .ServiceCIDR }}
-SERVICE_CIDR=10.96.0.0/12
+MACHINE+={{ .Machine.ObjectMeta.Name }}
+CLUSTER_DNS_DOMAIN={{ .Cluster.Spec.ClusterNetwork.ServiceDomain }}
+POD_CIDR={{ .PodCIDR }}
+SERVICE_CIDR={{ .ServiceCIDR }}
 
 swapoff -a
 # disable swap in fstab
