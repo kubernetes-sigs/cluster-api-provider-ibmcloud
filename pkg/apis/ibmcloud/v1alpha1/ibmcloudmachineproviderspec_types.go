@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,6 +45,9 @@ type IbmcloudMachineProviderSpec struct {
 	LocalDiskFlag bool `json:"localDiskFlag,omitempty"`
 
 	HourlyBillingFlag bool `json:"hourlyBillingFlag,omitempty"`
+
+	UserDataSecret *corev1.SecretReference `json:"userDataSecret,omitempty"`
+	SshKeyName     string                  `json:"sshKeyName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

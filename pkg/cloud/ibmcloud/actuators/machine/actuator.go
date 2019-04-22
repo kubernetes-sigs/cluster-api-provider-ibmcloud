@@ -24,6 +24,8 @@ import (
 	"strings"
 
 	"github.com/softlayer/softlayer-go/datatypes"
+
+	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 	ibmcloudclients "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/clients"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
@@ -32,6 +34,7 @@ import (
 
 const (
 	ProviderName = "ibmcloud"
+	UserDataKey  = "userData"
 )
 
 // Actuator is responsible for performing machine reconciliation
@@ -49,7 +52,31 @@ func NewActuator(params ibmcloud.ActuatorParams) (*IbmCloudClient, error) {
 // Create creates a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	log.Printf("Creating machine %v for cluster %v.", machine.Name, cluster.Name)
-	return fmt.Errorf("TODO: Not yet implemented")
+
+	kubeClient := ic.params.KubeClient
+	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(kubeClient, machine)
+	if err != nil {
+		return err
+	}
+
+	providerSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return err
+	}
+
+	guest, err := ic.guestExists(machine)
+	if err != nil {
+		return err
+	}
+	if guest != nil {
+		log.Printf("Skipped creating a VM that already exists.\n")
+		return nil
+	}
+
+	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec.SshKeyName)
+
+	return nil
+
 }
 
 // Delete deletes a machine and is invoked by the Machine Controller

@@ -62,11 +62,11 @@ func (gs *GuestService) guestWaitReady(Id int) {
 	log.Println("wait done")
 }
 
-func (gs *GuestService) GuestCreate(clusterName string, name string) {
+func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
 	// TODO: use customized value instead of hardcoded in code
-	keyId := getSshKey(gs.sess, "cluster-api-ibmcloud")
+	keyId := getSshKey(gs.sess, sshKeyName)
 	if keyId == 0 {
 		log.Printf("Cannot retrieving specific SSH key. Stop creating VM instance\n")
 		return
@@ -79,7 +79,7 @@ func (gs *GuestService) GuestCreate(clusterName string, name string) {
 
 	// Create a Virtual_Guest instance as a template
 	vGuestTemplate := datatypes.Virtual_Guest{
-		Hostname:                     sl.String(name),
+		Hostname:                     sl.String(hostName),
 		Domain:                       sl.String("example.com"),
 		MaxMemory:                    sl.Int(4096),
 		StartCpus:                    sl.Int(1),
