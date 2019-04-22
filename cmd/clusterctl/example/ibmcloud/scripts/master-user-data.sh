@@ -2,23 +2,16 @@
 set -e
 set -x
 (
-#KUBELET_VERSION={{ .Machine.Spec.Versions.Kubelet }}
-KUBELET_VERSION=1.14.0
+KUBELET_VERSION={{ .Machine.Spec.Versions.Kubelet }}
 VERSION=v${KUBELET_VERSION}
-#NAMESPACE={{ .Machine.ObjectMeta.Namespace }}
-NAMESPACE=ibmcloud # TODO: check ????
+NAMESPACE={{ .Machine.ObjectMeta.Namespace }}
 MACHINE=$NAMESPACE
 MACHINE+="/"
-#MACHINE+={{ .Machine.ObjectMeta.Name }}
-MACHINE+=dev-script
-#CONTROL_PLANE_VERSION={{ .Machine.Spec.Versions.ControlPlane }}
-CONTROL_PLANE_VERSION=1.14.0
-#CLUSTER_DNS_DOMAIN={{ .Cluster.Spec.ClusterNetwork.ServiceDomain }}
-CLUSTER_DNS_DOMAIN=cluster.local
-#POD_CIDR={{ .PodCIDR }}
-POD_CIDR=192.168.0.0/16
-#SERVICE_CIDR={{ .ServiceCIDR }}
-SERVICE_CIDR=10.96.0.0/12
+MACHINE+={{ .Machine.ObjectMeta.Name }}
+CONTROL_PLANE_VERSION={{ .Machine.Spec.Versions.ControlPlane }}
+CLUSTER_DNS_DOMAIN={{ .Cluster.Spec.ClusterNetwork.ServiceDomain }}
+POD_CIDR={{ .PodCIDR }}
+SERVICE_CIDR={{ .ServiceCIDR }}
 ARCH=amd64
 
 swapoff -a
@@ -115,7 +108,7 @@ kind: InitConfiguration
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
-  token: abcdef.0123456789abcdef
+  token: ${TOKEN}
   ttl: 24h0m0s
   usages:
   - signing
