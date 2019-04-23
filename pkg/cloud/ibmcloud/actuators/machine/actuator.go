@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -114,8 +115,7 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 	// after merge previous
 	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec.SshKeyName, userScriptRendered)
 
-	return nil
-
+	return ic.updateAnnotation(machine, strconv.Itoa(*guest.Id))
 }
 
 // Delete deletes a machine and is invoked by the Machine Controller
@@ -218,4 +218,23 @@ func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (guest *dataty
 		return nil, err
 	}
 	return guestGet, nil
+}
+
+func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string) error {
+	if machine.ObjectMeta.Annotations == nil {
+		machine.ObjectMeta.Annotations = make(map[string]string)
+	}
+	machine.ObjectMeta.Annotations[ibmcloud.IBMCloudIdAnnotationKey] = id
+
+	ip, err := ic.GetIP(nil, machine)
+	if err != nil {
+		return err
+	}
+	machine.ObjectMeta.Annotations[ibmcloud.IBMCloudIPAnnotationKey] = ip
+
+	if err := ic.params.Client.Update(nil, machine); err != nil {
+		return err
+	}
+
+	return nil
 }
