@@ -13,8 +13,13 @@ test: generate fmt vet manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
 
 # Build manager binary
+build: manager clusterctl
+
 manager: generate fmt vet
-	go build -o bin/manager sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/manager
+	go build -o bin/manager cmd/manager/main.go
+
+clusterctl:
+	go build -o bin/clusterctl cmd/clusterctl/main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -59,3 +64,6 @@ docker-build: test
 # Push the docker image
 docker-push:
 	docker push ${IMG}
+
+clean:
+	rm -f bin/manager bin/clusterctl
