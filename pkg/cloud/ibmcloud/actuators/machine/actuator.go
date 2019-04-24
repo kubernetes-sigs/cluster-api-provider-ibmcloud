@@ -23,9 +23,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/softlayer/softlayer-go/datatypes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	tokenapi "k8s.io/cluster-bootstrap/token/api"
+	tokenutil "k8s.io/cluster-bootstrap/token/util"
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
@@ -237,4 +240,27 @@ func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string
 	}
 
 	return nil
+}
+
+func (ic *IbmCloudClient) createBootstrapToken() (string, error) {
+	token, err := tokenutil.GenerateBootstrapToken()
+	if err != nil {
+		return "", err
+	}
+
+	expiration := time.Now().UTC().Add(TokenTTL)
+	tokenSecret, err := bootstrap.GenerateTokenSecret(token, expiration)
+	if err != nil {
+		panic(fmt.Sprintf("unable to create token. there might be a bug somwhere: %v", err))
+	}
+
+	err = ic.client.Create(context.TODO(), tokenSecret)
+	if err != nil {
+		return "", err
+	}
+
+	return tokenutil.TokenFromIDAndSecret(
+		string(tokenSecret.Data[tokenapi.BootstrapTokenIDKey]),
+		string(tokenSecret.Data[tokenapi.BootstrapTokenSecretKey]),
+	), nil
 }
