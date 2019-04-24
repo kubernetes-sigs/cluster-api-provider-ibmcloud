@@ -46,6 +46,7 @@ func getActuatorParams(mgr manager.Manager) ibmcloud.ActuatorParams {
 	}
 
 	return ibmcloud.ActuatorParams{
+		Client:     mgr.GetClient(),
 		KubeClient: kubeClient,
 	}
 
