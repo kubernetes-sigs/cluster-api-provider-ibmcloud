@@ -112,7 +112,10 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		if util.IsControlPlaneMachine(machine) {
 			userScriptRendered, err = masterStartupScript(cluster, machine, string(userData))
 		} else {
-			token := "abcdef.0123456789abcdef" // TODO: use customized/generated token
+			token, err := ic.createBootstrapToken()
+			if err != nil {
+				return fmt.Errorf("Failed to create toke: %s", err)
+			}
 			userScriptRendered, err = nodeStartupScript(cluster, machine, token, string(userData))
 		}
 	}
