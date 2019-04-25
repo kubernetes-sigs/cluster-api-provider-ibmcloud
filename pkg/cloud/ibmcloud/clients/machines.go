@@ -18,9 +18,12 @@ package clients
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -38,9 +41,30 @@ func NewGuestService(sess *session.Session) GuestService {
 	return GuestService{sess: sess}
 }
 
-// TODO: store info into secret later and use kubeclient to get it, now let's use ibmcloud default configuration
+type IBMCloudConfig struct {
+	UserName string `yaml:"userName,omitempty"`
+	APIKey   string `yaml:"apiKey,omitempty"`
+}
+
 func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clusterv1.Machine) (GuestService, error) {
-	sess := session.New()
+	// clouds.yaml is mounted into controller pod for clouds authentication
+	fileName := "/etc/ibmcloud/clouds.yaml"
+	if _, err := os.Stat(fileName); err != nil {
+		return GuestService{}, fmt.Errorf("Cannot stat %q: %v", fileName, err)
+	}
+	bytes, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return GuestService{}, fmt.Errorf("Cannot read %q: %v", fileName, err)
+	}
+
+	config := IBMCloudConfig{}
+	yaml.Unmarshal(bytes, &config)
+
+	if config.UserName == "" || config.APIKey == "" {
+		return GuestService{}, fmt.Errorf("Failed getting IBM Cloud config userName %q, apiKey %q", config.UserName, config.APIKey)
+	}
+
+	sess := session.New(config.UserName, config.APIKey)
 	return NewGuestService(sess), nil
 }
 
