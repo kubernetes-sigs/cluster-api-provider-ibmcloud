@@ -77,6 +77,20 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 		},
 	}
 
+	// TODO: remove this hardcoded path if we know how to execute userData as a script directly
+	scriptURL := "https://raw.githubusercontent.com/multicloudlab/cluster-api-provider-ibmcloud/master/cmd/clusterctl/configuration/ibmcloud/scripts/launcher.sh"
+	userData := []datatypes.Virtual_Guest_Attribute{
+		{
+			// TODO: if base64 needed
+			Value: sl.String(userScript),
+			Guest: nil,
+			Type: &datatypes.Virtual_Guest_Attribute_Type{
+				Keyname: sl.String("USER_DATA"),
+				Name:    sl.String("user data"),
+			},
+		},
+	}
+
 	// Create a Virtual_Guest instance as a template
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     sl.String(hostName),
@@ -89,6 +103,8 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 		HourlyBillingFlag:            sl.Bool(true),
 		SshKeyCount:                  sl.Uint(1),
 		SshKeys:                      sshKeys,
+		PostInstallScriptUri:         sl.String(scriptURL),
+		UserData:                     userData,
 	}
 
 	vGuest, err := s.Mask("id;domain").CreateObject(&vGuestTemplate)
