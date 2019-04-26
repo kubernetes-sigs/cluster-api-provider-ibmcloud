@@ -1059,7 +1059,8 @@
   revision = "94e1e7b7574c44c4c0f2007de6fe617e259191f3"
 
 [[projects]]
-  digest = "1:bc04752ec8a48d212a0db41c2085bb468ae7c8c34bcb317f552b68f4fe34865b"
+  branch = "release-0.1"
+  digest = "1:d92175fcffa434a7440cee734b886f32f586dfb6413702b08b25f701662b2bbb"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "cmd/clusterctl/clientcmd",
@@ -1087,8 +1088,7 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "29fee0a9ef590af33bbaa167ed17a8be50825679"
-  version = "0.1.0"
+  revision = "560b000be51c1dc371c901ab84af8070bc29e8dc"
 
 [[projects]]
   digest = "1:5aa50779f75cc439edd3455a6dee7cf179b52f8dde764a47cc929693485d1afb"
@@ -1185,6 +1185,7 @@
     "github.com/softlayer/softlayer-go/session",
     "github.com/softlayer/softlayer-go/sl",
     "golang.org/x/net/context",
+    "gopkg.in/yaml.v2",
     "k8s.io/api/core/v1",
     "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
