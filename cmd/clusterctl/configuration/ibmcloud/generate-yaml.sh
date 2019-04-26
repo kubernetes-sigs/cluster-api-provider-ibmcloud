@@ -100,20 +100,30 @@ TEMPLATES_PATH=${TEMPLATES_PATH:-$PWD/$SUPPORTED_PROVIDER_OS}
 CONFIG_DIR=$PWD/provider-component/clouds-secrets/configs
 OVERWRITE=${OVERWRITE:-0}
 CLOUDS_PATH=${CLOUDS_PATH:-""}
+USERDATA=$PWD/provider-component/user-data
+MASTER_USER_DATA=$USERDATA/$PROVIDER_OS/templates/master-user-data.sh
+WORKER_USER_DATA=$USERDATA/$PROVIDER_OS/templates/worker-user-data.sh
 
 # Set up the output dir if it does not yet exist
 mkdir -p $PWD/out
 cp -n $PWD/cluster.yaml.template $PWD/out/cluster.yaml
 cp -n $PWD/machines.yaml.template $PWD/out/machines.yaml
 
+mkdir -p $CONFIG_DIR
 cat $PWD/$CLOUDS_PATH > $CONFIG_DIR/clouds.yaml
 
+cat "$MASTER_USER_DATA" > $USERDATA/$PROVIDER_OS/master-user-data.sh
+cat "$WORKER_USER_DATA" > $USERDATA/$PROVIDER_OS/worker-user-data.sh
+
 # Build provider-components.yaml with kustomize
+kustomize build ../../../../config -o out/provider-components.yaml
+
 echo "---" >> $PWD/out/provider-components.yaml
-kustomize build $PWD/provider-component/clouds-secrets > $PWD/out/provider-components.yaml
+kustomize build $PWD/provider-component/clouds-secrets >> $PWD/out/provider-components.yaml
 
 echo "---" >> $PWD/out/provider-components.yaml
 kustomize build $PWD/provider-component/cluster-api >> $PWD/out/provider-components.yaml
 
+echo "---" >> $PWD/out/provider-components.yaml
+kustomize build $USERDATA/$PROVIDER_OS >> out/provider-components.yaml
 
-# TODO add user data here

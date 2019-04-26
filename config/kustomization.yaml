@@ -13,3 +13,4 @@ resources:
 - crds/ibmcloud_v1alpha1_ibmcloudclusterproviderstatus.yaml
 - crds/ibmcloud_v1alpha1_ibmcloudmachineproviderspec.yaml
 - crds/ibmcloud_v1alpha1_ibmcloudmachineproviderstatus.yaml
+- manager/manager.yaml
