@@ -1,3 +1,2 @@
-clouds:
-  username: <username>
-  toke: <toke>
+userName: "your-name"
+apiKey: "your-api-key"

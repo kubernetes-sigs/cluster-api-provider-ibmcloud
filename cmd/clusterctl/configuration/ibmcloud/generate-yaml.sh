@@ -106,11 +106,14 @@ mkdir -p $PWD/out
 cp -n $PWD/cluster.yaml.template $PWD/out/cluster.yaml
 cp -n $PWD/machines.yaml.template $PWD/out/machines.yaml
 
+mkdir -p $CONFIG_DIR
 cat $PWD/$CLOUDS_PATH > $CONFIG_DIR/clouds.yaml
 
 # Build provider-components.yaml with kustomize
+kustomize build ../../../../config -o out/provider-components.yaml
+
 echo "---" >> $PWD/out/provider-components.yaml
-kustomize build $PWD/provider-component/clouds-secrets > $PWD/out/provider-components.yaml
+kustomize build $PWD/provider-component/clouds-secrets >> $PWD/out/provider-components.yaml
 
 echo "---" >> $PWD/out/provider-components.yaml
 kustomize build $PWD/provider-component/cluster-api >> $PWD/out/provider-components.yaml
