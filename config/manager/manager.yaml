@@ -30,6 +30,7 @@ metadata:
     control-plane: controller-manager
     controller-tools.k8s.io: "1.0"
 spec:
+  replicas: 1
   selector:
     matchLabels:
       control-plane: controller-manager
@@ -41,7 +42,6 @@ spec:
         control-plane: controller-manager
         controller-tools.k8s.io: "1.0"
     spec:
-      replicas: 1
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master

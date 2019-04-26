@@ -13,4 +13,4 @@ secretGenerator:
   commands:
     userData: "cat master-user-data.sh"
 
-namespace: openstack-provider-system
+namespace: ibmcloud-provider-system
