@@ -21,20 +21,20 @@ import (
 	"fmt"
 
 	"k8s.io/klog"
-
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/cluster"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	capicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/controller"
 )
 
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
+
+	klog.Info("Starting controller of IBM cloud provider for cluster api")
 
 	cfg := config.GetConfigOrDie()
 	if cfg == nil {
@@ -47,18 +47,6 @@ func main() {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
 
-	cs, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		klog.Fatalf("Error creating new config: %v", err)
-	}
-
-	clusterActuator, err := cluster.NewActuator(cluster.ActuatorParams{
-		ClustersGetter: cs.ClusterV1alpha1(),
-	})
-	if err != nil {
-		klog.Fatalf("Error creating cluster actuator: %v", err)
-	}
-
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.Fatalf("Error adding apis scheme: %v", err)
 	}
@@ -67,7 +55,9 @@ func main() {
 		klog.Fatalf("Error adding cluster apis scheme: %v", err)
 	}
 
-	capicluster.AddWithActuator(mgr, clusterActuator)
+	if err := controller.AddToManager(mgr); err != nil {
+		klog.Fatalf("Error initializing controllers: %v", err)
+	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
 		klog.Fatalf("Failed starting controller: %v", err)
