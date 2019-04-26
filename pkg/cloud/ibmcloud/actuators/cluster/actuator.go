@@ -44,7 +44,8 @@ func NewActuator(params ActuatorParams) (*Actuator, error) {
 // Reconcile reconciles a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 	log.Printf("Reconciling cluster %v.", cluster.Name)
-	return fmt.Errorf("TODO: Not yet implemented")
+	// "TODO: Not yet implemented"
+	return nil
 }
 
 // Delete deletes a cluster and is invoked by the Cluster Controller
