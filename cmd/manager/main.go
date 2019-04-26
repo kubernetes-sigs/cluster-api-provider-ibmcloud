@@ -19,61 +19,47 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/cluster"
+	"k8s.io/klog"
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
-	"sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset"
-	capicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/controller"
 )
 
 func main() {
+	klog.InitFlags(nil)
+	flag.Parse()
+
+	klog.Info("Starting controller of IBM cloud provider for cluster api")
+
 	cfg := config.GetConfigOrDie()
 	if cfg == nil {
 		panic(fmt.Errorf("GetConfigOrDie didn't die"))
 	}
 
-	flag.Parse()
-	log := logf.Log.WithName("ibmcloud-controller-manager")
-	logf.SetLogger(logf.ZapLogger(false))
-	entryLog := log.WithName("entrypoint")
-
 	// Setup a Manager
 	mgr, err := manager.New(cfg, manager.Options{})
 	if err != nil {
-		entryLog.Error(err, "unable to set up overall controller manager")
-		os.Exit(1)
-	}
-
-	cs, err := clientset.NewForConfig(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	clusterActuator, err := cluster.NewActuator(cluster.ActuatorParams{
-		ClustersGetter: cs.ClusterV1alpha1(),
-	})
-	if err != nil {
-		panic(err)
+		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-		panic(err)
+		klog.Fatalf("Error adding apis scheme: %v", err)
 	}
 
 	if err := clusterapis.AddToScheme(mgr.GetScheme()); err != nil {
-		panic(err)
+		klog.Fatalf("Error adding cluster apis scheme: %v", err)
 	}
 
-	capicluster.AddWithActuator(mgr, clusterActuator)
+	if err := controller.AddToManager(mgr); err != nil {
+		klog.Fatalf("Error initializing controllers: %v", err)
+	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		entryLog.Error(err, "unable to run manager")
-		os.Exit(1)
+		klog.Fatalf("Failed starting controller: %v", err)
 	}
 }

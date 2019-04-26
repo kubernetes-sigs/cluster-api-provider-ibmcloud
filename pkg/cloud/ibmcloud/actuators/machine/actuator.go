@@ -123,9 +123,12 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
-	// TODO: execute userScriptRendered
-	// after merge previous
 	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec.SshKeyName, userScriptRendered)
+
+	guest, err = ic.guestExists(machine)
+	if err != nil {
+		return err
+	}
 
 	return ic.updateAnnotation(machine, strconv.Itoa(*guest.Id))
 }

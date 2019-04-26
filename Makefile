@@ -76,6 +76,10 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
+quick-image:
+	docker build . -t ${IMG}
+	docker push ${IMG}
+
 $(GOBIN):
 	echo "create gobin"
 	mkdir -p $(GOBIN)

@@ -25,6 +25,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/services"
@@ -165,7 +166,7 @@ func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
 
 	guests, err := s.GetVirtualGuests()
 	if err != nil {
-		log.Printf("Error listinging virtual guest: %s", err)
+		log.Printf("Error listing virtual guest: %s", err)
 		return []datatypes.Virtual_Guest{}, err
 	}
 	return guests, nil
@@ -183,11 +184,11 @@ func (gs *GuestService) GuestGet(name string) (*datatypes.Virtual_Guest, error) 
 	for _, guest := range guests {
 		// FIXME: how to unique identify one guest
 		if *guest.Hostname == name {
-			log.Printf("Found guest with Id %d for %s", *guest.Id, name)
+			klog.Infof("Found guest with Id %d for %s", *guest.Id, name)
 			return &guest, nil
 		}
 	}
-	return vg, fmt.Errorf("unable to find guest with name %s", name)
+	return vg, nil
 }
 
 func getSshKey(sess *session.Session, name string) int {
