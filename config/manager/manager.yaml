@@ -78,12 +78,23 @@ spec:
         - mountPath: /tmp/cert
           name: cert
           readOnly: true
+        - mountPath: /etc/ibmcloud/clouds.yaml
+          readOnly: true
+          name: cloud-config
       terminationGracePeriodSeconds: 10
       volumes:
       - name: cert
         secret:
           defaultMode: 420
           secretName: webhook-server-secret
+      - name: kubeadm
+        hostPath:
+          path: /usr/bin/kubeadm
+      - name: cloud-config
+        secret:
+          defaultMode: 420
+          secretName: cloud-config
+
 ---
 apiVersion: v1
 kind: Secret
