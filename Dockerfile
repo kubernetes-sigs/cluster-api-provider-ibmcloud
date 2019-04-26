@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager sigs.k8s.io/clu
 
 # Copy the controller-manager into a thin image
 FROM ubuntu:latest
+RUN apt-get update && apt-get install -y ca-certificates
 WORKDIR /
 COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-ibmcloud/manager .
 ENTRYPOINT ["/manager"]

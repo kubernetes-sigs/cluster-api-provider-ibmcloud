@@ -21,6 +21,7 @@ items:
         osReferenceCode: <the operating system selection>
         localDiskFlag: true
         hourlyBillingFlag: true
+        sshKeyName: <ssh key name>
     versions:
       kubelet: 1.14.0
       controlPlane: 1.14.0
