@@ -1,6 +1,7 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+CONTROLLER_IMG ?= ibmcloud-cluster-api-controller:latest
+CLUSTERCTL_IMG ?= ibmcloud-cluster-api-clusterctl:latest
 
 PWD := $(shell pwd)
 BASE_DIR := $(shell basename $(PWD))
@@ -68,17 +69,21 @@ endif
 
 # Build the docker image
 docker-build: test
-	docker build . -t ${IMG}
+	docker build . -f cmd/manager/Dockerfile -t ${CONTROLLER_IMG}
 	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${IMG}"'@' ./config/default/manager_image_patch.yaml
+	sed -i'' -e 's@image: .*@image: '"${CONTROLLER_IMG}"'@' ./config/default/manager_image_patch.yaml
+	docker build . -f cmd/clusterctl/Dockerfile -t ${CLUSTERCTL_IMG}
 
 # Push the docker image
 docker-push:
-	docker push ${IMG}
+	docker push ${CONTROLLER_IMG}
+	docker push ${CLUSTERCTL_IMG}
 
 quick-image:
-	docker build . -t ${IMG}
-	docker push ${IMG}
+	docker build . -f cmd/manager/Dockerfile -t ${CONTROLLER_IMG}
+	docker push ${CONTROLLER_IMG}
+	docker build . -f cmd/clusterctl/Dockerfile -t ${CLUSTERCTL_IMG}
+	docker push ${CLUSTERCTL_IMG}
 
 $(GOBIN):
 	echo "create gobin"
