@@ -22,6 +22,9 @@ items:
         localDiskFlag: true
         hourlyBillingFlag: true
         sshKeyName: <ssh key name>
+        userDataSecret:
+          name: master-user-data
+          namespace: ibmcloud-provider-system
     versions:
       kubelet: 1.14.0
       controlPlane: 1.14.0
@@ -45,5 +48,9 @@ items:
         osReferenceCode: <the operating system selection>
         localDiskFlag: true
         hourlyBillingFlag: true
+        sshKeyName: <ssh key name>
+        userDataSecret:
+          name: master-user-data
+          namespace: ibmcloud-provider-system
     versions:
       kubelet: 1.14.0

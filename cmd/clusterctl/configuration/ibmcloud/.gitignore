@@ -1,3 +1,5 @@
 clouds.yaml
 out/
 provider-component/clouds-secrets/configs/
+provider-component/user-data/ubuntu/master-user-data.sh
+provider-component/user-data/ubuntu/worker-user-data.sh

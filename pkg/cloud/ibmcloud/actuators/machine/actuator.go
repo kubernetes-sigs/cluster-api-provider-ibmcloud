@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	tokenapi "k8s.io/cluster-bootstrap/token/api"
 	tokenutil "k8s.io/cluster-bootstrap/token/util"
+	"k8s.io/klog"
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	bootstrap "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/bootstrap"
@@ -161,7 +162,8 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 // Update updates a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	log.Printf("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
-	return fmt.Errorf("TODO: Not yet implemented")
+	klog.Infof("TODO: Not yet implemented")
+	return nil
 }
 
 // Exists test for the existance of a machine and is invoked by the Machine Controller

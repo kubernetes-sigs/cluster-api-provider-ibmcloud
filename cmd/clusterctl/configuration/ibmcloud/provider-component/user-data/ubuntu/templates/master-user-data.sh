@@ -92,9 +92,6 @@ cat > /etc/systemd/system/kubelet.service.d/20-kubenet.conf <<EOF
 Environment="KUBELET_DNS_ARGS=--cluster-dns=${CLUSTER_DNS_SERVER} --cluster-domain=${CLUSTER_DNS_DOMAIN}"
 EOF
 
-echo $OPENSTACK_CLOUD_PROVIDER_CONF | base64 -d > /etc/kubernetes/cloud.conf
-chmod 600 /etc/kubernetes/cloud.conf
-
 systemctl daemon-reload
 systemctl restart kubelet.service
 systemctl disable ufw
