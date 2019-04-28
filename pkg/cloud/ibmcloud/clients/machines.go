@@ -93,7 +93,7 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 	// TODO: use customized value instead of hardcoded in code
 	keyId := getSshKey(gs.sess, sshKeyName)
 	if keyId == 0 {
-		log.Printf("Cannot retrieving specific SSH key. Stop creating VM instance\n")
+		klog.Infof("Cannot retrieving specific SSH key. Stop creating VM instance\n")
 		return
 	}
 	sshKeys := []datatypes.Security_Ssh_Key{
@@ -101,6 +101,7 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 			Id: sl.Int(keyId),
 		},
 	}
+	klog.Infof("Got SSH key %q with id %d\n", sshKeyName, keyId)
 
 	// TODO: remove this hardcoded path if we know how to execute userData as a script directly
 	scriptURL := "https://raw.githubusercontent.com/multicloudlab/cluster-api-provider-ibmcloud/master/cmd/clusterctl/configuration/ibmcloud/scripts/launcher.sh"
@@ -119,9 +120,9 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 	// Create a Virtual_Guest instance as a template
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     sl.String(hostName),
-		Domain:                       sl.String("example.com"),
+		Domain:                       sl.String("test.ibmcloud.com"),
 		MaxMemory:                    sl.Int(4096),
-		StartCpus:                    sl.Int(1),
+		StartCpus:                    sl.Int(4),
 		Datacenter:                   &datatypes.Location{Name: sl.String("wdc01")},
 		OperatingSystemReferenceCode: sl.String("UBUNTU_LATEST"),
 		LocalDiskFlag:                sl.Bool(true),
@@ -134,15 +135,15 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 
 	vGuest, err := s.Mask("id;domain").CreateObject(&vGuestTemplate)
 	if err != nil {
-		log.Printf("%s\n", err)
+		klog.Infof("%s", err)
 		return
 	} else {
-		log.Printf("\nNew Virtual Guest created with ID %d\n", *vGuest.Id)
-		log.Printf("Domain: %s\n", *vGuest.Domain)
+		klog.Infof("New Virtual Guest created with ID %d", *vGuest.Id)
+		klog.Infof("Domain: %s", *vGuest.Domain)
 	}
 
 	// Wait for transactions to finish
-	log.Printf("Waiting for transactions to complete before destroying.")
+	klog.Infof("Waiting for transactions to complete before destroying.")
 	gs.guestWaitReady(*vGuest.Id)
 }
 
@@ -204,7 +205,6 @@ func getSshKey(sess *session.Session, name string) int {
 	for _, key := range keys {
 		if *key.Label == name {
 			id = *key.Id
-			log.Printf("Get SSH key for %q with value %d\n", *key.Label, *key.Id)
 			break
 		}
 	}
