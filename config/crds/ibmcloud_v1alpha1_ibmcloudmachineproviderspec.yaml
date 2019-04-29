@@ -43,6 +43,8 @@ spec:
           type: string
         sshKeyName:
           type: string
+        sshUserName:
+          type: string
         startCpus:
           format: int64
           type: integer
