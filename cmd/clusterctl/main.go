@@ -17,8 +17,9 @@ limitations under the License.
 package main
 
 import (
-	_ "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/cmd"
+
+	_ "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 )
 
 func main() {

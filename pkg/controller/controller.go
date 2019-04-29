@@ -17,11 +17,11 @@ limitations under the License.
 package controller
 
 import (
-	"k8s.io/klog"
-
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
+	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 )
 
 // AddToManagerFuncs is a list of functions to add all Controllers to the Manager

@@ -17,9 +17,10 @@ limitations under the License.
 package controller
 
 import (
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/cluster"
 	capicluster "sigs.k8s.io/cluster-api/pkg/controller/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/cluster"
 )
 
 //+kubebuilder:rbac:groups=ibmcloud.k8s.io,resources=ibmcloudclusterproviderspecs;ibmcloudclusterproviderstatuses,verbs=get;list;watch;create;update;patch;delete
