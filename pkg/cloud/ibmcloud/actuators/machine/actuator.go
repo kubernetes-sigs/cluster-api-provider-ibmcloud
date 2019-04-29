@@ -20,9 +20,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -176,55 +174,6 @@ func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 	return guest != nil, err
 }
 
-// The Machine Actuator interface must implement GetIP and GetKubeConfig functions as a workaround for issues
-// cluster-api#158 (https://github.com/kubernetes-sigs/cluster-api/issues/158) and cluster-api#160
-// (https://github.com/kubernetes-sigs/cluster-api/issues/160).
-
-// GetIP returns IP address of the machine in the cluster.
-func (ic *IbmCloudClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
-	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
-	if err != nil {
-		return "", err
-	}
-
-	guestGet, err := machineService.GuestGet(machine.Name)
-	if err != nil {
-		return "", err
-	}
-	return *guestGet.PrimaryIpAddress, nil
-}
-
-// GetKubeConfig gets a kubeconfig from the master.
-func (ic *IbmCloudClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clusterv1.Machine) (string, error) {
-	ip, err := ic.GetIP(cluster, master)
-	if err != nil {
-		return "", err
-	}
-
-	homeDir, ok := os.LookupEnv("HOME")
-	if !ok {
-		return "", fmt.Errorf("unable to use HOME environment variable to find SSH key: %v", err)
-	}
-
-	// FIXME: use ssh user defined in machine spec name later
-	sshUserName := "ubuntu"
-	// FIXME: use other predefined ssh keyname or make this global definition
-	privateKey := "cluster-api-provider-ibmcloud"
-
-	result := strings.TrimSpace(util.ExecCommand(
-		"ssh", "-i", homeDir+"/.ssh/"+privateKey,
-		"-o", "StrictHostKeyChecking no",
-		"-o", "UserKnownHostsFile /dev/null",
-		"-o", "BatchMode=yes",
-		fmt.Sprintf("%s@%s", sshUserName, ip),
-		"echo STARTFILE; sudo cat /etc/kubernetes/admin.conf"))
-	parts := strings.Split(result, "STARTFILE")
-	if len(parts) != 2 {
-		return "", nil
-	}
-	return strings.TrimSpace(parts[1]), nil
-}
-
 func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (guest *datatypes.Virtual_Guest, err error) {
 	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
 	if err != nil {
@@ -238,13 +187,25 @@ func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (guest *dataty
 	return guestGet, nil
 }
 
+func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
+	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
+	if err != nil {
+		return "", err
+	}
+
+	guestGet, err := machineService.GuestGet(machine.Name)
+	if err != nil {
+		return "", err
+	}
+	return *guestGet.PrimaryIpAddress, nil
+}
 func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string) error {
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
 	machine.ObjectMeta.Annotations[ibmcloud.IBMCloudIdAnnotationKey] = id
 
-	ip, err := ic.GetIP(nil, machine)
+	ip, err := ic.getIP(machine)
 	if err != nil {
 		return err
 	}
