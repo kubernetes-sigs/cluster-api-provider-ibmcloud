@@ -29,10 +29,10 @@ aliases:
     - khahmed
     - mdelder
     - spzala
-  cluster-api-openstack-maintainers:
+  cluster-api-ibmcloud-maintainers:
     - gyliu513
     - jichenjc
     - xunpan
-  cluster-api-openstack-reviewers:
+  cluster-api-ibmcloud-reviewers:
     - clyang82
     - morvencao
