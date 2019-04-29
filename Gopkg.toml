@@ -35,6 +35,10 @@ required = [
   branch="master"
 
 [[constraint]]
+  name = "k8s.io/klog"
+  version = "0.1.0"
+
+[[constraint]]
   name = "sigs.k8s.io/cluster-api"
   branch = "release-0.1"
 
