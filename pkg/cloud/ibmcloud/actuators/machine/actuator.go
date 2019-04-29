@@ -124,7 +124,7 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
-	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec.SshKeyName, userScriptRendered)
+	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec, userScriptRendered)
 
 	guest, err = ic.guestExists(machine)
 	if err != nil {
