@@ -103,8 +103,6 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 	}
 	klog.Infof("Got SSH key %q with id %d\n", sshKeyName, keyId)
 
-	// TODO: remove this hardcoded path if we know how to execute userData as a script directly
-	scriptURL := "https://raw.githubusercontent.com/multicloudlab/cluster-api-provider-ibmcloud/master/cmd/clusterctl/configuration/ibmcloud/scripts/launcher.sh"
 	userData := []datatypes.Virtual_Guest_Attribute{
 		{
 			// TODO: if base64 needed
@@ -129,7 +127,6 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 		HourlyBillingFlag:            sl.Bool(true),
 		SshKeyCount:                  sl.Uint(1),
 		SshKeys:                      sshKeys,
-		PostInstallScriptUri:         sl.String(scriptURL),
 		UserData:                     userData,
 	}
 
