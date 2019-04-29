@@ -31,6 +31,7 @@ import (
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 	"github.com/softlayer/softlayer-go/sl"
+	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -87,11 +88,10 @@ func (gs *GuestService) guestWaitReady(Id int) {
 	log.Println("wait done")
 }
 
-func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScript string) {
+func (gs *GuestService) GuestCreate(clusterName, hostName string, machineSpec *ibmcloudv1.IbmcloudMachineProviderSpec, userScript string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
-	// TODO: use customized value instead of hardcoded in code
-	keyId := getSshKey(gs.sess, sshKeyName)
+	keyId := getSshKey(gs.sess, machineSpec.SshKeyName)
 	if keyId == 0 {
 		klog.Infof("Cannot retrieving specific SSH key. Stop creating VM instance\n")
 		return
@@ -101,7 +101,6 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 			Id: sl.Int(keyId),
 		},
 	}
-	klog.Infof("Got SSH key %q with id %d\n", sshKeyName, keyId)
 
 	userData := []datatypes.Virtual_Guest_Attribute{
 		{
@@ -118,13 +117,13 @@ func (gs *GuestService) GuestCreate(clusterName, hostName, sshKeyName, userScrip
 	// Create a Virtual_Guest instance as a template
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     sl.String(hostName),
-		Domain:                       sl.String("test.ibmcloud.com"),
-		MaxMemory:                    sl.Int(4096),
-		StartCpus:                    sl.Int(4),
-		Datacenter:                   &datatypes.Location{Name: sl.String("wdc01")},
-		OperatingSystemReferenceCode: sl.String("UBUNTU_LATEST"),
-		LocalDiskFlag:                sl.Bool(true),
-		HourlyBillingFlag:            sl.Bool(true),
+		Domain:                       sl.String(machineSpec.Domain),
+		MaxMemory:                    sl.Int(machineSpec.MaxMemory),
+		StartCpus:                    sl.Int(machineSpec.StartCpus),
+		Datacenter:                   &datatypes.Location{Name: sl.String(machineSpec.Datacenter)},
+		OperatingSystemReferenceCode: sl.String(machineSpec.OSReferenceCode),
+		LocalDiskFlag:                sl.Bool(machineSpec.LocalDiskFlag),
+		HourlyBillingFlag:            sl.Bool(machineSpec.HourlyBillingFlag),
 		SshKeyCount:                  sl.Uint(1),
 		SshKeys:                      sshKeys,
 		UserData:                     userData,
