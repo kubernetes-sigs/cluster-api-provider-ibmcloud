@@ -48,6 +48,7 @@ type IbmcloudMachineProviderSpec struct {
 
 	UserDataSecret *corev1.SecretReference `json:"userDataSecret,omitempty"`
 	SshKeyName     string                  `json:"sshKeyName,omitempty"`
+	SshUserName    string                  `json:"sshUserName,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

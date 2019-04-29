@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
@@ -67,10 +68,14 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 		return "", fmt.Errorf("unable to use HOME environment variable to find SSH key: %v", err)
 	}
 
-	// FIXME: use ssh user defined in machine spec name later
-	sshUserName := "ubuntu"
-	// FIXME: use other predefined ssh keyname or make this global definition
-	privateKey := "cluster-api-provider-ibmcloud"
+	providerSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(master.Spec.ProviderSpec)
+	if err != nil {
+		return "", err
+	}
+	sshUserName := providerSpec.SshUserName
+
+	// TODO: generate IBM Cloud specific keys
+	privateKey := "id_rsa"
 
 	result := strings.TrimSpace(util.ExecCommand(
 		"ssh", "-i", homeDir+"/.ssh/"+privateKey,
