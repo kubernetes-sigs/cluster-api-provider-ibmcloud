@@ -22,5 +22,9 @@ if [ ! -f "${USER_DATA_FILE}" ];then
 fi
 
 #base64 -d ibm_cloud_data/openstack/latest/user_data > ~/deployk8s.sh
-cp ibm_cloud_data/openstack/latest/user_data ~/deployk8s.sh
-bash -x ~/deployk8s.sh
+cp ibm_cloud_data/openstack/latest/user_data /deployk8s.sh
+
+# IBM cloud runs executable files automatically based on test
+# To ensure the file is executed, explicitly run it
+
+bash -x /deployk8s.sh
