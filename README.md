@@ -1,2 +1,182 @@
-# cluster-api-provider-ibmcloud
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Kubernetes Cluster API Provider IBM Cloud](#kubernetes-cluster-api-provider-ibm-cloud)
+- [Kubernetes cluster-api-provider-ibmcloud Project](#kubernetes-cluster-api-provider-ibmcloud-project)
+  - [Community, discussion, contribution, and support](#community-discussion-contribution-and-support)
+    - [Code of conduct](#code-of-conduct)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Cluster Creation](#cluster-creation)
+    - [Interacting with your cluster](#interacting-with-your-cluster)
+    - [Cluster Deletion](#cluster-deletion)
+    - [Trouble shooting](#trouble-shooting)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+# Kubernetes Cluster API Provider IBM Cloud
+
 IBM Cloud Provider for Cluster API
+
+<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"><a href="https://www.ibm.com/cloud/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by IBM Cloud"></a>
+
+------
+
+# Kubernetes cluster-api-provider-ibmcloud Project
+
+This repository hosts a concrete implementation of an IBMCloud provider for the [cluster-api project](https://github.com/kubernetes-sigs/cluster-api).
+
+## Community, discussion, contribution, and support
+
+Learn how to engage with the Kubernetes community on the [community page](http://kubernetes.io/community/).
+
+You can reach the maintainers of this project at:
+
+- [#sig-ibmcloud on Kubernetes Slack](https://kubernetes.slack.com/messages/sig-ibmcloud)
+- [SIG-Cluster-Lifecycle Mailing List](https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle)
+
+### Code of conduct
+
+Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
+
+------
+
+## Getting Started
+
+### Prerequisites
+
+1. Install `kubectl` (see [here](http://kubernetes.io/docs/user-guide/prereqs/)).
+2. You can use either VM, container or existing Kubernetes cluster act as bootstrap cluster.
+   - If you want to use VM, install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/), version 0.30.0 or greater.
+   - If you want to use container, install [kind](https://github.com/kubernetes-sigs/kind#installation-and-usage).
+   - If you want to use existing Kubernetes cluster, prepare your kubeconfig.
+3. Install a [driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md) **if you are using minikube**. For Linux, we recommend kvm2. For MacOS, we recommend VirtualBox.
+4. An appropriately configured [Go development environment](https://golang.org/doc/install)
+5. Build the `clusterctl` tool
+
+   ```bash
+   git clone https://github.com/multicloudlab/cluster-api-provider-ibmcloud $GOPATH/src/sigs.k8s.io/cluster-api-provider-ibmcloud
+   cd $GOPATH/src/sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/clusterctl
+   go build
+   ```
+
+### Cluster Creation
+
+1. Create the `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml` files if needed. If you want to use the `generate-yaml.sh` script, then you will need kustomize version 1.0.11, which can be found at https://github.com/kubernetes-sigs/kustomize/releases/tag/v1.0.11, and the latest go implementation of yq, which can be found at https://github.com/mikefarah/yq. The script has the following usage:
+
+   ```bash
+   cd configuration/ibmcloud
+   ./generate-yaml.sh [options] <path/to/clouds.yaml> <provider os: [centos,ubuntu,coreos]>
+   cd ../..
+   ```
+
+   `<clouds.yaml>` is a yaml file to record how to interact with IBM Cloud, there's a sample
+   [clouds.yaml](cmd/clusterctl/configuration/ibmcloud/clouds.yaml.template).
+
+   `<provider os>` specifies the operating system of the virtual machines Kubernetes will run on.
+   Supported Operating Systems:
+   - `ubuntu`
+   - `centos` (Not Implemented)
+   - `coreos` (Not Implemented)
+
+   #### Quick notes on clouds.yaml
+   ```shell
+   $ cat clouds.yaml
+   userName: "your-name"
+   apiKey: "your-api-key"
+   ```
+
+   You can get `userName` and `apiKey` from https://control.softlayer.com/ .
+   - Logon to https://control.softlayer.com/ .
+   - Click your user name on the right top of the console.
+   - The console will navigate you to the page of `Edit User Profile`.
+   - Scroll down the page to the bottom, you will see a section `API Access Information`. You can get `userName` and `apiKey` from there.
+
+   #### Special notes on ssh keys and fetching `admin.conf`
+
+   In order to allow `clusterctl` to fetch Kubernetes' `admin.conf` from the master node, you **must** manually create the key pair in IBM Cloud. By default the generated `machine.yaml` uses `cluster-api-provider-ibmcloud` to be the `sshKeyName`. However, you are free to change that.
+
+   For the ssh key, you can logon to https://control.softlayer.com/ , click `Devices->Manage->SSH Keys`, you will be navigated to the page of `SSH Keys`, click `Add` to create your own key.
+
+2. Create a cluster:
+   - If you are using minikube:
+
+   ```bash
+   ./clusterctl create cluster --bootstrap-type minikube --bootstrap-flags kubernetes-version=v1.12.3 \
+     --provider ibmcloud -c examples/ibmcloud/out/cluster.yaml \
+     -m examples/ibmcloud/out/machines.yaml -p examples/ibmcloud/out/provider-components.yaml
+   ```
+
+   To choose a specific minikube driver, please use the `--bootstrap-flags vm-driver=xxx` command line parameter. For example to use the kvm2 driver with clusterctl you woud add `--bootstrap-flags vm-driver=kvm2`, for linux, if you haven't installed any driver, you can add `--bootstrap-flags vm-driver=none`.
+
+   - If you are using kind:
+
+   ```bash
+   ./clusterctl create cluster --bootstrap-type kind --provider ibmcloud \
+     -c examples/ibmcloud/out/cluster.yaml -m examples/ibmcloud/out/machines.yaml \
+     -p examples/ibmcloud/out/provider-components.yaml
+   ```
+
+   - If you are using existing Kubernetes cluster:
+   ```bash
+   ./clusterctl create cluster --bootstrap-cluster-kubeconfig ~/.kube/config \
+     --provider ibmcloud -c examples/ibmcloud/out/cluster.yaml \
+     -m examples/ibmcloud/out/machines.yaml \
+     -p examples/ibmcloud/out/provider-components.yaml
+   ```
+
+   For the above command, the `bootstrap-cluster-kubeconfig` was located at `~/.kube/config`, you must update it
+   to use your kubeconfig.
+
+   Additional advanced flags can be found via help.
+
+   ```bash
+   ./clusterctl create cluster --help
+   ```
+
+### Interacting with your cluster
+
+If you are using kind, config the `KUBECONFIG` first before using kubectl:
+
+```bash
+export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")"
+```
+
+Once you have created a cluster, you can interact with the cluster and machine
+resources using kubectl:
+
+```bash
+kubectl --kubeconfig=kubeconfig get clusters
+kubectl --kubeconfig=kubeconfig get machines
+kubectl --kubeconfig=kubeconfig get machines -o yaml
+```
+
+### Cluster Deletion
+
+This guide explains how to delete all resources that were created as part of
+your ibmcloud Cluster API Kubernetes cluster.
+
+1. Delete all of the node Machines in the cluster. Make sure to wait for the
+  corresponding Nodes to be deleted before moving onto the next step. After this
+  step, the master node will be the only remaining node.
+
+   ```bash
+   kubectl --kubeconfig=kubeconfig delete machines -l set=node
+   kubectl --kubeconfig=kubeconfig get nodes
+   ```
+
+2. Delete the master machine.
+    ```bash
+    kubectl --kubeconfig=kubeconfig delete machines -l set=master
+    ```
+
+3. Delete the kubeconfig file that were created for your cluster.
+
+   ```bash
+   rm kubeconfig
+   ```
+
+### Trouble shooting
+
+Please refer to [Trouble shooting documentation](docs/trouble_shooting.md) for further info.
