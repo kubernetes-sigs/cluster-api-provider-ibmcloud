@@ -1,7 +1,10 @@
 
 # Image URL to use all building/pushing image targets
-CONTROLLER_IMG ?= ibmcloud-cluster-api-controller:latest
-CLUSTERCTL_IMG ?= ibmcloud-cluster-api-clusterctl:latest
+CONTROLLER_IMG ?= ibmcloud-cluster-api-controller
+CLUSTERCTL_IMG ?= ibmcloud-cluster-api-clusterctl
+VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
+                 git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+REGISTRY ?= k8scloudprovider
 
 PWD := $(shell pwd)
 BASE_DIR := $(shell basename $(PWD))
@@ -69,21 +72,19 @@ endif
 
 # Build the docker image
 docker-build: test
-	docker build . -f cmd/manager/Dockerfile -t ${CONTROLLER_IMG}
-	@echo "updating kustomize image patch file for manager resource"
-	sed -i'' -e 's@image: .*@image: '"${CONTROLLER_IMG}"'@' ./config/default/manager_image_patch.yaml
-	docker build . -f cmd/clusterctl/Dockerfile -t ${CLUSTERCTL_IMG}
+	docker build . -f cmd/manager/Dockerfile -t $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
+	docker build . -f cmd/clusterctl/Dockerfile -t $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
 
 # Push the docker image
 docker-push:
-	docker push ${CONTROLLER_IMG}
-	docker push ${CLUSTERCTL_IMG}
+	docker push $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
+	docker push $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
 
 quick-image:
-	docker build . -f cmd/manager/Dockerfile -t ${CONTROLLER_IMG}
-	docker push ${CONTROLLER_IMG}
-	docker build . -f cmd/clusterctl/Dockerfile -t ${CLUSTERCTL_IMG}
-	docker push ${CLUSTERCTL_IMG}
+	docker build . -f cmd/manager/Dockerfile -t $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
+	docker push $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
+	docker build . -f cmd/clusterctl/Dockerfile -t $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
+	docker push $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
 
 $(GOBIN):
 	echo "create gobin"
