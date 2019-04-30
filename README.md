@@ -66,13 +66,13 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 1. Create the `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml` files if needed. If you want to use the `generate-yaml.sh` script, then you will need kustomize version 1.0.11, which can be found at https://github.com/kubernetes-sigs/kustomize/releases/tag/v1.0.11, and the latest go implementation of yq, which can be found at https://github.com/mikefarah/yq. The script has the following usage:
 
    ```bash
-   cd example/ibmcloud
+   cd examples/ibmcloud
    ./generate-yaml.sh [options] <path/to/clouds.yaml> <provider os: [centos,ubuntu,coreos]>
    cd ../..
    ```
 
    `<clouds.yaml>` is a yaml file to record how to interact with IBM Cloud, there's a sample
-   [clouds.yaml](cmd/clusterctl/example/ibmcloud/clouds.yaml.template).
+   [clouds.yaml](cmd/clusterctl/examples/ibmcloud/clouds.yaml.template).
 
    `<provider os>` specifies the operating system of the virtual machines Kubernetes will run on.
    Supported Operating Systems:
