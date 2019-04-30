@@ -74,7 +74,7 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
-	guest, err := ic.guestExists(machine)
+	guest, err := ic.getGuest(machine)
 	if err != nil {
 		return err
 	}
@@ -122,9 +122,9 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
-	machineService.GuestCreate(cluster.Name, machine.Name, providerSpec, userScriptRendered)
+	machineService.CreateGuest(cluster.Name, machine.Name, providerSpec, userScriptRendered)
 
-	guest, err = ic.guestExists(machine)
+	guest, err = ic.getGuest(machine)
 	if err != nil {
 		return err
 	}
@@ -139,17 +139,17 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
-	guestGet, err := ic.guestExists(machine)
+	guest, err := ic.getGuest(machine)
 	if err != nil {
 		return err
 	}
 
-	if guestGet == nil {
+	if guest == nil {
 		klog.Infof("Skipped deleting %s that is already deleted.\n", machine.Name)
 		return nil
 	}
 
-	err = machineService.GuestDelete(*guestGet.Id)
+	err = machineService.DeleteGuest(*guest.Id)
 	if err != nil {
 		return fmt.Errorf("Guest delete failed %s", err)
 	}
@@ -167,20 +167,20 @@ func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 
 // Exists test for the existance of a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	_, err := ic.guestExists(machine)
+	_, err := ic.getGuest(machine)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (*datatypes.Virtual_Guest, error) {
+func (ic *IbmCloudClient) getGuest(machine *clusterv1.Machine) (*datatypes.Virtual_Guest, error) {
 	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
 	if err != nil {
 		return nil, err
 	}
 
-	guest, err := machineService.GuestGet(machine.Name)
+	guest, err := machineService.GetGuest(machine.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +193,11 @@ func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
 		return "", err
 	}
 
-	guestGet, err := machineService.GuestGet(machine.Name)
+	guest, err := machineService.GetGuest(machine.Name)
 	if err != nil {
 		return "", err
 	}
-	return *guestGet.PrimaryIpAddress, nil
+	return *guest.PrimaryIpAddress, nil
 }
 func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string) error {
 	if machine.ObjectMeta.Annotations == nil {
