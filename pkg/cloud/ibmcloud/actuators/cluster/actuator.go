@@ -17,9 +17,7 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
-	"log"
-
+	"k8s.io/klog"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 )
@@ -43,13 +41,17 @@ func NewActuator(params ActuatorParams) (*Actuator, error) {
 
 // Reconcile reconciles a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
-	log.Printf("Reconciling cluster %v.", cluster.Name)
-	// "TODO: Not yet implemented"
+	klog.Infof("Reconciling cluster %v.", cluster.Name)
+
+	klog.Infof("Reconciling cluster %v: Not implemented yet.", cluster.Name)
 	return nil
 }
 
 // Delete deletes a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
-	log.Printf("Deleting cluster %v.", cluster.Name)
-	return fmt.Errorf("TODO: Not yet implemented")
+	klog.Infof("Deleting cluster %v.", cluster.Name)
+
+	klog.Infof("Deleting cluster %v: Not implemented yet.", cluster.Name)
+
+	return nil
 }
