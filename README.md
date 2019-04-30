@@ -19,7 +19,7 @@
 
 IBM Cloud Provider for Cluster API
 
-<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"><a href="https://aws.amazon.com/opensource/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by AWS Cloud Computing" style="max-width:50%;"></a>
+<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"><a href="https://www.ibm.com/cloud/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by IBM Cloud" height="100"></a>
 
 ------
 
