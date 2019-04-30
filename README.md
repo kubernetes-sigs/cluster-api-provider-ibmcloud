@@ -104,8 +104,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
    ```bash
    ./clusterctl create cluster --bootstrap-type minikube --bootstrap-flags kubernetes-version=v1.12.3 \
-     --provider ibmcloud -c examples/ibmcloud/out/cluster.yaml \
-     -m examples/ibmcloud/out/machines.yaml -p examples/ibmcloud/out/provider-components.yaml
+     --provider ibmcloud -c configuration/ibmcloud/out/cluster.yaml \
+     -m configuration/ibmcloud/out/machines.yaml -p configuration/ibmcloud/out/provider-components.yaml
    ```
 
    To choose a specific minikube driver, please use the `--bootstrap-flags vm-driver=xxx` command line parameter. For example to use the kvm2 driver with clusterctl you woud add `--bootstrap-flags vm-driver=kvm2`, for linux, if you haven't installed any driver, you can add `--bootstrap-flags vm-driver=none`.
@@ -114,16 +114,16 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
    ```bash
    ./clusterctl create cluster --bootstrap-type kind --provider ibmcloud \
-     -c examples/ibmcloud/out/cluster.yaml -m examples/ibmcloud/out/machines.yaml \
-     -p examples/ibmcloud/out/provider-components.yaml
+     -c configuration/ibmcloud/out/cluster.yaml -m configuration/ibmcloud/out/machines.yaml \
+     -p configuration/ibmcloud/out/provider-components.yaml
    ```
 
    - If you are using existing Kubernetes cluster:
    ```bash
    ./clusterctl create cluster --bootstrap-cluster-kubeconfig ~/.kube/config \
-     --provider ibmcloud -c examples/ibmcloud/out/cluster.yaml \
-     -m examples/ibmcloud/out/machines.yaml \
-     -p examples/ibmcloud/out/provider-components.yaml
+     --provider ibmcloud -c configuration/ibmcloud/out/cluster.yaml \
+     -m configuration/ibmcloud/out/machines.yaml \
+     -p configuration/ibmcloud/out/provider-components.yaml
    ```
 
    For the above command, the `bootstrap-cluster-kubeconfig` was located at `~/.kube/config`, you must update it
