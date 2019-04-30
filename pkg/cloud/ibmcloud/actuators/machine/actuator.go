@@ -129,6 +129,10 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
+	if guest == nil {
+		return fmt.Errorf("Guest host does not found")
+	}
+
 	return ic.updateAnnotation(machine, strconv.Itoa(*guest.Id))
 }
 
@@ -167,11 +171,12 @@ func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 
 // Exists test for the existance of a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	_, err := ic.getGuest(machine)
+	guest, err := ic.getGuest(machine)
 	if err != nil {
 		return false, err
 	}
-	return true, nil
+
+	return guest != nil, nil
 }
 
 func (ic *IbmCloudClient) getGuest(machine *clusterv1.Machine) (*datatypes.Virtual_Guest, error) {
