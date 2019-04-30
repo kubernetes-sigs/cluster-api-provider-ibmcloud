@@ -75,8 +75,7 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 	}
 	sshUserName := providerSpec.SshUserName
 
-	// TODO: generate IBM Cloud specific keys
-	privateKey := "id_rsa"
+	privateKey := "id_ibmcloud"
 
 	result := strings.TrimSpace(util.ExecCommand(
 		"ssh", "-i", homeDir+"/.ssh/"+privateKey,

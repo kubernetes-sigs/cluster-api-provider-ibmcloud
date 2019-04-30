@@ -104,6 +104,15 @@ USERDATA=$PWD/provider-component/user-data
 MASTER_USER_DATA=$USERDATA/$PROVIDER_OS/templates/master-user-data.sh
 WORKER_USER_DATA=$USERDATA/$PROVIDER_OS/templates/worker-user-data.sh
 
+CLOUD_SSH_PRIVATE_FILE=id_ibmcloud
+CLOUD_SSH_HOME=${HOME}/.ssh/
+# Create ssh key to access IBM Cloud machines on demand
+if [ ! -f ${CLOUD_SSH_HOME}${CLOUD_SSH_PRIVATE_FILE} ]; then
+  echo "Generating SSH key files for IBM cloud machine access."
+  # This is needed because GetKubeConfig assumes the key in the home .ssh dir.
+  ssh-keygen -t rsa -f ${CLOUD_SSH_HOME}${CLOUD_SSH_PRIVATE_FILE}  -N ""
+fi
+
 # Set up the output dir if it does not yet exist
 mkdir -p $PWD/out
 cp -n $PWD/cluster.yaml.template $PWD/out/cluster.yaml
