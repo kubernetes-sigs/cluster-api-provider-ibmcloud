@@ -7,7 +7,7 @@ approvers:
   - cluster-api-ibmcloud-maintainers
 
 reviewers:
+  - sig-ibmcloud-leads
   - cluster-api-maintainers
   - cluster-api-ibmcloud-maintainers
   - cluster-api-ibmcloud-reviewers
-  - sig-ibmcloud-leads
