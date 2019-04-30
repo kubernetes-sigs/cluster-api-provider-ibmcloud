@@ -20,7 +20,7 @@ items:
         osReferenceCode: <the operating system selection>
         localDiskFlag: true
         hourlyBillingFlag: true
-        sshKeyName: <ssh key name>
+        sshKeyName: cluster-api-provider-ibmcloud
         sshUserName: <ssh user name>
         userDataSecret:
           name: master-user-data
@@ -47,7 +47,7 @@ items:
         osReferenceCode: <the operating system selection>
         localDiskFlag: true
         hourlyBillingFlag: true
-        sshKeyName: <ssh key name>
+        sshKeyName: cluster-api-provider-ibmcloud
         sshUserName: <ssh user name>
         userDataSecret:
           name: worker-user-data
