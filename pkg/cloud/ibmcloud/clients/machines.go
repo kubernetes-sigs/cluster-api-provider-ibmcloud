@@ -74,7 +74,7 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 	return NewGuestService(sess), nil
 }
 
-func (gs *GuestService) guestWaitReady(Id int) {
+func (gs *GuestService) waitGuestReady(Id int) {
 	// Wait for transactions to finish
 	klog.Info("Waiting for transactions to complete before destroying.")
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
@@ -95,10 +95,10 @@ func (gs *GuestService) guestWaitReady(Id int) {
 	}
 	s.Session.Debug = false
 
-	klog.Info("Waiting for trasactions <%D> done.")
+	klog.Info("Waiting for trasactions done.")
 }
 
-func (gs *GuestService) GuestCreate(clusterName, hostName string, machineSpec *ibmcloudv1.IbmcloudMachineProviderSpec, userScript string) {
+func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *ibmcloudv1.IbmcloudMachineProviderSpec, userScript string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
 	keyId := getSshKey(gs.sess, machineSpec.SshKeyName)
@@ -146,10 +146,10 @@ func (gs *GuestService) GuestCreate(clusterName, hostName string, machineSpec *i
 	klog.Infof("New Virtual Guest created with ID %d in domain %q", *vGuest.Id, *vGuest.Domain)
 
 	// Wait for transactions to finish
-	gs.guestWaitReady(*vGuest.Id)
+	gs.waitGuestReady(*vGuest.Id)
 }
 
-func (gs *GuestService) GuestDelete(Id int) error {
+func (gs *GuestService) DeleteGuest(Id int) error {
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
 
 	success, err := s.DeleteObject()
@@ -163,7 +163,7 @@ func (gs *GuestService) GuestDelete(Id int) error {
 	return err
 }
 
-func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
+func (gs *GuestService) listGuest() ([]datatypes.Virtual_Guest, error) {
 	s := services.GetAccountService(gs.sess)
 
 	guests, err := s.GetVirtualGuests()
@@ -175,8 +175,8 @@ func (gs *GuestService) GuestList() ([]datatypes.Virtual_Guest, error) {
 }
 
 // FIXME: use API layer query instead of query all then compare here
-func (gs *GuestService) GuestGet(name string) (*datatypes.Virtual_Guest, error) {
-	guests, err := gs.GuestList()
+func (gs *GuestService) GetGuest(name string) (*datatypes.Virtual_Guest, error) {
+	guests, err := gs.listGuest()
 	if err != nil {
 		return nil, err
 	}
