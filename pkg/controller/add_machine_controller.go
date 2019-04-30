@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes authors.
+Copyright 2019 The Kubernetes authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ limitations under the License.
 package controller
 
 import (
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/machine"
-	capimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	capimachine "sigs.k8s.io/cluster-api/pkg/controller/machine"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/machine"
 )
 
 //+kubebuilder:rbac:groups=ibmcloud.k8s.io,resources=ibmcloudmachineproviderspecs;ibmcloudmachineproviderstatuses,verbs=get;list;watch;create;update;patch;delete

@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes authors.
+Copyright 2019 The Kubernetes authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,15 +23,16 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/yaml.v2"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/klog"
-
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 	"github.com/softlayer/softlayer-go/sl"
+	"gopkg.in/yaml.v2"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
+
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
+
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 

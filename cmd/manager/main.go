@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,10 +21,11 @@ import (
 	"fmt"
 
 	"k8s.io/klog"
-	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
+
+	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/controller"
