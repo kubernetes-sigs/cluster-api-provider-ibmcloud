@@ -182,6 +182,12 @@ your ibmcloud Cluster API Kubernetes cluster.
    rm kubeconfig
    ```
 
+4. Delete the ssh keypair that were created for your cluster machine.
+
+   ```bash
+   rm -rf $HOME/.ssh/id_ibmcloud*
+   ```
+
 ### Trouble shooting
 
 Please refer to [Trouble shooting documentation](docs/trouble_shooting.md) for further info.
