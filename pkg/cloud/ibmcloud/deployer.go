@@ -19,10 +19,10 @@ package ibmcloud
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
+	"k8s.io/klog"
 	clustercommon "sigs.k8s.io/cluster-api/pkg/apis/cluster/common"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
@@ -49,12 +49,12 @@ func NewDeploymentClient() *DeploymentClient {
 func (d *DeploymentClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	if machine.ObjectMeta.Annotations != nil {
 		if ip, ok := machine.ObjectMeta.Annotations[IBMCloudIPAnnotationKey]; ok {
-			log.Printf("Returning IP from machine annotation %s", ip)
+			klog.Infof("Returning IP from machine annotation %s", ip)
 			return ip, nil
 		}
 	}
 
-	return "", errors.New("could not get IP")
+	return "", errors.New("Cannot get IP")
 }
 
 // GetKubeConfig gets a kubeconfig from the master.
@@ -66,7 +66,7 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 
 	homeDir, ok := os.LookupEnv("HOME")
 	if !ok {
-		return "", fmt.Errorf("unable to use HOME environment variable to find SSH key: %v", err)
+		return "", fmt.Errorf("Unable to use HOME environment variable to find SSH key: %v", err)
 	}
 
 	providerSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(master.Spec.ProviderSpec)

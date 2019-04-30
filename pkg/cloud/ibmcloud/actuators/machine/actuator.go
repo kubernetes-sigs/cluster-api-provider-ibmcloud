@@ -19,7 +19,6 @@ package machine
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -62,7 +61,7 @@ func NewActuator(params ibmcloud.ActuatorParams) (*IbmCloudClient, error) {
 
 // Create creates a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Printf("Creating machine %v for cluster %v.", machine.Name, cluster.Name)
+	klog.Infof("Creating machine %v for cluster %v.", machine.Name, cluster.Name)
 
 	kubeClient := ic.params.KubeClient
 	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(kubeClient, machine)
@@ -80,7 +79,7 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 	if guest != nil {
-		log.Printf("Skipped creating a VM that already exists.\n")
+		klog.Infof("Skipped creating a VM that already exists.\n")
 		return nil
 	}
 
@@ -146,7 +145,7 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	if guestGet == nil {
-		log.Printf("Skipped deleting %s that is already deleted.\n", machine.Name)
+		klog.Infof("Skipped deleting %s that is already deleted.\n", machine.Name)
 		return nil
 	}
 
@@ -160,31 +159,32 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 
 // Update updates a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
-	log.Printf("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
+	klog.Infof("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
+
 	klog.Infof("TODO: Not yet implemented")
 	return nil
 }
 
 // Exists test for the existance of a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) (bool, error) {
-	guest, err := ic.guestExists(machine)
+	_, err := ic.guestExists(machine)
 	if err != nil {
 		return false, err
 	}
-	return guest != nil, err
+	return true, nil
 }
 
-func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (guest *datatypes.Virtual_Guest, err error) {
+func (ic *IbmCloudClient) guestExists(machine *clusterv1.Machine) (*datatypes.Virtual_Guest, error) {
 	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
 	if err != nil {
 		return nil, err
 	}
 
-	guestGet, err := machineService.GuestGet(machine.Name)
+	guest, err := machineService.GuestGet(machine.Name)
 	if err != nil {
 		return nil, err
 	}
-	return guestGet, nil
+	return guest, nil
 }
 
 func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
@@ -227,7 +227,7 @@ func (ic *IbmCloudClient) createBootstrapToken() (string, error) {
 	expiration := time.Now().UTC().Add(TokenTTL)
 	tokenSecret, err := bootstrap.GenerateTokenSecret(token, expiration)
 	if err != nil {
-		panic(fmt.Sprintf("unable to create token. there might be a bug somwhere: %v", err))
+		klog.Fatalf("Unable to create token: %v", err)
 	}
 
 	err = ic.client.Create(context.TODO(), tokenSecret)
