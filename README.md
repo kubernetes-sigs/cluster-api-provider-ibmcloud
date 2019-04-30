@@ -90,14 +90,19 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    You can get `userName` and `apiKey` from https://control.softlayer.com/ .
    - Logon to https://control.softlayer.com/ .
    - Click your user name on the right top of the console.
+   ![ibmcloud account](docs/images/ibmcloud-account.png)
    - The console will navigate you to the page of `Edit User Profile`.
+   ![ibmcloud profile](docs/images/ibmcloud-profile.png)
    - Scroll down the page to the bottom, you will see a section `API Access Information`. You can get `userName` and `apiKey` from there.
+   ![ibmcloud auth](docs/images/ibmcloud-auth.png)
 
    #### Special notes on ssh keys and fetching `admin.conf`
 
    In order to allow `clusterctl` to fetch Kubernetes' `admin.conf` from the master node, you **must** manually create the key pair in IBM Cloud. By default the generated `machine.yaml` uses `cluster-api-provider-ibmcloud` to be the `sshKeyName`. However, you are free to change that.
 
    For the ssh key, you can logon to https://control.softlayer.com/ , click `Devices->Manage->SSH Keys`, you will be navigated to the page of `SSH Keys`, click `Add` to create your own key.
+   ![ibmcloud key management](docs/images/ibmcloud-key.png)
+   ![ibmcloud key add](docs/images/ibmcloud-addkey.png)
 
 2. Create a cluster:
    - If you are using minikube:
