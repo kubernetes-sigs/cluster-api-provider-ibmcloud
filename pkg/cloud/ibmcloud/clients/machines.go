@@ -188,7 +188,7 @@ func (gs *GuestService) GetGuest(name string) (*datatypes.Virtual_Guest, error) 
 			return &guest, nil
 		}
 	}
-	return nil, fmt.Errorf("Virtual guest %q does not found", name)
+	return nil, nil
 }
 
 // TODO: directly get ID of ssh key instead of list and search
