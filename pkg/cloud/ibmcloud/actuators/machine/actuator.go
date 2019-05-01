@@ -130,7 +130,7 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	if guest == nil {
-		return fmt.Errorf("Guest host does not found")
+		return fmt.Errorf("Guest %s does not exist after created in cluster %s", machine.Name, cluster.Name)
 	}
 
 	return ic.updateAnnotation(machine, strconv.Itoa(*guest.Id))
@@ -204,6 +204,7 @@ func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
 	}
 	return *guest.PrimaryIpAddress, nil
 }
+
 func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string) error {
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
