@@ -23,6 +23,9 @@ aliases:
     - roberthbailey
     - rsdcastro
     - spew
+  sig-ibmcloud-admins:
+    - cblecker
+    - gyliu513
   sig-ibmcloud-leads:
     - ajayapte
     - bradtopol

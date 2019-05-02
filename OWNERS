@@ -2,11 +2,13 @@
 
 approvers:
   - sig-cluster-lifecycle-leads
+  - sig-ibmcloud-admins
   - cluster-api-admins
   - cluster-api-maintainers
   - cluster-api-ibmcloud-maintainers
 
 reviewers:
+  - sig-ibmcloud-admins
   - sig-ibmcloud-leads
   - cluster-api-maintainers
   - cluster-api-ibmcloud-maintainers
