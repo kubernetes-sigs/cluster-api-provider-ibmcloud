@@ -13,6 +13,8 @@ Fixes #
 
 **Special notes for your reviewer**:
 
+/sig ibmcloud
+
 1. Please confirm that if this PR changes any image versions, then that's the sole change this PR makes.
 
 **Release note**:
