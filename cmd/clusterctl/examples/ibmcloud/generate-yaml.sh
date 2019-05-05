@@ -7,7 +7,7 @@ print_help()
   echo "$SCRIPT - generates a provider-configs.yaml file"
   echo ""
   echo "Usage:"
-  echo "$SCRIPT [options] <path/to/clouds.yaml> <provider os: [ubuntu]>"
+  echo "$SCRIPT [options] <path/to/clouds.yaml> <provider os: [ubuntu]> [output folder]"
   echo "options:"
   echo "-h, --help                    show brief help"
   echo "-f, --force-overwrite         if file to be generated already exists, force script to overwrite it"
@@ -55,6 +55,13 @@ else
   exit 1
 fi
 
+OUTPUT=out
+if [[ -n "$3" ]] && [[ $3 != -* ]] && [[ $3 != --* ]]; then
+  OUTPUT=$(echo $3 | tr '[:upper:]' '[:lower:]')
+else
+  echo "no output folder provided, use name 'out' by default"
+fi
+
 # Check that OS is supported
 for i in "${arr[@]}"
 do
@@ -70,7 +77,7 @@ if test -z "$PROVIDER_OS"; then
   exit 1
 fi
 
-if [ -e out/provider-components.yaml ] && [ "$OVERWRITE" != "1" ]; then
+if [ -e $OUTPUT/provider-components.yaml ] && [ "$OVERWRITE" != "1" ]; then
   echo "Can't overwrite provider-components.yaml without user permission. Either run the script again"
   echo "with -f or --force-overwrite, or delete the file in the out/ directory."
   echo ""
@@ -100,24 +107,25 @@ fi
 # Prepare dependecies for kustomize
 mkdir -p $CONFIG_DIR
 cat $PWD/$CLOUDS_PATH > $CONFIG_DIR/clouds.yaml
-
 cat "$MASTER_USER_DATA" > $USERDATA/$PROVIDER_OS/master-user-data.sh
 cat "$WORKER_USER_DATA" > $USERDATA/$PROVIDER_OS/worker-user-data.sh
 
 # Set up the output dir if it does not yet exist
-mkdir -p $PWD/out
-cp -n $PWD/cluster.yaml.template $PWD/out/cluster.yaml
-cp -n $PWD/machines.yaml.template $PWD/out/machines.yaml
+mkdir -p $PWD/$OUTPUT
+cp -n $PWD/cluster.yaml.template $PWD/$OUTPUT/cluster.yaml
+cp -n $PWD/machines.yaml.template $PWD/$OUTPUT/machines.yaml
 
 # Build provider-components.yaml with kustomize
-kustomize build ../../../../config -o out/provider-components.yaml
+echo $PWD
+echo $OUTPUT
+kustomize build $PWD/../../../../config -o $PWD/$OUTPUT/provider-components.yaml
 
-echo "---" >> $PWD/out/provider-components.yaml
-kustomize build $PWD/provider-component/clouds-secrets >> $PWD/out/provider-components.yaml
+echo "---" >> $PWD/$OUTPUT/provider-components.yaml
+kustomize build $PWD/provider-component/clouds-secrets >> $PWD/$OUTPUT/provider-components.yaml
 
-echo "---" >> $PWD/out/provider-components.yaml
-kustomize build $PWD/provider-component/cluster-api >> $PWD/out/provider-components.yaml
+echo "---" >> $PWD/$OUTPUT/provider-components.yaml
+kustomize build $PWD/provider-component/cluster-api >> $PWD/$OUTPUT/provider-components.yaml
 
-echo "---" >> $PWD/out/provider-components.yaml
-kustomize build $USERDATA/$PROVIDER_OS >> out/provider-components.yaml
+echo "---" >> $PWD/$OUTPUT/provider-components.yaml
+kustomize build $USERDATA/$PROVIDER_OS >> $PWD/$OUTPUT/provider-components.yaml
 

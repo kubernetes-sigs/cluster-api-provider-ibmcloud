@@ -19,11 +19,16 @@ DEP = github.com/golang/dep/cmd/dep
 DEP_CHECK := $(shell command -v dep 2> /dev/null)
 
 HAS_DEP := $(shell command -v dep;)
+HAS_KUSTOMIZE := $(shell command -v kustomize;)
+
+GENERATE_YAML_PATH=cmd/clusterctl/examples/ibmcloud
+GENERATE_YAML_EXEC=generate-yaml.sh
+GENERATE_YAML_TEST_FOLDER=dummy-make-auto-test
 
 all: test manager
 
 # Run tests
-test: depend generate fmt vet manifests
+test: depend generate fmt vet manifests generate_yaml_test
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
 
 
@@ -62,6 +67,22 @@ fmt:
 # Run go vet against code
 vet:
 	go vet ./pkg/... ./cmd/...
+
+generate_yaml_test:
+
+ifndef HAS_KUSTOMIZE
+	# for now, higher version has some problem so we stick to 1.0.11
+	wget https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.11/kustomize_1.0.11_linux_amd64
+	mv kustomize_1.0.11_linux_amd64 /usr/local/bin/kustomize
+	chmod +x /usr/local/bin/kustomize
+endif
+
+	# Create a dummy file for test only
+	echo 'clouds' > cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
+	$(GENERATE_YAML_PATH)/$(GENERATE_YAML_EXEC) -f dummy-clouds-test.yaml ubuntu $(GENERATE_YAML_TEST_FOLDER)
+	# the folder will be generated under same folder of $(GENERATE_YAML_PATH)
+	rm -fr $(GENERATE_YAML_PATH)/$(GENERATE_YAML_TEST_FOLDER)
+	rm -f cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
 
 # Generate code
 generate:
