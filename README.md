@@ -3,7 +3,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Kubernetes Cluster API Provider IBM Cloud](#kubernetes-cluster-api-provider-ibm-cloud)
-- [Kubernetes cluster-api-provider-ibmcloud Project](#kubernetes-cluster-api-provider-ibmcloud-project)
+  - [What is the Cluster API Provider IBM Cloud](#what-is-the-cluster-api-provider-ibm-cloud)
   - [Community, discussion, contribution, and support](#community-discussion-contribution-and-support)
     - [Code of conduct](#code-of-conduct)
   - [Getting Started](#getting-started)
@@ -17,15 +17,17 @@
 
 # Kubernetes Cluster API Provider IBM Cloud
 
-IBM Cloud Provider for Cluster API
+[![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-ibmcloud)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-ibmcloud)
 
 <a href="https://github.com/kubernetes-sigs/cluster-api"><img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"></a><a href="https://www.ibm.com/cloud/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by IBM Cloud" height="100"></a>
 
 ------
 
-# Kubernetes cluster-api-provider-ibmcloud Project
-
 This repository hosts a concrete implementation of an IBMCloud provider for the [cluster-api project](https://github.com/kubernetes-sigs/cluster-api).
+
+## What is the Cluster API Provider IBM Cloud
+
+The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declarative, Kubernetes-style APIs to cluster creation, configuration and management. The API itself is shared across multiple cloud providers allowing for true IBM Cloud hybrid deployments of Kubernetes.
 
 ## Community, discussion, contribution, and support
 
@@ -56,7 +58,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 5. Build the `clusterctl` tool
 
    ```bash
-   git clone https://github.com/multicloudlab/cluster-api-provider-ibmcloud $GOPATH/src/sigs.k8s.io/cluster-api-provider-ibmcloud
+   git clone https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud $GOPATH/src/sigs.k8s.io/cluster-api-provider-ibmcloud
    cd $GOPATH/src/sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/clusterctl
    go build
    ```
