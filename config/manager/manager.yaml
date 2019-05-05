@@ -55,7 +55,7 @@ spec:
         operator: Exists
       containers:
       - name: ibmcloud-machine-controller
-        image: quay.io/cluster-api-provider-ibmcloud/ibmcloud-cluster-api-controller:latest
+        image: quay.io/cluster-api-provider-ibmcloud/controller:latest
         env:
           - name: POD_NAMESPACE
             valueFrom:
