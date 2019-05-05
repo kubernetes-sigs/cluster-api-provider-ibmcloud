@@ -37,6 +37,10 @@ import (
 
 const (
 	CloudsYamlFile = "/etc/ibmcloud/clouds.yaml"
+
+	// TODO: make the timeout to be configurable
+	WaitReadyRetryInterval = 5 * time.Second
+	WaitReadyTimeout       = 600 * time.Second
 )
 
 type GuestService struct {
@@ -74,28 +78,33 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 	return NewGuestService(sess), nil
 }
 
-func (gs *GuestService) waitGuestReady(Id int) {
+func (gs *GuestService) waitGuestReady(Id int) error {
 	// Wait for transactions to finish
 	klog.Info("Waiting for transactions to complete before destroying.")
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
 
 	// Delay to allow transactions to be registered
-	time.Sleep(5 * time.Second)
+	time.Sleep(WaitReadyRetryInterval)
 
 	// TODO: make it V(2) after initial development work done if necessary
 	//if klog.V(2) {
 	// Enable debug to show messages from IBM Cloud during node provision
 	s.Session.Debug = true
 	//}
+	sum := WaitReadyRetryInterval
 	for transactions, _ := s.GetActiveTransactions(); len(transactions) > 0; {
-		// TODO(gyliu513) make it configurable or use the notification mechanism to optimize
-		// the process instead of hardcoded waiting.
-		time.Sleep(5 * time.Second)
+		time.Sleep(WaitReadyRetryInterval)
+		sum += WaitReadyRetryInterval
+		if sum > WaitReadyTimeout {
+			// Now the guest failed to reach timeout
+			return fmt.Errorf("Waiting for guest %d ready time out", Id)
+		}
 		transactions, _ = s.GetActiveTransactions()
 	}
 	s.Session.Debug = false
 
-	klog.Info("Waiting for trasactions done.")
+	klog.Info("Waiting for transactions done.")
+	return nil
 }
 
 func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *ibmcloudv1.IbmcloudMachineProviderSpec, userScript string) {
@@ -146,7 +155,11 @@ func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *i
 	klog.Infof("New Virtual Guest created with ID %d in domain %q", *vGuest.Id, *vGuest.Domain)
 
 	// Wait for transactions to finish
-	gs.waitGuestReady(*vGuest.Id)
+	err = gs.waitGuestReady(*vGuest.Id)
+	if err != nil {
+		klog.Errorf("Failed to wait guest ready: %v", err)
+		return
+	}
 }
 
 func (gs *GuestService) DeleteGuest(Id int) error {
