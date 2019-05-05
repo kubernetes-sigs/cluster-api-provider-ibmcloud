@@ -35,4 +35,5 @@ aliases:
     - xunpan
   cluster-api-ibmcloud-reviewers:
     - clyang82
+    - hchenxa
     - morvencao
