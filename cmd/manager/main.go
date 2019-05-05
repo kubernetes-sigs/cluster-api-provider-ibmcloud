@@ -29,6 +29,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/controller"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 func main() {
@@ -47,6 +48,8 @@ func main() {
 	if err != nil {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
+
+	record.InitFromRecorder(mgr.GetRecorder("ibmcloud-controller"))
 
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		klog.Fatalf("Error adding apis scheme: %v", err)
