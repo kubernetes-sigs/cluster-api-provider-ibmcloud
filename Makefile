@@ -35,7 +35,7 @@ CONTROLLER_IMG ?= ibmcloud-cluster-api-controller
 CLUSTERCTL_IMG ?= ibmcloud-cluster-api-clusterctl
 VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
                  git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
-REGISTRY ?= k8scloudprovider
+REGISTRY ?= quay.io/cluster-api-provider-ibmcloud
 
 ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
 	$(error Please run 'make' from $(DEST). Current directory is $(PWD))
