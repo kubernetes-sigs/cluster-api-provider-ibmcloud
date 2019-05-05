@@ -17,6 +17,7 @@
 
 # Kubernetes Cluster API Provider IBM Cloud
 
+[![Build Status](https://travis-ci.org/kubernetes-sigs/cluster-api-provider-ibmcloud.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/cluster-api-provider-ibmcloud)
 [![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-ibmcloud)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-ibmcloud)
 
 <a href="https://github.com/kubernetes-sigs/cluster-api"><img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"></a><a href="https://www.ibm.com/cloud/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by IBM Cloud" height="100"></a>
