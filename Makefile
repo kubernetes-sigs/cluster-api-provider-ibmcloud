@@ -31,8 +31,8 @@ TAGS      :=
 LDFLAGS   := "-w -s -X 'main.version=${VERSION}'"
 
 # Image URL to use all building/pushing image targets
-CONTROLLER_IMG ?= ibmcloud-cluster-api-controller
-CLUSTERCTL_IMG ?= ibmcloud-cluster-api-clusterctl
+CONTROLLER_IMG ?= controller
+CLUSTERCTL_IMG ?= clusterctl
 VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
                  git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
 REGISTRY ?= quay.io/cluster-api-provider-ibmcloud
