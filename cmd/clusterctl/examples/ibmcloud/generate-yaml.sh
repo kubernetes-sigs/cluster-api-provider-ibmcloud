@@ -116,8 +116,6 @@ cp -n $PWD/cluster.yaml.template $PWD/$OUTPUT/cluster.yaml
 cp -n $PWD/machines.yaml.template $PWD/$OUTPUT/machines.yaml
 
 # Build provider-components.yaml with kustomize
-echo $PWD
-echo $OUTPUT
 kustomize build $PWD/../../../../config -o $PWD/$OUTPUT/provider-components.yaml
 
 echo "---" >> $PWD/$OUTPUT/provider-components.yaml
