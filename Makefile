@@ -150,21 +150,24 @@ deploy: generate_yaml_test
 # images section
 ############################################################
 # Build the docker image
-build-images: test
-	docker build . -f cmd/manager/Dockerfile -t $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
+clusterctl-image:
 	docker build . -f cmd/clusterctl/Dockerfile -t $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
-
-# Push the docker image
-push-images:
-	@echo "push images to $(REGISTRY)"
-	docker push $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
-	docker push $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
-
-build-push-images:
+controller-image:
 	docker build . -f cmd/manager/Dockerfile -t $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
-	docker push $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
-	docker build . -f cmd/clusterctl/Dockerfile -t $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
+
+push-clusterctl-image:
 	docker push $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
+push-controller-image:
+	docker push $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
+
+images: test clusterctl-image controller-image
+push-images: push-clusterctl-image push-controller-image
+
+build-push-images: build-images push-images
+
+# quickly get target image
+new-controller: controller-image push-controller-image
+new-clusterctl: clusterctl-image push-clusterctl-image
 
 ############################################################
 # clean section
