@@ -133,7 +133,7 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return fmt.Errorf("Guest %s does not exist after created in cluster %s", machine.Name, cluster.Name)
 	}
 
-	return ic.updateAnnotation(machine, strconv.Itoa(*guest.Id))
+	return ic.updateMachine(machine, strconv.Itoa(*guest.Id))
 }
 
 // Delete deletes a machine and is invoked by the Machine Controller
@@ -176,6 +176,13 @@ func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 		return false, err
 	}
 
+	if (guest != nil) && (machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "") {
+		// TODO(xunpan): this does not work in ibm cloud
+		// check why related providers only set it in Exists but not update resource works
+		providerID := fmt.Sprintf("ibmcloud:////%d", *guest.Id)
+		machine.Spec.ProviderID = &providerID
+	}
+
 	return guest != nil, nil
 }
 
@@ -205,7 +212,7 @@ func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
 	return *guest.PrimaryIpAddress, nil
 }
 
-func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string) error {
+func (ic *IbmCloudClient) updateMachine(machine *clusterv1.Machine, id string) error {
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
@@ -216,6 +223,11 @@ func (ic *IbmCloudClient) updateAnnotation(machine *clusterv1.Machine, id string
 		return err
 	}
 	machine.ObjectMeta.Annotations[ibmcloud.IBMCloudIPAnnotationKey] = ip
+
+	if machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "" {
+		providerID := fmt.Sprintf("ibmcloud:////%s", id)
+		machine.Spec.ProviderID = &providerID
+	}
 
 	if err := ic.params.Client.Update(nil, machine); err != nil {
 		return err
