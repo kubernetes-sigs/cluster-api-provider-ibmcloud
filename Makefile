@@ -15,7 +15,6 @@ SOURCES := $(shell find $(DEST) -name '*.go')
 HAS_DEP := $(shell command -v dep;)
 HAS_LINT := $(shell command -v golint;)
 HAS_KUSTOMIZE := $(shell command -v kustomize;)
-HAS_KUBEBUILDER := $(shell command -v kubebuilder;)
 GOX_PARALLEL ?= 3
 TARGETS ?= darwin/amd64 linux/amd64 linux/386 linux/arm linux/arm64 linux/ppc64le
 DIST_DIRS         = find * -type d -exec
@@ -53,16 +52,20 @@ $(GOBIN):
 
 work: $(GOBIN)
 
-depend: work
+kubebuilder:
+	echo "checking if kubebuilder exists or not"
+	if [ ! -d "/usr/local/kubebuilder" ]; then \
+		curl -LO https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.8/kubebuilder_1.0.8_linux_amd64.tar.gz \
+		&& tar xzf kubebuilder_1.0.8_linux_amd64.tar.gz \
+		&& mv kubebuilder_1.0.8_linux_amd64 kubebuilder && mv kubebuilder /usr/local/ \
+		&& rm kubebuilder_1.0.8_linux_amd64.tar.gz; \
+	fi	
+
+depend: work kubebuilder
 ifndef HAS_DEP
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 	dep ensure
-ifndef HAS_KUBEBUILDER
-	curl -LO https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.8/kubebuilder_1.0.8_linux_amd64.tar.gz
-	tar xzfP kubebuilder_1.0.8_linux_amd64.tar.gz -C /usr/local/bin --strip-components=2
-	rm kubebuilder_1.0.8_linux_amd64.tar.gz
-endif
 
 depend-update: work
 	dep ensure -update
