@@ -1043,12 +1043,12 @@
   revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
-  digest = "1:9cc257b3c9ff6a0158c9c661ab6eebda1fe8a4a4453cd5c4044dc9a2ebfb992b"
+  digest = "1:2c16dda1c44c2564a7818fbacb701323c16d77c21b969987c1bec08d3ee0b050"
   name = "k8s.io/klog"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "a5bc97fbc634d635061f3146511332c7e313a55a"
-  version = "v0.1.0"
+  revision = "e531227889390a39d9533dde61f590fe9f4b0035"
+  version = "v0.3.0"
 
 [[projects]]
   branch = "master"
