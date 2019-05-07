@@ -11,7 +11,7 @@
 **Which issue(s) this PR fixes** *(optional, in `fixes #<issue number>(, fixes #<issue_number>, ...)` format, will close the issue(s) when PR gets merged)*:
 Fixes #
 
-** Specify your PR reviewers**:
+**Specify your PR reviewers**:
 <!-- Add or remove reviewers as your request -->
 /cc @gyliu513 @jichenjc @xunpan
 
