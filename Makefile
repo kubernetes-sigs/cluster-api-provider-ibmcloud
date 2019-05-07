@@ -52,7 +52,16 @@ $(GOBIN):
 
 work: $(GOBIN)
 
-depend: work
+kubebuilder:
+	echo "checking if kubebuilder exists or not"
+	if [ ! -d "/usr/local/kubebuilder" ]; then \
+		curl -LO https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.8/kubebuilder_1.0.8_linux_amd64.tar.gz \
+		&& tar xzf kubebuilder_1.0.8_linux_amd64.tar.gz \
+		&& mv kubebuilder_1.0.8_linux_amd64 kubebuilder && mv kubebuilder /usr/local/ \
+		&& rm kubebuilder_1.0.8_linux_amd64.tar.gz; \
+	fi	
+
+depend: work kubebuilder
 ifndef HAS_DEP
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
@@ -103,7 +112,7 @@ functional:
 generate_yaml_test:
 ifndef HAS_KUSTOMIZE
 	# for now, higher version has some problem so we stick to 1.0.11
-	wget https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.11/kustomize_1.0.11_linux_amd64
+	curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.11/kustomize_1.0.11_linux_amd64
 	mv kustomize_1.0.11_linux_amd64 /usr/local/bin/kustomize
 	chmod +x /usr/local/bin/kustomize
 endif
