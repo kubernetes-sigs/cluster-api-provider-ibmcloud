@@ -15,6 +15,7 @@ SOURCES := $(shell find $(DEST) -name '*.go')
 HAS_DEP := $(shell command -v dep;)
 HAS_LINT := $(shell command -v golint;)
 HAS_KUSTOMIZE := $(shell command -v kustomize;)
+HAS_KUBEBUILDER := $(shell command -v kubebuilder;)
 GOX_PARALLEL ?= 3
 TARGETS ?= darwin/amd64 linux/amd64 linux/386 linux/arm linux/arm64 linux/ppc64le
 DIST_DIRS         = find * -type d -exec
@@ -57,6 +58,11 @@ ifndef HAS_DEP
 	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 	dep ensure
+ifndef HAS_KUBEBUILDER
+	curl -LO https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.8/kubebuilder_1.0.8_linux_amd64.tar.gz
+	tar xzfP kubebuilder_1.0.8_linux_amd64.tar.gz -C "$(GOBIN)" --strip-components=2
+	rm kubebuilder_1.0.8_linux_amd64.tar.gz
+endif
 
 depend-update: work
 	dep ensure -update
@@ -103,9 +109,9 @@ functional:
 generate_yaml_test:
 ifndef HAS_KUSTOMIZE
 	# for now, higher version has some problem so we stick to 1.0.11
-	wget https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.11/kustomize_1.0.11_linux_amd64
-	mv kustomize_1.0.11_linux_amd64 /usr/local/bin/kustomize
-	chmod +x /usr/local/bin/kustomize
+	curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.11/kustomize_1.0.11_linux_amd64
+	mv kustomize_1.0.11_linux_amd64 "$(GOBIN)"/kustomize
+	chmod +x "$(GOBIN)"/kustomize
 endif
 	# Create a dummy file for test only
 	echo 'clouds' > cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
