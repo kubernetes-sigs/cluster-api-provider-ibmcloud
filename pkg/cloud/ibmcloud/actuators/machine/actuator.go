@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/softlayer/softlayer-go/datatypes"
+	"github.com/softlayer/softlayer-go/sl"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	tokenapi "k8s.io/cluster-bootstrap/token/api"
 	tokenutil "k8s.io/cluster-bootstrap/token/util"
@@ -43,6 +44,11 @@ const (
 	UserDataKey  = "userData"
 
 	TokenTTL = 60 * time.Minute
+
+	MachinePending  string = "Pending"
+	MachineCreating string = "Creating"
+	MachineRunning  string = "Running"
+	MachineFailed   string = "Failed"
 )
 
 // Actuator is responsible for performing machine reconciliation
@@ -62,6 +68,8 @@ func NewActuator(params ibmcloud.ActuatorParams) (*IbmCloudClient, error) {
 // Create creates a machine and is invoked by the Machine Controller
 func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Creating machine %v for cluster %v.", machine.Name, cluster.Name)
+
+	ic.updatePhase(ctx, machine, MachinePending)
 
 	kubeClient := ic.params.KubeClient
 	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(kubeClient, machine)
@@ -122,17 +130,20 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
+	ic.updatePhase(ctx, machine, MachineCreating)
 	machineService.CreateGuest(cluster.Name, machine.Name, providerSpec, userScriptRendered)
-
 	guest, err = ic.getGuest(machine)
 	if err != nil {
+		ic.updatePhase(ctx, machine, MachineFailed)
 		return err
 	}
 
 	if guest == nil {
+		ic.updatePhase(ctx, machine, MachineFailed)
 		return fmt.Errorf("Guest %s does not exist after created in cluster %s", machine.Name, cluster.Name)
 	}
 
+	ic.updatePhase(ctx, machine, MachineRunning)
 	return ic.updateMachine(machine, strconv.Itoa(*guest.Id))
 }
 
@@ -177,10 +188,12 @@ func (ic *IbmCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	if (guest != nil) && (machine.Spec.ProviderID == nil || *machine.Spec.ProviderID == "") {
-		// TODO(xunpan): this does not work in ibm cloud
+		// TODO(xunpan): this does not work in ibm cloud if there is no `updatePhase`
 		// check why related providers only set it in Exists but not update resource works
 		providerID := fmt.Sprintf("ibmcloud:////%d", *guest.Id)
 		machine.Spec.ProviderID = &providerID
+
+		ic.updatePhase(ctx, machine, MachineRunning)
 	}
 
 	return guest != nil, nil
@@ -257,4 +270,12 @@ func (ic *IbmCloudClient) createBootstrapToken() (string, error) {
 		string(tokenSecret.Data[tokenapi.BootstrapTokenIDKey]),
 		string(tokenSecret.Data[tokenapi.BootstrapTokenSecretKey]),
 	), nil
+}
+
+func (ic *IbmCloudClient) updatePhase(ctx context.Context, machine *clusterv1.Machine, status string) {
+	machine.Status.Phase = sl.String(status)
+	err := ic.params.Client.Status().Update(ctx, machine)
+	if err != nil {
+		klog.Infof("Failed updating phase: %v", err)
+	}
 }

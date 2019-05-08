@@ -25,6 +25,7 @@ rules:
   - machinedeployments
   - machinesets
   - machines
+  - machines/status
   verbs:
   - get
   - list
@@ -57,3 +58,14 @@ rules:
   - update
   - patch
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
