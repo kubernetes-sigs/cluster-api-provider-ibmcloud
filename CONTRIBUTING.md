@@ -14,22 +14,19 @@ Kubernetes projects require that you sign a Contributor License Agreement (CLA) 
 
 ## Pre-check before submitting a PR
 
-After your PR is ready to commit, please run following three scripts to check your code:
+After your PR is ready to commit, please run following commands to check your code:
 
-- hack/verify-gofmt.sh
-- hack/update-gofmt.sh
-- hack/verify-golint.sh
-
-TODO: This will be moved to `pre-commit` check soon.
+```shell
+make check
+make test
+```
 
 ## Build and push images
 Make sure your code build passed:
 
 ```shell
-export IMG=<your-docker-registry>/cluster-api-provider-ibmcloud
-make
-make docker-build IMG=${IMG}
-make docker-push IMG=${IMG}
+export REGISTRY=<your-docker-registry>
+make build-push-images
 ```
 
 ## Start kind and deploy the provider
@@ -37,6 +34,7 @@ make docker-push IMG=${IMG}
 ```shell
 go get -u sigs.k8s.io/kind && kind create cluster
 export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+make install
 make deploy
 ```
 
