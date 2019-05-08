@@ -14,36 +14,19 @@ Kubernetes projects require that you sign a Contributor License Agreement (CLA) 
 
 ## Pre-check before submitting a PR
 
-After your PR is ready to commit, please run following three scripts to check your code:
+After your PR is ready to commit, please run following commands to check your code:
 
-- hack/verify-gofmt.sh
-- hack/update-gofmt.sh
-- hack/verify-golint.sh
-
-TODO: This will be moved to `pre-commit` check soon.
+```shell
+make check
+make test
+```
 
 ## Build and push images
 Make sure your code build passed:
 
 ```shell
-export IMG=<your-docker-registry>/cluster-api-provider-ibmcloud
-make
-make docker-build IMG=${IMG}
-make docker-push IMG=${IMG}
+export REGISTRY=<your-docker-registry>
+make build-push-images
 ```
 
-## Start kind and deploy the provider
-
-```shell
-go get -u sigs.k8s.io/kind && kind create cluster
-export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-make deploy
-```
-
-## Verify deployment
-
-TODO: Should deploy a sample Cluster and Machine resource to verify controllers are reconciling properly. This is troublesome however since before the actuator stubs are filled in, all we will see is messages to the effect of "TODO: Not yet implemented"..."
-
-```
-kubectl logs cluster-api-provider-ibmcloud-controller-manager-0 -n cluster-api-provider-ibmcloud-system
-```
+Now, you can follow the [getting started guide](./README.md#getting-started) to work with the Cluster API Provider IBM Cloud.
