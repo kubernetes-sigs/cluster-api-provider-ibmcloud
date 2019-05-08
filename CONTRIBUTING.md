@@ -29,19 +29,4 @@ export REGISTRY=<your-docker-registry>
 make build-push-images
 ```
 
-## Start kind and deploy the provider
-
-```shell
-go get -u sigs.k8s.io/kind && kind create cluster
-export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
-make install
-make deploy
-```
-
-## Verify deployment
-
-TODO: Should deploy a sample Cluster and Machine resource to verify controllers are reconciling properly. This is troublesome however since before the actuator stubs are filled in, all we will see is messages to the effect of "TODO: Not yet implemented"..."
-
-```
-kubectl logs cluster-api-provider-ibmcloud-controller-manager-0 -n cluster-api-provider-ibmcloud-system
-```
+Now, you can follow the [guide](./README.md#getting-started) to get started with the Cluster API Provider IBM Cloud.
