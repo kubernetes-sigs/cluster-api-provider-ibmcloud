@@ -172,7 +172,7 @@ push-controller-image:
 images: test clusterctl-image controller-image
 push-images: push-clusterctl-image push-controller-image
 
-build-push-images: build-images push-images
+build-push-images: images push-images
 
 # quickly get target image
 new-controller: controller-image push-controller-image
