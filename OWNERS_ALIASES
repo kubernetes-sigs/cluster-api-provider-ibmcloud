@@ -29,6 +29,7 @@ aliases:
     - khahmed
     - mdelder
     - spzala
+    - rtheis
   cluster-api-ibmcloud-maintainers:
     - gyliu513
     - jichenjc
