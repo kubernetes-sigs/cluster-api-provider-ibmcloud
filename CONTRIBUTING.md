@@ -29,4 +29,4 @@ export REGISTRY=<your-docker-registry>
 make build-push-images
 ```
 
-Now, you can follow the [guide](./README.md#getting-started) to get started with the Cluster API Provider IBM Cloud.
+Now, you can follow the [getting started guide](./README.md#getting-started) to work with the Cluster API Provider IBM Cloud.
