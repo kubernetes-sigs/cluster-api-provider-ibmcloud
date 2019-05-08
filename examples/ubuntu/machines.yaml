@@ -1,0 +1,56 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: MachineList
+items:
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    generateName: ibmcloud-master-
+    labels:
+      set: master
+      cluster.k8s.io/cluster-name: "test1"
+  spec:
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudproviderconfig/v1alpha1"
+        kind: "IbmcloudMachineProviderSpec"
+        domain: test.ibm.com
+        maxMemory: 4096
+        startCpus: 4
+        dataCenter: wdc01
+        osReferenceCode: UBUNTU_LATEST
+        localDiskFlag: true
+        hourlyBillingFlag: true
+        sshKeyName: ibmcloud-key
+        sshUserName: root
+        userDataSecret:
+          name: master-user-data
+          namespace: ibmcloud-provider-system
+    versions:
+      kubelet: 1.14.0
+      controlPlane: 1.14.0
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    generateName: ibmcloud-node-
+    labels:
+      set: node
+      cluster.k8s.io/cluster-name: "test1"
+  spec:
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudproviderconfig/v1alpha1"
+        kind: "IbmcloudMachineProviderSpec"
+        domain: test.ibm.com
+        maxMemory: 4096
+        startCpus: 4
+        dataCenter: wdc01
+        osReferenceCode: UBUNTU_LATEST
+        localDiskFlag: true
+        hourlyBillingFlag: true
+        sshKeyName: ibmcloud-key
+        sshUserName: root
+        userDataSecret:
+          name: worker-user-data
+          namespace: ibmcloud-provider-system
+    versions:
+      kubelet: 1.14.0
