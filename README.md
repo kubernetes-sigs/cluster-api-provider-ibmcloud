@@ -24,7 +24,7 @@
 
 ------
 
-This repository hosts a concrete implementation of an IBMCloud provider for the [cluster-api project](https://github.com/kubernetes-sigs/cluster-api).
+This repository hosts a concrete implementation of an IBM Cloud provider for the [cluster-api project](https://github.com/kubernetes-sigs/cluster-api).
 
 ## What is the Cluster API Provider IBM Cloud
 
@@ -163,7 +163,7 @@ kubectl --kubeconfig=kubeconfig get machines -o yaml
 ### Cluster Deletion
 
 This guide explains how to delete all resources that were created as part of
-your ibmcloud Cluster API Kubernetes cluster.
+your IBM Cloud Cluster API Kubernetes cluster.
 
 1. Delete all of the node Machines in the cluster. Make sure to wait for the
   corresponding Nodes to be deleted before moving onto the next step. After this
