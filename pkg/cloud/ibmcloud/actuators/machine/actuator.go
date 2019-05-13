@@ -49,6 +49,7 @@ const (
 	MachineCreating string = "Creating"
 	MachineRunning  string = "Running"
 	MachineFailed   string = "Failed"
+	MachineDeleting string = "Deleting"
 )
 
 // Actuator is responsible for performing machine reconciliation
@@ -163,6 +164,8 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 		klog.Infof("Skipped deleting %s that is already deleted.\n", machine.Name)
 		return nil
 	}
+
+	ic.updatePhase(ctx, machine, MachineDeleting)
 
 	err = machineService.DeleteGuest(*guest.Id)
 	if err != nil {
