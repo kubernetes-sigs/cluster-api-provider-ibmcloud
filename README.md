@@ -51,8 +51,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
 1. Install `kubectl` (see [here](http://kubernetes.io/docs/user-guide/prereqs/)).
 2. You can use either VM, container or existing Kubernetes cluster act as bootstrap cluster.
+   - If you want to use container, install [kind](https://github.com/kubernetes-sigs/kind#installation-and-usage). This is preferred.
    - If you want to use VM, install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/), version 0.30.0 or greater.
-   - If you want to use container, install [kind](https://github.com/kubernetes-sigs/kind#installation-and-usage).
    - If you want to use existing Kubernetes cluster, prepare your kubeconfig.
 3. Install a [driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md) **if you are using minikube**. For Linux, we recommend kvm2. For MacOS, we recommend VirtualBox.
 4. An appropriately configured [Go development environment](https://golang.org/doc/install)
