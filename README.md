@@ -107,6 +107,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    ![ibmcloud key management](docs/images/ibmcloud-key.png)
    ![ibmcloud key add](docs/images/ibmcloud-addkey.png)
 
+   ***NOTE*** The private key used to connect to the master node is by default (currently hardcoded) at ~/.ssh/id_ibmcloud, so make sure you copy the generated key's private key info into this file.
+
 2. Create a cluster:
    - If you are using minikube:
 
