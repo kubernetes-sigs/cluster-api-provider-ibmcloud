@@ -73,11 +73,14 @@ depend-update: work
 ############################################################
 # generate section
 ############################################################
-generate:
+generate: manifests
 ifndef GOPATH
 	$(error GOPATH not defined, please define GOPATH. Run "go help gopath" to learn more about GOPATH)
 endif
 	go generate ./pkg/... ./cmd/...
+
+manifests:
+	go run vendor/sigs.k8s.io/controller-tools/cmd/controller-gen/main.go crd
 
 ############################################################
 # check section
@@ -159,9 +162,9 @@ deploy: generate_yaml_test
 # images section
 ############################################################
 # Build the docker image
-clusterctl-image:
+clusterctl-image: manifests
 	docker build . -f cmd/clusterctl/Dockerfile -t $(REGISTRY)/$(CLUSTERCTL_IMG):$(VERSION)
-controller-image:
+controller-image: manifests
 	docker build . -f cmd/manager/Dockerfile -t $(REGISTRY)/$(CONTROLLER_IMG):$(VERSION)
 
 push-clusterctl-image:
