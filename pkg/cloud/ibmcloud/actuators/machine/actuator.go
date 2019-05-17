@@ -37,6 +37,7 @@ import (
 	bootstrap "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/bootstrap"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 	ibmcloudclients "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/clients"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 const (
@@ -145,6 +146,8 @@ func (ic *IbmCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	ic.updatePhase(ctx, machine, MachineRunning)
+	record.Eventf(machine, "CreatedInstance", "Created new instance id: %d", *guest.Id)
+
 	return ic.updateMachine(machine, strconv.Itoa(*guest.Id))
 }
 
@@ -171,6 +174,8 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	if err != nil {
 		return fmt.Errorf("Guest delete failed %s", err)
 	}
+
+	record.Eventf(machine, "DeletedInstance", "Terminated instance %d", *guest.Id)
 
 	return nil
 }
