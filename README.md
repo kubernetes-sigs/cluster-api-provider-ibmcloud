@@ -196,3 +196,8 @@ your IBM Cloud Cluster API Kubernetes cluster.
 ### Trouble shooting
 
 Please refer to [Trouble shooting documentation](docs/trouble_shooting.md) for further info.
+
+## IBM Cloud References
+
+If you have any further question about IBM Cloud settings in provider, please refer to
+[IBM Cloud help documentation](docs/ibmcloud_help.md) for further infomation.
