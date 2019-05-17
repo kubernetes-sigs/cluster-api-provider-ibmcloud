@@ -179,7 +179,7 @@ func (gs *GuestService) DeleteGuest(Id int) error {
 func (gs *GuestService) listGuest() ([]datatypes.Virtual_Guest, error) {
 	s := services.GetAccountService(gs.sess)
 
-	guests, err := s.GetVirtualGuests()
+	guests, err := s.Mask("id,hostname,domain,maxMemory,operatingSystemReferenceCode,localDiskFlag,hourlyBillingFlag,datacenter,startCpus").GetVirtualGuests()
 	if err != nil {
 		klog.Errorf("Error listing virtual guest: %v", err)
 		return nil, err

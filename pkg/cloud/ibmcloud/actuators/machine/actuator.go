@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/softlayer/softlayer-go/datatypes"
@@ -184,8 +185,73 @@ func (ic *IbmCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
 
-	klog.Infof("TODO: Not yet implemented")
-	return nil
+	// TODO(xunpan): node ref updating?
+
+	guest, err := ic.getGuest(machine)
+	if err != nil {
+		return err
+	}
+
+	if guest == nil {
+		return ic.Create(ctx, cluster, machine)
+	}
+	err = ic.updateMachine(machine, strconv.Itoa(*guest.Id))
+	if err != nil {
+		return err
+	}
+
+	if util.IsControlPlaneMachine(machine) {
+		klog.Info("TODO: Master inplace update not yet implemented")
+		return nil
+	}
+
+	machineSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return err
+	}
+
+	if guest.Domain == nil ||
+		guest.MaxMemory == nil ||
+		guest.OperatingSystemReferenceCode == nil ||
+		guest.LocalDiskFlag == nil ||
+		guest.HourlyBillingFlag == nil ||
+		guest.Datacenter.Name == nil ||
+		guest.StartCpus == nil {
+		return fmt.Errorf("Guest does not contain full information.")
+	}
+
+	if *guest.Domain == machineSpec.Domain &&
+		*guest.MaxMemory == machineSpec.MaxMemory &&
+		(*guest.OperatingSystemReferenceCode == machineSpec.OSReferenceCode ||
+			// TODO(xunpan): we do not know what is the latest, so latest is fine currently
+			strings.HasSuffix(machineSpec.OSReferenceCode, "_LATEST")) &&
+		*guest.LocalDiskFlag == machineSpec.LocalDiskFlag &&
+		*guest.HourlyBillingFlag == machineSpec.HourlyBillingFlag &&
+		*guest.Datacenter.Name == machineSpec.Datacenter &&
+		*guest.StartCpus == machineSpec.StartCpus {
+		// TODO(xunpan)
+		// currently, resource attribute updating triggers recreating a VM instance
+		// any use case to change:
+		//   - ssh key name
+		//   - ssh key name
+		//   - host name
+		return nil
+	}
+
+	klog.Infof("Guest: Domain: %v, MaxMemory: %v, OSReferenceCode: %v, LocalDiskFlag: %v, HourlyBillingFlag: %v, Datacenter: %v, StartCpus: %v",
+		machineSpec.Domain, *guest.MaxMemory, *guest.OperatingSystemReferenceCode, *guest.LocalDiskFlag,
+		machineSpec.HourlyBillingFlag, *guest.Datacenter.Name, *guest.StartCpus)
+	klog.Infof("Machine: Domain: %v, MaxMemory: %v, OSReferenceCode: %v, LocalDiskFlag: %v, HourlyBillingFlag: %v, Datacenter: %v, StartCpus: %v",
+		machineSpec.Domain, machineSpec.MaxMemory, machineSpec.OSReferenceCode, machineSpec.LocalDiskFlag,
+		machineSpec.HourlyBillingFlag, machineSpec.Datacenter, machineSpec.StartCpus)
+
+	klog.Infof("Recreating VM instances for machine %v of cluster %v.", machine.Name, cluster.Name)
+	err = ic.Delete(ctx, cluster, machine)
+	if err != nil {
+		return err
+	}
+
+	return ic.Create(ctx, cluster, machine)
 }
 
 // Exists test for the existance of a machine and is invoked by the Machine Controller
@@ -232,6 +298,9 @@ func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
 	}
 	if guest == nil {
 		return "", fmt.Errorf("Guest does not exist")
+	}
+	if guest.PrimaryIpAddress == nil {
+		return "", fmt.Errorf("Guest IP does not exist")
 	}
 
 	return *guest.PrimaryIpAddress, nil
