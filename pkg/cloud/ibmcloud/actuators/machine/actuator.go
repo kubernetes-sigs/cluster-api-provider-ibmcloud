@@ -225,6 +225,10 @@ func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if guest == nil {
+		return "", fmt.Errorf("Guest does not exist")
+	}
+
 	return *guest.PrimaryIpAddress, nil
 }
 
