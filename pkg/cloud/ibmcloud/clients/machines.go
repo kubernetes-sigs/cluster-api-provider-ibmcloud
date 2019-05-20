@@ -168,16 +168,17 @@ func (gs *GuestService) DeleteGuest(Id int) error {
 	return err
 }
 
-func (gs *GuestService) GetGuest(name string) (*datatypes.Virtual_Guest, error) {
+func (gs *GuestService) GetGuest(name, domain string) (*datatypes.Virtual_Guest, error) {
 	s := services.GetAccountService(gs.sess)
 
 	hostFilter := filter.Build(
 		filter.Path("virtualGuests.hostname").Eq(name),
+		filter.Path("virtualGuests.domain").Eq(domain),
 	)
 
 	guests, err := s.Filter(hostFilter).GetVirtualGuests()
 	if err != nil {
-		klog.Errorf("Error getting virtual guests: %v", err)
+		klog.Errorf("Error getting virtual guests by filter (hostname=%s, domain=%s): %v", name, domain, err)
 		return nil, err
 	}
 
@@ -188,7 +189,8 @@ func (gs *GuestService) GetGuest(name string) (*datatypes.Virtual_Guest, error) 
 	if len(guests) > 1 {
 		// I noticed that IBM Cloud can use same name for 2 machines.
 		// It is bad for our case. Print a message to make it to be noticed.
-		klog.Errorf("Getting more than one virtual guest. The first is used.")
+		klog.Errorf("Getting more than one virtual guests by filter (hostname=%s, domain=%s). The first one with id %q is used.",
+			name, domain, *guests[0].Id)
 	}
 
 	return &guests[0], nil
