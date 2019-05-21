@@ -121,8 +121,12 @@ kustomize build $PWD/../../../../config -o $PWD/$OUTPUT/provider-components.yaml
 echo "---" >> $PWD/$OUTPUT/provider-components.yaml
 kustomize build $PWD/provider-component/clouds-secrets >> $PWD/$OUTPUT/provider-components.yaml
 
+
+#latest kustomize do not allow include files outside the build folder, copy temply
+cp -r $CONFIG_DIR/../../../../../../../vendor/sigs.k8s.io/cluster-api/config $PWD/provider-component/cluster-api
 echo "---" >> $PWD/$OUTPUT/provider-components.yaml
 kustomize build $PWD/provider-component/cluster-api >> $PWD/$OUTPUT/provider-components.yaml
+rm -fr $PWD/provider-component/cluster-api/config
 
 echo "---" >> $PWD/$OUTPUT/provider-components.yaml
 kustomize build $USERDATA/$PROVIDER_OS >> $PWD/$OUTPUT/provider-components.yaml
