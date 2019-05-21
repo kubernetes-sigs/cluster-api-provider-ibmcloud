@@ -85,23 +85,10 @@ func (gs *GuestService) waitGuestReady(Id int) error {
 
 	// Delay to allow transactions to be registered
 	time.Sleep(WaitReadyRetryInterval)
-
-	// TODO: make it V(2) after initial development work done if necessary
-	//if klog.V(2) {
-	// Enable debug to show messages from IBM Cloud during node provision
-	s.Session.Debug = true
-	//}
-	sum := WaitReadyRetryInterval
-	for transactions, _ := s.GetActiveTransactions(); len(transactions) > 0; {
-		time.Sleep(WaitReadyRetryInterval)
-		sum += WaitReadyRetryInterval
-		if sum > WaitReadyTimeout {
-			// Now the guest failed to reach timeout
-			return fmt.Errorf("Waiting for guest %d ready time out", Id)
-		}
-		transactions, _ = s.GetActiveTransactions()
+	err := waitTransactionDone(&s)
+	if err != nil {
+		return err
 	}
-	s.Session.Debug = false
 
 	klog.Info("Waiting for transactions done.")
 	return nil
@@ -168,9 +155,13 @@ func (gs *GuestService) DeleteGuest(Id int) error {
 	success, err := s.DeleteObject()
 	if err != nil {
 		klog.Errorf("Failed deleting the virtual guest with ID %d: %v", Id, err)
+		return err
 	} else if success == false {
-		err = fmt.Errorf("Failed deleting the virtual guest with ID %d", Id)
-	} else {
+		return fmt.Errorf("Failed deleting the virtual guest with ID %d", Id)
+	}
+
+	err = waitTransactionDone(&s)
+	if err == nil {
 		klog.Infof("Virtual Guest deleted successfully")
 	}
 	return err
@@ -179,7 +170,7 @@ func (gs *GuestService) DeleteGuest(Id int) error {
 func (gs *GuestService) listGuest() ([]datatypes.Virtual_Guest, error) {
 	s := services.GetAccountService(gs.sess)
 
-	guests, err := s.GetVirtualGuests()
+	guests, err := s.Mask("id,hostname,domain,primaryIpAddress,maxMemory,operatingSystemReferenceCode,localDiskFlag,hourlyBillingFlag,datacenter,startCpus").GetVirtualGuests()
 	if err != nil {
 		klog.Errorf("Error listing virtual guest: %v", err)
 		return nil, err
@@ -224,4 +215,24 @@ func getSshKey(sess *session.Session, name string) int {
 
 	return id
 
+}
+
+func waitTransactionDone(s *services.Virtual_Guest) error {
+	//if klog.V(2) {
+	// Enable debug to show messages from IBM Cloud during node provision
+	s.Session.Debug = true
+	//}
+	sum := WaitReadyRetryInterval
+	for transactions, _ := s.GetActiveTransactions(); len(transactions) > 0; {
+		time.Sleep(WaitReadyRetryInterval)
+		sum += WaitReadyRetryInterval
+		if sum > WaitReadyTimeout {
+			// Now the guest failed to reach timeout
+			return fmt.Errorf("Waiting for guest %d ready time out", *s.Options.Id)
+		}
+		transactions, _ = s.GetActiveTransactions()
+	}
+	s.Session.Debug = false
+
+	return nil
 }
