@@ -114,9 +114,8 @@ functional:
 # Generate manifests e.g. CRD, RBAC etc.
 generate_yaml_test:
 ifndef HAS_KUSTOMIZE
-	# for now, higher version has some problem so we stick to 1.0.11
-	curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v1.0.11/kustomize_1.0.11_linux_amd64
-	mv kustomize_1.0.11_linux_amd64 /usr/local/bin/kustomize
+	curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v2.0.3/kustomize_2.0.3_linux_amd64
+	mv kustomize_2.0.3_linux_amd64 /usr/local/bin/kustomize
 	chmod +x /usr/local/bin/kustomize
 endif
 	# Create a dummy file for test only

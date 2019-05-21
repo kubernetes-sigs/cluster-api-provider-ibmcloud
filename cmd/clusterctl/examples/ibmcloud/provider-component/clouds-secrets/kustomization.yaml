@@ -5,8 +5,8 @@ generatorOptions:
 
 secretGenerator:
 - name: cloud-config
-  commands:
-    clouds.yaml: "cat configs/clouds.yaml"
+  files:
+    - clouds.yaml=configs/clouds.yaml
   type: Opaque
 
 namespace: ibmcloud-provider-system
