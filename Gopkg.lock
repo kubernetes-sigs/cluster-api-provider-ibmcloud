@@ -470,11 +470,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:51d24b4042c57241e7a2190140f6bfa026ebd285470d4907d96b5dd6473dbfa9"
+  digest = "1:7e9036631713cc672253c72cdc64a8734d883232fc277a4e9257b80acbf0ecfe"
   name = "github.com/softlayer/softlayer-go"
   packages = [
     "config",
     "datatypes",
+    "filter",
     "services",
     "session",
     "sl",
@@ -1181,6 +1182,7 @@
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/softlayer/softlayer-go/datatypes",
+    "github.com/softlayer/softlayer-go/filter",
     "github.com/softlayer/softlayer-go/services",
     "github.com/softlayer/softlayer-go/session",
     "github.com/softlayer/softlayer-go/sl",

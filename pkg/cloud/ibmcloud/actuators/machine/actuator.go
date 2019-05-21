@@ -279,7 +279,12 @@ func (ic *IbmCloudClient) getGuest(machine *clusterv1.Machine) (*datatypes.Virtu
 		return nil, err
 	}
 
-	guest, err := machineService.GetGuest(machine.Name)
+	providerSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	guest, err := machineService.GetGuest(machine.Name, providerSpec.Domain)
 	if err != nil {
 		return nil, err
 	}
@@ -287,12 +292,7 @@ func (ic *IbmCloudClient) getGuest(machine *clusterv1.Machine) (*datatypes.Virtu
 }
 
 func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
-	machineService, err := ibmcloudclients.NewInstanceServiceFromMachine(ic.params.KubeClient, machine)
-	if err != nil {
-		return "", err
-	}
-
-	guest, err := machineService.GetGuest(machine.Name)
+	guest, err := ic.getGuest(machine)
 	if err != nil {
 		return "", err
 	}

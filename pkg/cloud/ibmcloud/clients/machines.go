@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/softlayer/softlayer-go/datatypes"
+	"github.com/softlayer/softlayer-go/filter"
 	"github.com/softlayer/softlayer-go/services"
 	"github.com/softlayer/softlayer-go/session"
 	"github.com/softlayer/softlayer-go/sl"
@@ -167,32 +168,32 @@ func (gs *GuestService) DeleteGuest(Id int) error {
 	return err
 }
 
-func (gs *GuestService) listGuest() ([]datatypes.Virtual_Guest, error) {
+func (gs *GuestService) GetGuest(name, domain string) (*datatypes.Virtual_Guest, error) {
 	s := services.GetAccountService(gs.sess)
 
-	guests, err := s.Mask("id,hostname,domain,primaryIpAddress,maxMemory,operatingSystemReferenceCode,localDiskFlag,hourlyBillingFlag,datacenter,startCpus").GetVirtualGuests()
-	if err != nil {
-		klog.Errorf("Error listing virtual guest: %v", err)
-		return nil, err
-	}
-	return guests, nil
-}
+	hostFilter := filter.Build(
+		filter.Path("virtualGuests.hostname").Eq(name),
+		filter.Path("virtualGuests.domain").Eq(domain),
+	)
 
-// FIXME: use API layer query instead of query all then compare here
-func (gs *GuestService) GetGuest(name string) (*datatypes.Virtual_Guest, error) {
-	guests, err := gs.listGuest()
+	guests, err := s.Filter(hostFilter).GetVirtualGuests()
 	if err != nil {
+		klog.Errorf("Error getting virtual guests by filter (hostname=%s, domain=%s): %v", name, domain, err)
 		return nil, err
 	}
 
-	for _, guest := range guests {
-		// FIXME: how to unique identify one guest
-		if *guest.Hostname == name {
-			klog.Infof("Found guest with ID %d for %q", *guest.Id, name)
-			return &guest, nil
-		}
+	if len(guests) == 0 {
+		return nil, nil
 	}
-	return nil, nil
+
+	if len(guests) > 1 {
+		// I noticed that IBM Cloud can use same name for 2 machines.
+		// It is bad for our case. Print a message to make it to be noticed.
+		klog.Errorf("Getting more than one virtual guests by filter (hostname=%s, domain=%s). The first one with id %q is used.",
+			name, domain, *guests[0].Id)
+	}
+
+	return &guests[0], nil
 }
 
 // TODO: directly get ID of ssh key instead of list and search
