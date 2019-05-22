@@ -1,3 +1,8 @@
+[![Build Status](https://travis-ci.org/kubernetes-sigs/cluster-api-provider-ibmcloud.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/cluster-api-provider-ibmcloud)
+[![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-ibmcloud)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-ibmcloud)
+[![LICENSE](https://img.shields.io/badge/license-apache2.0-green.svg)](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/master/LICENSE)
+[![Releases](https://img.shields.io/badge/version-v0.0.1-orange.svg)](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases "Cluster API provider IBM Cloud latest release")
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
@@ -17,9 +22,6 @@
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Kubernetes Cluster API Provider IBM Cloud
-
-[![Build Status](https://travis-ci.org/kubernetes-sigs/cluster-api-provider-ibmcloud.svg?branch=master)](https://travis-ci.org/kubernetes-sigs/cluster-api-provider-ibmcloud)
-[![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-ibmcloud)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-ibmcloud)
 
 <a href="https://github.com/kubernetes-sigs/cluster-api"><img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"></a><a href="https://www.ibm.com/cloud/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by IBM Cloud" height="100"></a>
 
