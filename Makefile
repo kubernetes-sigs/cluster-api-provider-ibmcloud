@@ -14,7 +14,6 @@ SOURCES := $(shell find $(DEST) -name '*.go')
 
 HAS_DEP := $(shell command -v dep;)
 HAS_LINT := $(shell command -v golint;)
-HAS_KUSTOMIZE := $(shell command -v kustomize;)
 GOX_PARALLEL ?= 3
 TARGETS ?= darwin/amd64 linux/amd64 linux/386 linux/arm linux/arm64 linux/ppc64le
 DIST_DIRS         = find * -type d -exec
@@ -113,11 +112,6 @@ functional:
 
 # Generate manifests e.g. CRD, RBAC etc.
 generate_yaml_test:
-ifndef HAS_KUSTOMIZE
-	curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v2.0.3/kustomize_2.0.3_linux_amd64
-	mv kustomize_2.0.3_linux_amd64 /usr/local/bin/kustomize
-	chmod +x /usr/local/bin/kustomize
-endif
 	# Create a dummy file for test only
 	echo 'clouds' > cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
 	$(GENERATE_YAML_PATH)/$(GENERATE_YAML_EXEC) -f dummy-clouds-test.yaml ubuntu $(GENERATE_YAML_TEST_FOLDER)

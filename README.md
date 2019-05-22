@@ -50,7 +50,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
 ### Prerequisites
 
-1. Install `kubectl` (see [here](http://kubernetes.io/docs/user-guide/prereqs/)).
+1. Install `kubectl` (see [here](http://kubernetes.io/docs/user-guide/prereqs/)). Because `kustomize` was included into `kubectl` and it's used by `cluster-api-provider-ibmcloud` in generating yaml files, so version `1.14.0+` of `kubectl` is required, see [integrate kustomize into kubectl](https://github.com/kubernetes/enhancements/issues/633) for more info.
 2. You can use either VM, container or existing Kubernetes cluster act as bootstrap cluster.
    - If you want to use container, install [kind](https://github.com/kubernetes-sigs/kind#installation-and-usage). This is preferred.
    - If you want to use VM, install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/), version 0.30.0 or greater.
@@ -67,7 +67,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
 ### Cluster Creation
 
-1. Create the `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml` files if needed. If you want to use the `generate-yaml.sh` script, then you will need kustomize version 1.0.11, which can be found at https://github.com/kubernetes-sigs/kustomize/releases/tag/v1.0.11.
+1. Create the `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml` files if needed. 
 
    ```bash
    cd examples/ibmcloud
