@@ -40,23 +40,16 @@ dest_dir="${root_dir}/bin"
 mkdir -p "${dest_dir}"
 
 platform=$(uname -s|tr A-Z a-z)
-kb_version="1.0.8"
+kb_version="2.0.0-alpha.2"
 kb_tgz="kubebuilder_${kb_version}_${platform}_amd64.tar.gz"
 kb_url="https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${kb_version}/${kb_tgz}"
 curl "${curl_args}O" "${kb_url}" \
       && tar xzfP "${kb_tgz}" -C "${dest_dir}" --strip-components=2 \
         && rm "${kb_tgz}"
 
-ks_version="1.0.11"
-ks_binary="kustomize_${ks_version}_${platform}_amd64"
-ks_url="https://github.com/kubernetes-sigs/kustomize/releases/download/v${ks_version}/${ks_binary}"
-curl "${curl_args}" "${ks_url}" "-o" "${dest_dir}/kustomize" \
-  && chmod +x "${dest_dir}/kustomize"
-
 echo    "# destination:"
 echo    "#   ${dest_dir}"
 echo    "# versions:"
-echo -n "#   kustomize:      "; "${dest_dir}/kustomize" version
 echo -n "#   etcd:           "; ("${dest_dir}/etcd" --version || :) | grep "etcd Version:"
 echo -n "#   kube-apiserver: "; "${dest_dir}/kube-apiserver" --version
 echo -n "#   kubectl:        "; "${dest_dir}/kubectl" version --client --short
