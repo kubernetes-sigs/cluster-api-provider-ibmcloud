@@ -5,19 +5,6 @@ metadata:
   name: ibmcloud-provider-manager-role
 rules:
 - apiGroups:
-  - admissionregistration.k8s.io
-  resources:
-  - mutatingwebhookconfigurations
-  - validatingwebhookconfigurations
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
   - cluster.k8s.io
   resources:
   - clusters

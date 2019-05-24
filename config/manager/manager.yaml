@@ -61,8 +61,6 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: SECRET_NAME
-            value: $(WEBHOOK_SECRET_NAME)
         resources:
           limits:
             cpu: 100m
@@ -71,22 +69,12 @@ spec:
             cpu: 100m
             memory: 20Mi
         ports:
-        - containerPort: 9876
-          name: webhook-server
-          protocol: TCP
         volumeMounts:
-        - mountPath: /tmp/cert
-          name: cert
-          readOnly: true
         - mountPath: /etc/ibmcloud/
           readOnly: true
           name: cloud-config
       terminationGracePeriodSeconds: 10
       volumes:
-      - name: cert
-        secret:
-          defaultMode: 420
-          secretName: webhook-server-secret
       - name: kubeadm
         hostPath:
           path: /usr/bin/kubeadm
@@ -94,10 +82,3 @@ spec:
         secret:
           defaultMode: 420
           secretName: cloud-config
-
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: webhook-server-secret
-  namespace: ibmcloud-provider-system

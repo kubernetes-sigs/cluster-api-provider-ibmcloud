@@ -6,9 +6,6 @@ generatorOptions:
 resources:
 - rbac/rbac_role.yaml
 - rbac/rbac_role_binding.yaml
-- rbac/auth_proxy_service.yaml
-- rbac/auth_proxy_role.yaml
-- rbac/auth_proxy_role_binding.yaml
 - crds/ibmcloud_v1alpha1_ibmcloudclusterproviderspec.yaml
 - crds/ibmcloud_v1alpha1_ibmcloudclusterproviderstatus.yaml
 - crds/ibmcloud_v1alpha1_ibmcloudmachineproviderspec.yaml
