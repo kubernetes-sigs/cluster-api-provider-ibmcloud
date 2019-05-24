@@ -47,8 +47,6 @@ items:
         osReferenceCode: <the operating system selection>
         localDiskFlag: true
         hourlyBillingFlag: true
-        sshKeyName: cluster-api-provider-ibmcloud
-        sshUserName: <ssh user name>
         userDataSecret:
           name: worker-user-data
           namespace: ibmcloud-provider-system
