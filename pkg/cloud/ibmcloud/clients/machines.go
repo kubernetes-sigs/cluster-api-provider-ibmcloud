@@ -219,10 +219,11 @@ func getSshKey(sess *session.Session, name string) int {
 }
 
 func waitTransactionDone(s *services.Virtual_Guest) error {
-	//if klog.V(2) {
-	// Enable debug to show messages from IBM Cloud during node provision
-	s.Session.Debug = true
-	//}
+	if klog.V(3) {
+		// Enable debug to show messages from IBM Cloud during node provision
+		s.Session.Debug = true
+	}
+
 	sum := WaitReadyRetryInterval
 	for transactions, _ := s.GetActiveTransactions(); len(transactions) > 0; {
 		time.Sleep(WaitReadyRetryInterval)
