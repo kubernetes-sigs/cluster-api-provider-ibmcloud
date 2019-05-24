@@ -113,13 +113,25 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
    ***NOTE*** The private key used to connect to the master node is by default (currently hardcoded) at ~/.ssh/id_ibmcloud, so make sure you copy the generated key's private key info into this file.
 
+   Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) and put into `examples/ibmcloud/out/addons.yaml` then add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created:
+
+   The dashboard pod will be created and user is able to logon through k8s dashboard:
+
+```
+# kubectl --kubeconfig=kubeconfig get pods --all-namespaces
+NAMESPACE                  NAME                                          READY   STATUS             RESTARTS   AGE
+...
+kube-system                kubernetes-dashboard-5f7b999d65-ntrxb         1/1     Running            0          12m
+...
+```
+
 2. Create a cluster:
    - If you are using minikube:
 
    ```bash
    ./clusterctl create cluster --bootstrap-type minikube --bootstrap-flags kubernetes-version=v1.12.3 \
      --provider ibmcloud -c examples/ibmcloud/out/cluster.yaml \
-     -m examples/ibmcloud/out/machines.yaml -p examples/ibmcloud/out/provider-components.yaml
+     -m examples/ibmcloud/out/machines.yaml -p examples/ibmcloud/out/provider-components.yaml -a examples/ibmcloud/out/addons.yaml
    ```
 
    To choose a specific minikube driver, please use the `--bootstrap-flags vm-driver=xxx` command line parameter. For example to use the kvm2 driver with clusterctl you woud add `--bootstrap-flags vm-driver=kvm2`, for linux, if you haven't installed any driver, you can add `--bootstrap-flags vm-driver=none`.
@@ -129,7 +141,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    ```bash
    ./clusterctl create cluster --bootstrap-type kind --provider ibmcloud \
      -c examples/ibmcloud/out/cluster.yaml -m examples/ibmcloud/out/machines.yaml \
-     -p examples/ibmcloud/out/provider-components.yaml
+     -p examples/ibmcloud/out/provider-components.yaml -a examples/ibmcloud/out/addons.yaml
    ```
 
    - If you are using existing Kubernetes cluster:
@@ -137,7 +149,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    ./clusterctl create cluster --bootstrap-cluster-kubeconfig ~/.kube/config \
      --provider ibmcloud -c examples/ibmcloud/out/cluster.yaml \
      -m examples/ibmcloud/out/machines.yaml \
-     -p examples/ibmcloud/out/provider-components.yaml
+     -p examples/ibmcloud/out/provider-components.yaml -a examples/ibmcloud/out/addons.yaml
    ```
 
    For the above command, the `bootstrap-cluster-kubeconfig` was located at `~/.kube/config`, you must update it
