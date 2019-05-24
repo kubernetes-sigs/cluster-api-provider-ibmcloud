@@ -19,11 +19,11 @@ This guide (based on minikube and others should be similar) explains general inf
    ```
    # kubectl --kubeconfig minikube.kubeconfig get pods -n ibmcloud-provider-system
    NAMESPACE                   NAME                                     READY   STATUS    RESTARTS   AGE
-   ibmcloud-provider-system    clusterapi-controller-xxxxxxxxx-xxxxx   1/1     Running   0          27m
+   ibmcloud-provider-system    clusterapi-controller-0                  1/1     Running   0          27m
    ```
 
-2. Get log of clusterapi-controller-xxxxxxxx-xxxxx
+2. Get log of clusterapi-controller-0
 
    ```
-   # kubectl --kubeconfig minikube.kubeconfig log clusterapi-controller-xxxxxxxxx-xxxxx -n ibmcloud-provider-system
+   # kubectl --kubeconfig minikube.kubeconfig log clusterapi-controller-0 -n ibmcloud-provider-system
    ```
