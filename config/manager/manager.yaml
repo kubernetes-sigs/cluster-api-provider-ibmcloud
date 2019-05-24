@@ -24,7 +24,7 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: clusterapi-controllers
+  name: clusterapi-controller
   namespace: ibmcloud-provider-system
   labels:
     control-plane: controller-manager
