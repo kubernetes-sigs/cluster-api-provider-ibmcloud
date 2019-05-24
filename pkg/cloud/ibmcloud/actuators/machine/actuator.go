@@ -195,6 +195,9 @@ func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 	if guest == nil {
 		return ic.Create(ctx, cluster, machine)
 	}
+
+	ic.updatePhase(ctx, machine, MachineRunning)
+
 	err = ic.updateMachine(machine, strconv.Itoa(*guest.Id))
 	if err != nil {
 		return err
