@@ -33,7 +33,6 @@ import (
 const ProviderName = "ibmcloud"
 const (
 	IBMCloudIPAnnotationKey = "ibmcloud-ip-address"
-	IBMCloudIdAnnotationKey = "ibmcloud-resourceId"
 )
 
 func init() {

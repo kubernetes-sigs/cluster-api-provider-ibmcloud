@@ -313,7 +313,6 @@ func (ic *IbmCloudClient) updateMachine(machine *clusterv1.Machine, id string) e
 	if machine.ObjectMeta.Annotations == nil {
 		machine.ObjectMeta.Annotations = make(map[string]string)
 	}
-	machine.ObjectMeta.Annotations[ibmcloud.IBMCloudIdAnnotationKey] = id
 
 	ip, err := ic.getIP(machine)
 	if err != nil {
