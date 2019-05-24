@@ -16,6 +16,7 @@
     - [Cluster Creation](#cluster-creation)
     - [Interacting with your cluster](#interacting-with-your-cluster)
     - [Cluster Deletion](#cluster-deletion)
+    - [Create additional worker nodes](#create-additional-worker-nodes)
     - [Trouble shooting](#trouble-shooting)
   - [IBM Cloud References](#ibm-cloud-references)
 
@@ -195,6 +196,10 @@ your IBM Cloud Cluster API Kubernetes cluster.
    ```bash
    rm -rf $HOME/.ssh/id_ibmcloud*
    ```
+
+### Create additional worker nodes
+
+Please refer to [Create a new woker node](docs/add_node.md) for further info.
 
 ### Trouble shooting
 
