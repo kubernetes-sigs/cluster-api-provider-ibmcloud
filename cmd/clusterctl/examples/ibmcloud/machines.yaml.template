@@ -42,7 +42,7 @@ items:
         kind: "IbmcloudMachineProviderSpec"
         domain: <domain name>
         maxMemory: 4096
-        startCpus: 1
+        startCpus: 4
         dataCenter: <datacenter name>
         osReferenceCode: <the operating system selection>
         localDiskFlag: true
