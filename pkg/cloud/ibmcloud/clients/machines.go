@@ -81,7 +81,7 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 
 func (gs *GuestService) waitGuestReady(Id int) error {
 	// Wait for transactions to finish
-	klog.Info("Waiting for transactions to complete before destroying.")
+	klog.Info("Waiting for transactions to complete.")
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
 
 	// Delay to allow transactions to be registered
