@@ -81,7 +81,7 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 
 func (gs *GuestService) waitGuestReady(Id int) error {
 	// Wait for transactions to finish
-	klog.Info("Waiting for transactions to complete before destroying.")
+	klog.Info("Waiting for transactions to complete.")
 	s := services.GetVirtualGuestService(gs.sess).Id(Id)
 
 	// Delay to allow transactions to be registered
@@ -196,25 +196,29 @@ func (gs *GuestService) GetGuest(name, domain string) (*datatypes.Virtual_Guest,
 	return &guests[0], nil
 }
 
-// TODO: directly get ID of ssh key instead of list and search
 func getSshKey(sess *session.Session, name string) int {
-	id := 0
-
 	service := services.GetAccountService(sess)
-	keys, err := service.GetSshKeys()
+
+	sshKeyFilter := filter.Build(
+		filter.Path("sshKeys.label").Eq(name),
+	)
+
+	keys, err := service.Filter(sshKeyFilter).GetSshKeys()
 	if err != nil {
-		klog.Errorf("Error retrieving ssh keys: %v", err)
+		klog.Errorf("Error retrieving ssh keys by filter (key=%s): %v", name, err)
 		return 0
 	}
 
-	for _, key := range keys {
-		if *key.Label == name {
-			id = *key.Id
-			break
-		}
+	if len(keys) == 0 || keys[0].Id == nil {
+		return 0
 	}
 
-	return id
+	if len(keys) > 1 {
+		klog.Errorf("Getting more than one ssh keys by filter (key=%s). The first one with id %q is used.",
+			name, *keys[0].Id)
+	}
+
+	return *keys[0].Id
 
 }
 
