@@ -1,2 +1,5 @@
-userName: "your-name"
-apiKey: "your-api-key"
+clouds:
+  ibmcloud:
+    auth:
+      username: "test@test.com"
+      password: "here'syourpassword"

@@ -32,7 +32,7 @@ import (
 	"k8s.io/klog"
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
-
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
@@ -52,13 +52,8 @@ func NewGuestService(sess *session.Session) *GuestService {
 	return &GuestService{sess: sess}
 }
 
-type IBMCloudConfig struct {
-	UserName string `yaml:"userName,omitempty"`
-	APIKey   string `yaml:"apiKey,omitempty"`
-}
-
 func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clusterv1.Machine) (*GuestService, error) {
-	// clouds.yaml is mounted into controller pod for clouds authentication
+	// AuthConfig is mounted into controller pod for clouds authentication
 	fileName := CloudsYamlFile
 	if _, err := os.Stat(fileName); err != nil {
 		return nil, fmt.Errorf("Cannot stat %q: %v", fileName, err)
@@ -68,14 +63,15 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 		return nil, fmt.Errorf("Cannot read %q: %v", fileName, err)
 	}
 
-	config := IBMCloudConfig{}
+	config := cloud.Config{}
 	yaml.Unmarshal(bytes, &config)
+	authConfig := config.Clouds.Ibmcloud.Auth
 
-	if config.UserName == "" || config.APIKey == "" {
-		return nil, fmt.Errorf("Failed getting IBM Cloud config userName %q, apiKey %q", config.UserName, config.APIKey)
+	if authConfig.UserName == "" || authConfig.Password == "" {
+		return nil, fmt.Errorf("Failed getting IBM Cloud config username %q, password %q", authConfig.UserName, authConfig.Password)
 	}
 
-	sess := session.New(config.UserName, config.APIKey)
+	sess := session.New(authConfig.UserName, authConfig.Password)
 	return NewGuestService(sess), nil
 }
 
