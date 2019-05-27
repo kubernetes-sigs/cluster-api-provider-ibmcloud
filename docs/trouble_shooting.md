@@ -52,7 +52,7 @@ This guide (based on minikube and others should be similar) explains general inf
    You may hit errors with kind v0.3.0 and docker 18.09.6 on ubuntu. Use docker version < 18.09.6.
    ```
    Creating cluster "kind" ...
- ✓ Ensuring node image (kindest/node:v1.14.2) 🖼
+   ✓ Ensuring node image (kindest/node:v1.14.2) 🖼
     ERRO[22:52:13] 0cd93e6e3b3a28c4216a3fa7b0d75337e83ca32f5e4095629c75a472b2ee89a6
     ERRO[22:52:13] docker: Error response from daemon: driver failed programming external connectivity on endpoint kind-control-plane (1229f3b0af4456532d4a8cf9ae274c0c03441da448de535ee94a1a6e25148d05):  (iptables failed: iptables --wait -t nat -A DOCKER -p tcp -d 127.0.0.1 --dport 46796 -j DNAT --to-destination 172.17.0.2:6443 ! -i docker0: iptables: No chain/target/match by that name.
     ERRO[22:52:13]  (exit status 1)).
