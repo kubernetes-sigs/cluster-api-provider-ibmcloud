@@ -67,11 +67,11 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 	yaml.Unmarshal(bytes, &config)
 	authConfig := config.Clouds.Ibmcloud.Auth
 
-	if authConfig.UserName == "" || authConfig.Password == "" {
-		return nil, fmt.Errorf("Failed getting IBM Cloud config username %q, password %q", authConfig.UserName, authConfig.Password)
+	if authConfig.APIUserName == "" || authConfig.AuthenticationKey == "" {
+		return nil, fmt.Errorf("Failed getting IBM Cloud config API Username %q, Authentication Key %q", authConfig.APIUserName, authConfig.AuthenticationKey)
 	}
 
-	sess := session.New(authConfig.UserName, authConfig.Password)
+	sess := session.New(authConfig.APIUserName, authConfig.AuthenticationKey)
 	return NewGuestService(sess), nil
 }
 

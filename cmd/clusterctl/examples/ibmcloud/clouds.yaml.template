@@ -1,5 +1,5 @@
 clouds:
   ibmcloud:
     auth:
-      username: "test@test.com"
-      password: "here'syourpassword"
+      apiUserName: "Your API Username"
+      authenticationKey: "Your API Authentication Key"  

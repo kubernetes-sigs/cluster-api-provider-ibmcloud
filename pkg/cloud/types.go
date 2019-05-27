@@ -33,6 +33,6 @@ type IbmcloudConfig struct {
 
 // AuthConfig is mounted into controller pod for clouds authentication
 type AuthConfig struct {
-	UserName string `yaml:"username,omitempty"`
-	Password string `yaml:"password,omitempty"`
+	APIUserName       string `yaml:"apiUserName,omitempty"`
+	AuthenticationKey string `yaml:"authenticationKey,omitempty"`
 }

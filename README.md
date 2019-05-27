@@ -92,11 +92,11 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    clouds:
     ibmcloud:
       auth:
-        username: "test@test.com"
-        password: "here'syourpassword"
+        apiUserName: "Your API Username"
+        authenticationKey: "Your API Authentication Key"
    ```
 
-   You can get `username` and `password` from https://control.softlayer.com/ .
+   You can get `apiUserName` and `authenticationKey` from https://control.softlayer.com/ .
    - Logon to https://control.softlayer.com/ .
    - Click your user name on the right top of the console.
    ![ibmcloud account](docs/images/ibmcloud-account.png)
