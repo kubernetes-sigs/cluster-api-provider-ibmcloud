@@ -30,7 +30,7 @@ This guide (based on minikube and others should be similar) explains general inf
 
 ## Cannot create bootstrap cluster if you are using kind
    
-1. Check if kind works well.
+   Check if kind works well.
 
    ```
    # kind create cluster
