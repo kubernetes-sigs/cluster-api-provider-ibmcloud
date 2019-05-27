@@ -47,8 +47,6 @@ This guide (based on minikube and others should be similar) explains general inf
    kubectl cluster-info
    ```
 
-2. Check docker version.
-
    You may hit errors as below with kind v0.3.0 and docker-ce 18.09.6 on ubuntu.
    Follow the tickets to solve the problem.
    - https://github.com/kubernetes-sigs/kind/issues/567
