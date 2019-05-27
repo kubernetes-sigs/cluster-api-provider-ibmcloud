@@ -48,4 +48,4 @@ This guide (based on minikube and others should be similar) explains general inf
    ```
 
 2. Check docker version.
-   kind v0.3.0 can work with docker 18.06.0 on ubuntu.
+   You may hit errors with kind v0.3.0 and docker 18.09.6 on ubuntu. Use docker version < 18.09.6.
