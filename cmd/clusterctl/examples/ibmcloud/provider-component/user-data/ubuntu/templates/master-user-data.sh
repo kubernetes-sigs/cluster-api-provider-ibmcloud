@@ -16,7 +16,7 @@ ARCH=amd64
 
 swapoff -a
 # disable swap in fstab
-sed -i.bak -r 's/(.+ swap .+)/#\1/' /etc/fstab
+sed -i.bak -r '/\sswap\s/s/^#?/#/' /etc/fstab
 
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 touch /etc/apt/sources.list.d/kubernetes.list
