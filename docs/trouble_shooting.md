@@ -27,3 +27,24 @@ This guide (based on minikube and others should be similar) explains general inf
    ```
    # kubectl --kubeconfig minikube.kubeconfig log clusterapi-controller-0 -n ibmcloud-provider-system
    ```
+
+## Cannot create bootstrap cluster if you are using kind.
+   
+1. Check if kind works well.
+
+   ```
+   # kind create cluster
+   Creating cluster "kind" ...
+   ✓ Ensuring node image (kindest/node:v1.14.2) 🖼
+   ✓ Preparing nodes 📦
+   ✓ Creating kubeadm config 📜
+   ✓ Starting control-plane 🕹️
+   ✓ Installing CNI 🔌
+   ✓ Installing StorageClass 💾
+   Cluster creation complete. You can now use the cluster with:
+
+   export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+   kubectl cluster-info
+   ```
+
+  
