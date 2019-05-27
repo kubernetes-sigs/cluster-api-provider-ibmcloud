@@ -28,7 +28,7 @@ This guide (based on minikube and others should be similar) explains general inf
    # kubectl --kubeconfig minikube.kubeconfig log clusterapi-controller-0 -n ibmcloud-provider-system
    ```
 
-## Cannot create bootstrap cluster if you are using kind.
+## Cannot create bootstrap cluster if you are using kind
    
 1. Check if kind works well.
 
@@ -47,4 +47,5 @@ This guide (based on minikube and others should be similar) explains general inf
    kubectl cluster-info
    ```
 
-  
+2. Check docker version.
+   kind v0.3.0 cannot work with docker 18.09.6 on ubuntu.
