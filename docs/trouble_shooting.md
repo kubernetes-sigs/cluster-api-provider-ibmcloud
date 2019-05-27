@@ -49,7 +49,7 @@ This guide (based on minikube and others should be similar) explains general inf
 
 2. Check docker version.
 
-   You may hit errors with kind v0.3.0 and docker-ce 18.09.6 on ubuntu. Use docker-ce version < 18.09.6.
+   You may hit errors as below with kind v0.3.0 and docker-ce 18.09.6 on ubuntu. Use docker-ce version < 18.09.6.
    ```
    Creating cluster "kind" ...
    ✓ Ensuring node image (kindest/node:v1.14.2) 🖼
