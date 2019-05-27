@@ -4,6 +4,7 @@
 
 - [Trouble shooting](#trouble-shooting)
   - [Get log of clusterapi-controller containers](#get-log-of-clusterapi-controller-containers)
+  - [Cannot create bootstrap cluster if you are using kind](#cannot-create-bootstrap-cluster-if-you-are-using-kind)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -26,4 +27,38 @@ This guide (based on minikube and others should be similar) explains general inf
 
    ```
    # kubectl --kubeconfig minikube.kubeconfig log clusterapi-controller-0 -n ibmcloud-provider-system
+   ```
+
+## Cannot create bootstrap cluster if you are using kind
+   
+   Check if kind works well.
+
+   ```
+   # kind create cluster
+   Creating cluster "kind" ...
+   ✓ Ensuring node image (kindest/node:v1.14.2) 🖼
+   ✓ Preparing nodes 📦
+   ✓ Creating kubeadm config 📜
+   ✓ Starting control-plane 🕹️
+   ✓ Installing CNI 🔌
+   ✓ Installing StorageClass 💾
+   Cluster creation complete. You can now use the cluster with:
+
+   export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+   kubectl cluster-info
+   ```
+
+   You may hit errors as below with kind v0.3.0 and docker-ce 18.09.6 on ubuntu.
+   Follow the tickets to solve the problem.
+   - https://github.com/kubernetes-sigs/kind/issues/567
+   - https://github.com/moby/moby/issues/1871
+   ```
+   Creating cluster "kind" ...
+   ✓ Ensuring node image (kindest/node:v1.14.2) 🖼
+    ERRO[22:52:13] 0cd93e6e3b3a28c4216a3fa7b0d75337e83ca32f5e4095629c75a472b2ee89a6
+    ERRO[22:52:13] docker: Error response from daemon: driver failed programming external connectivity on endpoint kind-control-plane (1229f3b0af4456532d4a8cf9ae274c0c03441da448de535ee94a1a6e25148d05):  (iptables failed: iptables --wait -t nat -A DOCKER -p tcp -d 127.0.0.1 --dport 46796 -j DNAT --to-destination 172.17.0.2:6443 ! -i docker0: iptables: No chain/target/match by that name.
+    ERRO[22:52:13]  (exit status 1)).
+    ✗ Preparing nodes 📦
+    ERRO[22:52:13] docker run error: exit status 125
+    Error: failed to create cluster: docker run error: exit status 125
    ```
