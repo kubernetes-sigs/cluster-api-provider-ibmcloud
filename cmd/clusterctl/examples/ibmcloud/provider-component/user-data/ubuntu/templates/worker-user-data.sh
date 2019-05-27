@@ -16,7 +16,7 @@ SERVICE_CIDR={{ .ServiceCIDR }}
 
 swapoff -a
 # disable swap in fstab
-sed -i.bak -r 's/(.+ swap .+)/#\1/' /etc/fstab
+sed -i.bak -r '/\sswap\s/s/^#?/#/' /etc/fstab
 
 apt-get update
 apt-get install -y apt-transport-https prips
