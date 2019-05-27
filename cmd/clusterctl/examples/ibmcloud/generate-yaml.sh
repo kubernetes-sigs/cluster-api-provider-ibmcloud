@@ -112,8 +112,8 @@ cat "$WORKER_USER_DATA" > $USERDATA/$PROVIDER_OS/worker-user-data.sh
 
 # Set up the output dir if it does not yet exist
 mkdir -p $PWD/$OUTPUT
-cp -n $PWD/cluster.yaml.template $PWD/$OUTPUT/cluster.yaml
-cp -n $PWD/machines.yaml.template $PWD/$OUTPUT/machines.yaml
+cp -n $PWD/cluster.yaml.template $PWD/$OUTPUT/cluster.yaml || true
+cp -n $PWD/machines.yaml.template $PWD/$OUTPUT/machines.yaml || true
 
 # Build provider-components.yaml with kustomize
 kubectl kustomize $PWD/../../../../config > $PWD/$OUTPUT/provider-components.yaml
