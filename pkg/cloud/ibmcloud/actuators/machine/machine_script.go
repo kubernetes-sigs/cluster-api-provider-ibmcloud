@@ -31,7 +31,7 @@ type setupParams struct {
 	Token       string
 	Cluster     *clusterv1.Cluster
 	Machine     *clusterv1.Machine
-	MachineSpec *ibmcloudv1.IbmcloudMachineProviderSpec
+	MachineSpec *ibmcloudv1.IBMCloudMachineProviderSpec
 
 	PodCIDR           string
 	ServiceCIDR       string

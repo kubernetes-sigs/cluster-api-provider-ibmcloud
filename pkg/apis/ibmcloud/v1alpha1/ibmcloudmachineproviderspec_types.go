@@ -25,9 +25,9 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IbmcloudMachineProviderSpec defines the desired state of IbmcloudMachineProvider
+// IBMCloudMachineProviderSpec defines the desired state of IBMCloudMachineProvider
 // +k8s:openapi-gen=true
-type IbmcloudMachineProviderSpec struct {
+type IBMCloudMachineProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -53,13 +53,13 @@ type IbmcloudMachineProviderSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IbmcloudMachineProviderSpecList contains a list of IbmcloudMachineProviderSpec
-type IbmcloudMachineProviderSpecList struct {
+// IBMCloudMachineProviderSpecList contains a list of IBMCloudMachineProviderSpec
+type IBMCloudMachineProviderSpecList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []IbmcloudMachineProviderSpec `json:"items"`
+	Items           []IBMCloudMachineProviderSpec `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&IbmcloudMachineProviderSpec{}, &IbmcloudMachineProviderSpecList{})
+	SchemeBuilder.Register(&IBMCloudMachineProviderSpec{}, &IBMCloudMachineProviderSpecList{})
 }

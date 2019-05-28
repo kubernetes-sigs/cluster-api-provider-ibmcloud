@@ -23,11 +23,11 @@ type Config struct {
 
 // Clouds can be different cloud providers for extension purpose
 type Clouds struct {
-	Ibmcloud IbmcloudConfig `yaml:"ibmcloud,omitempty"`
+	IBMCloud IBMCloudConfig `yaml:"ibmcloud,omitempty"`
 }
 
-// IbmcloudConfig holds ibm cloud provider required configurations
-type IbmcloudConfig struct {
+// IBMCloudConfig holds ibm cloud provider required configurations
+type IBMCloudConfig struct {
 	Auth AuthConfig `yaml:"auth,omitempty"`
 }
 

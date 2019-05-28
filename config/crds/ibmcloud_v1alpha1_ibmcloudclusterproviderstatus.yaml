@@ -8,7 +8,7 @@ metadata:
 spec:
   group: ibmcloud.cluster.k8s.io
   names:
-    kind: IbmcloudClusterProviderStatus
+    kind: IBMCloudClusterProviderStatus
     plural: ibmcloudclusterproviderstatuses
   scope: Namespaced
   validation:

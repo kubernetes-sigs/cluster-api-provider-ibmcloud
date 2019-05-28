@@ -52,26 +52,26 @@ func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }
 
-// ClusterConfigFromProviderSpec unmarshals a provider config into an Ibmcloud Cluster type
-func ClusterSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*IbmcloudClusterProviderSpec, error) {
+// ClusterConfigFromProviderSpec unmarshals a provider config into an IBMCloud Cluster type
+func ClusterSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*IBMCloudClusterProviderSpec, error) {
 	if providerSpec.Value == nil {
 		return nil, errors.New("no such providerSpec found in manifest")
 	}
 
-	var config IbmcloudClusterProviderSpec
+	var config IBMCloudClusterProviderSpec
 	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
 		return nil, err
 	}
 	return &config, nil
 }
 
-// ClusterStatusFromProviderStatus unmarshals a provider status into an Ibmcloud Cluster Status type
-func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*IbmcloudClusterProviderStatus, error) {
+// ClusterStatusFromProviderStatus unmarshals a provider status into an IBMCloud Cluster Status type
+func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*IBMCloudClusterProviderStatus, error) {
 	if extension == nil {
-		return &IbmcloudClusterProviderStatus{}, nil
+		return &IBMCloudClusterProviderStatus{}, nil
 	}
 
-	status := new(IbmcloudClusterProviderStatus)
+	status := new(IBMCloudClusterProviderStatus)
 	if err := yaml.Unmarshal(extension.Raw, status); err != nil {
 		return nil, err
 	}
@@ -79,19 +79,19 @@ func ClusterStatusFromProviderStatus(extension *runtime.RawExtension) (*Ibmcloud
 	return status, nil
 }
 
-func MachineSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*IbmcloudMachineProviderSpec, error) {
+func MachineSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*IBMCloudMachineProviderSpec, error) {
 	if providerSpec.Value == nil {
 		return nil, errors.New("no such providerSpec found in manifest")
 	}
 
-	var config IbmcloudMachineProviderSpec
+	var config IBMCloudMachineProviderSpec
 	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
 		return nil, err
 	}
 	return &config, nil
 }
 
-func EncodeClusterStatus(status *IbmcloudClusterProviderStatus) (*runtime.RawExtension, error) {
+func EncodeClusterStatus(status *IBMCloudClusterProviderStatus) (*runtime.RawExtension, error) {
 	if status == nil {
 		return &runtime.RawExtension{}, nil
 	}

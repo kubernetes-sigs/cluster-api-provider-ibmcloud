@@ -25,12 +25,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func TestStorageIbmcloudClusterProviderSpec(t *testing.T) {
+func TestStorageIBMCloudClusterProviderSpec(t *testing.T) {
 	key := types.NamespacedName{
 		Name:      "foo",
 		Namespace: "default",
 	}
-	created := &IbmcloudClusterProviderSpec{
+	created := &IBMCloudClusterProviderSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "default",
@@ -38,7 +38,7 @@ func TestStorageIbmcloudClusterProviderSpec(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 
 	// Test Create
-	fetched := &IbmcloudClusterProviderSpec{}
+	fetched := &IBMCloudClusterProviderSpec{}
 	g.Expect(c.Create(context.TODO(), created)).NotTo(gomega.HaveOccurred())
 
 	g.Expect(c.Get(context.TODO(), key, fetched)).NotTo(gomega.HaveOccurred())

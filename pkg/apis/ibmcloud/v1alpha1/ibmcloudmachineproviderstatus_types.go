@@ -23,14 +23,14 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// IbmcloudMachineProviderStatusSpec defines the desired state of IbmcloudMachineProviderStatus
-type IbmcloudMachineProviderStatusSpec struct {
+// IBMCloudMachineProviderStatusSpec defines the desired state of IBMCloudMachineProviderStatus
+type IBMCloudMachineProviderStatusSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
 
-// IbmcloudMachineProviderStatusStatus defines the observed state of IbmcloudMachineProviderStatus
-type IbmcloudMachineProviderStatusStatus struct {
+// IBMCloudMachineProviderStatusStatus defines the observed state of IBMCloudMachineProviderStatus
+type IBMCloudMachineProviderStatusStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -38,25 +38,25 @@ type IbmcloudMachineProviderStatusStatus struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IbmcloudMachineProviderStatus is the Schema for the ibmcloudmachineproviderstatuses API
+// IBMCloudMachineProviderStatus is the Schema for the ibmcloudmachineproviderstatuses API
 // +k8s:openapi-gen=true
-type IbmcloudMachineProviderStatus struct {
+type IBMCloudMachineProviderStatus struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   IbmcloudMachineProviderStatusSpec   `json:"spec,omitempty"`
-	Status IbmcloudMachineProviderStatusStatus `json:"status,omitempty"`
+	Spec   IBMCloudMachineProviderStatusSpec   `json:"spec,omitempty"`
+	Status IBMCloudMachineProviderStatusStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// IbmcloudMachineProviderStatusList contains a list of IbmcloudMachineProviderStatus
-type IbmcloudMachineProviderStatusList struct {
+// IBMCloudMachineProviderStatusList contains a list of IBMCloudMachineProviderStatus
+type IBMCloudMachineProviderStatusList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []IbmcloudMachineProviderStatus `json:"items"`
+	Items           []IBMCloudMachineProviderStatus `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&IbmcloudMachineProviderStatus{}, &IbmcloudMachineProviderStatusList{})
+	SchemeBuilder.Register(&IBMCloudMachineProviderStatus{}, &IBMCloudMachineProviderStatusList{})
 }
