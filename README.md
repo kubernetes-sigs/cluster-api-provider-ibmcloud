@@ -116,8 +116,6 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
    ***NOTE*** The private key used to connect to the master node is by default (currently hardcoded) at ~/.ssh/id_ibmcloud, so make sure you copy the generated key's private key info into this file.
 
-   ***NOTE*** Make sure the pod CIDR and serivce CIDR you specified in `cluster.yaml` have no overlap with provisioned node CIDR, and each data center you specified in `machines.yaml` has different node CIDR setting, for complete node CIDR settings in all data centers, please refer to: https://control.softlayer.com/network/subnets
-
    Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) and put into `examples/ibmcloud/out/addons.yaml` then add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created:
 
    The dashboard pod will be created and user is able to logon through k8s dashboard:
