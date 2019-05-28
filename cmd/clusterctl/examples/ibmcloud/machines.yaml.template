@@ -4,7 +4,7 @@ items:
 - apiVersion: "cluster.k8s.io/v1alpha1"
   kind: Machine
   metadata:
-    generateName: ibmcloud-master-
+    generateName: ibmcloud-master- # VM instance name prefix
     labels:
       set: master
       cluster.k8s.io/cluster-name: "test1"
@@ -13,15 +13,15 @@ items:
       value:
         apiVersion: "ibmcloudproviderconfig/v1alpha1"
         kind: "IBMCloudMachineProviderSpec"
-        domain: <domain name>
+        domain: <domain name> # A domain name for VM instance
         maxMemory: 4096
         startCpus: 4
-        dataCenter: <datacenter name>
-        osReferenceCode: <the operating system selection>
+        dataCenter: <datacenter name> # A valid data center name
+        osReferenceCode: <the operating system selection> # A valid OS reference code
         localDiskFlag: true
         hourlyBillingFlag: true
-        sshKeyName: cluster-api-provider-ibmcloud
-        sshUserName: root
+        sshKeyName: cluster-api-provider-ibmcloud # Replace with the label of SSH Key
+        sshUserName: root # Replace with user name of SSH Key
         userDataSecret:
           name: master-user-data
           namespace: ibmcloud-provider-system
