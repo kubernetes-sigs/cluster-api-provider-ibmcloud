@@ -103,7 +103,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    ![ibmcloud account](docs/images/ibmcloud-account.png)
    - The console will navigate you to the page of `Edit User Profile`.
    ![ibmcloud profile](docs/images/ibmcloud-profile.png)
-   - Scroll down the page to the bottom, you will see a section `API Access Information`. You can get `userName` and `apiKey` from there.
+   - Scroll down the page to the bottom, you will see a section `API Access Information`. You can get `apiUserName` and `authenticationKey` from there.
    ![ibmcloud auth](docs/images/ibmcloud-auth.png)
 
    #### Special notes on ssh keys and fetching `admin.conf`
@@ -115,6 +115,8 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    ![ibmcloud key add](docs/images/ibmcloud-addkey.png)
 
    ***NOTE*** The private key used to connect to the master node is by default (currently hardcoded) at `~/.ssh/id_ibmcloud`, so make sure you copy the generated key's private key info into this file.
+
+   For the `sshUserName`, you can use `root` or `ubuntu` user for the `Ubuntu` cloud image, while you can only use `root` user for other Linux cloud images. By default the generated `machine.yaml` uses `root` to be the `sshUserName`. 
 
    Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) and put into `examples/ibmcloud/out/addons.yaml` then add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created:
 

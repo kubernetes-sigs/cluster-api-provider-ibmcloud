@@ -21,7 +21,7 @@ items:
         localDiskFlag: true
         hourlyBillingFlag: true
         sshKeyName: cluster-api-provider-ibmcloud
-        sshUserName: <ssh user name>
+        sshUserName: root
         userDataSecret:
           name: master-user-data
           namespace: ibmcloud-provider-system
@@ -48,7 +48,7 @@ items:
         localDiskFlag: true
         hourlyBillingFlag: true
         sshKeyName: cluster-api-provider-ibmcloud
-        sshUserName: <ssh user name>
+        sshUserName: root
         userDataSecret:
           name: worker-user-data
           namespace: ibmcloud-provider-system
