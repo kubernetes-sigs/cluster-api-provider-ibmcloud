@@ -114,7 +114,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    ![ibmcloud key management](docs/images/ibmcloud-key.png)
    ![ibmcloud key add](docs/images/ibmcloud-addkey.png)
 
-   ***NOTE*** The private key used to connect to the master node is by default (currently hardcoded) at ~/.ssh/id_ibmcloud, so make sure you copy the generated key's private key info into this file.
+   ***NOTE*** The private key used to connect to the master node is by default (currently hardcoded) at `~/.ssh/id_ibmcloud`, so make sure you copy the generated key's private key info into this file.
 
    Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) and put into `examples/ibmcloud/out/addons.yaml` then add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created:
 
