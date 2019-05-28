@@ -12,7 +12,7 @@ items:
     providerSpec:
       value:
         apiVersion: "ibmcloudproviderconfig/v1alpha1"
-        kind: "IbmcloudMachineProviderSpec"
+        kind: "IBMCloudMachineProviderSpec"
         domain: test.ibm.com
         maxMemory: 4096
         startCpus: 4
@@ -39,7 +39,7 @@ items:
     providerSpec:
       value:
         apiVersion: "ibmcloudproviderconfig/v1alpha1"
-        kind: "IbmcloudMachineProviderSpec"
+        kind: "IBMCloudMachineProviderSpec"
         domain: test.ibm.com
         maxMemory: 4096
         startCpus: 4

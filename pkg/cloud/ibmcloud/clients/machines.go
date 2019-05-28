@@ -65,7 +65,7 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 
 	config := cloud.Config{}
 	yaml.Unmarshal(bytes, &config)
-	authConfig := config.Clouds.Ibmcloud.Auth
+	authConfig := config.Clouds.IBMCloud.Auth
 
 	if authConfig.APIUserName == "" || authConfig.AuthenticationKey == "" {
 		return nil, fmt.Errorf("Failed getting IBM Cloud config API Username %q, Authentication Key %q", authConfig.APIUserName, authConfig.AuthenticationKey)
@@ -91,7 +91,7 @@ func (gs *GuestService) waitGuestReady(Id int) error {
 	return nil
 }
 
-func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *ibmcloudv1.IbmcloudMachineProviderSpec, userScript string) {
+func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *ibmcloudv1.IBMCloudMachineProviderSpec, userScript string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
 	keyId := getSshKey(gs.sess, machineSpec.SshKeyName)
