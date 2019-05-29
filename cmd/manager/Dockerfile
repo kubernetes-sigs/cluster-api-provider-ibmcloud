@@ -11,8 +11,8 @@ COPY vendor/ vendor/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/manager
 
 # Copy the controller-manager into a thin image
-FROM ubuntu:latest
-RUN apt-get update && apt-get install -y ca-certificates
+FROM alpine:latest
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
 WORKDIR /
 COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-ibmcloud/manager .
 ENTRYPOINT ["/manager"]
