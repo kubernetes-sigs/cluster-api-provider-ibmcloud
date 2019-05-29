@@ -117,6 +117,8 @@ func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *i
 	}
 
 	// Create a Virtual_Guest instance from a template
+	// TODO: create instance from spcified subnetwork to avoid CIDR confliction with the pod CIDR and service CIDR
+	// of the provisioned cluster, see:https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/153
 	vGuestTemplate := datatypes.Virtual_Guest{
 		Hostname:                     sl.String(hostName),
 		Domain:                       sl.String(machineSpec.Domain),

@@ -62,3 +62,22 @@ This guide (based on minikube and others should be similar) explains general inf
     ERRO[22:52:13] docker run error: exit status 125
     Error: failed to create cluster: docker run error: exit status 125
    ```
+
+## Calico node keeps CrashLoopBackOff
+
+Check the pod CIDR and serivce CIDR you specified in `cluster.yaml` have no overlap with provisioned node CIDR, and each data center you specified in `machines.yaml` has different node CIDR setting, for complete node CIDR settings in all data centers, please refer to: https://control.softlayer.com/network/subnets
+
+If the pod CIDR and serivce CIDR you specified in `cluster.yaml` have overlap with provisioned node CIDR, the `calico-node-xx` pod in worker node will failed to connect to tha api-server with the following logs:
+
+   ```
+   # kubectl --kubeconfig=kubeconfig -n kube-system logs -f calico-node-smfx8
+   Threshold time for bird readiness check:  30s
+   2019-05-27 11:14:48.306 [INFO][10] startup.go 256: Early log level set to info
+   2019-05-27 11:14:48.306 [INFO][10] startup.go 272: Using NODENAME environment for node name
+   2019-05-27 11:14:48.306 [INFO][10] startup.go 284: Determined node name: ibmcloud-node-jkb9p
+   2019-05-27 11:14:48.307 [INFO][10] startup.go 316: Checking datastore connection
+   2019-05-27 11:15:18.308 [INFO][10] startup.go 331: Hit error connecting to datastore - retry error=Get https://10.96.0.1:443/api/v1/nodes/foo: dial tcp 10.96.0.1:443: i/o timeout
+   2019-05-27 11:15:49.309 [INFO][10] startup.go 331: Hit error connecting to datastore - retry error=Get https://10.96.0.1:443/api/v1/nodes/foo: dial tcp 10.96.0.1:443: i/o timeout
+   ```
+
+If this is the case you encounter, please change the pod CIDR and serivce CIDR you specified in `cluster.yaml` so that they have no overlap with provisioned node CIDR and then recreate the cluster.
