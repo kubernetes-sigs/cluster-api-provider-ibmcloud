@@ -63,11 +63,11 @@ This guide (based on minikube and others should be similar) explains general inf
     Error: failed to create cluster: docker run error: exit status 125
    ```
 
-## Can provision cluster but calico-node-xx pod keeps CrashLoopBackOff status
+## Calico node keeps CrashLoopBackOff
 
-   Check the pod CIDR and serivce CIDR you specified in `cluster.yaml` have no overlap with provisioned node CIDR, and each data center you specified in `machines.yaml` has different node CIDR setting, for complete node CIDR settings in all data centers, please refer to: https://control.softlayer.com/network/subnets
+Check the pod CIDR and serivce CIDR you specified in `cluster.yaml` have no overlap with provisioned node CIDR, and each data center you specified in `machines.yaml` has different node CIDR setting, for complete node CIDR settings in all data centers, please refer to: https://control.softlayer.com/network/subnets
 
-   If the pod CIDR and serivce CIDR you specified in `cluster.yaml` have overlap with provisioned node CIDR, the `calico-node-xx` pod in worker node will failed to connect to tha api-server with the following logs:
+If the pod CIDR and serivce CIDR you specified in `cluster.yaml` have overlap with provisioned node CIDR, the `calico-node-xx` pod in worker node will failed to connect to tha api-server with the following logs:
 
    ```
    # kubectl --kubeconfig=kubeconfig -n kube-system logs -f calico-node-smfx8
@@ -80,4 +80,4 @@ This guide (based on minikube and others should be similar) explains general inf
    2019-05-27 11:15:49.309 [INFO][10] startup.go 331: Hit error connecting to datastore - retry error=Get https://10.96.0.1:443/api/v1/nodes/foo: dial tcp 10.96.0.1:443: i/o timeout
    ```
 
-   If this is the case you encounter, please change the pod CIDR and serivce CIDR so that they have no overlap with provisioned node CIDR and then recreate the cluster.
+If this is the case you encounter, please change the pod CIDR and serivce CIDR you specified in `cluster.yaml` so that they have no overlap with provisioned node CIDR and then recreate the cluster.
