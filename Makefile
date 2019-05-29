@@ -1,6 +1,11 @@
 GIT_HOST = sigs.k8s.io
 PWD := $(shell pwd)
 BASE_DIR := $(shell basename $(PWD))
+# customize kubebuilder path
+KUBEBUILDER_PATH ?= /usr/local
+export KUBEBUILDER_ASSETS=$(KUBEBUILDER_PATH)/kubebuilder/bin
+# customize kubectl path
+KUBECTL_PATH ?= /usr/local/bin
 # Keep an existing GOPATH, make a private one if it is undefined
 GOPATH_DEFAULT := $(PWD)/.go
 export GOPATH ?= $(GOPATH_DEFAULT)
@@ -32,8 +37,7 @@ LDFLAGS   := "-w -s -X 'main.version=${VERSION}'"
 # Image URL to use all building/pushing image targets
 CONTROLLER_IMG ?= controller
 CLUSTERCTL_IMG ?= clusterctl
-VERSION ?= $(shell git describe --exact-match 2> /dev/null || \
-                 git describe --match=$(git rev-parse --short=8 HEAD) --always --dirty --abbrev=8)
+
 REGISTRY ?= quay.io/cluster-api-provider-ibmcloud
 
 ifneq ("$(realpath $(DEST))", "$(realpath $(PWD))")
@@ -53,10 +57,10 @@ work: $(GOBIN)
 
 kubebuilder:
 	echo "checking if kubebuilder exists or not"
-	if [ ! -d "/usr/local/kubebuilder" ]; then \
+	if [ ! -d "$(KUBEBUILDER_PATH)/kubebuilder" ]; then \
 		curl -LO https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.8/kubebuilder_1.0.8_linux_amd64.tar.gz \
 		&& tar xzf kubebuilder_1.0.8_linux_amd64.tar.gz \
-		&& mv kubebuilder_1.0.8_linux_amd64 kubebuilder && mv kubebuilder /usr/local/ \
+		&& mv kubebuilder_1.0.8_linux_amd64 kubebuilder && mv kubebuilder $(KUBEBUILDER_PATH) \
 		&& rm kubebuilder_1.0.8_linux_amd64.tar.gz; \
 	fi	
 
@@ -110,8 +114,16 @@ unit: depend generate check
 functional:
 	@echo "$@ not yet implemented"
 
+kubectl:
+	echo "checking if kubectl exists or not"
+	if [ ! -f "$(KUBECTL_PATH)/kubectl" ]; then \
+		curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.14.0/bin/linux/amd64/kubectl \
+		&& mv kubectl $(KUBECTL_PATH) \
+		&& chmod +x $(KUBECTL_PATH)/kubectl; \
+	fi
+
 # Generate manifests e.g. CRD, RBAC etc.
-generate_yaml_test:
+generate_yaml_test: kubectl
 	# Create a dummy file for test only
 	echo 'clouds' > cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
 	$(GENERATE_YAML_PATH)/$(GENERATE_YAML_EXEC) -f dummy-clouds-test.yaml ubuntu $(GENERATE_YAML_TEST_FOLDER)
