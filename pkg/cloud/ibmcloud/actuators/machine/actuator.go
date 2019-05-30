@@ -220,7 +220,8 @@ func (ic *IbmCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 		guest.HourlyBillingFlag == nil ||
 		guest.Datacenter.Name == nil ||
 		guest.StartCpus == nil {
-		return fmt.Errorf("Guest does not contain full information.")
+		klog.Info("Guest does not contain full information.")
+		return nil
 	}
 
 	if *guest.Domain == machineSpec.Domain &&
@@ -303,7 +304,8 @@ func (ic *IbmCloudClient) getIP(machine *clusterv1.Machine) (string, error) {
 		return "", fmt.Errorf("Guest does not exist")
 	}
 	if guest.PrimaryIpAddress == nil {
-		return "", fmt.Errorf("Guest IP does not exist")
+		klog.Infof("Guest IP does not exist")
+		return "", nil
 	}
 
 	return *guest.PrimaryIpAddress, nil
