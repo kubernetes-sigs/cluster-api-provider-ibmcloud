@@ -1,0 +1,18 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+secretGenerator:
+- name: cloud-config
+  namespace: ibmcloud-provider-system
+  files:
+    - clouds.yaml
+  type: Opaque
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+bases:
+  - ../config
+  - provider-component/cluster-api
+  - provider-component/user-data

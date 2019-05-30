@@ -1,0 +1,5 @@
+clouds:
+  ibmcloud:
+    auth:
+      apiUserName: "IBMCLOUD_APIUSERNAME"
+      authenticationKey: "IBMCLOUD_AUTHENTICATION_KEY"

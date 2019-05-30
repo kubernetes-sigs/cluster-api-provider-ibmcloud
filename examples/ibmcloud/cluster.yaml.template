@@ -1,0 +1,15 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: Cluster
+metadata:
+  name: CLUSTER_NAME
+spec:
+    clusterNetwork:
+        services:
+            cidrBlocks: CLUSTER_SERVICES_CIDR_BLOCKS
+        pods:
+            cidrBlocks: CLUSTER_PODS_CIDR_BLOCKS
+        serviceDomain: "CLUSTER_SERVICE_DOMAIN"
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudclusterproviderconfig/v1alpha1"
+        kind: "IBMCloudClusterProviderSpec"

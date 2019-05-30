@@ -1,6 +1,9 @@
 # temporay files
 *.swp
 
+# env.sh
+/env.sh
+
 # binaries
 bin/
 cmd/clusterctl/clusterctl
@@ -15,6 +18,9 @@ cmd/clusterctl/examples/ibmcloud/clouds.yaml
 cmd/clusterctl/examples/ibmcloud/provider-component/clouds-secrets/configs
 cmd/clusterctl/examples/ibmcloud/provider-component/user-data/ubuntu/master-user-data.sh
 cmd/clusterctl/examples/ibmcloud/provider-component/user-data/ubuntu/worker-user-data.sh
+
+# output yaml
+/_output
 
 # test coverage out
 cover.out

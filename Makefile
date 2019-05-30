@@ -58,7 +58,7 @@ kubebuilder:
 		&& tar xzf kubebuilder_1.0.8_linux_amd64.tar.gz \
 		&& mv kubebuilder_1.0.8_linux_amd64 kubebuilder && mv kubebuilder /usr/local/ \
 		&& rm kubebuilder_1.0.8_linux_amd64.tar.gz; \
-	fi	
+	fi
 
 depend: work kubebuilder
 ifndef HAS_DEP
@@ -185,3 +185,5 @@ realclean: clean
 	if [ "$(GOPATH)" = "$(GOPATH_DEFAULT)" ]; then \
 		rm -rf $(GOPATH); \
 	fi
+
+include hack/Makefile.hack

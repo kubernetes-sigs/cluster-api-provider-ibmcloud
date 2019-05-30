@@ -1,0 +1,57 @@
+apiVersion: "cluster.k8s.io/v1alpha1"
+kind: MachineList
+items:
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    generateName: ibmcloud-master-
+    labels:
+      set: master
+      cluster.k8s.io/cluster-name: "CLUSTER_NAME"
+  spec:
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudproviderconfig/v1alpha1"
+        kind: "IBMCloudMachineProviderSpec"
+        domain: CONTROL_PLANE_DOMAIN
+        maxMemory: CONTROL_PLANE_OS_MEMORY
+        startCpus: CONTROL_PLANE_OS_CPU
+        dataCenter: CONTROL_PLANE_DATACENTER
+        osReferenceCode: CONTROL_PLANE_OS_CODE
+        localDiskFlag: true
+        hourlyBillingFlag: true
+        sshKeyName: CONTROL_PLANE_SSH_KEYNAME
+        sshUserName: CONTROL_PLANE_SSH_USERNAME
+        userDataSecret:
+          name: master-user-data
+          namespace: ibmcloud-provider-system
+    versions:
+      kubelet: CONTROL_PLANE_KUBELET_VERSION
+      controlPlane: CONTROL_PLANE_VERSION
+
+- apiVersion: "cluster.k8s.io/v1alpha1"
+  kind: Machine
+  metadata:
+    generateName: ibmcloud-node-
+    labels:
+      set: node
+      cluster.k8s.io/cluster-name: "CLUSTER_NAME"
+  spec:
+    providerSpec:
+      value:
+        apiVersion: "ibmcloudproviderconfig/v1alpha1"
+        kind: "IBMCloudMachineProviderSpec"
+        domain: NODE_DOMAIN
+        maxMemory: NODE_OS_MEMORY
+        startCpus: NODE_OS_CPU
+        dataCenter: NODE_DATACENTER
+        osReferenceCode: NODE_OS_CODE
+        localDiskFlag: true
+        hourlyBillingFlag: true
+        sshKeyName: NODE_SSH_KEYNAME
+        sshUserName: NODE_SSH_USERNAME
+        userDataSecret:
+          name: worker-user-data
+          namespace: ibmcloud-provider-system
+    versions:
+      kubelet: NODE_KUBELET_VERSION
