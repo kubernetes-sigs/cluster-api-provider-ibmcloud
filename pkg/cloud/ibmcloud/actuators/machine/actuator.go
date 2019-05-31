@@ -23,8 +23,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/softlayer/softlayer-go/datatypes"
 	"github.com/softlayer/softlayer-go/sl"
+	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	tokenapi "k8s.io/cluster-bootstrap/token/api"
 	tokenutil "k8s.io/cluster-bootstrap/token/util"
@@ -154,7 +156,6 @@ func (ic *IBMCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 	}
 	machine.Status.ProviderStatus = ext
 
-	klog.Info("----", machine.Status.ProviderStatus)
 	ic.updatePhase(ctx, machine, MachineRunning)
 	record.Eventf(machine, "CreatedInstance", "Created new instance id: %d", *guest.Id)
 
@@ -291,7 +292,34 @@ func (ic *IBMCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 		ic.updatePhase(ctx, machine, MachineRunning)
 	}
 
+	// Set the Machine NodeRef.
+	if guest != nil && machine != nil && machine.Status.NodeRef == nil {
+		nodeRef, err := ic.getNodeReference(machine.Name)
+		if err == nil {
+			machine.Status.NodeRef = nodeRef
+			klog.Info("Setting machine's nodeRef machine-name", machine.Name, machine.Namespace, nodeRef.Name)
+		} else {
+			klog.Info("Cannot set nodeRef", "error", err)
+		}
+	}
+
 	return guest != nil, nil
+}
+
+func (ic *IBMCloudClient) getNodeReference(name string) (*apicorev1.ObjectReference, error) {
+	getOpt := metav1.GetOptions{}
+	node, err := ic.params.KubeClient.CoreV1().Nodes().Get(name, getOpt)
+	if err != nil {
+		return nil, errors.Errorf("no node found for machine: %s", name)
+	}
+
+	klog.Info("setting machine node ref:", name)
+	return &apicorev1.ObjectReference{
+		Kind:       "Node",
+		APIVersion: apicorev1.SchemeGroupVersion.String(),
+		Name:       node.Name,
+		UID:        node.UID,
+	}, nil
 }
 
 func (ic *IBMCloudClient) getGuest(machine *clusterv1.Machine) (*datatypes.Virtual_Guest, error) {
