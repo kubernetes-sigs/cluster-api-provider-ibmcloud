@@ -108,3 +108,21 @@ func EncodeClusterStatus(status *IBMCloudClusterProviderStatus) (*runtime.RawExt
 		Raw: rawBytes,
 	}, nil
 }
+
+func EncodeMachineStatus(status *IBMCloudMachineProviderStatus) (*runtime.RawExtension, error) {
+	if status == nil {
+		return &runtime.RawExtension{}, nil
+	}
+
+	var rawBytes []byte
+	var err error
+
+	//  TODO: use apimachinery conversion https://godoc.org/k8s.io/apimachinery/pkg/runtime#Convert_runtime_Object_To_runtime_RawExtension
+	if rawBytes, err = json.Marshal(status); err != nil {
+		return nil, err
+	}
+
+	return &runtime.RawExtension{
+		Raw: rawBytes,
+	}, nil
+}
