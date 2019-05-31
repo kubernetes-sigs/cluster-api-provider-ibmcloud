@@ -23,10 +23,10 @@ COPY vendor/ vendor/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o clusterctl sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/clusterctl
 
 # Copy clusterctl into a thin image
-FROM debian:stretch-slim
-WORKDIR /root/
+FROM alpine:latest
+RUN apk update && apk add ca-certificates openssh-client && rm -rf /var/cache/apk/*
 
-RUN apt-get update && apt-get install -y ca-certificates openssh-client
+WORKDIR /root/
 
 COPY --from=builder /go/src/sigs.k8s.io/cluster-api-provider-ibmcloud/clusterctl .
 ENTRYPOINT ["./clusterctl"]
