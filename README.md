@@ -131,6 +131,9 @@ kube-system                kubernetes-dashboard-5f7b999d65-ntrxb         1/1    
 ```
 
 2. Create a cluster:
+
+You should review files `cluster.yaml` and `machines.yaml`, and ensure the `domain`, `dataCenter` and `osReferenceCode` are set. You can customize those values based on your requirement.
+
    - If you are using minikube:
 
    ```bash
