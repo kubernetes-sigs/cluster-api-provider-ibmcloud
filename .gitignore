@@ -15,7 +15,8 @@ cmd/clusterctl/examples/ibmcloud/clouds.yaml
 cmd/clusterctl/examples/ibmcloud/provider-component/clouds-secrets/configs
 cmd/clusterctl/examples/ibmcloud/provider-component/user-data/ubuntu/master-user-data.sh
 cmd/clusterctl/examples/ibmcloud/provider-component/user-data/ubuntu/worker-user-data.sh
-
+cmd/clusterctl/examples/ibmcloud/provider-component/user-data/centos/master-user-data.sh
+cmd/clusterctl/examples/ibmcloud/provider-component/user-data/centos/worker-user-data.sh
 # test coverage out
 cover.out
 

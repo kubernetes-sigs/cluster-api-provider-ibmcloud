@@ -7,7 +7,7 @@ print_help()
   echo "$SCRIPT - generates a provider-configs.yaml file"
   echo ""
   echo "Usage:"
-  echo "$SCRIPT [options] <path/to/clouds.yaml> <provider os: [ubuntu]> [output folder]"
+  echo "$SCRIPT [options] <path/to/clouds.yaml> <provider os: [ubuntu/centos]> [output folder]"
   echo "options:"
   echo "-h, --help                    show brief help"
   echo "-f, --force-overwrite         if file to be generated already exists, force script to overwrite it"
@@ -15,7 +15,7 @@ print_help()
 }
 
 # Supported Operating Systems
-declare -a arr=("ubuntu")
+declare -a arr=("ubuntu", "centos")
 SCRIPT=$(basename $0)
 while test $# -gt 0; do
         case "$1" in
@@ -49,7 +49,7 @@ if [[ -n "$2" ]] && [[ $2 != -* ]] && [[ $2 != --* ]]; then
   USER_OS=$(echo $2 | tr '[:upper:]' '[:lower:]')
 else
   echo "Error: No provider OS specified"
-  echo "You mush choose between the following operating systems: ubuntu"
+  echo "You mush choose between the following operating systems: ubuntu/centos"
   echo ""
   print_help
   exit 1
