@@ -48,7 +48,7 @@ func NewDeploymentClient() *DeploymentClient {
 func (d *DeploymentClient) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	if machine.ObjectMeta.Annotations != nil {
 		if ip, ok := machine.ObjectMeta.Annotations[IBMCloudIPAnnotationKey]; ok {
-			klog.Infof("Returning IP from machine annotation %s", ip)
+			klog.V(3).Infof("Returning IP from machine annotation %s", ip)
 			return ip, nil
 		}
 	}
