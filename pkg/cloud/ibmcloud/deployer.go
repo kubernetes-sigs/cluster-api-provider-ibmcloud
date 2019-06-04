@@ -78,8 +78,8 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 
 	result := strings.TrimSpace(util.ExecCommand(
 		"ssh", "-i", homeDir+"/.ssh/"+privateKey,
-		"-o", "StrictHostKeyChecking no",
-		"-o", "UserKnownHostsFile /dev/null",
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "BatchMode=yes",
 		fmt.Sprintf("%s@%s", sshUserName, ip),
 		"echo STARTFILE; sudo cat /etc/kubernetes/admin.conf"))
