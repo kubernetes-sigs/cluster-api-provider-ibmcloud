@@ -56,6 +56,8 @@ spec:
       containers:
       - name: ibmcloud-machine-controller
         image: quay.io/cluster-api-provider-ibmcloud/controller:latest
+        args:
+          - --wait_transactions_timeout=600s
         env:
           - name: POD_NAMESPACE
             valueFrom:

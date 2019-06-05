@@ -33,15 +33,14 @@ import (
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/options"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 )
 
 const (
 	CloudsYamlFile = "/etc/ibmcloud/clouds.yaml"
 
-	// TODO: make the timeout to be configurable
 	WaitReadyRetryInterval = 5 * time.Second
-	WaitReadyTimeout       = 600 * time.Second
 )
 
 type GuestService struct {
@@ -226,11 +225,13 @@ func waitTransactionDone(s *services.Virtual_Guest) error {
 		s.Session.Debug = true
 	}
 
+	klog.V(4).Infof("Waiting to get active transactions in %ds", options.WaitTransactionsTimeout/time.Second)
+
 	sum := WaitReadyRetryInterval
 	for transactions, _ := s.GetActiveTransactions(); len(transactions) > 0; {
 		time.Sleep(WaitReadyRetryInterval)
 		sum += WaitReadyRetryInterval
-		if sum > WaitReadyTimeout {
+		if sum > options.WaitTransactionsTimeout {
 			// Now the guest failed to reach timeout
 			return fmt.Errorf("Waiting for guest %d ready time out", *s.Options.Id)
 		}

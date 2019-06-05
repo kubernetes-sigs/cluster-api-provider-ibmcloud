@@ -22,9 +22,11 @@ import (
 )
 
 var (
-	TokenTTL time.Duration
+	TokenTTL                time.Duration
+	WaitTransactionsTimeout time.Duration
 )
 
 func init() {
 	flag.DurationVar(&TokenTTL, "token_ttl", 60*time.Minute, "TTL for kubeadm bootstrap token of the target Kubernetes cluster")
+	flag.DurationVar(&WaitTransactionsTimeout, "wait_transactions_timeout", 600*time.Second, "Timeout in seconds for waiting IBM Cloud transactions ready")
 }
