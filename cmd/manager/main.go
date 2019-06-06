@@ -28,6 +28,7 @@ import (
 	clusterapis "sigs.k8s.io/cluster-api/pkg/apis"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis"
+	_ "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/controller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )

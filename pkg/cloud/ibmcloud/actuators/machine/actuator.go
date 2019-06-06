@@ -38,14 +38,13 @@ import (
 	bootstrap "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/bootstrap"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
 	ibmcloudclients "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/clients"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 const (
 	ProviderName = "ibmcloud"
 	UserDataKey  = "userData"
-
-	TokenTTL = 60 * time.Minute
 
 	MachinePending  string = "Pending"
 	MachineCreating string = "Creating"
@@ -356,7 +355,7 @@ func (ic *IBMCloudClient) createBootstrapToken() (string, error) {
 		return "", err
 	}
 
-	expiration := time.Now().UTC().Add(TokenTTL)
+	expiration := time.Now().UTC().Add(options.TokenTTL)
 	tokenSecret, err := bootstrap.GenerateTokenSecret(token, expiration)
 	if err != nil {
 		klog.Fatalf("Unable to create token: %v", err)
