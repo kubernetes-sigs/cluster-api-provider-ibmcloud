@@ -35,14 +35,11 @@ type IBMCloudMachineProviderSpec struct {
 
 	Domain string `json:"domain,omitempty"`
 
-	MaxMemory int `json:"maxMemory,omitempty"`
-	StartCpus int `json:"startCpus,omitempty"`
+	Flavor string `json:"flavor,omitempty"`
 
 	Datacenter string `json:"dataCenter,omitempty"`
 
 	OSReferenceCode string `json:"osReferenceCode,omitempty"`
-
-	LocalDiskFlag bool `json:"localDiskFlag,omitempty"`
 
 	HourlyBillingFlag bool `json:"hourlyBillingFlag,omitempty"`
 

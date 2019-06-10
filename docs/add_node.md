@@ -36,11 +36,9 @@ spec:
       apiVersion: "ibmcloudproviderconfig/v1alpha1"
       kind: "IBMCloudMachineProviderSpec"
       domain: example.com
-      maxMemory: 4096
-      startCpus: 4
+      flavor: B1_2X4X25
       dataCenter: wdc01
       osReferenceCode: UBUNTU_LATEST
-      localDiskFlag: true
       hourlyBillingFlag: true
       userDataSecret:
         name: worker-user-data

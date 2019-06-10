@@ -115,21 +115,22 @@ func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *i
 		},
 	}
 
+	var options datatypes.Virtual_Guest_SupplementalCreateObjectOptions
+	options.FlavorKeyName = sl.String(machineSpec.Flavor)
+
 	// Create a Virtual_Guest instance from a template
 	// TODO: create instance from spcified subnetwork to avoid CIDR confliction with the pod CIDR and service CIDR
 	// of the provisioned cluster, see:https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/153
 	vGuestTemplate := datatypes.Virtual_Guest{
-		Hostname:                     sl.String(hostName),
-		Domain:                       sl.String(machineSpec.Domain),
-		MaxMemory:                    sl.Int(machineSpec.MaxMemory),
-		StartCpus:                    sl.Int(machineSpec.StartCpus),
-		Datacenter:                   &datatypes.Location{Name: sl.String(machineSpec.Datacenter)},
-		OperatingSystemReferenceCode: sl.String(machineSpec.OSReferenceCode),
-		LocalDiskFlag:                sl.Bool(machineSpec.LocalDiskFlag),
-		HourlyBillingFlag:            sl.Bool(machineSpec.HourlyBillingFlag),
-		SshKeyCount:                  sl.Uint(1),
-		SshKeys:                      sshKeys,
-		UserData:                     userData,
+		Hostname:                        sl.String(hostName),
+		Domain:                          sl.String(machineSpec.Domain),
+		SupplementalCreateObjectOptions: &options,
+		Datacenter:                      &datatypes.Location{Name: sl.String(machineSpec.Datacenter)},
+		OperatingSystemReferenceCode:    sl.String(machineSpec.OSReferenceCode),
+		HourlyBillingFlag:               sl.Bool(machineSpec.HourlyBillingFlag),
+		SshKeyCount:                     sl.Uint(1),
+		SshKeys:                         sshKeys,
+		UserData:                        userData,
 	}
 
 	vGuest, err := s.Mask("id;domain").CreateObject(&vGuestTemplate)

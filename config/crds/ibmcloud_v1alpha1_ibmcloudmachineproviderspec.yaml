@@ -23,6 +23,8 @@ spec:
           type: string
         domain:
           type: string
+        flavor:
+          type: string
         hostname:
           type: string
         hourlyBillingFlag:
@@ -32,11 +34,6 @@ spec:
             object represents. Servers may infer this from the endpoint the client
             submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
           type: string
-        localDiskFlag:
-          type: boolean
-        maxMemory:
-          format: int64
-          type: integer
         metadata:
           type: object
         osReferenceCode:
@@ -45,9 +42,6 @@ spec:
           type: string
         sshUserName:
           type: string
-        startCpus:
-          format: int64
-          type: integer
         userDataSecret:
           type: object
   version: v1alpha1
