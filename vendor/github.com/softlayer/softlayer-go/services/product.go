@@ -1128,7 +1128,7 @@ func (r Product_Order) PlaceOrder(orderData interface{}, saveAsQuote *bool) (res
 }
 
 // Use this method for placing server quotes and additional services quotes. The same applies for this as with verifyOrder. Send in the SoftLayer_Container_Product_Order_Hardware_Server for server quotes. After placing the quote, you must go to this URL to finish the order process. After going to this URL, it will direct you back to a SoftLayer webpage that tells us you have finished the process. After this, it will go to sales for final approval.
-func (r Product_Order) PlaceQuote(orderData *datatypes.Container_Product_Order) (resp datatypes.Container_Product_Order_Receipt, err error) {
+func (r Product_Order) PlaceQuote(orderData interface{}) (resp datatypes.Container_Product_Order_Receipt, err error) {
 	params := []interface{}{
 		orderData,
 	}
