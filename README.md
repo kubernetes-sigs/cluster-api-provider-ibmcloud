@@ -223,6 +223,10 @@ your IBM Cloud Cluster API Kubernetes cluster.
 
 Please refer to [Create a new woker node](docs/add_node.md) for further info.
 
+### How to use clusterctl image
+
+Please refer to [How to use clusterctl image](docs/how_to_use_clusterctl.md) for further info.
+
 ### Trouble shooting
 
 Please refer to [Trouble shooting documentation](docs/trouble_shooting.md) for further info.
