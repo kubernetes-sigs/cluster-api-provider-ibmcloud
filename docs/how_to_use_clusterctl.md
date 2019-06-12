@@ -19,7 +19,7 @@ The `clusterctl` image is designed to run independently to provision ibmcloud cl
     ```
 3. Create `configmap` with `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml`.
     ```
-    kubectl create configmap ibmcloud-config --from-file=./clouds.yaml --from-file=./cluster.yaml --from-file=./machines.yaml --from-file=./provider-components.yaml
+    kubectl create configmap ibmcloud-config --from-file=./cluster.yaml --from-file=./machines.yaml --from-file=./provider-components.yaml --from-file=./addons.yaml
     ```
 4. Create `secret` to store the ssh private key
     ```

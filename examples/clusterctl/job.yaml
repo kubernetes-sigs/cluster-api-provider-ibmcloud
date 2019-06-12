@@ -7,7 +7,7 @@ spec:
     spec:
       hostNetwork: true
       containers:
-      - command: ['sh', '-c', 'clusterctl create cluster --bootstrap-type  kind --provider ibmcloud -c /examples/cluster.yaml -m /examples/machines.yaml -p /examples/provider-components.yaml && kubectl create secret generic kubeconfig --from-file kubeconfig']
+      - command: ['sh', '-c', 'clusterctl create cluster --bootstrap-type kind --provider ibmcloud -c /examples/cluster.yaml -m /examples/machines.yaml -p /examples/provider-components.yaml -a /examples/addons.yaml && kubectl create secret generic kubeconfig --from-file kubeconfig']
         image: quay.io/cluster-api-provider-ibmcloud/clusterctl:latest
         imagePullPolicy: IfNotPresent
         name: clusterctl
