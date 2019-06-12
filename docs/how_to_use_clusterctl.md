@@ -9,7 +9,7 @@
 
 # IBM Cloud
 ## How to use clusterctl image in existing kubernetes cluster?
-The `clusterctl` image is designed to run independently to provision ibmcloud cluster. we have embedded the `kind` and `kubectl` into `clusterctl` image.
+The `clusterctl` image is designed to run independently to provision ibmcloud cluster. We have embedded the `kind` and `kubectl` into `clusterctl` image.
 
 1. Follow [this readme](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/#cluster-creation) to generate `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml`
 
@@ -19,11 +19,14 @@ The `clusterctl` image is designed to run independently to provision ibmcloud cl
     ```
 3. Create `configmap` with `cluster.yaml`, `machines.yaml`, `provider-components.yaml`, and `addons.yaml`.
     ```
-    kubectl create configmap ibmcloud-config --from-file=./cluster.yaml --from-file=./machines.yaml --from-file=./provider-components.yaml --from-file=./addons.yaml
+    kubectl create configmap ibmcloud-config --from-file=./cluster.yaml \
+        --from-file=./machines.yaml --from-file=./provider-components.yaml \
+        --from-file=./addons.yaml
     ```
 4. Create `secret` to store the ssh private key
     ```
-    kubectl create secret generic ibmcloud-ssh-key-secret --from-file=id_ibmcloud=/root/.ssh/id_ibmcloud
+    kubectl create secret generic ibmcloud-ssh-key-secret \ 
+        --from-file=id_ibmcloud=/root/.ssh/id_ibmcloud
     ```
 5. Create clusterrole and clusterrolebinding by apply the examples/clusterrole.yaml and examples/clusterrolebinding.yaml
     ```
@@ -37,7 +40,8 @@ The `clusterctl` image is designed to run independently to provision ibmcloud cl
 
 7. After the job completes successfully, it creates a secret to store the `kubeconfig`. You can save it to access the remote cluster. for example:
     ```
-    kubectl get secret kubeconfig -ojsonpath={.data.kubeconfig} | base64 -d > /tmp/kubeconfig
+    kubectl get secret kubeconfig -ojsonpath={.data.kubeconfig} \
+        | base64 -d > /tmp/kubeconfig
     ```
 8. Now it is ready to access the remote cluster
     ```
