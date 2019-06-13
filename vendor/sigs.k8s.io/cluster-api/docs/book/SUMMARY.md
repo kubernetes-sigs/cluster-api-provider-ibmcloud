@@ -4,6 +4,7 @@
 
 ## Getting Started
 
+* [Glossary](../glossary.md)
 * [Existing Providers](getting_started/existing_providers.md)
 
 ## Common Code
@@ -25,8 +26,4 @@
 * [Create Actuators](provider_implementations/create_actuators.md)
 * [Register Controllers](provider_implementations/register_controllers.md)
 * [Building, Running, and Testing](provider_implementations/building_running_and_testing.md)
-
-## Appendices
-
-* [Cluster API KEP](appendices/keps/0003-cluster-api.md)
 
