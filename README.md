@@ -136,6 +136,11 @@ kube-system                kubernetes-dashboard-5f7b999d65-ntrxb         1/1    
 
 You should review files `cluster.yaml` and `machines.yaml`, and ensure the `domain`, `dataCenter` and `osReferenceCode` are set. You can customize those values based on your requirement.
 
+For `machines.yaml`, you can follow the [sample file](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/master/examples/ubuntu/machines.yaml), and make sure `sshKeyName` and the `Label` value in SSH Keys are identical, shown as below:
+![ibmcloud machines sshkeyname](docs/images/ibmcloud-machines_yaml_sshKeyname.png)
+![ibmcloud softlayer sshkeys](docs/images/ibmcloud-softlayersshkeys.png)
+
+
    - If you are using minikube:
 
    ```bash
