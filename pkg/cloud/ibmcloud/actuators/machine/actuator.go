@@ -151,7 +151,7 @@ func (ic *IBMCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 	ext, err := ibmcloudv1.EncodeMachineStatus(&ibmcloudv1.IBMCloudMachineProviderStatus{})
 	if err != nil {
 		ic.updatePhase(ctx, machine, MachineFailed)
-		return fmt.Errorf("Guest %s encode status faield in cluster %s", machine.Name, cluster.Name)
+		return fmt.Errorf("Guest %s encode status failed in cluster %s", machine.Name, cluster.Name)
 	}
 	machine.Status.ProviderStatus = ext
 
@@ -210,7 +210,7 @@ func (ic *IBMCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 	ext, err := ibmcloudv1.EncodeMachineStatus(&ibmcloudv1.IBMCloudMachineProviderStatus{})
 	if err != nil {
 		ic.updatePhase(ctx, machine, MachineFailed)
-		return fmt.Errorf("Guest %s encode status faield in cluster %s", machine.Name, cluster.Name)
+		return fmt.Errorf("Guest %s encode status failed in cluster %s", machine.Name, cluster.Name)
 	}
 	machine.Status.ProviderStatus = ext
 
