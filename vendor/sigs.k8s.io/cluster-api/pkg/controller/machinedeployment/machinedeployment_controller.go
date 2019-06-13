@@ -210,6 +210,10 @@ func (r *ReconcileMachineDeployment) reconcile(ctx context.Context, d *v1alpha1.
 		return reconcile.Result{}, err
 	}
 
+	if d.DeletionTimestamp != nil {
+		return reconcile.Result{}, r.sync(d, msList, machineMap)
+	}
+
 	if d.Spec.Paused {
 		return reconcile.Result{}, r.sync(d, msList, machineMap)
 	}

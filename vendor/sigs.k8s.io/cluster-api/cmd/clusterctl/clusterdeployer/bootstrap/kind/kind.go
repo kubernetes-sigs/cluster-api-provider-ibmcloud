@@ -24,11 +24,10 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/klog"
-	"sigs.k8s.io/cluster-api/pkg/util"
 )
 
 const (
-	kindClusterNamePrefix = "clusterapi-"
+	kindClusterName = "clusterapi"
 )
 
 var (
@@ -56,7 +55,7 @@ func WithOptions(options []string) *Kind {
 		}
 		return true
 	}() {
-		options = append(options, fmt.Sprintf("name=%s", kindClusterNamePrefix+util.RandomString(5)))
+		options = append(options, fmt.Sprintf("name=%s", kindClusterName))
 	}
 
 	return &Kind{
