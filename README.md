@@ -17,6 +17,7 @@
     - [Interacting with your cluster](#interacting-with-your-cluster)
     - [Cluster Deletion](#cluster-deletion)
     - [Create additional worker nodes](#create-additional-worker-nodes)
+    - [How to use clusterctl image](#how-to-use-clusterctl-image)
     - [Trouble shooting](#trouble-shooting)
   - [IBM Cloud References](#ibm-cloud-references)
 
@@ -222,6 +223,10 @@ your IBM Cloud Cluster API Kubernetes cluster.
 ### Create additional worker nodes
 
 Please refer to [Create a new woker node](docs/add_node.md) for further info.
+
+### How to use clusterctl image
+
+The `quay.io/cluster-api-provider-ibmcloud/clusterctl` image is designed to run independently to provision ibmcloud cluster. We have embedded the `kind` and `kubectl` into `clusterctl` image. Please refer to [How to use clusterctl image](docs/how_to_use_clusterctl.md) for further info.
 
 ### Trouble shooting
 
