@@ -75,6 +75,11 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 	sshUserName := providerSpec.SshUserName
 
 	privateKey := "id_ibmcloud"
+	envPrivateKey, ok := os.LookupEnv("IBMCLOUD_HOST_SSH_PRIVATE_FILE")
+	if ok && (0 != strings.Compare(envPrivateKey, "")) {
+		klog.V(3).Infof("Found environment variable to SSH private file %s", envPrivateKey)
+		privateKey := envPrivateKey
+	}
 
 	result := strings.TrimSpace(util.ExecCommand(
 		"ssh", "-i", homeDir+"/.ssh/"+privateKey,
