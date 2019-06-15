@@ -469,8 +469,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:7e9036631713cc672253c72cdc64a8734d883232fc277a4e9257b80acbf0ecfe"
+  digest = "1:80d06a83fb701d7da5e0798e6e7b28777402968f0bb8120e6bfcd3abd3fce0b6"
   name = "github.com/softlayer/softlayer-go"
   packages = [
     "config",
@@ -481,7 +480,7 @@
     "sl",
   ]
   pruneopts = "NUT"
-  revision = "205c6f3fd34edf41f9c66b04702815a0f2f2ba48"
+  revision = "7c592eb"
 
 [[projects]]
   digest = "1:6792bb72ea0e7112157d02e4e175cd421b43d004a853f56316a19beca6e0c074"
@@ -996,7 +995,7 @@
   version = "kubernetes-1.13.1"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.15"
   digest = "1:28fd6a61b5220aab30c6f7344676ff5aaea4a5f14407d95f33e238b13da2d2ef"
   name = "k8s.io/cluster-bootstrap"
   packages = [
@@ -1004,7 +1003,7 @@
     "token/util",
   ]
   pruneopts = "NUT"
-  revision = "9f4676fa25619bddda9a767ee734a3478ecf34c3"
+  revision = "2678701f500208526aa081769a976ddba7d3a73b"
 
 [[projects]]
   branch = "master"
@@ -1029,6 +1028,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:dc54d24e166e75a89145883b6080306f5684db2e8ab7a068625f010dee604c6e"
+  name = "k8s.io/component-base"
+  packages = ["cli/flag"]
+  pruneopts = "NUT"
+  revision = "4ec51977545472652ffe99d8f6ca92c55f018f31"
+
+[[projects]]
+  branch = "master"
   digest = "1:6dc0e912aaeea5f98199e018d3601b4c98b7549afd0cd5ef4ca025911e0a90b2"
   name = "k8s.io/gengo"
   packages = [
@@ -1044,12 +1051,12 @@
   revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
-  digest = "1:2c16dda1c44c2564a7818fbacb701323c16d77c21b969987c1bec08d3ee0b050"
+  digest = "1:0c3d89917517870412417ab480735ff8023ae85583a99098682eec54501213df"
   name = "k8s.io/klog"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "e531227889390a39d9533dde61f590fe9f4b0035"
-  version = "v0.3.0"
+  revision = "78315d914a8af2453db4864e69230b647b1ff711"
+  version = "v0.3.2"
 
 [[projects]]
   branch = "master"
@@ -1061,7 +1068,7 @@
 
 [[projects]]
   branch = "release-0.1"
-  digest = "1:d92175fcffa434a7440cee734b886f32f586dfb6413702b08b25f701662b2bbb"
+  digest = "1:d885a5905c58b580aa8a7f58f7d0480e13e12c8abc2ff9ec87c8627253a6bf3f"
   name = "sigs.k8s.io/cluster-api"
   packages = [
     "cmd/clusterctl/clientcmd",
@@ -1089,10 +1096,10 @@
     "pkg/util",
   ]
   pruneopts = "T"
-  revision = "560b000be51c1dc371c901ab84af8070bc29e8dc"
+  revision = "5ed76e24e0319770757c25fdb07669d89b778fd8"
 
 [[projects]]
-  digest = "1:36a0acd06086e19807e226393aa7ecd76a5587ca6601ec05119205f29b6ef083"
+  digest = "1:b82bd586b2fce3e796794a3b23010072540295719b072338527ac4d418e886d9"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
     "pkg/cache",
@@ -1107,6 +1114,7 @@
     "pkg/handler",
     "pkg/internal/controller",
     "pkg/internal/controller/metrics",
+    "pkg/internal/objectutil",
     "pkg/internal/recorder",
     "pkg/leaderelection",
     "pkg/manager",
@@ -1132,8 +1140,8 @@
     "pkg/webhook/types",
   ]
   pruneopts = "NUT"
-  revision = "12d98582e72927b6cd0123e2b4e819f9341ce62c"
-  version = "v0.1.10"
+  revision = "477bf4f046c31c351b46fa00262bc814ac0bbca1"
+  version = "v0.1.11"
 
 [[projects]]
   digest = "1:992675a6714d511089a0b7ffb7063d36e5423089cda610642de7a0cfbbf673ab"
