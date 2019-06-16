@@ -55,7 +55,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 ### Prerequisites
 
 1. Install `kubectl` (see [here](http://kubernetes.io/docs/user-guide/prereqs/)). Because `kustomize` was included into `kubectl` and it's used by `cluster-api-provider-ibmcloud` in generating yaml files, so version `1.14.0+` of `kubectl` is required, see [integrate kustomize into kubectl](https://github.com/kubernetes/enhancements/issues/633) for more info.
-2. You can use either VM, container or existing Kubernetes cluster act as bootstrap cluster.
+2. You can use either VM, container or existing Kubernetes cluster act as the bootstrap cluster.
    - If you want to use container, install [kind](https://github.com/kubernetes-sigs/kind#installation-and-usage). This is preferred.
    - If you want to use VM, install [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/), version 0.30.0 or greater.
    - If you want to use existing Kubernetes cluster, prepare your kubeconfig.
@@ -88,6 +88,12 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    - `centos` (Not Implemented)
    - `coreos` (Not Implemented)
 
+   Example command:
+
+   ```bash
+   ./generate-yaml.sh ./clouds.yaml ubuntu
+   ```
+   
    #### Quick notes on clouds.yaml
    ```shell
    $ cat clouds.yaml
@@ -120,23 +126,27 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
    For the `sshUserName`, you can use `root` or `ubuntu` user for the `Ubuntu` cloud image, while you can only use `root` user for other Linux cloud images. By default the generated `machine.yaml` uses `root` to be the `sshUserName`. 
 
-   Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) and put into `examples/ibmcloud/out/addons.yaml` then add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created:
+   Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) to `examples/ibmcloud/out/` directory:
 
-   The dashboard pod will be created and user is able to logon through k8s dashboard:
+   ```bash
+   wget -O  addons.yaml  https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+   ```
 
-```
-# kubectl --kubeconfig=kubeconfig get pods --all-namespaces
-NAMESPACE                  NAME                                          READY   STATUS             RESTARTS   AGE
-...
-kube-system                kubernetes-dashboard-5f7b999d65-ntrxb         1/1     Running            0          12m
-...
-```
+   Add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created. The dashboard pod will be created and user is able to logon through k8s dashboard:
+
+   ```
+   # kubectl --kubeconfig=kubeconfig get pods --all-namespaces
+   NAMESPACE                  NAME                                          READY   STATUS             RESTARTS   AGE
+   ...
+   kube-system                kubernetes-dashboard-5f7b999d65-ntrxb         1/1     Running            0          12m
+   ...
+   ```
 
 2. Create a cluster:
 
 You should review files `cluster.yaml` and `machines.yaml`, and ensure the `domain`, `dataCenter` and `osReferenceCode` are set. You can customize those values based on your requirement.
 
-For `machines.yaml`, you can follow the [sample file](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/master/examples/ubuntu/machines.yaml), and make sure `sshKeyName` and the `Label` value in SSH Keys are identical, shown as below:
+For `machines.yaml`, you can follow the [sample file](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/master/examples/ubuntu/machines.yaml), and make sure `sshKeyName` and the `Label` value in `SSH Keys` are identical, shown as below:
 ![ibmcloud machines sshkeyname](docs/images/ibmcloud-machines_yaml_sshKeyname.png)
 ![ibmcloud softlayer sshkeys](docs/images/ibmcloud-softlayersshkeys.png)
 
@@ -188,10 +198,31 @@ export KUBECONFIG="$(kind get kubeconfig-path --name="clusterapi")"
 Once you have created a cluster, you can interact with the cluster and machine
 resources using kubectl:
 
-```bash
-kubectl --kubeconfig=kubeconfig get clusters
-kubectl --kubeconfig=kubeconfig get machines
-kubectl --kubeconfig=kubeconfig get machines -o yaml
+```
+# kubectl --kubeconfig=kubeconfig get clusters
+NAME    AGE
+test1   28m
+# kubectl --kubeconfig=kubeconfig get machines
+NAME                    PROVIDERID              PHASE
+ibmcloud-master-464lh   ibmcloud:////82692207   Running
+ibmcloud-node-rjtnv     ibmcloud:////82692501   Running
+# kubectl --kubeconfig=kubeconfig get machines -o yaml
+apiVersion: v1
+items:
+- apiVersion: cluster.k8s.io/v1alpha1
+  kind: Machine
+  metadata:
+    annotations:
+      ibmcloud-ip-address: 158.85.27.183
+    creationTimestamp: "2019-06-15T15:56:16Z"
+    finalizers:
+    - foregroundDeletion
+    - machine.cluster.k8s.io
+    generateName: ibmcloud-master-
+    generation: 1
+    labels:
+      cluster.k8s.io/cluster-name: test1
+...
 ```
 
 ### Cluster Deletion
@@ -227,7 +258,7 @@ your IBM Cloud Cluster API Kubernetes cluster.
 
 ### Create additional worker nodes
 
-Please refer to [Create a new woker node](docs/add_node.md) for further info.
+Please refer to [Create a new worker node](docs/add_node.md) for further info.
 
 ### How to use clusterctl image
 
@@ -240,4 +271,4 @@ Please refer to [Trouble shooting documentation](docs/trouble_shooting.md) for f
 ## IBM Cloud References
 
 If you have any further question about IBM Cloud settings in provider, please refer to
-[IBM Cloud help documentation](docs/ibmcloud_help.md) for further infomation.
+[IBM Cloud help documentation](docs/ibmcloud_help.md) for further information.
