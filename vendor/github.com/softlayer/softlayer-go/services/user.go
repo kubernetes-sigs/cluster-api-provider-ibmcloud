@@ -141,6 +141,8 @@ func (r User_Customer) AddBulkVirtualGuestAccess(virtualGuestIds []int) (resp bo
 // Grants the user access to a single dedicated host device.  The user will only be allowed to see and access devices in both the portal and the API to which they have been granted access.  If the user's account has devices to which the user has not been granted access, then "not found" exceptions are thrown if the user attempts to access any of these devices.
 //
 // Users can assign device access to their child users, but not to themselves. An account's master has access to all devices on their customer account and can set dedicated host access for any of the other users on their account.
+//
+// Only the USER_MANAGE permission is required to execute this.
 func (r User_Customer) AddDedicatedHostAccess(dedicatedHostId *int) (resp bool, err error) {
 	params := []interface{}{
 		dedicatedHostId,
@@ -161,6 +163,8 @@ func (r User_Customer) AddExternalBinding(externalBinding *datatypes.User_Extern
 // Add hardware to a portal user's hardware access list. A user's hardware access list controls which of an account's hardware objects a user has access to in the SoftLayer customer portal and API. Hardware does not exist in the SoftLayer portal and returns "not found" exceptions in the API if the user doesn't have access to it. If a user already has access to the hardware you're attempting to add then addHardwareAccess() returns true.
 //
 // Users can assign hardware access to their child users, but not to themselves. An account's master has access to all hardware on their customer account and can set hardware access for any of the other users on their account.
+//
+// Only the USER_MANAGE permission is required to execute this.
 func (r User_Customer) AddHardwareAccess(hardwareId *int) (resp bool, err error) {
 	params := []interface{}{
 		hardwareId,
@@ -204,6 +208,8 @@ func (r User_Customer) AddRole(role *datatypes.User_Permission_Role) (err error)
 // Add a CloudLayer Computing Instance to a portal user's access list. A user's CloudLayer Computing Instance access list controls which of an account's CloudLayer Computing Instance objects a user has access to in the SoftLayer customer portal and API. CloudLayer Computing Instances do not exist in the SoftLayer portal and returns "not found" exceptions in the API if the user doesn't have access to it. If a user already has access to the CloudLayer Computing Instance you're attempting to add then addVirtualGuestAccess() returns true.
 //
 // Users can assign CloudLayer Computing Instance access to their child users, but not to themselves. An account's master has access to all CloudLayer Computing Instances on their customer account and can set CloudLayer Computing Instance access for any of the other users on their account.
+//
+// Only the USER_MANAGE permission is required to execute this.
 func (r User_Customer) AddVirtualGuestAccess(virtualGuestId *int) (resp bool, err error) {
 	params := []interface{}{
 		virtualGuestId,
@@ -383,7 +389,7 @@ func (r User_Customer) GetAllowedVirtualGuestIds() (resp []int, err error) {
 	return
 }
 
-// Retrieve A portal user's API Authentication keys. There is a max limit of two API keys per user.
+// Retrieve A portal user's API Authentication keys. There is a max limit of one API key per user.
 func (r User_Customer) GetApiAuthenticationKeys() (resp []datatypes.User_Customer_ApiAuthentication, err error) {
 	err = r.Session.DoRequest("SoftLayer_User_Customer", "getApiAuthenticationKeys", nil, &r.Options, &resp)
 	return
@@ -395,12 +401,6 @@ func (r User_Customer) GetAuthenticationToken(token *datatypes.Container_User_Au
 		token,
 	}
 	err = r.Session.DoRequest("SoftLayer_User_Customer", "getAuthenticationToken", params, &r.Options, &resp)
-	return
-}
-
-// Retrieve The CDN accounts associated with a portal user.
-func (r User_Customer) GetCdnAccounts() (resp []datatypes.Network_ContentDelivery_Account, err error) {
-	err = r.Session.DoRequest("SoftLayer_User_Customer", "getCdnAccounts", nil, &r.Options, &resp)
 	return
 }
 
@@ -2563,6 +2563,8 @@ func (r User_Customer_OpenIdConnect) AddBulkVirtualGuestAccess(virtualGuestIds [
 // Grants the user access to a single dedicated host device.  The user will only be allowed to see and access devices in both the portal and the API to which they have been granted access.  If the user's account has devices to which the user has not been granted access, then "not found" exceptions are thrown if the user attempts to access any of these devices.
 //
 // Users can assign device access to their child users, but not to themselves. An account's master has access to all devices on their customer account and can set dedicated host access for any of the other users on their account.
+//
+// Only the USER_MANAGE permission is required to execute this.
 func (r User_Customer_OpenIdConnect) AddDedicatedHostAccess(dedicatedHostId *int) (resp bool, err error) {
 	params := []interface{}{
 		dedicatedHostId,
@@ -2583,6 +2585,8 @@ func (r User_Customer_OpenIdConnect) AddExternalBinding(externalBinding *datatyp
 // Add hardware to a portal user's hardware access list. A user's hardware access list controls which of an account's hardware objects a user has access to in the SoftLayer customer portal and API. Hardware does not exist in the SoftLayer portal and returns "not found" exceptions in the API if the user doesn't have access to it. If a user already has access to the hardware you're attempting to add then addHardwareAccess() returns true.
 //
 // Users can assign hardware access to their child users, but not to themselves. An account's master has access to all hardware on their customer account and can set hardware access for any of the other users on their account.
+//
+// Only the USER_MANAGE permission is required to execute this.
 func (r User_Customer_OpenIdConnect) AddHardwareAccess(hardwareId *int) (resp bool, err error) {
 	params := []interface{}{
 		hardwareId,
@@ -2626,6 +2630,8 @@ func (r User_Customer_OpenIdConnect) AddRole(role *datatypes.User_Permission_Rol
 // Add a CloudLayer Computing Instance to a portal user's access list. A user's CloudLayer Computing Instance access list controls which of an account's CloudLayer Computing Instance objects a user has access to in the SoftLayer customer portal and API. CloudLayer Computing Instances do not exist in the SoftLayer portal and returns "not found" exceptions in the API if the user doesn't have access to it. If a user already has access to the CloudLayer Computing Instance you're attempting to add then addVirtualGuestAccess() returns true.
 //
 // Users can assign CloudLayer Computing Instance access to their child users, but not to themselves. An account's master has access to all CloudLayer Computing Instances on their customer account and can set CloudLayer Computing Instance access for any of the other users on their account.
+//
+// Only the USER_MANAGE permission is required to execute this.
 func (r User_Customer_OpenIdConnect) AddVirtualGuestAccess(virtualGuestId *int) (resp bool, err error) {
 	params := []interface{}{
 		virtualGuestId,
@@ -2840,7 +2846,7 @@ func (r User_Customer_OpenIdConnect) GetAllowedVirtualGuestIds() (resp []int, er
 	return
 }
 
-// Retrieve A portal user's API Authentication keys. There is a max limit of two API keys per user.
+// Retrieve A portal user's API Authentication keys. There is a max limit of one API key per user.
 func (r User_Customer_OpenIdConnect) GetApiAuthenticationKeys() (resp []datatypes.User_Customer_ApiAuthentication, err error) {
 	err = r.Session.DoRequest("SoftLayer_User_Customer_OpenIdConnect", "getApiAuthenticationKeys", nil, &r.Options, &resp)
 	return
@@ -2852,12 +2858,6 @@ func (r User_Customer_OpenIdConnect) GetAuthenticationToken(token *datatypes.Con
 		token,
 	}
 	err = r.Session.DoRequest("SoftLayer_User_Customer_OpenIdConnect", "getAuthenticationToken", params, &r.Options, &resp)
-	return
-}
-
-// Retrieve The CDN accounts associated with a portal user.
-func (r User_Customer_OpenIdConnect) GetCdnAccounts() (resp []datatypes.Network_ContentDelivery_Account, err error) {
-	err = r.Session.DoRequest("SoftLayer_User_Customer_OpenIdConnect", "getCdnAccounts", nil, &r.Options, &resp)
 	return
 }
 

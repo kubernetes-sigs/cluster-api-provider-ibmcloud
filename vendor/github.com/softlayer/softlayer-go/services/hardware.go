@@ -937,6 +937,12 @@ func (r Hardware) GetMetricTrackingObject() (resp datatypes.Metric_Tracking_Obje
 	return
 }
 
+// Retrieve
+func (r Hardware) GetModules() (resp []datatypes.Hardware_Component, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware", "getModules", nil, &r.Options, &resp)
+	return
+}
+
 // Returns open monitoring alarms for a given time period
 func (r Hardware) GetMonitoringActiveAlarms(startDate *datatypes.Time, endDate *datatypes.Time) (resp []datatypes.Container_Monitoring_Alarm_History, err error) {
 	params := []interface{}{
@@ -1080,6 +1086,18 @@ func (r Hardware) GetNextBillingCycleBandwidthAllocation() (resp datatypes.Float
 // Retrieve
 func (r Hardware) GetNotesHistory() (resp []datatypes.Hardware_Note, err error) {
 	err = r.Session.DoRequest("SoftLayer_Hardware", "getNotesHistory", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve The amount of non-volatile memory a piece of hardware has, measured in gigabytes.
+func (r Hardware) GetNvRamCapacity() (resp uint, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware", "getNvRamCapacity", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve
+func (r Hardware) GetNvRamComponentModels() (resp []datatypes.Hardware_Component_Model, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware", "getNvRamComponentModels", nil, &r.Options, &resp)
 	return
 }
 
@@ -1686,6 +1704,70 @@ func (r Hardware_Blade) GetHardwareParent() (resp datatypes.Hardware, err error)
 // no documentation yet
 func (r Hardware_Blade) GetObject() (resp datatypes.Hardware_Blade, err error) {
 	err = r.Session.DoRequest("SoftLayer_Hardware_Blade", "getObject", nil, &r.Options, &resp)
+	return
+}
+
+// no documentation yet
+type Hardware_Component_Locator struct {
+	Session *session.Session
+	Options sl.Options
+}
+
+// GetHardwareComponentLocatorService returns an instance of the Hardware_Component_Locator SoftLayer service
+func GetHardwareComponentLocatorService(sess *session.Session) Hardware_Component_Locator {
+	return Hardware_Component_Locator{Session: sess}
+}
+
+func (r Hardware_Component_Locator) Id(id int) Hardware_Component_Locator {
+	r.Options.Id = &id
+	return r
+}
+
+func (r Hardware_Component_Locator) Mask(mask string) Hardware_Component_Locator {
+	if !strings.HasPrefix(mask, "mask[") && (strings.Contains(mask, "[") || strings.Contains(mask, ",")) {
+		mask = fmt.Sprintf("mask[%s]", mask)
+	}
+
+	r.Options.Mask = mask
+	return r
+}
+
+func (r Hardware_Component_Locator) Filter(filter string) Hardware_Component_Locator {
+	r.Options.Filter = filter
+	return r
+}
+
+func (r Hardware_Component_Locator) Limit(limit int) Hardware_Component_Locator {
+	r.Options.Limit = &limit
+	return r
+}
+
+func (r Hardware_Component_Locator) Offset(offset int) Hardware_Component_Locator {
+	r.Options.Offset = &offset
+	return r
+}
+
+// no documentation yet
+func (r Hardware_Component_Locator) GetGenericComponentModelAvailability(genericComponentModelIds []int) (resp []datatypes.Hardware_Component_Locator_Result, err error) {
+	params := []interface{}{
+		genericComponentModelIds,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_Component_Locator", "getGenericComponentModelAvailability", params, &r.Options, &resp)
+	return
+}
+
+// no documentation yet
+func (r Hardware_Component_Locator) GetPackageItemsAvailability(packageId *int) (resp []datatypes.Hardware_Component_Locator_Result, err error) {
+	params := []interface{}{
+		packageId,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_Component_Locator", "getPackageItemsAvailability", params, &r.Options, &resp)
+	return
+}
+
+// no documentation yet
+func (r Hardware_Component_Locator) GetServerPackageAvailability() (resp []datatypes.Hardware_Component_Locator_Result, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Component_Locator", "getServerPackageAvailability", nil, &r.Options, &resp)
 	return
 }
 
@@ -2888,6 +2970,12 @@ func (r Hardware_Router) GetMetricTrackingObject() (resp datatypes.Metric_Tracki
 	return
 }
 
+// Retrieve
+func (r Hardware_Router) GetModules() (resp []datatypes.Hardware_Component, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Router", "getModules", nil, &r.Options, &resp)
+	return
+}
+
 // Returns open monitoring alarms for a given time period
 func (r Hardware_Router) GetMonitoringActiveAlarms(startDate *datatypes.Time, endDate *datatypes.Time) (resp []datatypes.Container_Monitoring_Alarm_History, err error) {
 	params := []interface{}{
@@ -3031,6 +3119,18 @@ func (r Hardware_Router) GetNextBillingCycleBandwidthAllocation() (resp datatype
 // Retrieve
 func (r Hardware_Router) GetNotesHistory() (resp []datatypes.Hardware_Note, err error) {
 	err = r.Session.DoRequest("SoftLayer_Hardware_Router", "getNotesHistory", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve The amount of non-volatile memory a piece of hardware has, measured in gigabytes.
+func (r Hardware_Router) GetNvRamCapacity() (resp uint, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Router", "getNvRamCapacity", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve
+func (r Hardware_Router) GetNvRamComponentModels() (resp []datatypes.Hardware_Component_Model, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Router", "getNvRamComponentModels", nil, &r.Options, &resp)
 	return
 }
 
@@ -3653,6 +3753,17 @@ func (r Hardware_SecurityModule) CreateFirmwareUpdateTransaction(ipmi *int, raid
 		harddrive,
 	}
 	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "createFirmwareUpdateTransaction", params, &r.Options, &resp)
+	return
+}
+
+// You can launch hyper-threading update by selecting from your server list. It will bring your server offline for approximately 60 minutes while the update is in progress.
+//
+// In the event of a hardware failure during this our datacenter engineers will be notified of the problem automatically. They will then replace any failed components to bring your server back online, and will be contacting you to ensure that impact on your server is minimal.
+func (r Hardware_SecurityModule) CreateHyperThreadingUpdateTransaction(disableHyperthreading *int) (resp bool, err error) {
+	params := []interface{}{
+		disableHyperthreading,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "createHyperThreadingUpdateTransaction", params, &r.Options, &resp)
 	return
 }
 
@@ -4771,6 +4882,12 @@ func (r Hardware_SecurityModule) GetMetricTrackingObjectId() (resp int, err erro
 	return
 }
 
+// Retrieve
+func (r Hardware_SecurityModule) GetModules() (resp []datatypes.Hardware_Component, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "getModules", nil, &r.Options, &resp)
+	return
+}
+
 // Returns open monitoring alarms for a given time period
 func (r Hardware_SecurityModule) GetMonitoringActiveAlarms(startDate *datatypes.Time, endDate *datatypes.Time) (resp []datatypes.Container_Monitoring_Alarm_History, err error) {
 	params := []interface{}{
@@ -4926,6 +5043,18 @@ func (r Hardware_SecurityModule) GetNextBillingCycleBandwidthAllocation() (resp 
 // Retrieve
 func (r Hardware_SecurityModule) GetNotesHistory() (resp []datatypes.Hardware_Note, err error) {
 	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "getNotesHistory", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve The amount of non-volatile memory a piece of hardware has, measured in gigabytes.
+func (r Hardware_SecurityModule) GetNvRamCapacity() (resp uint, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "getNvRamCapacity", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve
+func (r Hardware_SecurityModule) GetNvRamComponentModels() (resp []datatypes.Hardware_Component_Model, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "getNvRamComponentModels", nil, &r.Options, &resp)
 	return
 }
 
@@ -5594,6 +5723,18 @@ func (r Hardware_SecurityModule) MassFirmwareUpdate(hardwareIds []int, ipmi *boo
 	return
 }
 
+// You can launch hyper-threading update by selecting from your server list. It will bring your server offline for approximately 60 minutes while the updates are in progress.
+//
+// In the event of a hardware failure during this update our datacenter engineers will be notified of the problem automatically. They will then replace any failed components to bring your server back online. They will be in contact with you to ensure that impact on your server is minimal.
+func (r Hardware_SecurityModule) MassHyperThreadingUpdate(hardwareIds []int, disableHyperthreading *bool) (resp []datatypes.Container_Hardware_Server_Request, err error) {
+	params := []interface{}{
+		hardwareIds,
+		disableHyperthreading,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule", "massHyperThreadingUpdate", params, &r.Options, &resp)
+	return
+}
+
 // Reloads current or customer specified operating system configuration.
 //
 // This service has a confirmation protocol for proceeding with the reload. To proceed with the reload without confirmation, simply pass in 'FORCE' as the token parameter. To proceed with the reload with confirmation, simply call the service with no parameter. A token string will be returned by this service. The token will remain active for 10 minutes. Use this token as the parameter to confirm that a reload is to be performed for the server.
@@ -6002,6 +6143,17 @@ func (r Hardware_SecurityModule750) CreateFirmwareUpdateTransaction(ipmi *int, r
 		harddrive,
 	}
 	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "createFirmwareUpdateTransaction", params, &r.Options, &resp)
+	return
+}
+
+// You can launch hyper-threading update by selecting from your server list. It will bring your server offline for approximately 60 minutes while the update is in progress.
+//
+// In the event of a hardware failure during this our datacenter engineers will be notified of the problem automatically. They will then replace any failed components to bring your server back online, and will be contacting you to ensure that impact on your server is minimal.
+func (r Hardware_SecurityModule750) CreateHyperThreadingUpdateTransaction(disableHyperthreading *int) (resp bool, err error) {
+	params := []interface{}{
+		disableHyperthreading,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "createHyperThreadingUpdateTransaction", params, &r.Options, &resp)
 	return
 }
 
@@ -7120,6 +7272,12 @@ func (r Hardware_SecurityModule750) GetMetricTrackingObjectId() (resp int, err e
 	return
 }
 
+// Retrieve
+func (r Hardware_SecurityModule750) GetModules() (resp []datatypes.Hardware_Component, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "getModules", nil, &r.Options, &resp)
+	return
+}
+
 // Returns open monitoring alarms for a given time period
 func (r Hardware_SecurityModule750) GetMonitoringActiveAlarms(startDate *datatypes.Time, endDate *datatypes.Time) (resp []datatypes.Container_Monitoring_Alarm_History, err error) {
 	params := []interface{}{
@@ -7275,6 +7433,18 @@ func (r Hardware_SecurityModule750) GetNextBillingCycleBandwidthAllocation() (re
 // Retrieve
 func (r Hardware_SecurityModule750) GetNotesHistory() (resp []datatypes.Hardware_Note, err error) {
 	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "getNotesHistory", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve The amount of non-volatile memory a piece of hardware has, measured in gigabytes.
+func (r Hardware_SecurityModule750) GetNvRamCapacity() (resp uint, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "getNvRamCapacity", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve
+func (r Hardware_SecurityModule750) GetNvRamComponentModels() (resp []datatypes.Hardware_Component_Model, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "getNvRamComponentModels", nil, &r.Options, &resp)
 	return
 }
 
@@ -7943,6 +8113,18 @@ func (r Hardware_SecurityModule750) MassFirmwareUpdate(hardwareIds []int, ipmi *
 	return
 }
 
+// You can launch hyper-threading update by selecting from your server list. It will bring your server offline for approximately 60 minutes while the updates are in progress.
+//
+// In the event of a hardware failure during this update our datacenter engineers will be notified of the problem automatically. They will then replace any failed components to bring your server back online. They will be in contact with you to ensure that impact on your server is minimal.
+func (r Hardware_SecurityModule750) MassHyperThreadingUpdate(hardwareIds []int, disableHyperthreading *bool) (resp []datatypes.Container_Hardware_Server_Request, err error) {
+	params := []interface{}{
+		hardwareIds,
+		disableHyperthreading,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_SecurityModule750", "massHyperThreadingUpdate", params, &r.Options, &resp)
+	return
+}
+
 // Reloads current or customer specified operating system configuration.
 //
 // This service has a confirmation protocol for proceeding with the reload. To proceed with the reload without confirmation, simply pass in 'FORCE' as the token parameter. To proceed with the reload with confirmation, simply call the service with no parameter. A token string will be returned by this service. The token will remain active for 10 minutes. Use this token as the parameter to confirm that a reload is to be performed for the server.
@@ -8351,6 +8533,17 @@ func (r Hardware_Server) CreateFirmwareUpdateTransaction(ipmi *int, raidControll
 		harddrive,
 	}
 	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "createFirmwareUpdateTransaction", params, &r.Options, &resp)
+	return
+}
+
+// You can launch hyper-threading update by selecting from your server list. It will bring your server offline for approximately 60 minutes while the update is in progress.
+//
+// In the event of a hardware failure during this our datacenter engineers will be notified of the problem automatically. They will then replace any failed components to bring your server back online, and will be contacting you to ensure that impact on your server is minimal.
+func (r Hardware_Server) CreateHyperThreadingUpdateTransaction(disableHyperthreading *int) (resp bool, err error) {
+	params := []interface{}{
+		disableHyperthreading,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "createHyperThreadingUpdateTransaction", params, &r.Options, &resp)
 	return
 }
 
@@ -9469,6 +9662,12 @@ func (r Hardware_Server) GetMetricTrackingObjectId() (resp int, err error) {
 	return
 }
 
+// Retrieve
+func (r Hardware_Server) GetModules() (resp []datatypes.Hardware_Component, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "getModules", nil, &r.Options, &resp)
+	return
+}
+
 // Returns open monitoring alarms for a given time period
 func (r Hardware_Server) GetMonitoringActiveAlarms(startDate *datatypes.Time, endDate *datatypes.Time) (resp []datatypes.Container_Monitoring_Alarm_History, err error) {
 	params := []interface{}{
@@ -9624,6 +9823,18 @@ func (r Hardware_Server) GetNextBillingCycleBandwidthAllocation() (resp datatype
 // Retrieve
 func (r Hardware_Server) GetNotesHistory() (resp []datatypes.Hardware_Note, err error) {
 	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "getNotesHistory", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve The amount of non-volatile memory a piece of hardware has, measured in gigabytes.
+func (r Hardware_Server) GetNvRamCapacity() (resp uint, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "getNvRamCapacity", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve
+func (r Hardware_Server) GetNvRamComponentModels() (resp []datatypes.Hardware_Component_Model, err error) {
+	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "getNvRamComponentModels", nil, &r.Options, &resp)
 	return
 }
 
@@ -10289,6 +10500,18 @@ func (r Hardware_Server) MassFirmwareUpdate(hardwareIds []int, ipmi *bool, raidC
 		harddrive,
 	}
 	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "massFirmwareUpdate", params, &r.Options, &resp)
+	return
+}
+
+// You can launch hyper-threading update by selecting from your server list. It will bring your server offline for approximately 60 minutes while the updates are in progress.
+//
+// In the event of a hardware failure during this update our datacenter engineers will be notified of the problem automatically. They will then replace any failed components to bring your server back online. They will be in contact with you to ensure that impact on your server is minimal.
+func (r Hardware_Server) MassHyperThreadingUpdate(hardwareIds []int, disableHyperthreading *bool) (resp []datatypes.Container_Hardware_Server_Request, err error) {
+	params := []interface{}{
+		hardwareIds,
+		disableHyperthreading,
+	}
+	err = r.Session.DoRequest("SoftLayer_Hardware_Server", "massHyperThreadingUpdate", params, &r.Options, &resp)
 	return
 }
 

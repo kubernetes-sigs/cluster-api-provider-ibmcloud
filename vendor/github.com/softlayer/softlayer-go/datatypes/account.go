@@ -293,12 +293,6 @@ type Account struct {
 	// no documentation yet
 	CatalystEnrollments []Catalyst_Enrollment `json:"catalystEnrollments,omitempty" xmlrpc:"catalystEnrollments,omitempty"`
 
-	// A count of an account's associated CDN accounts.
-	CdnAccountCount *uint `json:"cdnAccountCount,omitempty" xmlrpc:"cdnAccountCount,omitempty"`
-
-	// An account's associated CDN accounts.
-	CdnAccounts []Network_ContentDelivery_Account `json:"cdnAccounts,omitempty" xmlrpc:"cdnAccounts,omitempty"`
-
 	// The city of the mailing address belonging to an account.
 	City *string `json:"city,omitempty" xmlrpc:"city,omitempty"`
 
@@ -397,6 +391,9 @@ type Account struct {
 
 	// A fax phone number assigned to an account.
 	FaxPhone *string `json:"faxPhone,omitempty" xmlrpc:"faxPhone,omitempty"`
+
+	// no documentation yet
+	FileBlockBetaAccessFlag *bool `json:"fileBlockBetaAccessFlag,omitempty" xmlrpc:"fileBlockBetaAccessFlag,omitempty"`
 
 	// Each customer account is listed under a single individual. This is that individual's first name.
 	FirstName *string `json:"firstName,omitempty" xmlrpc:"firstName,omitempty"`
@@ -1156,9 +1153,6 @@ type Account struct {
 
 	// An account's reverse WHOIS data. This data is used when making SWIP requests.
 	RwhoisData *Network_Subnet_Rwhois_Data `json:"rwhoisData,omitempty" xmlrpc:"rwhoisData,omitempty"`
-
-	// no documentation yet
-	SalesforceAccountLink *Account_Link `json:"salesforceAccountLink,omitempty" xmlrpc:"salesforceAccountLink,omitempty"`
 
 	// The SAML configuration for this account.
 	SamlAuthentication *Account_Authentication_Saml `json:"samlAuthentication,omitempty" xmlrpc:"samlAuthentication,omitempty"`
@@ -2853,6 +2847,12 @@ type Account_Shipment struct {
 
 	// The type id of the shipment.
 	TypeId *int `json:"typeId,omitempty" xmlrpc:"typeId,omitempty"`
+
+	// The address at which the shipment is received.
+	ViaAddress *Account_Address `json:"viaAddress,omitempty" xmlrpc:"viaAddress,omitempty"`
+
+	// The via address id of the shipment.
+	ViaAddressId *int `json:"viaAddressId,omitempty" xmlrpc:"viaAddressId,omitempty"`
 }
 
 // The SoftLayer_Account_Shipment_Item data type contains information relating to a shipment's item. Basic information such as addresses, the shipment courier, and any tracking information for as shipment is accessible with this data type.

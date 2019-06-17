@@ -143,20 +143,14 @@ type User_Customer struct {
 	// A portal user's secondary phone number.
 	AlternatePhone *string `json:"alternatePhone,omitempty" xmlrpc:"alternatePhone,omitempty"`
 
-	// A count of a portal user's API Authentication keys. There is a max limit of two API keys per user.
+	// A count of a portal user's API Authentication keys. There is a max limit of one API key per user.
 	ApiAuthenticationKeyCount *uint `json:"apiAuthenticationKeyCount,omitempty" xmlrpc:"apiAuthenticationKeyCount,omitempty"`
 
-	// A portal user's API Authentication keys. There is a max limit of two API keys per user.
+	// A portal user's API Authentication keys. There is a max limit of one API key per user.
 	ApiAuthenticationKeys []User_Customer_ApiAuthentication `json:"apiAuthenticationKeys,omitempty" xmlrpc:"apiAuthenticationKeys,omitempty"`
 
 	// The authentication token used for logging into the SoftLayer customer portal.
 	AuthenticationToken *Container_User_Authentication_Token `json:"authenticationToken,omitempty" xmlrpc:"authenticationToken,omitempty"`
-
-	// A count of the CDN accounts associated with a portal user.
-	CdnAccountCount *uint `json:"cdnAccountCount,omitempty" xmlrpc:"cdnAccountCount,omitempty"`
-
-	// The CDN accounts associated with a portal user.
-	CdnAccounts []Network_ContentDelivery_Account `json:"cdnAccounts,omitempty" xmlrpc:"cdnAccounts,omitempty"`
 
 	// A count of a portal user's child users. Some portal users may not have child users.
 	ChildUserCount *uint `json:"childUserCount,omitempty" xmlrpc:"childUserCount,omitempty"`

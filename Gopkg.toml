@@ -46,7 +46,7 @@ required = [
 
 [[constraint]]
   name = "github.com/softlayer/softlayer-go"
-  revision = "7c592eb"
+  revision = "ba6e7f29521771a05a8faa6c1782735b4b74dc36"
 
 [[constraint]]
   name = "k8s.io/klog"

@@ -268,6 +268,16 @@ func (r Brand) IsPlatformServicesBrand() (resp bool, err error) {
 	return
 }
 
+// Reactivate an account associated with this Brand.  Anything that would disqualify the account from being reactivated will cause an exception to be raised.
+func (r Brand) ReactivateAccount(accountId *int) (err error) {
+	var resp datatypes.Void
+	params := []interface{}{
+		accountId,
+	}
+	err = r.Session.DoRequest("SoftLayer_Brand", "reactivateAccount", params, &r.Options, &resp)
+	return
+}
+
 // Verify that an account may be disabled by a Brand Agent.  Anything that would disqualify the account from being disabled will cause an exception to be raised.
 func (r Brand) VerifyCanDisableAccount(accountId *int) (err error) {
 	var resp datatypes.Void
@@ -275,6 +285,16 @@ func (r Brand) VerifyCanDisableAccount(accountId *int) (err error) {
 		accountId,
 	}
 	err = r.Session.DoRequest("SoftLayer_Brand", "verifyCanDisableAccount", params, &r.Options, &resp)
+	return
+}
+
+// Verify that an account may be reactivated by a Brand Agent.  Anything that would disqualify the account from being reactivated will cause an exception to be raised.
+func (r Brand) VerifyCanReactivateAccount(accountId *int) (err error) {
+	var resp datatypes.Void
+	params := []interface{}{
+		accountId,
+	}
+	err = r.Session.DoRequest("SoftLayer_Brand", "verifyCanReactivateAccount", params, &r.Options, &resp)
 	return
 }
 

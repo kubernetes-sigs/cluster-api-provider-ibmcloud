@@ -23,30 +23,6 @@ package datatypes
 // no documentation yet
 type Network struct {
 	Entity
-
-	// The owning account identifier.
-	AccountId *int `json:"accountId,omitempty" xmlrpc:"accountId,omitempty"`
-
-	// The size of the Network specified in CIDR notation. Specified in conjunction with the ``networkIdentifier`` to describe the bounding subnet size for the Network. Required for creation. See [[SoftLayer_Network/createObject]] documentation for creation details.
-	Cidr *int `json:"cidr,omitempty" xmlrpc:"cidr,omitempty"`
-
-	// Unique identifier for the network.
-	Id *int `json:"id,omitempty" xmlrpc:"id,omitempty"`
-
-	// A name for the Network. This is required during creation of a Network and is entirely user defined.
-	Name *string `json:"name,omitempty" xmlrpc:"name,omitempty"`
-
-	// The starting IP address of the Network. Specified in conjunction with the ``cidr`` property to specify the bounding IP address space for the Network. Required for creation. See [[SoftLayer_Network/createObject]] documentation for creation details.
-	NetworkIdentifier *string `json:"networkIdentifier,omitempty" xmlrpc:"networkIdentifier,omitempty"`
-
-	// Notes, or a description of the Network. This is entirely user defined.
-	Notes *string `json:"notes,omitempty" xmlrpc:"notes,omitempty"`
-
-	// A count of the Subnets within the Network. These represent the realized segments of the Network and reside within a [[SoftLayer_Network_Pod|Pod]]. A Subnet must be specified when provisioning a compute resource within a Network.
-	SubnetCount *uint `json:"subnetCount,omitempty" xmlrpc:"subnetCount,omitempty"`
-
-	// The Subnets within the Network. These represent the realized segments of the Network and reside within a [[SoftLayer_Network_Pod|Pod]]. A Subnet must be specified when provisioning a compute resource within a Network.
-	Subnets []Network_Subnet `json:"subnets,omitempty" xmlrpc:"subnets,omitempty"`
 }
 
 // The SoftLayer_Network_Application_Delivery_Controller data type models a single instance of an application delivery controller. Local properties are read only, except for a ''notes'' property, which can be used to describe your application delivery controller service. The type's relational properties provide more information to the service's function and login information to the controller's backend management if advanced view is enabled.
@@ -1449,134 +1425,6 @@ type Network_Component_Uplink_Hardware struct {
 
 	// The [[SoftLayer_Network_Component|Network Component]] that a uplink connection belongs to..
 	NetworkComponent *Network_Component `json:"networkComponent,omitempty" xmlrpc:"networkComponent,omitempty"`
-}
-
-// The SoftLayer_Network_ContentDelivery_Account data type models an individual CDN account. CDN accounts contain references to the SoftLayer customer account they belong to, login credentials for upload services, and a CDN account's status. Please contact SoftLayer sales to purchase or cancel a CDN account
-type Network_ContentDelivery_Account struct {
-	Entity
-
-	// The customer account that a CDN account belongs to.
-	Account *Account `json:"account,omitempty" xmlrpc:"account,omitempty"`
-
-	// The internal identifier of the customer account that a CDN account belongs to.
-	AccountId *int `json:"accountId,omitempty" xmlrpc:"accountId,omitempty"`
-
-	// The CDN account id that this CDN account is associated with.
-	AssociatedCdnAccountId *string `json:"associatedCdnAccountId,omitempty" xmlrpc:"associatedCdnAccountId,omitempty"`
-
-	// A count of the IP addresses that are used for the content authentication service.
-	AuthenticationIpAddressCount *uint `json:"authenticationIpAddressCount,omitempty" xmlrpc:"authenticationIpAddressCount,omitempty"`
-
-	// The IP addresses that are used for the content authentication service.
-	AuthenticationIpAddresses []Network_ContentDelivery_Authentication_Address `json:"authenticationIpAddresses,omitempty" xmlrpc:"authenticationIpAddresses,omitempty"`
-
-	// The current billing item for a CDN account.
-	BillingItem *Billing_Item `json:"billingItem,omitempty" xmlrpc:"billingItem,omitempty"`
-
-	// The name of a CDN account.
-	CdnAccountName *string `json:"cdnAccountName,omitempty" xmlrpc:"cdnAccountName,omitempty"`
-
-	// A brief note on a CDN account.
-	CdnAccountNote *string `json:"cdnAccountNote,omitempty" xmlrpc:"cdnAccountNote,omitempty"`
-
-	// The solution type of a CDN account.
-	CdnSolutionName *string `json:"cdnSolutionName,omitempty" xmlrpc:"cdnSolutionName,omitempty"`
-
-	// The date that a CDN account was created.
-	CreateDate *Time `json:"createDate,omitempty" xmlrpc:"createDate,omitempty"`
-
-	// Indicates if CDN account is dependent on other service. If set, this CDN account is limited to these services: createOriginPullMapping, deleteOriginPullRule, getOriginPullMappingInformation, getCdnUrls, purgeCache, loadContent, manageHttpCompression
-	DependantServiceFlag *bool `json:"dependantServiceFlag,omitempty" xmlrpc:"dependantServiceFlag,omitempty"`
-
-	// A CDN account's internal identifier.
-	Id *int `json:"id,omitempty" xmlrpc:"id,omitempty"`
-
-	// Indicates if it is a legacy CDN or not
-	LegacyCdnFlag *bool `json:"legacyCdnFlag,omitempty" xmlrpc:"legacyCdnFlag,omitempty"`
-
-	// Indicates if CDN logging is enabled.
-	LogEnabledFlag *string `json:"logEnabledFlag,omitempty" xmlrpc:"logEnabledFlag,omitempty"`
-
-	// Indicates if customer is allowed to access the CDN provider's management portal.
-	ProviderPortalAccessFlag *bool `json:"providerPortalAccessFlag,omitempty" xmlrpc:"providerPortalAccessFlag,omitempty"`
-
-	// A CDN account's status presented in a more detailed data type.
-	Status *Network_ContentDelivery_Account_Status `json:"status,omitempty" xmlrpc:"status,omitempty"`
-
-	// The internal identifier of a CDN status
-	StatusId *int `json:"statusId,omitempty" xmlrpc:"statusId,omitempty"`
-
-	// Indicates if the token authentication service is enabled or not.
-	TokenAuthenticationEnabledFlag *bool `json:"tokenAuthenticationEnabledFlag,omitempty" xmlrpc:"tokenAuthenticationEnabledFlag,omitempty"`
-}
-
-// The SoftLayer_Network_ContentDelivery_Account_Status contains information on a CDN account.
-type Network_ContentDelivery_Account_Status struct {
-	Entity
-
-	// A longer description of a CDN account's status.
-	Description *string `json:"description,omitempty" xmlrpc:"description,omitempty"`
-
-	// A CDN account status' internal identifier.
-	Id *int `json:"id,omitempty" xmlrpc:"id,omitempty"`
-
-	// A CDN account status' name.
-	Name *string `json:"name,omitempty" xmlrpc:"name,omitempty"`
-}
-
-// The SoftLayer_Network_ContentDelivery_Authentication_Address data type models an individual IP address that CDN allow or deny access from.
-type Network_ContentDelivery_Authentication_Address struct {
-	Entity
-
-	// The type of access on an IP address.  It can be "ALLOW" or "DENY"
-	AccessType *string `json:"accessType,omitempty" xmlrpc:"accessType,omitempty"`
-
-	// The internal identifier of the CDN account
-	CdnAccountId *int `json:"cdnAccountId,omitempty" xmlrpc:"cdnAccountId,omitempty"`
-
-	// The created date
-	CreateDate *Time `json:"createDate,omitempty" xmlrpc:"createDate,omitempty"`
-
-	// The internal identifier of an authentication IP address
-	Id *int `json:"id,omitempty" xmlrpc:"id,omitempty"`
-
-	// The IP address that you want to block or allow access to
-	IpAddress *string `json:"ipAddress,omitempty" xmlrpc:"ipAddress,omitempty"`
-
-	// The last modified date
-	ModifyDate *Time `json:"modifyDate,omitempty" xmlrpc:"modifyDate,omitempty"`
-
-	// The name of an authentication IP.  This helps you to keep track of IP addresses.
-	Name *string `json:"name,omitempty" xmlrpc:"name,omitempty"`
-
-	// The priority of an authentication IP address.  The smaller number, the higher in priority.  Higher priority IP will be matched first.
-	Priority *int `json:"priority,omitempty" xmlrpc:"priority,omitempty"`
-
-	// The internal identifier of the user who created an authentication IP record
-	UserId *int `json:"userId,omitempty" xmlrpc:"userId,omitempty"`
-}
-
-// The SoftLayer_Network_ContentDelivery_Authentication_Address data type models an individual IP address that CDN allow or deny access from.
-type Network_ContentDelivery_Authentication_Token struct {
-	Entity
-
-	// The internal identifier of a CDN account
-	CdnAccountId *int `json:"cdnAccountId,omitempty" xmlrpc:"cdnAccountId,omitempty"`
-
-	// The client IP address. This is optional.
-	ClientIp *string `json:"clientIp,omitempty" xmlrpc:"clientIp,omitempty"`
-
-	// The created date
-	CreateDate *Time `json:"createDate,omitempty" xmlrpc:"createDate,omitempty"`
-
-	// The customer id.  You can use this optional value to tie a user id to an authentication token.
-	Name *string `json:"name,omitempty" xmlrpc:"name,omitempty"`
-
-	// The referrer information.  This is optional.
-	Referrer *string `json:"referrer,omitempty" xmlrpc:"referrer,omitempty"`
-
-	// The managed token string
-	Token *string `json:"token,omitempty" xmlrpc:"token,omitempty"`
 }
 
 // The SoftLayer_Network_Customer_Subnet data type contains general information relating to a single customer subnet (remote).
@@ -5382,9 +5230,6 @@ type Network_Subnet struct {
 
 	// The upstream network component firewall.
 	NetworkComponentFirewall *Network_Component_Firewall `json:"networkComponentFirewall,omitempty" xmlrpc:"networkComponentFirewall,omitempty"`
-
-	// The Private Network identifier this subnet is within, if applicable.
-	NetworkId *int `json:"networkId,omitempty" xmlrpc:"networkId,omitempty"`
 
 	// A subnet's network identifier. This is the first IP address of a subnet and may not be assigned to a network interface.
 	NetworkIdentifier *string `json:"networkIdentifier,omitempty" xmlrpc:"networkIdentifier,omitempty"`
