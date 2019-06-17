@@ -2395,10 +2395,11 @@ func (r Virtual_Guest_Block_Device_Template_Group) EditObject(templateObject *da
 	return
 }
 
-// Find block device template groups containing a GC enabled image for the current active user. A sorted collection of groups is returned. The Caller can optionally specify data center names to retrieve GC images only from those data centers.
-func (r Virtual_Guest_Block_Device_Template_Group) FindGcImagesByCurrentUser(dataCenters []string) (resp []datatypes.Virtual_Guest_Block_Device_Template_Group, err error) {
+// Find block device template groups containing a GC enabled cloudinit image for the current active user. A sorted collection of groups is returned. The Caller can optionally specify data center or region names to retrieve GC images from only those locations.
+func (r Virtual_Guest_Block_Device_Template_Group) FindGcImagesByCurrentUser(dataCenters []string, regions []string) (resp []datatypes.Virtual_Guest_Block_Device_Template_Group, err error) {
 	params := []interface{}{
 		dataCenters,
+		regions,
 	}
 	err = r.Session.DoRequest("SoftLayer_Virtual_Guest_Block_Device_Template_Group", "findGcImagesByCurrentUser", params, &r.Options, &resp)
 	return
@@ -2626,6 +2627,15 @@ func (r Virtual_Guest_Block_Device_Template_Group) PermitSharingAccess(accountId
 		accountId,
 	}
 	err = r.Session.DoRequest("SoftLayer_Virtual_Guest_Block_Device_Template_Group", "permitSharingAccess", params, &r.Options, &resp)
+	return
+}
+
+// Removes compatible platforms on the template group.
+func (r Virtual_Guest_Block_Device_Template_Group) RemoveCompatiblePlatforms(platformNames []string) (resp bool, err error) {
+	params := []interface{}{
+		platformNames,
+	}
+	err = r.Session.DoRequest("SoftLayer_Virtual_Guest_Block_Device_Template_Group", "removeCompatiblePlatforms", params, &r.Options, &resp)
 	return
 }
 

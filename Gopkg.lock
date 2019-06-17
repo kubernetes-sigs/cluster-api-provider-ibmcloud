@@ -469,7 +469,7 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:80d06a83fb701d7da5e0798e6e7b28777402968f0bb8120e6bfcd3abd3fce0b6"
+  digest = "1:7000d6c6fac941417748ec1a17ca5edbe3fbc2f384cd33c91f2cc0a53415bdaa"
   name = "github.com/softlayer/softlayer-go"
   packages = [
     "config",
@@ -480,7 +480,7 @@
     "sl",
   ]
   pruneopts = "NUT"
-  revision = "7c592eb"
+  revision = "ba6e7f29521771a05a8faa6c1782735b4b74dc36"
 
 [[projects]]
   digest = "1:6792bb72ea0e7112157d02e4e175cd421b43d004a853f56316a19beca6e0c074"

@@ -150,6 +150,15 @@ func (r Account) DisableEuSupport() (err error) {
 	return
 }
 
+// This method will edit the account's information. Pass in a SoftLayer_Account template with the fields to be modified. Certain changes to the account will automatically create a ticket for manual review. This will be returned with the SoftLayer_Container_Account_Update_Response.<br> <br> The following fields are editable:<br> <br> <ul> <li>companyName</li> <li>firstName</li> <li>lastName</li> <li>address1</li> <li>address2</li> <li>city</li> <li>state</li> <li>country</li> <li>email</li> <li>officePhone</li> <li>alternatePhone</li> <li>faxPhone</li> <li>abuseEmails.email</li> <li>billingInfo.vatId</li> </ul>
+func (r Account) EditAccount(modifiedAccountInformation *datatypes.Account) (resp datatypes.Container_Account_Update_Response, err error) {
+	params := []interface{}{
+		modifiedAccountInformation,
+	}
+	err = r.Session.DoRequest("SoftLayer_Account", "editAccount", params, &r.Options, &resp)
+	return
+}
+
 // <p> If you select the EU Supported option, the most common Support issues will be limited to IBM Cloud staff located in the EU.  In the event your issue requires non-EU expert assistance, it will be reviewed and approval given prior to any non-EU intervention.  Additionally, in order to support and update the services, cross-border Processing of your data may still occur.  Please ensure you take the necessary actions to allow this Processing, as detailed in the <strong><a href="http://www-03.ibm.com/software/sla/sladb.nsf/sla/bm-6605-12">Cloud Service Terms</a></strong>. A standard Data Processing Addendum is available <strong><a href="https://www-05.ibm.com/support/operations/zz/en/dpa.html">here</a></strong>. </p>
 //
 // <p> <strong>Important note (you will only see this once):</strong> Orders using the API will proceed without additional notifications. The terms related to selecting products, services, or locations outside the EU apply to API orders. Users you create and API keys you generate will have the ability to order products, services, and locations outside of the EU. It is your responsibility to educate anyone you grant access to your account on the consequences and requirements if they make a selection that is not in the EU Supported option.  In order to meet EU Supported requirements, the current PPTP VPN solution will no longer be offered or supported. </p>
@@ -569,12 +578,6 @@ func (r Account) GetCatalystEnrollments() (resp []datatypes.Catalyst_Enrollment,
 	return
 }
 
-// Retrieve An account's associated CDN accounts.
-func (r Account) GetCdnAccounts() (resp []datatypes.Network_ContentDelivery_Account, err error) {
-	err = r.Session.DoRequest("SoftLayer_Account", "getCdnAccounts", nil, &r.Options, &resp)
-	return
-}
-
 // Retrieve All closed tickets associated with an account.
 func (r Account) GetClosedTickets() (resp []datatypes.Ticket, err error) {
 	err = r.Session.DoRequest("SoftLayer_Account", "getClosedTickets", nil, &r.Options, &resp)
@@ -741,6 +744,12 @@ func (r Account) GetExpiredSecurityCertificates() (resp []datatypes.Security_Cer
 // Retrieve Logs of who entered a colocation area which is assigned to this account, or when a user under this account enters a datacenter.
 func (r Account) GetFacilityLogs() (resp []datatypes.User_Access_Facility_Log, err error) {
 	err = r.Session.DoRequest("SoftLayer_Account", "getFacilityLogs", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve
+func (r Account) GetFileBlockBetaAccessFlag() (resp bool, err error) {
+	err = r.Session.DoRequest("SoftLayer_Account", "getFileBlockBetaAccessFlag", nil, &r.Options, &resp)
 	return
 }
 
@@ -1730,12 +1739,6 @@ func (r Account) GetRwhoisData() (resp datatypes.Network_Subnet_Rwhois_Data, err
 	return
 }
 
-// Retrieve
-func (r Account) GetSalesforceAccountLink() (resp datatypes.Account_Link, err error) {
-	err = r.Session.DoRequest("SoftLayer_Account", "getSalesforceAccountLink", nil, &r.Options, &resp)
-	return
-}
-
 // Retrieve The SAML configuration for this account.
 func (r Account) GetSamlAuthentication() (resp datatypes.Account_Authentication_Saml, err error) {
 	err = r.Session.DoRequest("SoftLayer_Account", "getSamlAuthentication", nil, &r.Options, &resp)
@@ -2146,7 +2149,7 @@ func (r Account) SetAbuseEmails(emails []string) (resp bool, err error) {
 }
 
 // Set the total number of servers that are to be maintained in the given pool. When a server is ordered a new server will be put in the pool to replace the server that was removed to fill an order to maintain the desired pool availability quantity.
-func (r Account) SetManagedPoolQuantity(poolKeyName *string, backendRouter *string, quantity *int) (resp []byte, err error) {
+func (r Account) SetManagedPoolQuantity(poolKeyName *string, backendRouter *string, quantity *int) (resp int, err error) {
 	params := []interface{}{
 		poolKeyName,
 		backendRouter,
@@ -2172,9 +2175,12 @@ func (r Account) SwapCreditCards() (resp bool, err error) {
 }
 
 // no documentation yet
-func (r Account) SyncCurrentUserPopulationWithPaas() (err error) {
+func (r Account) SyncCurrentUserPopulationWithPaas(skipIbmidLookupFlag *bool) (err error) {
 	var resp datatypes.Void
-	err = r.Session.DoRequest("SoftLayer_Account", "syncCurrentUserPopulationWithPaas", nil, &r.Options, &resp)
+	params := []interface{}{
+		skipIbmidLookupFlag,
+	}
+	err = r.Session.DoRequest("SoftLayer_Account", "syncCurrentUserPopulationWithPaas", params, &r.Options, &resp)
 	return
 }
 
@@ -2190,7 +2196,7 @@ func (r Account) UpdateVpnUsersForResource(objectId *int, objectType *string) (r
 	return
 }
 
-// This method will validate the following account fields. Included are the allowed characters for each field.<br> <strong>Company Name (required):</strong> alphabet, numbers, space, period, dash, octothorpe, forward slash, backward slash, comma, colon, at sign, ampersand, underscore, apostrophe, parenthesis, exclamation point. (Note: may not contain an email address)<br> <strong>First Name (required):</strong> alphabet, space, period, dash, comma, apostrophe.<br> <strong>Last Name (required):</strong> alphabet, space, period, dash, comma, apostrophe.<br> <strong>Email (required):</strong> Validates e-mail addresses against the syntax in RFC 822.<br> <strong>Address 1 (required):</strong> alphabet, numbers, space, period, dash, octothorpe, forward slash, backward slash, comma, colon, at sign, ampersand, underscore, apostrophe.<br> <strong>Address 2 (required):</strong> alphabet, numbers, space, period, dash, octothorpe, forward slash, backward slash, comma, colon, at sign, ampersand, underscore, apostrophe.<br> <strong>City (required):</strong> alphabet, space, period, dash, apostrophe, forward slash.<br> <strong>State (required):</strong> Required if country is US, Brazil, Canada or India. Must be valid Alpha-2 ISO 3166-1 state code for that country.<br> <strong>Postal Code (required):</strong> alphabet, numbers, dash, space.<br> <strong>Country (required):</strong> alphabet, numbers. Must be valid Alpha-2 ISO 3166-1 country code.<br> <strong>Office Phone (required):</strong> alphabet, numbers, space, period, dash, parenthesis, plus sign.<br> <strong>Alternate Phone:</strong> alphabet, numbers, space, period, dash, parenthesis, plus sign.<br> <strong>Fax Phone:</strong> alphabet, numbers, space, period, dash, parenthesis, plus sign.<br>
+// This method will validate the following account fields. Included are the allowed characters for each field.<br> <strong>Company Name (required):</strong> alphabet, numbers, space, period, dash, octothorpe, forward slash, backward slash, comma, colon, at sign, ampersand, underscore, apostrophe, parenthesis, exclamation point. (Note: may not contain an email address)<br> <strong>First Name (required):</strong> alphabet, space, period, dash, comma, apostrophe.<br> <strong>Last Name (required):</strong> alphabet, space, period, dash, comma, apostrophe.<br> <strong>Email (required):</strong> Validates e-mail addresses against the syntax in RFC 822.<br> <strong>Address 1 (required):</strong> alphabet, numbers, space, period, dash, octothorpe, forward slash, backward slash, comma, colon, at sign, ampersand, underscore, apostrophe, parentheses.<br> <strong>Address 2 (required):</strong> alphabet, numbers, space, period, dash, octothorpe, forward slash, backward slash, comma, colon, at sign, ampersand, underscore, apostrophe, parentheses.<br> <strong>City (required):</strong> alphabet, space, period, dash, apostrophe, forward slash.<br> <strong>State (required):</strong> Required if country is US, Brazil, Canada or India. Must be valid Alpha-2 ISO 3166-1 state code for that country.<br> <strong>Postal Code (required):</strong> alphabet, numbers, dash, space.<br> <strong>Country (required):</strong> alphabet, numbers. Must be valid Alpha-2 ISO 3166-1 country code.<br> <strong>Office Phone (required):</strong> alphabet, numbers, space, period, dash, parenthesis, plus sign.<br> <strong>Alternate Phone:</strong> alphabet, numbers, space, period, dash, parenthesis, plus sign.<br> <strong>Fax Phone:</strong> alphabet, numbers, space, period, dash, parenthesis, plus sign.<br>
 func (r Account) Validate(account *datatypes.Account) (resp []string, err error) {
 	params := []interface{}{
 		account,
@@ -5122,6 +5128,12 @@ func (r Account_Shipment) GetTrackingData() (resp []datatypes.Account_Shipment_T
 // Retrieve The type of shipment (e.g. for Data Transfer Service or Colocation Service).
 func (r Account_Shipment) GetType() (resp datatypes.Account_Shipment_Type, err error) {
 	err = r.Session.DoRequest("SoftLayer_Account_Shipment", "getType", nil, &r.Options, &resp)
+	return
+}
+
+// Retrieve The address at which the shipment is received.
+func (r Account_Shipment) GetViaAddress() (resp datatypes.Account_Address, err error) {
+	err = r.Session.DoRequest("SoftLayer_Account_Shipment", "getViaAddress", nil, &r.Options, &resp)
 	return
 }
 

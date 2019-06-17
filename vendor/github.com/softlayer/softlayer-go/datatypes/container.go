@@ -720,6 +720,20 @@ type Container_Account_ProofOfConcept_Review_Summary struct {
 	Status *string `json:"status,omitempty" xmlrpc:"status,omitempty"`
 }
 
+// Contains data related to an account after editing its information.
+type Container_Account_Update_Response struct {
+	Entity
+
+	// Whether or not the update was accepted and applied.
+	AcceptedFlag *bool `json:"acceptedFlag,omitempty" xmlrpc:"acceptedFlag,omitempty"`
+
+	// The updated SoftLayer_Account.
+	Account *Account `json:"account,omitempty" xmlrpc:"account,omitempty"`
+
+	// If a manual review is required, this will be populated with the SoftLayer_Ticket for that review.
+	Ticket *Ticket `json:"ticket,omitempty" xmlrpc:"ticket,omitempty"`
+}
+
 // The SoftLayer_Container_Authentication_Request_Common data type contains common information for requests to the getPortalLogin API. This is an abstract class that serves as a base that more specialized classes will derive from. For example, a request class specific to SoftLayer Native IMS Login (username and password).
 type Container_Authentication_Request_Common struct {
 	Container_Authentication_Request_Contract
@@ -2390,227 +2404,6 @@ type Container_Network_CdnMarketplace_Vendor struct {
 	VendorName *string `json:"vendorName,omitempty" xmlrpc:"vendorName,omitempty"`
 }
 
-// SoftLayer_Container_Network_ContentDelivery_Authentication_Directory represents a token authentication directory on your CDN FTP or on your origin server.
-type Container_Network_ContentDelivery_Authentication_Directory struct {
-	Entity
-
-	// The date that a token authentication directory was created.
-	CreateDate *Time `json:"createDate,omitempty" xmlrpc:"createDate,omitempty"`
-
-	// The name of a directory or a file within a directory listing.
-	Name *string `json:"name,omitempty" xmlrpc:"name,omitempty"`
-
-	// The type of platform that a token authentication directory is defined for. Possible types are HTTP Large, HTTP Small, Flash and Windows Media
-	Type *string `json:"type,omitempty" xmlrpc:"type,omitempty"`
-}
-
-// This container is used for CDN content authentication service.
-type Container_Network_ContentDelivery_Authentication_Parameter struct {
-	Entity
-
-	// A CDN account name
-	CdnAccountName *string `json:"cdnAccountName,omitempty" xmlrpc:"cdnAccountName,omitempty"`
-
-	// A client IP address
-	ClientIp *string `json:"clientIp,omitempty" xmlrpc:"clientIp,omitempty"`
-
-	// A client referrer information
-	Referrer *string `json:"referrer,omitempty" xmlrpc:"referrer,omitempty"`
-
-	// A source URL
-	SourceUrl *string `json:"sourceUrl,omitempty" xmlrpc:"sourceUrl,omitempty"`
-
-	// An authentication token string
-	Token *string `json:"token,omitempty" xmlrpc:"token,omitempty"`
-}
-
-// CDN supports the content authentication service. With the content authentication service, customers can control access to their contents. There are several scenarios where this authentication capability could be useful. Websites can prevent other rogue websites from linking to their videos. Content owners can prevent users from passing around http links, thus forcing them to login to view contents. It is also possible to authenticate via the client IP address. Referrer information is also checked if provided by a client's browser. servers will invoke a web service method to validate a content authentication token.
-//
-// CDN uses the default authentication web service provided by SoftLayer to validate a token. A customer can use their own implementation of the token authentication web service by using [[SoftLayer_Network_ContentDelivery_Account::setAuthenticationServiceEndpoint|setAuthenticationServiceEndpoint]] method.
-//
-// This container class holds the token validation web service endpoint information. CDN supports 3 different protocols: HTTP, RTMP (streaming Flash), and MMS (streaming Windows Media)
-type Container_Network_ContentDelivery_Authentication_ServiceEndpoint struct {
-	Entity
-
-	// The authentication web service endpoint that CDN servers will use to validate a token
-	Endpoint *string `json:"endpoint,omitempty" xmlrpc:"endpoint,omitempty"`
-
-	// The protocol that the WSDL will be used for.  This can be HTTP, WINDOWSMEDIA, or FLASH
-	Protocol *string `json:"protocol,omitempty" xmlrpc:"protocol,omitempty"`
-}
-
-// SoftLayer_Container_Network_ContentDelivery_Bandwidth_PointsOfPresence_Summary models an individual CDN point of presence's bandwidth usage for a CDN account within a given date range. CDN POPs are located throughout the world, so individual POP usage may be beneficial in determining who is downloading your CDN hosted content.
-type Container_Network_ContentDelivery_Bandwidth_PointsOfPresence_Summary struct {
-	Entity
-
-	// The amount of bandwidth used by a CDN POP.
-	Bandwidth *uint `json:"bandwidth,omitempty" xmlrpc:"bandwidth,omitempty"`
-
-	// The ending date of a CDN POP bandwidth summary.
-	EndDateTime *Time `json:"endDateTime,omitempty" xmlrpc:"endDateTime,omitempty"`
-
-	// A CDN POP's name. This is typically the city the POP resides in.
-	PopName *string `json:"popName,omitempty" xmlrpc:"popName,omitempty"`
-
-	// The starting date of a CDN POP bandwidth summary.
-	StartDateTime *Time `json:"startDateTime,omitempty" xmlrpc:"startDateTime,omitempty"`
-
-	// The unit of measurement used in a CDN POP bandwidth summary.
-	UsageUnits *string `json:"usageUnits,omitempty" xmlrpc:"usageUnits,omitempty"`
-
-	// The view count
-	ViewCount *uint `json:"viewCount,omitempty" xmlrpc:"viewCount,omitempty"`
-}
-
-// SoftLayer_Container_Network_ContentDelivery_Bandwidth_Summary models a CDN account's overall bandwidth usage and overages within a given date range.
-type Container_Network_ContentDelivery_Bandwidth_Summary struct {
-	Entity
-
-	// The CDN account id
-	CdnAccountId *int `json:"cdnAccountId,omitempty" xmlrpc:"cdnAccountId,omitempty"`
-
-	// The ending date of a CDN bandwidth summary.
-	EndDateTime *Time `json:"endDateTime,omitempty" xmlrpc:"endDateTime,omitempty"`
-
-	// The name of a file that is requested by visitors
-	FileName *string `json:"fileName,omitempty" xmlrpc:"fileName,omitempty"`
-
-	// The media type
-	MediaType *string `json:"mediaType,omitempty" xmlrpc:"mediaType,omitempty"`
-
-	// The starting date of a CDN bandwidth summary.
-	StartDateTime *Time `json:"startDateTime,omitempty" xmlrpc:"startDateTime,omitempty"`
-
-	// The amount of bandwidth used by a CDN account in between a given starting and ending date.
-	Usage *Float64 `json:"usage,omitempty" xmlrpc:"usage,omitempty"`
-
-	// The unit of measurement used in a CDN bandwidth summary.
-	UsageUnits *string `json:"usageUnits,omitempty" xmlrpc:"usageUnits,omitempty"`
-}
-
-// SoftLayer_Container_Network_ContentDelivery_Bandwidth_Summary_File models a CDN account's overall bandwidth usage and overages within a given date range.
-type Container_Network_ContentDelivery_Bandwidth_Summary_Detail struct {
-	Container_Network_ContentDelivery_Bandwidth_Summary
-
-	// The duration of a file that is viewed.
-	Duration *Float64 `json:"duration,omitempty" xmlrpc:"duration,omitempty"`
-
-	// The number of times that a file is viewed.
-	ViewCount *int `json:"viewCount,omitempty" xmlrpc:"viewCount,omitempty"`
-}
-
-// SoftLayer's CDN allows for multiple origin pull domains and CNAME records. This container holds the origin pull configuration details. CDN currently supports origin pull method for HTTP content.
-type Container_Network_ContentDelivery_OriginPull_Mapping struct {
-	Entity
-
-	// The CNAME record.
-	Cname *string `json:"cname,omitempty" xmlrpc:"cname,omitempty"`
-
-	// The unique identifier of an origin pull configuration
-	Id *string `json:"id,omitempty" xmlrpc:"id,omitempty"`
-
-	// This indicates if an origin pull mapping is for the secure content or not.
-	IsSecureContent *bool `json:"isSecureContent,omitempty" xmlrpc:"isSecureContent,omitempty"`
-
-	// The type of a media supported by CDN. Supported media types are: "HTTP", "FLASH" and "WM"
-	MediaType *string `json:"mediaType,omitempty" xmlrpc:"mediaType,omitempty"`
-
-	// The URL of a origin server.  A URL can contain a directory path.
-	OriginUrl *string `json:"originUrl,omitempty" xmlrpc:"originUrl,omitempty"`
-}
-
-// SoftLayer's CDN content delivery network offering replicates your data to a number of Points of Presence (POP's) around the world. SoftLayer_Container_Network_ContentDelivery_PointsOfPresence models one of these POP locations.
-type Container_Network_ContentDelivery_PointsOfPresence struct {
-	Entity
-
-	// A CDN Point of Presence's internal identifier.
-	Id *int `json:"id,omitempty" xmlrpc:"id,omitempty"`
-
-	// A CDN Point of Presence's name. This is typically the city that the POP is located in.
-	Name *string `json:"name,omitempty" xmlrpc:"name,omitempty"`
-}
-
-// This container holds information on a purge request. [[SoftLayer_Network_ContentDelivery_Account::purgeCache|Purge method]] for more details.
-//
-// Status code can be "SUCCESS", "FAILED", or "INVALID_URL" "INVALID_URL" code is returned when a URL is malformed or does not belong to customer. "FAILED" is returned in case there was an internal error.
-type Container_Network_ContentDelivery_PurgeService_Response struct {
-	Entity
-
-	// A status code indicates whether your request was successful or not
-	StatusCode *string `json:"statusCode,omitempty" xmlrpc:"statusCode,omitempty"`
-
-	// A URL that you wish to purge its cache object
-	Url *string `json:"url,omitempty" xmlrpc:"url,omitempty"`
-}
-
-// no documentation yet
-type Container_Network_ContentDelivery_Report_Usage struct {
-	Entity
-
-	// no documentation yet
-	ApplicationDeliveryNetwork *Float64 `json:"applicationDeliveryNetwork,omitempty" xmlrpc:"applicationDeliveryNetwork,omitempty"`
-
-	// no documentation yet
-	ApplicationDeliveryNetworkSsl *Float64 `json:"applicationDeliveryNetworkSsl,omitempty" xmlrpc:"applicationDeliveryNetworkSsl,omitempty"`
-
-	// no documentation yet
-	DiskSpace *Float64 `json:"diskSpace,omitempty" xmlrpc:"diskSpace,omitempty"`
-
-	// no documentation yet
-	EndDate *Time `json:"endDate,omitempty" xmlrpc:"endDate,omitempty"`
-
-	// no documentation yet
-	Flash *Float64 `json:"flash,omitempty" xmlrpc:"flash,omitempty"`
-
-	// no documentation yet
-	Http *Float64 `json:"http,omitempty" xmlrpc:"http,omitempty"`
-
-	// no documentation yet
-	HttpSmall *Float64 `json:"httpSmall,omitempty" xmlrpc:"httpSmall,omitempty"`
-
-	// no documentation yet
-	Https *Float64 `json:"https,omitempty" xmlrpc:"https,omitempty"`
-
-	// no documentation yet
-	HttpsSmall *Float64 `json:"httpsSmall,omitempty" xmlrpc:"httpsSmall,omitempty"`
-
-	// no documentation yet
-	Region *string `json:"region,omitempty" xmlrpc:"region,omitempty"`
-
-	// no documentation yet
-	SslTotal *Float64 `json:"sslTotal,omitempty" xmlrpc:"sslTotal,omitempty"`
-
-	// no documentation yet
-	StandardTotal *Float64 `json:"standardTotal,omitempty" xmlrpc:"standardTotal,omitempty"`
-
-	// no documentation yet
-	StartDate *Time `json:"startDate,omitempty" xmlrpc:"startDate,omitempty"`
-
-	// no documentation yet
-	WindowsMedia *Float64 `json:"windowsMedia,omitempty" xmlrpc:"windowsMedia,omitempty"`
-}
-
-// SoftLayer's CDN content delivery network allows for multiple types of media hosting in addition to traditional HTTP hosting. Each of these media types are accessible form a different URL. SoftLayer_Container_Network_ContentDelivery_SupportedProtocol holds details about CDN supported media types and their associated URLs.
-//
-// CDN media URLs follow the standard <protocol>://<cdn-name>.<platform-name>.cdn.softlayer.net
-//
-// Flash streaming, Windows Media streaming and HTTP protocols are supported: Flash streaming: <nowiki>rtmp://<cdn-name>.flash.cdn.softlayer.net</nowiki> Windows Media streaming: <nowiki>mms://<cdn-name>.wm.cdn.softlayer.net</nowiki> HTTP: <nowiki>http://<cdn-name>.http.cdn.softlayer.net</nowiki>
-type Container_Network_ContentDelivery_SupportedProtocol struct {
-	Entity
-
-	// The host name related to CDN supported media, and is represented in the hostname portion of a CDN URL.
-	Host *string `json:"host,omitempty" xmlrpc:"host,omitempty"`
-
-	// The type of a media supported by CDN such as "FLASH", "WINDOWSMEDIA" or "HTTP"
-	MediaType *string `json:"mediaType,omitempty" xmlrpc:"mediaType,omitempty"`
-
-	// The platform name. It's a friendly name of media type.
-	Platform *string `json:"platform,omitempty" xmlrpc:"platform,omitempty"`
-
-	// The media protocol supported by CDN. This represents the media portion of a CDN URL.  Currently supported protocols are: rtmp, mms and http
-	Protocol *string `json:"protocol,omitempty" xmlrpc:"protocol,omitempty"`
-}
-
 // SoftLayer_Container_Network_Directory_Listing represents a single entry in a listing of files within a remote directory. API methods that return remote directory listings typically return arrays of SoftLayer_Container_Network_Directory_Listing objects.
 type Container_Network_Directory_Listing struct {
 	Entity
@@ -4157,27 +3950,6 @@ type Container_Product_Order_Network_Application_Delivery_Controller struct {
 
 	// An optional [[SoftLayer_Network_Application_Delivery_Controller]] identifier that is used for upgrading an existing application delivery controller.
 	ApplicationDeliveryControllerId *int `json:"applicationDeliveryControllerId,omitempty" xmlrpc:"applicationDeliveryControllerId,omitempty"`
-}
-
-// This is the datatype that needs to be populated and sent to SoftLayer_Product_Order::placeOrder. This datatype has everything required to place a CDN order with SoftLayer.
-type Container_Product_Order_Network_ContentDelivery_Account struct {
-	Container_Product_Order
-
-	// The CDN account name
-	CdnAccountName *string `json:"cdnAccountName,omitempty" xmlrpc:"cdnAccountName,omitempty"`
-}
-
-// This is the datatype that needs to be populated and sent to SoftLayer_Product_Order::placeOrder. This datatype has everything required to place a CDN order with SoftLayer.
-type Container_Product_Order_Network_ContentDelivery_Account_Upgrade struct {
-	Container_Product_Order
-
-	// ID of an existing CDN account. You can use this to upgrade an existing CDN account.
-	CdnAccountId *string `json:"cdnAccountId,omitempty" xmlrpc:"cdnAccountId,omitempty"`
-}
-
-// This is the datatype that needs to be populated and sent to SoftLayer_Product_Order::placeOrder. This datatype has everything required to place a CDN Service order with SoftLayer.
-type Container_Product_Order_Network_ContentDelivery_Service struct {
-	Container_Product_Order
 }
 
 // This is the datatype that needs to be populated and sent to SoftLayer_Product_Order::placeOrder when purchasing a Network Interconnect.
