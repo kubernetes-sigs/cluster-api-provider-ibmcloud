@@ -27,3 +27,11 @@ slcli virtual create-options
 ```
 
 Then you can set `dataCenter` value by referring to the returned list.
+
+## How to set `flavor` value in `machines.yaml`?
+Like `osReferenceCode` above, you can also list available flavors by using following command:
+```bash
+slcli virtual create-options
+```
+
+Then you can set `flavor` value by referring to the returned list, for example, `B1_2X4X25`.

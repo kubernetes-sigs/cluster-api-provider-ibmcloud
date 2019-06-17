@@ -232,24 +232,21 @@ func (ic *IBMCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 	}
 
 	if guest.Domain == nil ||
-		guest.MaxMemory == nil ||
 		guest.OperatingSystemReferenceCode == nil ||
-		guest.LocalDiskFlag == nil ||
+		guest.SupplementalCreateObjectOptions == nil ||
+		guest.SupplementalCreateObjectOptions.FlavorKeyName == nil ||
 		guest.HourlyBillingFlag == nil ||
-		guest.Datacenter.Name == nil ||
-		guest.StartCpus == nil {
+		guest.Datacenter.Name == nil {
 		return fmt.Errorf("Guest does not contain full information.")
 	}
 
 	if *guest.Domain == machineSpec.Domain &&
-		*guest.MaxMemory == machineSpec.MaxMemory &&
+		*guest.SupplementalCreateObjectOptions.FlavorKeyName == machineSpec.Flavor &&
 		(*guest.OperatingSystemReferenceCode == machineSpec.OSReferenceCode ||
 			// TODO(xunpan): we do not know what is the latest, so latest is fine currently
 			strings.HasSuffix(machineSpec.OSReferenceCode, "_LATEST")) &&
-		*guest.LocalDiskFlag == machineSpec.LocalDiskFlag &&
 		*guest.HourlyBillingFlag == machineSpec.HourlyBillingFlag &&
-		*guest.Datacenter.Name == machineSpec.Datacenter &&
-		*guest.StartCpus == machineSpec.StartCpus {
+		*guest.Datacenter.Name == machineSpec.Datacenter {
 		// TODO(xunpan)
 		// currently, resource attribute updating triggers recreating a VM instance
 		// any use case to change:
@@ -259,12 +256,12 @@ func (ic *IBMCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 		return nil
 	}
 
-	klog.Infof("Guest: Domain: %v, MaxMemory: %v, OSReferenceCode: %v, LocalDiskFlag: %v, HourlyBillingFlag: %v, Datacenter: %v, StartCpus: %v",
-		machineSpec.Domain, *guest.MaxMemory, *guest.OperatingSystemReferenceCode, *guest.LocalDiskFlag,
-		machineSpec.HourlyBillingFlag, *guest.Datacenter.Name, *guest.StartCpus)
-	klog.Infof("Machine: Domain: %v, MaxMemory: %v, OSReferenceCode: %v, LocalDiskFlag: %v, HourlyBillingFlag: %v, Datacenter: %v, StartCpus: %v",
-		machineSpec.Domain, machineSpec.MaxMemory, machineSpec.OSReferenceCode, machineSpec.LocalDiskFlag,
-		machineSpec.HourlyBillingFlag, machineSpec.Datacenter, machineSpec.StartCpus)
+	klog.Infof("Guest: Domain: %v, Flavor: %v, OSReferenceCode: %v, HourlyBillingFlag: %v, Datacenter: %v",
+		machineSpec.Domain, *guest.SupplementalCreateObjectOptions.FlavorKeyName, *guest.OperatingSystemReferenceCode,
+		machineSpec.HourlyBillingFlag, *guest.Datacenter.Name)
+	klog.Infof("Machine: Domain: %v, Flavor: %v, OSReferenceCode: %v, HourlyBillingFlag: %v, Datacenter: %v",
+		machineSpec.Domain, machineSpec.Flavor, machineSpec.OSReferenceCode,
+		machineSpec.HourlyBillingFlag, machineSpec.Datacenter)
 
 	klog.Infof("Recreating VM instances for machine %v of cluster %v.", machine.Name, cluster.Name)
 	err = ic.Delete(ctx, cluster, machine)

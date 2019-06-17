@@ -14,11 +14,9 @@ items:
         apiVersion: "ibmcloudproviderconfig/v1alpha1"
         kind: "IBMCloudMachineProviderSpec"
         domain: <domain name> # A domain name for VM instance
-        maxMemory: 4096
-        startCpus: 4
+        flavor: <flavor name> # A valid flavor name
         dataCenter: <datacenter name> # A valid data center name
         osReferenceCode: <the operating system selection> # A valid OS reference code
-        localDiskFlag: true
         hourlyBillingFlag: true
         sshKeyName: cluster-api-provider-ibmcloud # Replace with the label of SSH Key
         sshUserName: root # Replace with user name of SSH Key
@@ -41,11 +39,9 @@ items:
         apiVersion: "ibmcloudproviderconfig/v1alpha1"
         kind: "IBMCloudMachineProviderSpec"
         domain: <domain name>
-        maxMemory: 4096
-        startCpus: 4
+        flavor: <flavor name> # A valid flvaor name
         dataCenter: <datacenter name>
         osReferenceCode: <the operating system selection>
-        localDiskFlag: true
         hourlyBillingFlag: true
         sshKeyName: cluster-api-provider-ibmcloud
         sshUserName: root
