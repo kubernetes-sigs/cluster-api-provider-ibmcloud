@@ -170,6 +170,15 @@ For `machines.yaml`, you can follow the [sample file](https://github.com/kuberne
      -p examples/ibmcloud/out/provider-components.yaml -a examples/ibmcloud/out/addons.yaml
    ```
 
+   **NOTE:** If you have an existing Kubernetes cluster which is created by kind, and the cluster name is `clusterapi`,  you should delete this cluster before run `clusterctl` to create a cluster, for example:
+
+   ```
+   # kind get clusters
+   clusterapi
+   # kind delete cluster --name=clusterapi
+   Deleting cluster "clusterapi" ...
+   ```
+
    - If you are using existing Kubernetes cluster:
    ```bash
    ./clusterctl create cluster --bootstrap-cluster-kubeconfig ~/.kube/config \
