@@ -5,6 +5,7 @@
 - [IBM Cloud](#ibm-cloud)
   - [How to set correct OS reference code in `machines.yaml`?](#how-to-set-correct-os-reference-code-in-machinesyaml)
   - [How to set `dataCenter` value in `machines.yaml`?](#how-to-set-datacenter-value-in-machinesyaml)
+  - [How to set `flavor` value in `machines.yaml`?](#how-to-set-flavor-value-in-machinesyaml)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 

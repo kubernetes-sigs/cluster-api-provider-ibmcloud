@@ -5,6 +5,7 @@
 - [Trouble shooting](#trouble-shooting)
   - [Get log of clusterapi-controller containers](#get-log-of-clusterapi-controller-containers)
   - [Cannot create bootstrap cluster if you are using kind](#cannot-create-bootstrap-cluster-if-you-are-using-kind)
+  - [Calico node keeps CrashLoopBackOff](#calico-node-keeps-crashloopbackoff)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
