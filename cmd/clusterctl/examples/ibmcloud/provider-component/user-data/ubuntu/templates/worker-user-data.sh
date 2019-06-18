@@ -12,6 +12,7 @@ MACHINE+="/"
 MACHINE+={{ .Machine.ObjectMeta.Name }}
 CLUSTER_DNS_DOMAIN={{ .Cluster.Spec.ClusterNetwork.ServiceDomain }}
 POD_CIDR={{ .PodCIDR }}
+NODE_TAINTS_OPTION={{ if .Machine.Spec.Taints }}--register-with-taints={{ taintMap .Machine.Spec.Taints }}{{ end }}
 SERVICE_CIDR={{ .ServiceCIDR }}
 
 swapoff -a
@@ -108,6 +109,12 @@ cat > /etc/systemd/system/kubelet.service.d/20-kubenet.conf <<EOF
 [Service]
 Environment="KUBELET_DNS_ARGS=--cluster-dns=${CLUSTER_DNS_SERVER} --cluster-domain=${CLUSTER_DNS_DOMAIN}"
 EOF
+
+cat > /etc/systemd/system/kubelet.service.d/20-cloud.conf << EOF
+[Service]
+Environment="KUBELET_EXTRA_ARGS=${NODE_TAINTS_OPTION}"
+EOF
+
 systemctl daemon-reload
 systemctl restart kubelet.service
 systemctl disable ufw 

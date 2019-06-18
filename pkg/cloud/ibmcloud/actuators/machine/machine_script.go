@@ -20,8 +20,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 	"text/template"
 
+	corev1 "k8s.io/api/core/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
@@ -41,10 +43,22 @@ type setupParams struct {
 func init() {
 }
 
+func taintMap(taints []corev1.Taint) string {
+	var builder strings.Builder
+	for _, taint := range taints {
+		builder.WriteString(fmt.Sprintf("%s=%s:%s,", taint.Key, taint.Value, taint.Effect))
+	}
+	return strings.TrimRight(builder.String(), ",")
+}
+
 func masterStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine, script string) (string, error) {
 	machineSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
 	if err != nil {
 		return "", err
+	}
+
+	funcMap := map[string]interface{}{
+		"taintMap": taintMap,
 	}
 
 	params := setupParams{
@@ -55,7 +69,7 @@ func masterStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine,
 		ServiceCIDR: getSubnet(cluster.Spec.ClusterNetwork.Services),
 	}
 
-	masterStartUpScript := template.Must(template.New("masterStartUp").Parse(script))
+	masterStartUpScript := template.Must(template.New("masterStartUp").Funcs(funcMap).Parse(script))
 
 	var buf bytes.Buffer
 	if err := masterStartUpScript.Execute(&buf, params); err != nil {
@@ -77,6 +91,10 @@ func nodeStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine, t
 		return getEndpoint(cluster.Status.APIEndpoints[0]), nil
 	}
 
+	funcMap := map[string]interface{}{
+		"taintMap": taintMap,
+	}
+
 	params := setupParams{
 		Token:             token,
 		Cluster:           cluster,
@@ -87,7 +105,7 @@ func nodeStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine, t
 		GetMasterEndpoint: GetMasterEndpoint,
 	}
 
-	nodeStartUpScript := template.Must(template.New("nodeStartUp").Parse(script))
+	nodeStartUpScript := template.Must(template.New("nodeStartUp").Funcs(funcMap).Parse(script))
 
 	var buf bytes.Buffer
 	if err := nodeStartUpScript.Execute(&buf, params); err != nil {
