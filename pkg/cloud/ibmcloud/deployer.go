@@ -74,10 +74,12 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 	}
 	sshUserName := providerSpec.SshUserName
 
-	privateKey := "id_ibmcloud"
+	// get SSH key file
+	privateKey := getSSHKeyFile(homeDir)
+	klog.V(4).Infof("Use ssh key file %s", privateKey)
 
 	result := strings.TrimSpace(util.ExecCommand(
-		"ssh", "-i", homeDir+"/.ssh/"+privateKey,
+		"ssh", "-i", privateKey,
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "BatchMode=yes",
@@ -88,4 +90,14 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 		return "", nil
 	}
 	return strings.TrimSpace(parts[1]), nil
+}
+
+func getSSHKeyFile(homeDir string) string {
+	defaultKey := homeDir + "/.ssh/id_ibmcloud"
+	envPrivateKey, ok := os.LookupEnv("IBMCLOUD_HOST_SSH_PRIVATE_FILE")
+	if !ok || (0 == strings.Compare(envPrivateKey, "")) {
+		return defaultKey
+	}
+	klog.V(3).Infof("Found environment variable SSH private file %s", envPrivateKey)
+	return envPrivateKey
 }

@@ -95,13 +95,18 @@ USERDATA=$PWD/provider-component/user-data
 MASTER_USER_DATA=$USERDATA/$PROVIDER_OS/templates/master-user-data.sh
 WORKER_USER_DATA=$USERDATA/$PROVIDER_OS/templates/worker-user-data.sh
 
-CLOUD_SSH_PRIVATE_FILE=id_ibmcloud
-CLOUD_SSH_HOME=${HOME}/.ssh/
+# Set default
+CLOUD_SSH_PRIVATE_FILE=${HOME}/.ssh/id_ibmcloud
+# Read SSH private file from env
+if [ "x$IBMCLOUD_HOST_SSH_PRIVATE_FILE" != "x" ]; then
+  CLOUD_SSH_PRIVATE_FILE=$IBMCLOUD_HOST_SSH_PRIVATE_FILE
+fi
+
 # Create ssh key to access IBM Cloud machines on demand
-if [ ! -f ${CLOUD_SSH_HOME}${CLOUD_SSH_PRIVATE_FILE} ]; then
+if [ ! -f ${CLOUD_SSH_PRIVATE_FILE} ]; then
   echo "Generating SSH key files for IBM cloud machine access."
   # This is needed because GetKubeConfig assumes the key in the home .ssh dir.
-  ssh-keygen -t rsa -f ${CLOUD_SSH_HOME}${CLOUD_SSH_PRIVATE_FILE}  -N ""
+  ssh-keygen -t rsa -f ${CLOUD_SSH_PRIVATE_FILE}  -N ""
 fi
 
 # Prepare dependecies for kustomize
