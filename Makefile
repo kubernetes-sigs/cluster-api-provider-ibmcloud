@@ -106,7 +106,7 @@ vet: depend generate
 ############################################################
 # test section
 ############################################################
-test: unit functional fmt vet generate_yaml_test
+test: unit functional fmt vet generate_yaml_test 
 
 unit: depend generate check
 	go test -tags=unit $(shell go list ./...) $(TESTARGS)
@@ -125,11 +125,24 @@ kubectl:
 # Generate manifests e.g. CRD, RBAC etc.
 generate_yaml_test: kubectl
 	# Create a dummy file for test only
-	echo 'clouds' > cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
-	$(GENERATE_YAML_PATH)/$(GENERATE_YAML_EXEC) -f dummy-clouds-test.yaml ubuntu $(GENERATE_YAML_TEST_FOLDER)
 	# the folder will be generated under same folder of $(GENERATE_YAML_PATH)
-	rm -fr $(GENERATE_YAML_PATH)/$(GENERATE_YAML_TEST_FOLDER)
-	rm -f cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml
+
+	# "" is to test default value
+	# "id_userCustomKey" is to test custom SSH Key
+	
+	for KeyFile in "" "id_userCustomKey"; \
+	do \
+		if [ "x$${KeyFile}" != "x" ]; then \
+			export IBMCLOUD_HOST_SSH_PRIVATE_FILE=$${KeyFile}; \
+		fi; \
+		echo 'clouds' > cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml; \
+		$(GENERATE_YAML_PATH)/$(GENERATE_YAML_EXEC) -f dummy-clouds-test.yaml ubuntu $(GENERATE_YAML_TEST_FOLDER); \
+		rm -fr $(GENERATE_YAML_PATH)/$(GENERATE_YAML_TEST_FOLDER); \
+		rm -f cmd/clusterctl/examples/ibmcloud/dummy-clouds-test.yaml; \
+		if [ "x$${KeyFile}" != "x" ]; then \
+			unset IBMCLOUD_HOST_SSH_PRIVATE_FILE; \
+		fi; \
+	done
 
 ############################################################
 # build section
