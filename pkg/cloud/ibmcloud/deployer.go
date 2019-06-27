@@ -78,13 +78,16 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 	privateKey := getSSHKeyFile(homeDir)
 	klog.V(4).Infof("Use ssh key file %s", privateKey)
 
-	result := strings.TrimSpace(util.ExecCommand(
+	// ignore the error here as the err might occur due to not ready yet
+	res, err := util.ExecCommand(
 		"ssh", "-i", privateKey,
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "BatchMode=yes",
 		fmt.Sprintf("%s@%s", sshUserName, ip),
-		"echo STARTFILE; sudo cat /etc/kubernetes/admin.conf"))
+		"echo STARTFILE; sudo cat /etc/kubernetes/admin.conf")
+
+	result := strings.TrimSpace(res)
 	parts := strings.Split(result, "STARTFILE")
 	if len(parts) != 2 {
 		return "", nil
