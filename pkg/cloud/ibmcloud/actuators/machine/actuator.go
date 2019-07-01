@@ -190,6 +190,30 @@ func (ic *IBMCloudClient) Delete(ctx context.Context, cluster *clusterv1.Cluster
 	return nil
 }
 
+func (ic *IBMCloudClient) validateGuest(guest *datatypes.Virtual_Guest) error {
+	if guest.Domain == nil {
+		return fmt.Errorf("Guest domain is empty")
+	}
+
+	if guest.OperatingSystemReferenceCode == nil {
+		return fmt.Errorf("OS reference code is empty")
+	}
+
+	if guest.SupplementalCreateObjectOptions == nil || guest.SupplementalCreateObjectOptions.FlavorKeyName == nil {
+		return fmt.Errorf("Guest flavor is empty")
+	}
+
+	if guest.HourlyBillingFlag == nil {
+		return fmt.Errorf("Guest billing flag is empty")
+	}
+
+	if guest.Datacenter == nil || guest.Datacenter.Name == nil {
+		return fmt.Errorf("Guest Data center is empty")
+	}
+
+	return nil
+}
+
 // Update updates a machine and is invoked by the Machine Controller
 func (ic *IBMCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster, machine *clusterv1.Machine) error {
 	klog.Infof("Updating machine %v for cluster %v.", machine.Name, cluster.Name)
@@ -231,13 +255,9 @@ func (ic *IBMCloudClient) Update(ctx context.Context, cluster *clusterv1.Cluster
 		return err
 	}
 
-	if guest.Domain == nil ||
-		guest.OperatingSystemReferenceCode == nil ||
-		guest.SupplementalCreateObjectOptions == nil ||
-		guest.SupplementalCreateObjectOptions.FlavorKeyName == nil ||
-		guest.HourlyBillingFlag == nil ||
-		guest.Datacenter.Name == nil {
-		return fmt.Errorf("Guest does not contain full information.")
+	err = ic.validateGuest(guest)
+	if err != nil {
+		return err
 	}
 
 	if *guest.Domain == machineSpec.Domain &&
