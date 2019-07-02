@@ -293,9 +293,9 @@ func (ic *IBMCloudClient) Exists(ctx context.Context, cluster *clusterv1.Cluster
 		nodeRef, err := ic.getNodeReference(machine.Name)
 		if err == nil {
 			machine.Status.NodeRef = nodeRef
-			klog.Info("Setting machine's nodeRef machine-name", machine.Name, machine.Namespace, nodeRef.Name)
+			klog.Infof("Setting machne %v/%v noderef to %v", machine.Namespace, machine.Name, nodeRef.Name)
 		} else {
-			klog.Info("Cannot set nodeRef", "error", err)
+			klog.Info("Cannot set nodeRef: ", err)
 		}
 	}
 
@@ -306,10 +306,9 @@ func (ic *IBMCloudClient) getNodeReference(name string) (*apicorev1.ObjectRefere
 	getOpt := metav1.GetOptions{}
 	node, err := ic.params.KubeClient.CoreV1().Nodes().Get(name, getOpt)
 	if err != nil {
-		return nil, errors.Errorf("no node found for machine: %s", name)
+		return nil, errors.Errorf("%v set failed: %v", name, err)
 	}
 
-	klog.Info("setting machine node ref:", name)
 	return &apicorev1.ObjectReference{
 		Kind:       "Node",
 		APIVersion: apicorev1.SchemeGroupVersion.String(),
