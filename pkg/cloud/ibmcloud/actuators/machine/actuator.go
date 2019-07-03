@@ -125,7 +125,7 @@ func (ic *IBMCloudClient) Create(ctx context.Context, cluster *clusterv1.Cluster
 		} else {
 			token, err := ic.createBootstrapToken()
 			if err != nil {
-				return fmt.Errorf("Failed to create toke: %s", err)
+				return fmt.Errorf("Failed to create token: %s", err)
 			}
 			userScriptRendered, err = nodeStartupScript(cluster, machine, token, string(userData))
 		}
