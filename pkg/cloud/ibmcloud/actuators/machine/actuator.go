@@ -28,13 +28,14 @@ import (
 	"github.com/softlayer/softlayer-go/sl"
 	apicorev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	tokenapi "k8s.io/cluster-bootstrap/token/api"
 	tokenutil "k8s.io/cluster-bootstrap/token/util"
 	"k8s.io/klog"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/cluster-api/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	ibmcloudv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	bootstrap "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/bootstrap"
@@ -410,10 +411,77 @@ func (ic *IBMCloudClient) createBootstrapToken() (string, error) {
 		return "", err
 	}
 
+	kubeClient, err := getWorkloadClusterKubeClient(ic.client)
+	if err != nil {
+		return "", err
+	}
+
+	err = kubeClient.Create(context.TODO(), tokenSecret)
+	if err != nil {
+		return "", err
+	}
+
 	return tokenutil.TokenFromIDAndSecret(
 		string(tokenSecret.Data[tokenapi.BootstrapTokenIDKey]),
 		string(tokenSecret.Data[tokenapi.BootstrapTokenSecretKey]),
 	), nil
+}
+
+func getWorkloadClusterKubeClient(controllerClient client.Client) (client.Client, error) {
+	var master *clusterv1.Machine
+	var cluster *clusterv1.Cluster
+
+	msList := &clusterv1.MachineList{}
+	listOptions := &client.ListOptions{}
+	err := controllerClient.List(context.TODO(), listOptions, msList)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving machines: %v", err)
+	}
+	for _, m := range msList.Items {
+		if util.IsControlPlaneMachine(&m) {
+			master = &m
+			break
+		}
+	}
+	if master == nil {
+		return nil, fmt.Errorf("could not find master node")
+	}
+
+	clusterList := &clusterv1.ClusterList{}
+	err = controllerClient.List(context.TODO(), listOptions, clusterList)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving clusters: %v", err)
+	}
+	for _, c := range clusterList.Items {
+		if clusterName, ok := master.Labels[clusterv1.MachineClusterLabelName]; ok && clusterName == c.Name {
+			cluster = &c
+		}
+	}
+	if cluster == nil {
+		return nil, fmt.Errorf("could not find cluster")
+	}
+
+	kubeConfig, err := ibmcloud.NewDeploymentClient().GetKubeConfig(cluster, master)
+	if err != nil {
+		return nil, err
+	}
+
+	apiConfig, err := clientcmd.Load([]byte(kubeConfig))
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := clientcmd.NewDefaultClientConfig(*apiConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	mgr, err := manager.New(cfg, manager.Options{})
+	if err != nil {
+		return nil, fmt.Errorf("unable to create manager for restConfig: %v", err)
+	}
+
+	return mgr.GetClient(), nil
 }
 
 func (ic *IBMCloudClient) updatePhase(ctx context.Context, machine *clusterv1.Machine, status string) {

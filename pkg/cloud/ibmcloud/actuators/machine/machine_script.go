@@ -35,6 +35,13 @@ type setupParams struct {
 	Machine     *clusterv1.Machine
 	MachineSpec *ibmcloudv1.IBMCloudMachineProviderSpec
 
+	CACert     string
+	CAKey      string
+	EtcdCACert string
+	EtcdCAKey  string
+	SaCert     string
+	SaKey      string
+
 	PodCIDR           string
 	ServiceCIDR       string
 	GetMasterEndpoint func() (string, error)
@@ -52,24 +59,33 @@ func taintMap(taints []corev1.Taint) string {
 }
 
 func masterStartupScript(cluster *clusterv1.Cluster, machine *clusterv1.Machine, script string) (string, error) {
-	machineSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
+	clusterProviderSpec, err := ibmcloudv1.ClusterSpecFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return "", err
 	}
 
-	funcMap := map[string]interface{}{
-		"taintMap": taintMap,
-	}
+	machineProviderSpec, err := ibmcloudv1.MachineSpecFromProviderSpec(machine.Spec.ProviderSpec)
 
 	params := setupParams{
 		Cluster:     cluster,
 		Machine:     machine,
-		MachineSpec: machineSpec,
+		MachineSpec: machineProviderSpec,
+		CACert:      string(clusterProviderSpec.CAKeyPair.Cert),
+		CAKey:       string(clusterProviderSpec.CAKeyPair.Key),
+		EtcdCACert:  string(clusterProviderSpec.EtcdCAKeyPair.Cert),
+		EtcdCAKey:   string(clusterProviderSpec.EtcdCAKeyPair.Key),
+		SaCert:      string(clusterProviderSpec.SAKeyPair.Cert),
+		SaKey:       string(clusterProviderSpec.SAKeyPair.Key),
 		PodCIDR:     getSubnet(cluster.Spec.ClusterNetwork.Pods),
 		ServiceCIDR: getSubnet(cluster.Spec.ClusterNetwork.Services),
 	}
 
-	masterStartUpScript := template.Must(template.New("masterStartUp").Funcs(funcMap).Parse(script))
+	fMap := map[string]interface{}{
+		"Indent":   templateYAMLIndent,
+		"taintMap": taintMap,
+	}
+
+	masterStartUpScript := template.Must(template.New("masterStartUp").Funcs(fMap).Parse(script))
 
 	var buf bytes.Buffer
 	if err := masterStartUpScript.Execute(&buf, params); err != nil {
@@ -124,4 +140,10 @@ func getSubnet(netRange clusterv1.NetworkRanges) string {
 		return ""
 	}
 	return netRange.CIDRBlocks[0]
+}
+
+func templateYAMLIndent(i int, input string) string {
+	split := strings.Split(input, "\n")
+	ident := "\n" + strings.Repeat(" ", i)
+	return strings.Repeat(" ", i) + strings.Join(split, ident)
 }

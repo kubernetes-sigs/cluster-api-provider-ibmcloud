@@ -95,9 +95,9 @@ func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *i
 
 	keyId := getSshKey(gs.sess, machineSpec.SshKeyName)
 	if keyId == 0 {
-		klog.Infof("Cannot retrieving specific SSH key %q. Stop creating VM instance.", machineSpec.SshKeyName)
-		return
+		klog.Infof("Cannot retrieving specific SSH key %q. Continue creating VM instance.", machineSpec.SshKeyName)
 	}
+
 	sshKeys := []datatypes.Security_Ssh_Key{
 		{
 			Id: sl.Int(keyId),
@@ -121,16 +121,29 @@ func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *i
 	// Create a Virtual_Guest instance from a template
 	// TODO: create instance from spcified subnetwork to avoid CIDR confliction with the pod CIDR and service CIDR
 	// of the provisioned cluster, see:https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/153
-	vGuestTemplate := datatypes.Virtual_Guest{
-		Hostname:                        sl.String(hostName),
-		Domain:                          sl.String(machineSpec.Domain),
-		SupplementalCreateObjectOptions: &options,
-		Datacenter:                      &datatypes.Location{Name: sl.String(machineSpec.Datacenter)},
-		OperatingSystemReferenceCode:    sl.String(machineSpec.OSReferenceCode),
-		HourlyBillingFlag:               sl.Bool(machineSpec.HourlyBillingFlag),
-		SshKeyCount:                     sl.Uint(1),
-		SshKeys:                         sshKeys,
-		UserData:                        userData,
+	var vGuestTemplate datatypes.Virtual_Guest
+	if keyId == 0 {
+		vGuestTemplate = datatypes.Virtual_Guest{
+			Hostname:                        sl.String(hostName),
+			Domain:                          sl.String(machineSpec.Domain),
+			SupplementalCreateObjectOptions: &options,
+			Datacenter:                      &datatypes.Location{Name: sl.String(machineSpec.Datacenter)},
+			OperatingSystemReferenceCode:    sl.String(machineSpec.OSReferenceCode),
+			HourlyBillingFlag:               sl.Bool(machineSpec.HourlyBillingFlag),
+			SshKeyCount:                     sl.Uint(1),
+			SshKeys:                         sshKeys,
+			UserData:                        userData,
+		}
+	} else {
+		vGuestTemplate = datatypes.Virtual_Guest{
+			Hostname:                        sl.String(hostName),
+			Domain:                          sl.String(machineSpec.Domain),
+			SupplementalCreateObjectOptions: &options,
+			Datacenter:                      &datatypes.Location{Name: sl.String(machineSpec.Datacenter)},
+			OperatingSystemReferenceCode:    sl.String(machineSpec.OSReferenceCode),
+			HourlyBillingFlag:               sl.Bool(machineSpec.HourlyBillingFlag),
+			UserData:                        userData,
+		}
 	}
 
 	vGuest, err := s.Mask("id;domain").CreateObject(&vGuestTemplate)

@@ -25,6 +25,7 @@ import (
 
 	providerv1 "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/apis/ibmcloud/v1alpha1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ibmcloud/actuators/services/certificate"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -54,6 +55,19 @@ func (a *IBMCloudClient) Reconcile(cluster *clusterv1.Cluster) error {
 	status, err := providerv1.ClusterStatusFromProviderStatus(cluster.Status.ProviderStatus)
 	if err != nil {
 		return errors.Errorf("failed to load cluster provider status: %v", err)
+	}
+	clusterName := fmt.Sprintf("%s-%s", cluster.Namespace, cluster.Name)
+
+	clusterProviderSpec, err := providerv1.ClusterSpecFromProviderSpec(cluster.Spec.ProviderSpec)
+	if err != nil {
+		return err
+	}
+
+	certificatesService := certificates.NewService()
+	klog.Infof("Reconciling certificates for cluster %s", clusterName)
+	// Store cert material in spec.
+	if err := certificatesService.ReconcileCertificates(clusterName, clusterProviderSpec); err != nil {
+		return errors.Wrapf(err, "failed to reconcile certificates for cluster %q", cluster.Name)
 	}
 
 	defer func() {

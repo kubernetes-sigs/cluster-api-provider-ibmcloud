@@ -35,7 +35,7 @@ if [[ -z "$MASTER" ]]; then
     echo "falling back to localhost"
     MASTER="localhost"
 fi
-MASTER="${MASTER}:443"
+MASTER="${MASTER}:6443"
 
 function install_configure_docker () {
     # prevent docker from auto-starting
@@ -117,7 +117,7 @@ bootstrapTokens:
   - signing
   - authentication
 localAPIEndpoint:
-  bindPort: 443
+  bindPort: 6443
 nodeRegistration:
   criSocket: /var/run/dockershim.sock
   taints:
