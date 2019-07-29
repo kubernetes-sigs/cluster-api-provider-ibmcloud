@@ -35,7 +35,6 @@ type IBMCloudClient struct {
 }
 
 // NewActuator creates a new Actuator
-// NewActuator creates a new Actuator
 func NewActuator(params ibmcloud.ActuatorParams) (*IBMCloudClient, error) {
 	return &IBMCloudClient{
 		params: params,
