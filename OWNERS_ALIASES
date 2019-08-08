@@ -23,13 +23,9 @@ aliases:
     - roberthbailey
     - rsdcastro
     - spew
-  sig-ibmcloud-leads:
-    - ajayapte
+  provider-ibmcloud-leads:
     - bradtopol
-    - khahmed
-    - mdelder
     - spzala
-    - rtheis
   cluster-api-ibmcloud-maintainers:
     - gyliu513
     - jichenjc

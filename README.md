@@ -41,7 +41,7 @@ Learn how to engage with the Kubernetes community on the [community page](http:/
 
 You can reach the maintainers of this project at:
 
-- [#sig-ibmcloud on Kubernetes Slack](https://kubernetes.slack.com/messages/sig-ibmcloud)
+- [#provider-ibmcloud on Kubernetes Slack](https://kubernetes.slack.com/messages/provider-ibmcloud)
 - [SIG-Cluster-Lifecycle Mailing List](https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle)
 
 ### Code of conduct
