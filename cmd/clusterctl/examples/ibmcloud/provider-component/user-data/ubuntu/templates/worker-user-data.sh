@@ -33,9 +33,7 @@ function install_configure_docker () {
     chmod +x /usr/sbin/policy-rc.d
     trap "rm /usr/sbin/policy-rc.d" RETURN
 
-    # TODO: remove the version after kubeadm dependency fixed
-    docker_version=$(apt-cache policy docker.io | grep 18.06 | awk '{print $1}' | head -n 1)
-    apt-get install -y docker.io=${docker_version}
+    apt-get install -y docker.io
 
     echo 'DOCKER_OPTS="--iptables=false --ip-masq=false"' > /etc/default/docker
 
