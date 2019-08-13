@@ -149,13 +149,16 @@ generate_yaml_test: kubectl
 ############################################################
 build: manager clusterctl
 
-manager: depend generate check
+manager: depend generate check mgr
+
+clusterctl: depend generate check cmd
+
+mgr:
 	CGO_ENABLED=0 GOOS=$(GOOS) go build \
 		-ldflags $(LDFLAGS) \
 		-o bin/manager \
 		cmd/manager/main.go
-
-clusterctl: depend generate check
+cmd:
 	CGO_ENABLED=0 GOOS=$(GOOS) go build \
 		-ldflags $(LDFLAGS) \
 		-o bin/clusterctl \
@@ -196,8 +199,8 @@ push-images: push-clusterctl-image push-controller-image
 build-push-images: images push-images
 
 # quickly get target image
-new-controller: controller-image push-controller-image
-new-clusterctl: clusterctl-image push-clusterctl-image
+mgr-img: controller-image push-controller-image
+cmd-img: clusterctl-image push-clusterctl-image
 
 ############################################################
 # clean section
