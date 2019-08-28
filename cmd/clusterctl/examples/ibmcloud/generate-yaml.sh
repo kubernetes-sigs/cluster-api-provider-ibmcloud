@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 # Function that prints out the help message, describing the script
@@ -86,13 +86,13 @@ if [ -e $OUTPUT/provider-components.yaml ] && [ "$OVERWRITE" != "1" ]; then
 fi
 
 kubectlversion=`kubectl version | grep 'Minor:"[0-9]*' -o| grep -o [0-9]*`
-for item in $kubectlversion; 
-do 
-   if [ $item -lt 14 ] ; 
-   then 
+for item in $kubectlversion;
+do
+   if [ $item -lt 14 ] ;
+   then
        echo "kubectl client and server version must equal or bigger than 1.14";
-       exit 1 
-   fi; 
+       exit 1
+   fi;
 done
 
 # Define global variables
@@ -144,4 +144,3 @@ rm -fr $PWD/provider-component/cluster-api/config
 
 echo "---" >> $PWD/$OUTPUT/provider-components.yaml
 kubectl kustomize $USERDATA/$PROVIDER_OS >> $PWD/$OUTPUT/provider-components.yaml
-

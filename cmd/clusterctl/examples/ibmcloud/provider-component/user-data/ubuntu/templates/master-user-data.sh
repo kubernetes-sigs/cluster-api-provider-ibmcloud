@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 set -x
 (
@@ -26,7 +26,7 @@ apt-get update -y
 apt-get install -y \
     prips
 
-# Getting master public ip 
+# Getting master public ip
 # TODO: is there any general way to get IP address in IBM Cloud?
 # e.g. Openstack: curl --fail -s http://169.254.169.254/2009-04-04/meta-data/local-ipv4
 echo "trying to get public ipv4 $i / 60"
@@ -161,4 +161,3 @@ done
 kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://docs.projectcalico.org/v3.5/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 echo done.
 ) 2>&1 | tee /var/log/startup.log
-
