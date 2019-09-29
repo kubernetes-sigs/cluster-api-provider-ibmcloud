@@ -91,6 +91,14 @@
   version = "v2.9.6"
 
 [[projects]]
+  digest = "1:4304cca260ab815326ca42d9c28fb843342748267034c51963e13f5e54e727d1"
+  name = "github.com/evanphx/json-patch"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "026c730a0dcc5d11f93f1cf1cc65b01247ea7b6f"
+  version = "v4.5.0"
+
+[[projects]]
   digest = "1:81466b4218bf6adddac2572a30ac733a9255919bc2f470b4827a317bd4ee1756"
   name = "github.com/ghodss/yaml"
   packages = ["."]
@@ -920,7 +928,7 @@
   version = "kubernetes-1.13.4"
 
 [[projects]]
-  digest = "1:a1872092d102aff259566c971ae5fc579d1f15ff4da631be9b0bba8eb0829c9e"
+  digest = "1:8f99cb1d5731972db727be4fd48e1151c3e7bf71ed0d2ee5621c182c706c99ea"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -972,6 +980,7 @@
     "rest",
     "rest/watch",
     "restmapper",
+    "testing",
     "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
@@ -1106,7 +1115,7 @@
   revision = "d1b07f40847c37e8933056c3eb99be08f87b9a81"
 
 [[projects]]
-  digest = "1:a15aa757c164c2df56a1fe9f716a94573d8954c1e111512d607c70f6c7394ac4"
+  digest = "1:8da446dcb9cf95aecee405248e630c088557d592faab755d0552fe608d9be58b"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
     "pkg/cache",
@@ -1114,6 +1123,7 @@
     "pkg/client",
     "pkg/client/apiutil",
     "pkg/client/config",
+    "pkg/client/fake",
     "pkg/controller",
     "pkg/envtest",
     "pkg/envtest/printer",
@@ -1224,6 +1234,7 @@
     "sigs.k8s.io/cluster-api/pkg/util",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
+    "sigs.k8s.io/controller-runtime/pkg/client/fake",
     "sigs.k8s.io/controller-runtime/pkg/controller",
     "sigs.k8s.io/controller-runtime/pkg/envtest",
     "sigs.k8s.io/controller-runtime/pkg/handler",
