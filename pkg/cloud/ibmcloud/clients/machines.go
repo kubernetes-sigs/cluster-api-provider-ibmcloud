@@ -74,10 +74,10 @@ func NewInstanceServiceFromMachine(kubeClient kubernetes.Interface, machine *clu
 	return NewGuestService(sess), nil
 }
 
-func (gs *GuestService) waitGuestReady(Id int) error {
+func (gs *GuestService) waitGuestReady(ID int) error {
 	// Wait for transactions to finish
 	klog.Info("Waiting for transactions to complete.")
-	s := services.GetVirtualGuestService(gs.sess).Id(Id)
+	s := services.GetVirtualGuestService(gs.sess).Id(ID)
 
 	// Delay to allow transactions to be registered
 	time.Sleep(WaitReadyRetryInterval)
@@ -93,14 +93,14 @@ func (gs *GuestService) waitGuestReady(Id int) error {
 func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *ibmcloudv1.IBMCloudMachineProviderSpec, userScript string) {
 	s := services.GetVirtualGuestService(gs.sess)
 
-	keyId := getSshKey(gs.sess, machineSpec.SshKeyName)
-	if keyId == 0 {
-		klog.Infof("Cannot retrieving specific SSH key %q. Stop creating VM instance.", machineSpec.SshKeyName)
+	keyID := getSSHKey(gs.sess, machineSpec.SSHKeyName)
+	if keyID == 0 {
+		klog.Infof("Cannot retrieving specific SSH key %q. Stop creating VM instance.", machineSpec.SSHKeyName)
 		return
 	}
 	sshKeys := []datatypes.Security_Ssh_Key{
 		{
-			Id: sl.Int(keyId),
+			Id: sl.Int(keyID),
 		},
 	}
 
@@ -148,15 +148,15 @@ func (gs *GuestService) CreateGuest(clusterName, hostName string, machineSpec *i
 	}
 }
 
-func (gs *GuestService) DeleteGuest(Id int) error {
-	s := services.GetVirtualGuestService(gs.sess).Id(Id)
+func (gs *GuestService) DeleteGuest(ID int) error {
+	s := services.GetVirtualGuestService(gs.sess).Id(ID)
 
 	success, err := s.DeleteObject()
 	if err != nil {
-		klog.Errorf("Failed deleting the virtual guest with ID %d: %v", Id, err)
+		klog.Errorf("Failed deleting the virtual guest with ID %d: %v", ID, err)
 		return err
 	} else if success == false {
-		return fmt.Errorf("Failed deleting the virtual guest with ID %d", Id)
+		return fmt.Errorf("Failed deleting the virtual guest with ID %d", ID)
 	}
 
 	err = waitTransactionDone(&s)
@@ -194,7 +194,7 @@ func (gs *GuestService) GetGuest(name, domain string) (*datatypes.Virtual_Guest,
 	return &guests[0], nil
 }
 
-func getSshKey(sess *session.Session, name string) int {
+func getSSHKey(sess *session.Session, name string) int {
 	service := services.GetAccountService(sess)
 
 	sshKeyFilter := filter.Build(

@@ -68,7 +68,7 @@ func TestGetKubeConfig(t *testing.T) {
 	}
 	// ssh user name
 	tmpConfig := ibmcloudv1.IBMCloudMachineProviderSpec{
-		SshUserName: "testUser",
+		SSHUserName: "testUser",
 	}
 
 	bytes, err := yaml.Marshal(tmpConfig)

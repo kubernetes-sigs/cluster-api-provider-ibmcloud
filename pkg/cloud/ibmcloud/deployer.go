@@ -72,7 +72,7 @@ func (d *DeploymentClient) GetKubeConfig(cluster *clusterv1.Cluster, master *clu
 	if err != nil {
 		return "", err
 	}
-	sshUserName := providerSpec.SshUserName
+	sshUserName := providerSpec.SSHUserName
 
 	// get SSH key file
 	privateKey := getSSHKeyFile(homeDir)
