@@ -16,7 +16,7 @@ export TESTARGS ?= $(TESTARGS_DEFAULT)
 DEST := $(GOPATH)/src/$(GIT_HOST)/$(BASE_DIR)
 SOURCES := $(shell find $(DEST) -name '*.go')
 
-# Kctive module mode, as we use go modules to manage dependencies
+# Active module mode, as we use go modules to manage dependencies
 export GO111MODULE=on
 
 HAS_LINT := $(shell command -v golint;)
