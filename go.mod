@@ -2,6 +2,24 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.12
 
+replace (
+    k8s.io/api => k8s.io/api v0.0.0-20190222213804-5cb15d344471
+    k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190228180357-d002e88f6236
+    k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
+    k8s.io/client-go => k8s.io/client-go v0.0.0-20190228174230-b40b2a5939e4
+    k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.0.0-20190612212613-c76815829c2e
+    k8s.io/code-generator => k8s.io/code-generator v0.0.0-20190620073620-d55040311883
+    k8s.io/component-base => k8s.io/component-base v0.0.0-20190626045757-ca439aa083f5
+    k8s.io/gengo => k8s.io/gengo v0.0.0-20190327210449-e17681d19d3a
+    k8s.io/klog => k8s.io/klog v0.3.3
+    k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208
+    sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v0.0.0-20190625161037-d1b07f40847c
+    sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.1.12
+    sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.1.11
+    sigs.k8s.io/testing_frameworks => sigs.k8s.io/testing_frameworks v0.1.1
+    sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.1.0
+)
+
 require (
 	cloud.google.com/go v0.40.0
 	contrib.go.opencensus.io/exporter/ocagent v0.4.12
