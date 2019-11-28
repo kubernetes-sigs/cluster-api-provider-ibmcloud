@@ -17,10 +17,10 @@ FROM golang:1.12.5 as builder
 WORKDIR /go/src/sigs.k8s.io/cluster-api-provider-ibmcloud
 COPY pkg/    pkg/
 COPY cmd/    cmd/
-COPY vendor/ vendor/
+COPY go.mod ./
 
 # build clusterctl
-RUN CGO_ENABLED=0 GOOS=linux go build -a -o clusterctl sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/clusterctl
+RUN export GO111MODULE=on && go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -o clusterctl sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/clusterctl
 
 # Copy clusterctl into a thin image
 FROM alpine:latest

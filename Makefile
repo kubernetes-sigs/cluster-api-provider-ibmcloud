@@ -13,11 +13,12 @@ GOBIN_DEFAULT := $(GOPATH)/bin
 export GOBIN ?= $(GOBIN_DEFAULT)
 TESTARGS_DEFAULT := "-v"
 export TESTARGS ?= $(TESTARGS_DEFAULT)
-PKG := $(shell awk  -F "\"" '/^ignored = / { print $$2 }' Gopkg.toml)
 DEST := $(GOPATH)/src/$(GIT_HOST)/$(BASE_DIR)
 SOURCES := $(shell find $(DEST) -name '*.go')
 
-HAS_DEP := $(shell command -v dep;)
+# Kctive module mode, as we use go modules to manage dependencies
+export GO111MODULE=on
+
 HAS_LINT := $(shell command -v golint;)
 GOX_PARALLEL ?= 3
 TARGETS ?= darwin/amd64 linux/amd64 linux/386 linux/arm linux/arm64 linux/ppc64le
@@ -62,16 +63,15 @@ kubebuilder:
 		&& tar xzf kubebuilder_1.0.8_linux_amd64.tar.gz \
 		&& mv kubebuilder_1.0.8_linux_amd64 kubebuilder && mv kubebuilder $(KUBEBUILDER_PATH) \
 		&& rm kubebuilder_1.0.8_linux_amd64.tar.gz; \
-	fi	
+	fi
 
 depend: work kubebuilder
-ifndef HAS_DEP
-	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-endif
-	dep ensure
+	go mod tidy
+	go mod vendor
 
 depend-update: work
-	dep ensure -update
+	go mod tidy
+	go mod vendor
 
 ############################################################
 # generate section
@@ -106,7 +106,7 @@ vet: depend generate
 ############################################################
 # test section
 ############################################################
-test: unit functional fmt vet generate_yaml_test 
+test: unit functional fmt vet generate_yaml_test
 
 unit: depend generate check
 	go test -tags=unit $(shell go list ./...) $(TESTARGS)
@@ -129,7 +129,7 @@ generate_yaml_test: kubectl
 
 	# "" is to test default value
 	# "id_userCustomKey" is to test custom SSH Key
-	
+
 	for KeyFile in "" "id_userCustomKey"; \
 	do \
 		if [ "x$${KeyFile}" != "x" ]; then \
