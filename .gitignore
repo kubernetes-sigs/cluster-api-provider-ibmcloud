@@ -4,6 +4,7 @@
 # binaries
 bin/
 cmd/clusterctl/clusterctl
+cmd/manager/manager
 
 # command generated files
 kubeconfig
