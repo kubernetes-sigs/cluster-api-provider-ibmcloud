@@ -45,7 +45,9 @@ func main() {
 	}
 
 	// Setup a Manager
-	mgr, err := manager.New(cfg, manager.Options{})
+	mgr, err := manager.New(cfg, manager.Options{
+		LeaderElectionID: "controller-leader-election-cluster-api-provider-ibmcloud",
+	})
 	if err != nil {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
 	}
