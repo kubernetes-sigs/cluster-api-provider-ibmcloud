@@ -12,6 +12,8 @@ cmd/clusterctl/kubeconfig
 
 # scripts outputs
 cmd/clusterctl/examples/ibmcloud/out/
+cmd/clusterctl/examples/ibmcloud/cluster-api-0.1.4
+cmd/clusterctl/examples/ibmcloud/v0.1.4.tar.gz
 cmd/clusterctl/examples/ibmcloud/clouds.yaml
 cmd/clusterctl/examples/ibmcloud/provider-component/clouds-secrets/configs
 cmd/clusterctl/examples/ibmcloud/provider-component/user-data/ubuntu/master-user-data.sh

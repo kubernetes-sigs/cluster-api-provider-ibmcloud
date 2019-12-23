@@ -137,7 +137,11 @@ kubectl kustomize $PWD/provider-component/clouds-secrets >> $PWD/$OUTPUT/provide
 
 
 #latest kustomize do not allow include files outside the build folder, copy temply
-cp -r $CONFIG_DIR/../../../../../../../vendor/sigs.k8s.io/cluster-api/config $PWD/provider-component/cluster-api
+if [ ! -f v0.1.4.tar.gz ]; then
+  curl -LO https://github.com/kubernetes-sigs/cluster-api/archive/v0.1.4.tar.gz
+  tar xvf v0.1.4.tar.gz cluster-api-0.1.4/config
+fi
+cp -r ./cluster-api-0.1.4/config $PWD/provider-component/cluster-api
 echo "---" >> $PWD/$OUTPUT/provider-components.yaml
 kubectl kustomize $PWD/provider-component/cluster-api >> $PWD/$OUTPUT/provider-components.yaml
 rm -fr $PWD/provider-component/cluster-api/config
