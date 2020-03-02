@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/klog"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 
@@ -33,8 +34,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
+var (
+	//flags
+	healthAddr string
+)
+
 func main() {
 	klog.InitFlags(nil)
+	flag.StringVar(&healthAddr, "health-addr", ":9440", "The address the health endpoint binds to.")
 	flag.Parse()
 
 	klog.Info("Starting controller of IBM cloud provider for cluster api")
@@ -46,7 +53,8 @@ func main() {
 
 	// Setup a Manager
 	mgr, err := manager.New(cfg, manager.Options{
-		LeaderElectionID: "controller-leader-election-cluster-api-provider-ibmcloud",
+		LeaderElectionID:       "controller-leader-election-cluster-api-provider-ibmcloud",
+		HealthProbeBindAddress: healthAddr,
 	})
 	if err != nil {
 		klog.Fatalf("unable to set up overall controller manager: %v", err)
@@ -64,6 +72,14 @@ func main() {
 
 	if err := controller.AddToManager(mgr); err != nil {
 		klog.Fatalf("Error initializing controllers: %v", err)
+	}
+
+	if err := mgr.AddReadyzCheck("ping", healthz.Ping); err != nil {
+		klog.Fatalf("unable to create health check: %v", err)
+	}
+
+	if err := mgr.AddHealthzCheck("ping", healthz.Ping); err != nil {
+		klog.Fatalf("unable to create health check: %v", err)
 	}
 
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {

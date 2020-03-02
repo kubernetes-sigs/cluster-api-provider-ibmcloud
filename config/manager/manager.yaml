@@ -71,6 +71,17 @@ spec:
             cpu: 100m
             memory: 20Mi
         ports:
+        - containerPort: 9440
+          name: healthz
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: healthz
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: healthz
         volumeMounts:
         - mountPath: /etc/ibmcloud/
           readOnly: true
