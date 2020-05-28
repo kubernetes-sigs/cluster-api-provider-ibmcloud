@@ -2,14 +2,14 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Trouble shooting](#trouble-shooting)
+- [Troubleshooting](#troubleshooting)
   - [Get log of clusterapi-controller containers](#get-log-of-clusterapi-controller-containers)
   - [Cannot create bootstrap cluster if you are using kind](#cannot-create-bootstrap-cluster-if-you-are-using-kind)
   - [Calico node keeps CrashLoopBackOff](#calico-node-keeps-crashloopbackoff)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Trouble shooting
+# Troubleshooting
 
 This guide (based on minikube and others should be similar) explains general info on how to debug issues if cluster failed to create.
 
@@ -31,7 +31,7 @@ This guide (based on minikube and others should be similar) explains general inf
    ```
 
 ## Cannot create bootstrap cluster if you are using kind
-   
+
    Check if kind works well.
 
    ```
