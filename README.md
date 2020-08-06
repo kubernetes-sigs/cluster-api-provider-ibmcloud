@@ -142,7 +142,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) to `examples/ibmcloud/out/` directory:
 
    ```bash
-   wget -O  addons.yaml  https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+   wget -O addons.yaml https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
    ```
 
    Add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created. The dashboard pod will be created and user is able to logon through k8s dashboard:
@@ -222,28 +222,28 @@ resources using kubectl:
 
 ```
 # kubectl --kubeconfig=kubeconfig get clusters
-NAME    AGE
-test1   28m
+NAME    AGE
+test1   28m
 # kubectl --kubeconfig=kubeconfig get machines
-NAME                    PROVIDERID              PHASE
-ibmcloud-master-464lh   ibmcloud:////82692207   Running
-ibmcloud-node-rjtnv     ibmcloud:////82692501   Running
+NAME                    PROVIDERID              PHASE
+ibmcloud-master-464lh   ibmcloud:////82692207   Running
+ibmcloud-node-rjtnv     ibmcloud:////82692501   Running
 # kubectl --kubeconfig=kubeconfig get machines -o yaml
 apiVersion: v1
 items:
 - apiVersion: cluster.k8s.io/v1alpha1
-  kind: Machine
-  metadata:
-    annotations:
-      ibmcloud-ip-address: 158.85.27.183
-    creationTimestamp: "2019-06-15T15:56:16Z"
-    finalizers:
-    - foregroundDeletion
-    - machine.cluster.k8s.io
-    generateName: ibmcloud-master-
-    generation: 1
-    labels:
-      cluster.k8s.io/cluster-name: test1
+  kind: Machine
+  metadata:
+    annotations:
+      ibmcloud-ip-address: 158.85.27.183
+    creationTimestamp: "2019-06-15T15:56:16Z"
+    finalizers:
+    - foregroundDeletion
+    - machine.cluster.k8s.io
+    generateName: ibmcloud-master-
+    generation: 1
+    labels:
+      cluster.k8s.io/cluster-name: test1
 ...
 ```
 
