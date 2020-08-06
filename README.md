@@ -104,14 +104,27 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
         authenticationKey: "Your API Authentication Key"
    ```
 
-   You can get `apiUserName` and `authenticationKey` from https://control.softlayer.com/ .
-   - Logon to https://control.softlayer.com/ .
-   - Click your user name on the right top of the console.
-   ![ibmcloud account](docs/images/ibmcloud-account.png)
-   - The console will navigate you to the page of `Edit User Profile`.
-   ![ibmcloud profile](docs/images/ibmcloud-profile.png)
-   - Scroll down the page to the bottom, you will see a section `API Access Information`. You can get `apiUserName` and `authenticationKey` from there.
-   ![ibmcloud auth](docs/images/ibmcloud-auth.png)
+   You can get `apiUserName` and `authenticationKey` from [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started).
+   - Login to IBM Cloud with your account
+   ```shell
+   $ ibmcloud login
+   ```
+   - List user accounts to get an account for IBM Cloud operation
+   ```shell
+   $ ibmcloud sl user list
+   id        username                     email                displayName
+   xxxxxxx   your_user_name@email.example name@email.example   Your_Name
+   ```
+   - Get user details with your `id`
+   ```shell
+   $ ibmcloud sl user detail your_id --keys
+   name           value
+   ...
+   Username       your_user_name@email.example
+   APIKEY         fakekey001
+   ...
+   ```
+   You got `Username` and `APIKEY` to configure `apiUserName` and `authenticationKey` of your `clouds.yaml`
 
    #### Special notes on SSH keys and fetching `admin.conf`
 
@@ -129,7 +142,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
    Optionally, add a `addons.yaml` can provide additional add ons in target cluster, for example, download [k8s dashboard](https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml) to `examples/ibmcloud/out/` directory:
 
    ```bash
-   wget -O  addons.yaml  https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
+   wget -O addons.yaml https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended/kubernetes-dashboard.yaml
    ```
 
    Add `-a examples/ibmcloud/out/addons.yaml` in `clusterctl` command, after cluster created. The dashboard pod will be created and user is able to logon through k8s dashboard:
@@ -209,28 +222,28 @@ resources using kubectl:
 
 ```
 # kubectl --kubeconfig=kubeconfig get clusters
-NAME    AGE
-test1   28m
+NAME    AGE
+test1   28m
 # kubectl --kubeconfig=kubeconfig get machines
-NAME                    PROVIDERID              PHASE
-ibmcloud-master-464lh   ibmcloud:////82692207   Running
-ibmcloud-node-rjtnv     ibmcloud:////82692501   Running
+NAME                    PROVIDERID              PHASE
+ibmcloud-master-464lh   ibmcloud:////82692207   Running
+ibmcloud-node-rjtnv     ibmcloud:////82692501   Running
 # kubectl --kubeconfig=kubeconfig get machines -o yaml
 apiVersion: v1
 items:
 - apiVersion: cluster.k8s.io/v1alpha1
-  kind: Machine
-  metadata:
-    annotations:
-      ibmcloud-ip-address: 158.85.27.183
-    creationTimestamp: "2019-06-15T15:56:16Z"
-    finalizers:
-    - foregroundDeletion
-    - machine.cluster.k8s.io
-    generateName: ibmcloud-master-
-    generation: 1
-    labels:
-      cluster.k8s.io/cluster-name: test1
+  kind: Machine
+  metadata:
+    annotations:
+      ibmcloud-ip-address: 158.85.27.183
+    creationTimestamp: "2019-06-15T15:56:16Z"
+    finalizers:
+    - foregroundDeletion
+    - machine.cluster.k8s.io
+    generateName: ibmcloud-master-
+    generation: 1
+    labels:
+      cluster.k8s.io/cluster-name: test1
 ...
 ```
 
