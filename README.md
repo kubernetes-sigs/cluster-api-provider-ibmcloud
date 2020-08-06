@@ -104,14 +104,27 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
         authenticationKey: "Your API Authentication Key"
    ```
 
-   You can get `apiUserName` and `authenticationKey` from https://control.softlayer.com/ .
-   - Logon to https://control.softlayer.com/ .
-   - Click your user name on the right top of the console.
-   ![ibmcloud account](docs/images/ibmcloud-account.png)
-   - The console will navigate you to the page of `Edit User Profile`.
-   ![ibmcloud profile](docs/images/ibmcloud-profile.png)
-   - Scroll down the page to the bottom, you will see a section `API Access Information`. You can get `apiUserName` and `authenticationKey` from there.
-   ![ibmcloud auth](docs/images/ibmcloud-auth.png)
+   You can get `apiUserName` and `authenticationKey` from [IBM Cloud CLI](https://cloud.ibm.com/docs/cli?topic=cli-getting-started).
+   - Login to IBM Cloud with your account
+   ```shell
+   $ ibmcloud login
+   ```
+   - List user accounts to get an account for IBM Cloud operation
+   ```shell
+   $ ibmcloud sl user list
+   id        username                     email                displayName
+   xxxxxxx   your_user_name@email.example name@email.example   Your_Name
+   ```
+   - Get user details with your `id`
+   ```shell
+   $ ibmcloud sl user detail your_id --keys
+   name           value
+   ...
+   Username       your_user_name@email.example
+   APIKEY         fakekey001
+   ...
+   ```
+   You got `Username` and `APIKEY` to configure `apiUserName` and `authenticationKey` of your `clouds.yaml`
 
    #### Special notes on SSH keys and fetching `admin.conf`
 
