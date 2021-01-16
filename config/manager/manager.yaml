@@ -3,66 +3,32 @@ kind: Namespace
 metadata:
   labels:
     control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
-  name: ibmcloud-provider-system
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: controller-manager-service
-  namespace: ibmcloud-provider-system
-  labels:
-    control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
-spec:
-  selector:
-    control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
-  ports:
-  - port: 443
+  name: system
 ---
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
-  name: clusterapi-controller
-  namespace: ibmcloud-provider-system
+  name: controller-manager
+  namespace: system
   labels:
     control-plane: controller-manager
-    controller-tools.k8s.io: "1.0"
 spec:
-  replicas: 1
   selector:
     matchLabels:
       control-plane: controller-manager
-      controller-tools.k8s.io: "1.0"
-  serviceName: controller-manager-service
+  replicas: 1
   template:
     metadata:
       labels:
         control-plane: controller-manager
-        controller-tools.k8s.io: "1.0"
     spec:
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - effect: NoExecute
-        key: node.kubernetes.io/not-ready
-        operator: Exists
-      - effect: NoExecute
-        key: node.kubernetes.io/unreachable
-        operator: Exists
       containers:
-      - name: ibmcloud-machine-controller
-        image: quay.io/cluster-api-provider-ibmcloud/controller:latest
+      - command:
+        - /manager
         args:
-          - --wait_transactions_timeout=600s
-        env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
+        - --enable-leader-election
+        image: controller:latest
+        name: manager
         resources:
           limits:
             cpu: 100m
@@ -70,17 +36,4 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
-        ports:
-        volumeMounts:
-        - mountPath: /etc/ibmcloud/
-          readOnly: true
-          name: cloud-config
       terminationGracePeriodSeconds: 10
-      volumes:
-      - name: kubeadm
-        hostPath:
-          path: /usr/bin/kubeadm
-      - name: cloud-config
-        secret:
-          defaultMode: 420
-          secretName: cloud-config
