@@ -21,8 +21,8 @@ import (
 	"os"
 
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "github.com/multicloudlab/cluster-api-provider-ibmvpccloud/api/v1alpha3"
-	"github.com/multicloudlab/cluster-api-provider-ibmvpccloud/cloud/scope"
+	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
+	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

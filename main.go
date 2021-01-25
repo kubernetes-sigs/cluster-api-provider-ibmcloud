@@ -28,8 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	infrastructurev1alpha3 "github.com/multicloudlab/cluster-api-provider-ibmvpccloud/api/v1alpha3"
-	"github.com/multicloudlab/cluster-api-provider-ibmvpccloud/controllers"
+	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
+	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/controllers"
 	// +kubebuilder:scaffold:imports
 )
 
