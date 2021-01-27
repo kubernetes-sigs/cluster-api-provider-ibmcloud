@@ -1,4 +1,4 @@
-module github.com/multicloudlab/cluster-api-provider-ibmvpccloud
+module github.com/kubernetes-sigs/cluster-api-provider-ibmcloud
 
 go 1.13
 
@@ -20,5 +20,4 @@ require (
 	sigs.k8s.io/cluster-api v0.3.9
 	sigs.k8s.io/controller-runtime v0.5.10
 	sigs.k8s.io/controller-tools v0.2.6 // indirect
-	sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06 // indirect
 )

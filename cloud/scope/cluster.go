@@ -84,8 +84,11 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	if err != nil {
 		return nil, err
 	} else {
-		s.updateDefaultSG(*vpc.DefaultSecurityGroup.ID)
-		return vpc, nil
+		if err := s.updateDefaultSG(*vpc.DefaultSecurityGroup.ID); err != nil {
+			return nil, err
+		} else {
+			return vpc, nil
+		}
 	}
 }
 
@@ -207,7 +210,9 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 			return subnet, err
 		}
 		if pgw != nil {
-			s.attachPublicGateWay(*subnet.ID, *pgw.ID)
+			if _, err := s.attachPublicGateWay(*subnet.ID, *pgw.ID); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return subnet, err

@@ -3,6 +3,12 @@
 IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1"
+TOOLS_DIR := hack/tools
+TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/bin)
+GO_INSTALL = ./scripts/go_install.sh
+GOLANGCI_LINT_VER := v1.31.0
+GOLANGCI_LINT_BIN := golangci-lint
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -79,3 +85,14 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+## --------------------------------------
+## Linting
+## --------------------------------------
+
+.PHONY: lint
+lint: $(GOLANGCI_LINT) ## Lint codebase
+	$(GOLANGCI_LINT) run -v --fast=false
+
+$(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
