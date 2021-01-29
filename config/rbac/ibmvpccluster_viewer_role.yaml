@@ -1,0 +1,20 @@
+# permissions for end users to view ibmvpcclusters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ibmvpccluster-viewer-role
+rules:
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io 
+  resources:
+  - ibmvpcclusters
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io 
+  resources:
+  - ibmvpcclusters/status
+  verbs:
+  - get

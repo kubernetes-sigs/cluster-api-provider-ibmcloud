@@ -1,5 +1,0 @@
-clouds:
-  ibmcloud:
-    auth:
-      apiUserName: "Your API Username"
-      authenticationKey: "Your API Authentication Key"  
