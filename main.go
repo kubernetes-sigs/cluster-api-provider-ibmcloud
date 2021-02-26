@@ -88,6 +88,22 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
 		os.Exit(1)
 	}
+	if err = (&controllers.IBMPowerVSClusterReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSCluster")
+		os.Exit(1)
+	}
+	if err = (&controllers.IBMPowerVSMachineReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

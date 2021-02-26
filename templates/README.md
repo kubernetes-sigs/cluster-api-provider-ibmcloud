@@ -1,6 +1,8 @@
 Render the template via clusterctl
 ==================================
 
+## VPC
+
 ```
 IBMVPC_REGION=us-south-1 \
 IBMVPC_ZONE=us-south-1 \
@@ -14,4 +16,21 @@ clusterctl config cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
 --control-plane-machine-count=1 \
 --worker-machine-count=2 \
 --from ~/.cluster-api/dev-repository/infrastructure-ibmvpccloud/v0.3.8/cluster-template.yaml
+```
+
+## Power VS
+
+```shell
+IBMPOWERVS_SSHKEY_NAME="mkumatag-pub-key" \
+IBMPOWERVS_VIP="192.168.150.125" \
+IBMPOWERVS_VIP_EXTERNAL="158.175.161.125" \
+IBMPOWERVS_VIP_CIDR="29" \
+IBMPOWERVS_IMAGE_ID="fb2f75d1-1157-40b9-af2f-5459685ca089" \
+IBMPOWERVS_SERVICE_INSTANCE_ID="e449d86e-c3a0-4c07-959e-8557fdf55482" \
+IBMPOWERVS_NETWORK_ID="07ba61c2-64a4-42ce-911e-a3b3656eab7c" \
+clusterctl config cluster ibm-powervs-1 --kubernetes-version v1.21.2 \
+--target-namespace default \
+--control-plane-machine-count=3 \
+--worker-machine-count=1 \
+--from ./cluster-template-powervs.yaml
 ```
