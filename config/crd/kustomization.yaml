@@ -1,3 +1,5 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
 commonLabels:
   cluster.x-k8s.io/v1alpha3: v1alpha3
   
@@ -8,6 +10,7 @@ commonLabels:
 resources:
 - bases/infrastructure.cluster.x-k8s.io_ibmvpcclusters.yaml
 - bases/infrastructure.cluster.x-k8s.io_ibmvpcmachines.yaml
+- bases/infrastructure.cluster.x-k8s.io_ibmvpcmachinetemplates.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
