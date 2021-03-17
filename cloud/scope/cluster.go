@@ -8,7 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	infrav1 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
 	"github.com/pkg/errors"
-	"k8s.io/klog/klogr"
+	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
