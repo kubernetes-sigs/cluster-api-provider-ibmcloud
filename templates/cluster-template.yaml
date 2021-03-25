@@ -52,6 +52,7 @@ spec:
     namespace: "${NAMESPACE}"
   kubeadmConfigSpec:
     clusterConfiguration:
+      kubernetesVersion: ${KUBERNETES_VERSION}
       controllerManager:
         extraArgs: {enable-hostpath-provisioner: 'true'}
       apiServer:
