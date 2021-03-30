@@ -7,7 +7,7 @@ metadata:
     prometheus.io/scheme: "https"
   labels:
     control-plane: controller-manager
-  name: controller-manager-metrics-service
+  name: controller-manager-metrics-svc
   namespace: system
 spec:
   ports:
