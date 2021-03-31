@@ -118,7 +118,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 	}()
 
 	// Handle deleted machines
-	if !ibmVpcMachine.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !ibmVpcMachine.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(machineScope)
 	}
 
