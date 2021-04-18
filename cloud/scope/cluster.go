@@ -254,18 +254,9 @@ func (s *ClusterScope) DeleteSubnet() error {
 	pgw, _, err := s.IBMVPCClients.VPCService.GetSubnetPublicGateway(getPGWOptions)
 	if pgw != nil && err == nil { // publicgateway found
 		// Unset the publicgateway for subnet first
-		unsetPGWOption := &vpcv1.UnsetSubnetPublicGatewayOptions{}
-		unsetPGWOption.SetID(subnetID)
-		_, err = s.IBMVPCClients.VPCService.UnsetSubnetPublicGateway(unsetPGWOption)
+		err = s.detachPublicGateway(subnetID, *pgw.ID)
 		if err != nil {
-			return errors.Wrap(err, "Error when unsetting publicgateway for subnet "+subnetID)
-		}
-		// Delete the public gateway
-		deletePGWOption := &vpcv1.DeletePublicGatewayOptions{}
-		deletePGWOption.SetID(*pgw.ID)
-		_, err = s.IBMVPCClients.VPCService.DeletePublicGateway(deletePGWOption)
-		if err != nil {
-			return errors.Wrap(err, "Error when deleting publicgateway for subnet "+subnetID)
+			return errors.Wrap(err, "Error when detaching publicgateway for subnet "+subnetID)
 		}
 	}
 
@@ -301,17 +292,21 @@ func (s *ClusterScope) attachPublicGateWay(subnetID string, pgwID string) (*vpcv
 	return publicGateway, err
 }
 
-func (s *ClusterScope) detatchPublicGateway(subnetID string, pgwID string) error {
+func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error {
 	// Unset the publicgateway first, and then delete it
-	unsetPGWOption := &vpcv1.UnsetSubnetPublicGatewayOptions{
-		ID: &subnetID,
-	}
+	unsetPGWOption := &vpcv1.UnsetSubnetPublicGatewayOptions{}
+	unsetPGWOption.SetID(subnetID)
 	_, err := s.IBMVPCClients.VPCService.UnsetSubnetPublicGateway(unsetPGWOption)
-
 	if err != nil {
-		deletePGWOption := &vpcv1.DeletePublicGatewayOptions{}
-		deletePGWOption.SetID(pgwID)
-		_, err = s.IBMVPCClients.VPCService.DeletePublicGateway(deletePGWOption)
+		return errors.Wrap(err, "Error when unsetting publicgateway for subnet "+subnetID)
+	}
+
+	// Delete the public gateway
+	deletePGWOption := &vpcv1.DeletePublicGatewayOptions{}
+	deletePGWOption.SetID(pgwID)
+	_, err = s.IBMVPCClients.VPCService.DeletePublicGateway(deletePGWOption)
+	if err != nil {
+		return errors.Wrap(err, "Error when deleting publicgateway for subnet "+subnetID)
 	}
 	return err
 }
