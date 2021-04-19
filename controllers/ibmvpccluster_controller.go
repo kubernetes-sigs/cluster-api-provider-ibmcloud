@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/go-logr/logr"
 	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
 	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
@@ -158,6 +159,27 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 }
 
 func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+	// check if still have existing VSIs
+	listVSIOpts := &vpcv1.ListInstancesOptions{
+		VPCID: &clusterScope.IBMVPCCluster.Status.VPC.ID,
+	}
+	vsis, _, err := clusterScope.VPCService.ListInstances(listVSIOpts)
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "Error when listing VSIs when tried to delete subnet ")
+	}
+	// skip deleting other resources if still have vsis running
+	if *vsis.TotalCount != int64(0) {
+		return ctrl.Result{}, nil
+	}
+
+	if err := clusterScope.DeleteSubnet(); err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "failed to delete subnet")
+	}
+
+	if err := clusterScope.DeleteFloatingIP(); err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "failed to delete floatingIP")
+	}
+
 	if err := clusterScope.DeleteVPC(); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to delete VPC")
 	} else {

@@ -170,6 +170,17 @@ func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error
 	}
 }
 
+func (s *ClusterScope) DeleteFloatingIP() error {
+	fipID := *s.IBMVPCCluster.Status.APIEndpoint.FIPID
+	if fipID != "" {
+		deleteFIPOption := &vpcv1.DeleteFloatingIPOptions{}
+		deleteFIPOption.SetID(fipID)
+		_, err := s.IBMVPCClients.VPCService.DeleteFloatingIP(deleteFIPOption)
+		return err
+	}
+	return nil
+}
+
 func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 	subnetName := s.IBMVPCCluster.Name + "-subnet"
 	subnetReply, err := s.ensureSubnetUnique(subnetName)
@@ -234,6 +245,31 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 	}
 }
 
+func (s *ClusterScope) DeleteSubnet() error {
+	subnetID := *s.IBMVPCCluster.Status.Subnet.ID
+
+	// get the pgw id for given subnet, so we can delete it later
+	getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{}
+	getPGWOptions.SetID(subnetID)
+	pgw, _, err := s.IBMVPCClients.VPCService.GetSubnetPublicGateway(getPGWOptions)
+	if pgw != nil && err == nil { // publicgateway found
+		// Unset the publicgateway for subnet first
+		err = s.detachPublicGateway(subnetID, *pgw.ID)
+		if err != nil {
+			return errors.Wrap(err, "Error when detaching publicgateway for subnet "+subnetID)
+		}
+	}
+
+	// Delete subnet
+	deleteSubnetOption := &vpcv1.DeleteSubnetOptions{}
+	deleteSubnetOption.SetID(subnetID)
+	_, err = s.IBMVPCClients.VPCService.DeleteSubnet(deleteSubnetOption)
+	if err != nil {
+		return errors.Wrap(err, "Error when deleting subnet ")
+	}
+	return err
+}
+
 func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string) (*vpcv1.PublicGateway, error) {
 	options := &vpcv1.CreatePublicGatewayOptions{}
 	options.SetVPC(&vpcv1.VPCIdentity{
@@ -254,6 +290,25 @@ func (s *ClusterScope) attachPublicGateWay(subnetID string, pgwID string) (*vpcv
 	})
 	publicGateway, _, err := s.IBMVPCClients.VPCService.SetSubnetPublicGateway(options)
 	return publicGateway, err
+}
+
+func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error {
+	// Unset the publicgateway first, and then delete it
+	unsetPGWOption := &vpcv1.UnsetSubnetPublicGatewayOptions{}
+	unsetPGWOption.SetID(subnetID)
+	_, err := s.IBMVPCClients.VPCService.UnsetSubnetPublicGateway(unsetPGWOption)
+	if err != nil {
+		return errors.Wrap(err, "Error when unsetting publicgateway for subnet "+subnetID)
+	}
+
+	// Delete the public gateway
+	deletePGWOption := &vpcv1.DeletePublicGatewayOptions{}
+	deletePGWOption.SetID(pgwID)
+	_, err = s.IBMVPCClients.VPCService.DeletePublicGateway(deletePGWOption)
+	if err != nil {
+		return errors.Wrap(err, "Error when deleting publicgateway for subnet "+subnetID)
+	}
+	return err
 }
 
 // PatchObject persists the cluster configuration and status.
