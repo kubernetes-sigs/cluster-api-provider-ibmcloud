@@ -54,23 +54,96 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 3. Install a [driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md) **if you are using minikube**. For Linux, we recommend kvm2. For MacOS, we recommend VirtualBox.
 4. An appropriately configured [Go development environment](https://golang.org/doc/install)
 5. Install `clusterctl` tool (see [here](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl))
+
 ### Cluster Creation
 
-1. Create a cluster:
+1. Create Management Cluster
 
-You can use clusterctl to render the yaml through templates.
+    Using kind:
 
-```
-IBMVPC_REGION=us-south-1 \
-IBMVPC_ZONE=us-south-1 \
-IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
-IBMVPC_NAME=ibm-vpc-1 \
-IBMVPC_IMAGE_ID=r134-ea84bbec-7986-4ff5-8489-d9ec34611dd4 \
-IBMVPC_PROFILE=bx2-4x16 \
-IBMVPC_SSHKEY_ID=r134-2a82b725-e570-43d3-8b23-9539e8641944 \
-clusterctl config cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
---target-namespace default \
---control-plane-machine-count=1 \
---worker-machine-count=2 \
---from ./templates/cluster-template.yaml | kubectl apply -f -
-```
+    ```
+    kind create cluster
+    ```
+
+2. Apply CRDs
+
+    ```
+    kubectl apply -f config/crd/bases
+    ```
+
+    Output:
+    ```
+    customresourcedefinition.apiextensions.k8s.io/ibmvpcclusters.infrastructure.cluster.x-k8s.io created
+    customresourcedefinition.apiextensions.k8s.io/ibmvpcmachines.infrastructure.cluster.x-k8s.io created
+    customresourcedefinition.apiextensions.k8s.io/ibmvpcmachinetemplates.infrastructure.cluster.x-k8s.io created
+    ```
+
+3. Initialize Management Cluster
+
+    ```
+    clusterctl init
+    ```
+
+    Output:
+    ```
+    Fetching providers
+    Installing cert-manager Version="v1.1.0"
+    Waiting for cert-manager to be available...
+    Installing Provider="cluster-api" Version="v0.3.16" TargetNamespace="capi-system"
+    Installing Provider="bootstrap-kubeadm" Version="v0.3.16" TargetNamespace="capi-kubeadm-bootstrap-system"
+    Installing Provider="control-plane-kubeadm" Version="v0.3.16" TargetNamespace="capi-kubeadm-control-plane-system"
+
+    Your management cluster has been initialized successfully!
+
+    You can now create your first workload cluster by running the following:
+
+      clusterctl config cluster [name] --kubernetes-version [version] | kubectl apply -f -
+    ```
+
+4. Set Workload Cluster Environment Variables
+
+   ```
+
+   export IAM_ENDPOINT=https://iam.test.cloud.ibm.com/identity/token
+   export SERVICE_ENDPOINT=https://us-east.iaas.cloud.ibm.com/v1
+   export API_KEY=<YOUR_API_KEY>
+
+   ```
+
+5. Run Provider Controllers
+
+    ```
+    make run
+    ```
+
+6. Create a cluster:
+
+    You can use clusterctl to render the yaml through templates.
+
+    ```
+    IBMVPC_REGION=us-south \
+    IBMVPC_ZONE=us-south-1 \
+    IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
+    IBMVPC_NAME=ibm-vpc-1 \
+    IBMVPC_IMAGE_ID=r134-ea84bbec-7986-4ff5-8489-d9ec34611dd4 \
+    IBMVPC_PROFILE=bx2-4x16 \
+    IBMVPC_SSHKEY_ID=r134-2a82b725-e570-43d3-8b23-9539e8641944 \
+    clusterctl config cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
+    --target-namespace default \
+    --control-plane-machine-count=1 \
+    --worker-machine-count=2 \
+    --from ./templates/cluster-template.yaml | kubectl apply -f -
+    ```
+
+    Output:
+    ```
+    cluster.cluster.x-k8s.io/ibm-vpc-5 created
+    ibmvpccluster.infrastructure.cluster.x-k8s.io/ibm-vpc-5 created
+    kubeadmcontrolplane.controlplane.cluster.x-k8s.io/ibm-vpc-5-control-plane created
+    ibmvpcmachinetemplate.infrastructure.cluster.x-k8s.io/ibm-vpc-5-control-plane created
+    machinedeployment.cluster.x-k8s.io/ibm-vpc-5-md-0 created
+    ibmvpcmachinetemplate.infrastructure.cluster.x-k8s.io/ibm-vpc-5-md-0 created
+    kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-vpc-5-md-0 created
+    ```
+
+    **Note:** the image ID field above must currently reference a custom vm that gets imported as a custom image for VSI provisioning in IBM Cloud VPC2.
