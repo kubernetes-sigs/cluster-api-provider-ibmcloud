@@ -197,7 +197,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
     ```
     ~ kubectl get clusters
     NAME         PHASE
-    ibm-vpc-0   Provisioned
+    ibm-vpc-0    Provisioned
     ```
 
     Kubeadm Control Plane
