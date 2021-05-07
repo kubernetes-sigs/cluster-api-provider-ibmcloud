@@ -236,7 +236,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
     NAME              PHASE       REPLICAS   READY   UPDATED   UNAVAILABLE
     ibm-vpc-0-md-0    Running     2          2       2
 
-    ~ kubectl edit machinedeployment ibm-vpc-0-md-0
+    ~ kubectl scale machinedeployment ibm-vpc-0-md-0 --replicas 3
     ```
 
     Increase / decrease the `replicas: 2` count in the spec section to see the machine replicas reconciled within the workload cluster.
