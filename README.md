@@ -139,7 +139,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     ```console
     export IAM_ENDPOINT=https://iam.cloud.ibm.com/identity/token
-    export SERVICE_ENDPOINT=https://us-east.iaas.cloud.ibm.com/v1
+    export SERVICE_ENDPOINT=https://us-south.iaas.cloud.ibm.com/v1
     export API_KEY=<YOUR_API_KEY>
     ```
 
