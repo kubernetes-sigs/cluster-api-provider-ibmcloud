@@ -72,12 +72,12 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     Using [kind](https://kind.sigs.k8s.io/docs/user/quick-start/):
 
-    ```
+    ```console
     ~ kind create cluster --name my-bootstrap --config bootstrap.yaml
     ```
 
     Example bootstrap.yaml:
-    ```
+    ```yaml
     kind: Cluster
     apiVersion: kind.x-k8s.io/v1alpha4
     nodes:
@@ -87,7 +87,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     Make sure the nodes are in `Ready` state before moving on.
 
-    ```
+    ```console
     ~ kubectl get nodes
     NAME                         STATUS   ROLES                  AGE   VERSION
     my-bootstrap-control-plane   Ready    control-plane,master   46h   v1.20.2
@@ -96,12 +96,12 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
 2. Apply IBM VPC CAPI CRDs
 
-    ```
+    ```console
     ~ kubectl apply -f config/crd/bases
     ```
 
     Output:
-    ```
+    ```console
     customresourcedefinition.apiextensions.k8s.io/ibmvpcclusters.infrastructure.cluster.x-k8s.io created
     customresourcedefinition.apiextensions.k8s.io/ibmvpcmachines.infrastructure.cluster.x-k8s.io created
     customresourcedefinition.apiextensions.k8s.io/ibmvpcmachinetemplates.infrastructure.cluster.x-k8s.io created
@@ -111,12 +111,12 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     This cluster will be used to provision a workload cluster in IBM Cloud.
 
-    ```
+    ```console
     ~ clusterctl init
     ```
 
     Output:
-    ```
+    ```console
     Fetching providers
     Installing cert-manager Version="v1.1.0"
     Waiting for cert-manager to be available...
@@ -137,7 +137,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     The sample IAM_ENDPOINT below points to Production and the SERVICE_ENDPOINT points to the `us-east` VPC region. Make sure these values reflect your target VPC environment in IBM Cloud.
 
-    ```
+    ```console
     export IAM_ENDPOINT=https://iam.cloud.ibm.com/identity/token
     export SERVICE_ENDPOINT=https://us-east.iaas.cloud.ibm.com/v1
     export API_KEY=<YOUR_API_KEY>
@@ -147,7 +147,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     The controllers will run against your local management bootstrap cluster.
 
-    ```
+    ```console
     ~ make run
     ```
 
@@ -157,7 +157,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     **Note:** the `IBMVPC_IMAGE_ID` value below should reflect the ID of the custom qcow2 image
 
-    ```
+    ```console
     IBMVPC_REGION=us-south \
     IBMVPC_ZONE=us-south-1 \
     IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
@@ -173,7 +173,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
     ```
 
     Output:
-    ```
+    ```console
     cluster.cluster.x-k8s.io/ibm-vpc-5 created
     ibmvpccluster.infrastructure.cluster.x-k8s.io/ibm-vpc-5 created
     kubeadmcontrolplane.controlplane.cluster.x-k8s.io/ibm-vpc-5-control-plane created
@@ -186,7 +186,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 4. Deploy Container Network Interface (CNI)
 
     Example: calico
-    ```
+    ```console
     kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
     ```
 
@@ -194,21 +194,21 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 5. Check the state of the provisioned cluster and machine objects within the local management cluster
 
     Clusters
-    ```
+    ```console
     ~ kubectl get clusters
     NAME         PHASE
     ibm-vpc-0    Provisioned
     ```
 
     Kubeadm Control Plane
-    ```
+    ```console
     ~ kubectl get kubeadmcontrolplane
     NAME                       INITIALIZED   API SERVER AVAILABLE   VERSION   REPLICAS   READY   UPDATED   UNAVAILABLE
     ibm-vpc-0-control-plane    true          true                   v1.19.9   1          1       1
     ```
 
     Machines
-    ```
+    ```console
     ~ kubectl get machines
     ibm-vpc-0-control-plane-vzz47     ibmvpc://ibm-vpc-0/ibm-vpc-0-control-plane-rg6xv   Running        v1.19.9
     ibm-vpc-0-md-0-5444cfcbcd-6gg5z   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-dbxb7            Running        v1.19.9
@@ -217,7 +217,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
 6.  Check the state of the newly provisioned cluster within IBM Cloud
 
-    ```
+    ```console
     ~ clusterctl get kubeconfig ibm-vpc-0 > ~/.kube/ibm-vpc-0
     ~ export KUBECONFIG=~/.kube/ibm-vpc-0
     ~ kubectl get nodes
@@ -231,7 +231,7 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
     With your management *(local)* and workload *(IBM Cloud)* clusters successfully provisioned, you can now experiment with altering the number of machine deployment replicas in your management cluster and see the replica counts reconciled in your workload cluster.
 
-    ```
+    ```console
     ~ kubectl get machinedeployments
     NAME              PHASE       REPLICAS   READY   UPDATED   UNAVAILABLE
     ibm-vpc-0-md-0    Running     2          2       2
