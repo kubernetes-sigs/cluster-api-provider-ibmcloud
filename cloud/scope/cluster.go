@@ -19,6 +19,7 @@ type ClusterScopeParams struct {
 	Client        client.Client
 	Logger        logr.Logger
 	Cluster       *clusterv1.Cluster
+	IBMCluster    *infrav1.IBMCluster
 	IBMVPCCluster *infrav1.IBMVPCCluster
 }
 
@@ -29,6 +30,7 @@ type ClusterScope struct {
 
 	IBMVPCClients
 	Cluster       *clusterv1.Cluster
+	IBMCluster    *infrav1.IBMCluster
 	IBMVPCCluster *infrav1.IBMVPCCluster
 }
 
@@ -59,6 +61,7 @@ func NewClusterScope(params ClusterScopeParams, iamEndpoint string, apiKey strin
 		client:        params.Client,
 		IBMVPCClients: params.IBMVPCClients,
 		Cluster:       params.Cluster,
+		IBMCluster:    params.IBMCluster,
 		IBMVPCCluster: params.IBMVPCCluster,
 		patchHelper:   helper,
 	}, nil

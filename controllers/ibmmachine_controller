@@ -38,8 +38,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-// IBMVPCMachineReconciler reconciles a IBMVPCMachine object
-type IBMVPCMachineReconciler struct {
+// IBMMachineReconciler reconciles a IBMVPCMachine object
+type IBMMachineReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
@@ -48,7 +48,7 @@ type IBMVPCMachineReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines/status,verbs=get;update;patch
 
-func (r *IBMVPCMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
+func (r *IBMMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("ibmvpcmachine", req.NamespacedName)
 
@@ -126,13 +126,13 @@ func (r *IBMVPCMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 	return r.reconcileNormal(ctx, machineScope)
 }
 
-func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *IBMMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrastructurev1alpha3.IBMVPCMachine{}).
 		Complete(r)
 }
 
-func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
+func (r *IBMMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
 	controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrastructurev1alpha3.MachineFinalizer)
 
 	// Make sure bootstrap data is available and populated.
@@ -184,12 +184,12 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMVPCMachineReconciler) getOrCreate(scope *scope.MachineScope) (*vpcv1.Instance, error) {
+func (r *IBMMachineReconciler) getOrCreate(scope *scope.MachineScope) (*vpcv1.Instance, error) {
 	instance, err := scope.CreateMachine()
 	return instance, err
 }
 
-func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ ctrl.Result, reterr error) {
+func (r *IBMMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ ctrl.Result, reterr error) {
 	scope.Info("Handling deleted IBMVPCMachine")
 
 	if err := scope.DeleteMachine(); err != nil {

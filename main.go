@@ -70,6 +70,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.IBMClusterReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("IBMCluster"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMCluster")
+		os.Exit(1)
+	}
 	if err = (&controllers.IBMVPCClusterReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),

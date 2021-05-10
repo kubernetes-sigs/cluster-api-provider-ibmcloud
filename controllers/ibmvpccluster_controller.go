@@ -25,7 +25,9 @@ import (
 	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -51,13 +53,22 @@ func (r *IBMVPCClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 
 	// your logic here
 	// Fetch the IBMVPCCluster instance
-	ibmCluster := &infrastructurev1alpha3.IBMVPCCluster{}
-	err := r.Get(ctx, req.NamespacedName, ibmCluster)
+	ibmVPCCluster := &infrastructurev1alpha3.IBMVPCCluster{}
+	err := r.Get(ctx, req.NamespacedName, ibmVPCCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	ibmCluster, err := GetOwnerIBMCluster(ctx, r.Client, ibmVPCCluster.ObjectMeta)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if ibmCluster == nil {
+		log.Info("IBMVPCCluster Controller has not yet set OwnerRef")
+		return ctrl.Result{}, nil
 	}
 
 	// Fetch the Cluster.
@@ -66,7 +77,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		return ctrl.Result{}, err
 	}
 	if cluster == nil {
-		log.Info("Cluster Controller has not yet set OwnerRef")
+		log.Info("IBMCluster Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
 
@@ -79,10 +90,11 @@ func (r *IBMVPCClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 		Client:        r.Client,
 		Logger:        log,
 		Cluster:       cluster,
-		IBMVPCCluster: ibmCluster,
+		IBMCluster:    ibmCluster,
+		IBMVPCCluster: ibmVPCCluster,
 	}, iamEndpoint, apiKey, svcEndpoint)
 
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
+	// Always close the scope when exiting this function so we can persist any IBM VPC instance changes.
 	defer func() {
 		if err := clusterScope.Close(); err != nil && reterr == nil {
 			reterr = err
@@ -102,8 +114,8 @@ func (r *IBMVPCClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 }
 
 func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer)
+	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.VPCClusterFinalizer) {
+		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.VPCClusterFinalizer)
 		//_ = r.Update(ctx, clusterScope.IBMVPCCluster)
 		return ctrl.Result{}, nil
 	}
@@ -170,4 +182,37 @@ func (r *IBMVPCClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrastructurev1alpha3.IBMVPCCluster{}).
 		Complete(r)
+}
+
+// GetOwnerCluster returns the Cluster object owning the current resource.
+func GetOwnerIBMCluster(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*infrastructurev1alpha3.IBMCluster, error) {
+	for _, ref := range obj.OwnerReferences {
+		if ref.Kind != "IBMCluster" {
+			continue
+		}
+		gv, err := schema.ParseGroupVersion(ref.APIVersion)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		// hard code the group information right now. IT SHOULD BE DEFINED SOMEWHERE
+		if gv.Group == "infrastructure.cluster.x-k8s.io" {
+			return GetIBMClusterByName(ctx, c, obj.Namespace, ref.Name)
+		}
+	}
+	return nil, nil
+}
+
+// GetClusterByName finds and return a Cluster object using the specified params.
+func GetIBMClusterByName(ctx context.Context, c client.Client, namespace, name string) (*infrastructurev1alpha3.IBMCluster, error) {
+	ibmCluster := &infrastructurev1alpha3.IBMCluster{}
+	key := client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}
+
+	if err := c.Get(ctx, key, ibmCluster); err != nil {
+		return nil, err
+	}
+
+	return ibmCluster, nil
 }

@@ -1,0 +1,9 @@
+apiVersion: infrastructure.cluster.k8s.io/v1alpha3
+kind: IBMCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: ibmcluster-sample
+spec:
+  # Add fields here
+  foo: bar

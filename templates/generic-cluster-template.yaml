@@ -1,0 +1,146 @@
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: Cluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+  name: "${CLUSTER_NAME}"
+  namespace: "${NAMESPACE}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - ${POD_CIDR:="192.168.0.0/16"}
+    serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
+    services:
+      cidrBlocks:
+      - ${SERVICE_CIDR:="10.128.0.0/12"}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: IBMCluster
+    name: "${CLUSTER_NAME}"
+    namespace: "${NAMESPACE}"
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+    kind: KubeadmControlPlane
+    name: "${CLUSTER_NAME}-control-plane"
+    namespace: "${NAMESPACE}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: IBMCluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+  name: "${CLUSTER_NAME}"
+spec:
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    kind: IBMVPCCluster
+    name: "${CLUSTER_NAME}"
+    namespace: "${NAMESPACE}"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: IBMVPCCluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+  name: "${CLUSTER_NAME}"
+spec:
+  region: "${IBMVPC_REGION}"
+  zone: "${IBMVPC_ZONE}"
+  resourceGroup: "${IBMVPC_RESOURCEGROUP}"
+  vpc: "${IBMVPC_NAME}"
+---
+kind: KubeadmControlPlane
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha3
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+  namespace: "${NAMESPACE}"
+spec:
+  version: "${KUBERNETES_VERSION}"
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  infrastructureTemplate:
+    kind: IBMVPCMachineTemplate
+    apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+    name: "${CLUSTER_NAME}-control-plane"
+    namespace: "${NAMESPACE}"
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      kubernetesVersion: ${KUBERNETES_VERSION}
+      controllerManager:
+        extraArgs: {enable-hostpath-provisioner: 'true'}
+      apiServer:
+        certSANs: [localhost, 127.0.0.1]
+      dns: {}
+      etcd: {}
+      networking: {}
+      scheduler: {}
+    initConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+        kubeletExtraArgs: {eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'}
+    joinConfiguration:
+      discovery: {}
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+        kubeletExtraArgs: {eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'}
+---
+kind: IBMVPCMachineTemplate
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      image: "${IBMVPC_IMAGE_ID}"
+      zone: "${IBMVPC_ZONE}"
+      profile: "${IBMVPC_PROFILE}"
+      sshKeys:
+      - "${IBMVPC_SSHKEY_ID}"
+---
+apiVersion: cluster.x-k8s.io/v1alpha3
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  selector:
+    matchLabels:
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-md-0"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-md-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+        kind: IBMVPCMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1alpha3
+kind: IBMVPCMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      image: "${IBMVPC_IMAGE_ID}"
+      zone: "${IBMVPC_ZONE}"
+      profile: "${IBMVPC_PROFILE}"
+      sshKeys:
+      - "${IBMVPC_SSHKEY_ID}"
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1alpha3
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%

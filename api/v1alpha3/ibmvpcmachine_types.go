@@ -26,7 +26,7 @@ import (
 const (
 	// MachineFinalizer allows IBMVPCMachineReconciler to clean up resources associated with IBMVPCMachine before
 	// removing it from the apiserver.
-	MachineFinalizer = "ibmvpcmachine.infrastructure.cluster.x-k8s.io"
+	VPCMachineFinalizer = "ibmvpcmachine.infrastructure.cluster.x-k8s.io"
 )
 
 // IBMVPCMachineSpec defines the desired state of IBMVPCMachine
@@ -70,10 +70,10 @@ type IBMVPCMachineStatus struct {
 
 	Ready bool `json:"ready"`
 
-	// Addresses contains the GCP instance associated addresses.
+	// Addresses contains the instance associated addresses.
 	Addresses []v1.NodeAddress `json:"addresses,omitempty"`
 
-	// InstanceStatus is the status of the GCP instance for this machine.
+	// InstanceStatus is the status of the instance for this machine.
 	// +optional
 	InstanceStatus string `json:"instanceState,omitempty"`
 }
