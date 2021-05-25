@@ -53,7 +53,7 @@ type IBMMachineStatus struct {
 
 // +kubebuilder:object:generate=true
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=ibmachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:resource:path=ibmmachines,scope=Namespaced,categories=cluster-api
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready for IBM  instances"
