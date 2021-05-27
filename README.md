@@ -64,6 +64,9 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
 
 1. Build a qcow2 image suitable for use as a Kubernetes cluster machine as detailed in the image builder [book](https://image-builder.sigs.k8s.io/capi/providers/raw.html).
 
+    **Note:** Rename the output image to add the `.qcow2` extension. This is required by the next step.
+
+
 2. Create a VPC Gen2 custom image based on the qcow2 image built in the previous step as detailed in the VPC [documentation](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images).
 
 ### Provision local boostrap management cluster:
