@@ -1,12 +1,16 @@
 package v1alpha3
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // IBMMachineTemplateSpec defines the desired state of IBMMachineTemplate
 type IBMMachineTemplateSpec struct {
-	Template IBMMachineTemplateResource `json:"template"`
+	// InfrastructureTemplate is a required reference to a custom resource
+	// offered by an infrastructure provider.
+	InfrastructureTemplate corev1.ObjectReference     `json:"infrastructureTemplate"`
+	Template               IBMMachineTemplateResource `json:"template"`
 }
 
 // IBMMachineTemplateResource describes the data needed to create am IBMMachine from a template

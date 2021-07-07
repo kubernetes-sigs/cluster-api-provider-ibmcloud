@@ -18,6 +18,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/pkg/errors"
 
 	"github.com/go-logr/logr"
 	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
@@ -32,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // IBMClusterReconciler reconciles a IBMCluster object
@@ -72,6 +76,21 @@ func (r *IBMClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reter
 		return ctrl.Result{}, nil
 	}
 
+	helper, err := patch.NewHelper(ibmCluster, r.Client)
+	if err != nil {
+		return reconcile.Result{}, errors.Wrap(err, "failed to init patch helper")
+	}
+
+	defer func() {
+		e := helper.Patch(
+			context.TODO(),
+			ibmCluster,
+		)
+		if e != nil {
+			fmt.Println(e.Error())
+		}
+	}()
+
 	// Handle deleted clusters
 	if !ibmCluster.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ibmCluster)
@@ -82,12 +101,25 @@ func (r *IBMClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reter
 
 func (r *IBMClusterReconciler) reconcile(ctx context.Context, ibmCluster *infrastructurev1alpha3.IBMCluster) (ctrl.Result, error) {
 	// Call generic external reconciler.
-	_, err := r.reconcileExternal(ctx, ibmCluster, ibmCluster.Spec.InfrastructureRef)
+	clusterReconcileResult, err := r.reconcileExternal(ctx, ibmCluster, ibmCluster.Spec.InfrastructureRef)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-
+	actualCluster := clusterReconcileResult.Result
 	ibmCluster.Status.Ready = true
+
+	if err := util.UnstructuredUnmarshalField(actualCluster, &ibmCluster.Spec.ControlPlaneEndpoint, "spec", "controlPlaneEndpoint"); err != nil {
+		return ctrl.Result{}, errors.Wrapf(err, "failed to retrieve Spec.ControlPlaneEndpoint from infrastructure provider for Cluster %q in namespace %q",
+			ibmCluster.Name, ibmCluster.Namespace)
+	}
+
+	fmt.Println(ibmCluster.Spec.ControlPlaneEndpoint)
+
+	if err := util.UnstructuredUnmarshalField(actualCluster, &ibmCluster.Status.APIEndpoint, "status", "APIEndpoint"); err != nil && err != util.ErrUnstructuredFieldNotFound {
+		return ctrl.Result{}, errors.Wrapf(err, "failed to retrieve Status.APIEndpoint from infrastructure provider for Cluster %q in namespace %q",
+			ibmCluster.Name, ibmCluster.Namespace)
+	}
+
 	_ = r.Client.Update(ctx, ibmCluster)
 	return ctrl.Result{}, nil
 }
@@ -128,5 +160,5 @@ func (r *IBMClusterReconciler) reconcileExternal(ctx context.Context, cluster *i
 	if err := patchHelper.Patch(ctx, obj); err != nil {
 		return external.ReconcileOutput{}, err
 	}
-	return external.ReconcileOutput{}, nil
+	return external.ReconcileOutput{Result: obj}, nil
 }

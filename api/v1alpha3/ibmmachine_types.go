@@ -36,7 +36,7 @@ type IBMMachineSpec struct {
 
 	// InfrastructureRef is a required reference to a custom resource
 	// offered by an infrastructure provider.
-	InfrastructureRef corev1.ObjectReference `json:"infrastructureRef"`
+	InfrastructureRef *corev1.ObjectReference `json:"infrastructureRef"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
