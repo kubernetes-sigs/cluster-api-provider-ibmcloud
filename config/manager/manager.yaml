@@ -26,7 +26,8 @@ spec:
       - command:
         - /manager
         args:
-        - --enable-leader-election
+        - "--leader-elect"
+        - "--metrics-bind-addr=127.0.0.1:8080"
         image: controller:latest
         name: manager
         resources:

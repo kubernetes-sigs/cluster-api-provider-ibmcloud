@@ -22,13 +22,9 @@ rules:
   resources:
   - secrets
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
-  - watch  
+  - watch
 - apiGroups:
   - cluster.x-k8s.io
   resources:
@@ -46,7 +42,7 @@ rules:
   verbs:
   - get
   - list
-  - watch  
+  - watch
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
