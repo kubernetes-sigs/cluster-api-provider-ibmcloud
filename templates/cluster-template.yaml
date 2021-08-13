@@ -65,12 +65,18 @@ spec:
     initConfiguration:
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs: {eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'}
+        kubeletExtraArgs: 
+          cloud-provider: external
+          provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
+          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
     joinConfiguration:
       discovery: {}
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs: {eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'}
+        kubeletExtraArgs: 
+          cloud-provider: external
+          provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
+          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
 ---
 kind: IBMVPCMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
@@ -131,4 +137,6 @@ spec:
       joinConfiguration:
         nodeRegistration:
           kubeletExtraArgs:
+            cloud-provider: external
+            provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
             eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
