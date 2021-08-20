@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -29,6 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
+
+	infrastructurev1alpha4 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -61,7 +62,7 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(cfg).ToNot(BeNil())
 
 	Expect(clusterv1.AddToScheme(scheme.Scheme)).To(Succeed())
-	Expect(infrastructurev1alpha3.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(infrastructurev1alpha4.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	// +kubebuilder:scaffold:scheme
 
