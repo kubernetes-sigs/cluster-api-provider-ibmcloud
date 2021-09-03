@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
+	infrastructurev1alpha4 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,14 +45,13 @@ type IBMMachineReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmmachines/status,verbs=get;update;patch
 
-func (r *IBMMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.Background()
+func (r *IBMMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmmachine", req.NamespacedName)
 
 	// your logic here
 	// Fetch the IBM VPC instance.
 
-	ibmMachine := &infrastructurev1alpha3.IBMMachine{}
+	ibmMachine := &infrastructurev1alpha4.IBMMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -79,7 +78,7 @@ func (r *IBMMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reter
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	ibmCluster := &infrastructurev1alpha3.IBMCluster{}
+	ibmCluster := &infrastructurev1alpha4.IBMCluster{}
 	ibmClusterName := client.ObjectKey{
 		Namespace: ibmMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
@@ -100,12 +99,12 @@ func (r *IBMMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reter
 
 func (r *IBMMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha3.IBMMachine{}).
+		For(&infrastructurev1alpha4.IBMMachine{}).
 		Complete(r)
 }
 
-func (r *IBMMachineReconciler) reconcileNormal(ctx context.Context, ibmCluster *infrastructurev1alpha3.IBMCluster, ibmMachine *infrastructurev1alpha3.IBMMachine) (ctrl.Result, error) {
-	//controllerutil.AddFinalizer(machineScope.IBMMachine, infrastructurev1alpha3.MachineFinalizer)
+func (r *IBMMachineReconciler) reconcileNormal(ctx context.Context, ibmCluster *infrastructurev1alpha4.IBMCluster, ibmMachine *infrastructurev1alpha4.IBMMachine) (ctrl.Result, error) {
+	//controllerutil.AddFinalizer(machineScope.IBMMachine, infrastructurev1alpha4.MachineFinalizer)
 
 	_, err := r.reconcileExternal(ctx, ibmCluster, ibmMachine, ibmMachine.Spec.InfrastructureRef)
 	if err != nil {
@@ -117,14 +116,12 @@ func (r *IBMMachineReconciler) reconcileNormal(ctx context.Context, ibmCluster *
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMMachineReconciler) reconcileDelete(ibmMachine *infrastructurev1alpha3.IBMMachine) (_ ctrl.Result, reterr error) {
+func (r *IBMMachineReconciler) reconcileDelete(ibmMachine *infrastructurev1alpha4.IBMMachine) (_ ctrl.Result, reterr error) {
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMMachineReconciler) reconcileExternal(ctx context.Context, cluster *infrastructurev1alpha3.IBMCluster, machine *infrastructurev1alpha3.IBMMachine, ref *v1.ObjectReference) (external.ReconcileOutput, error) {
-	logger := r.Log.WithValues("ibmcluster", cluster.Name)
-
-	if err := utilconversion.ConvertReferenceAPIContract(ctx, logger, r.Client, r.restConfig, ref); err != nil {
+func (r *IBMMachineReconciler) reconcileExternal(ctx context.Context, cluster *infrastructurev1alpha4.IBMCluster, machine *infrastructurev1alpha4.IBMMachine, ref *v1.ObjectReference) (external.ReconcileOutput, error) {
+	if err := utilconversion.ConvertReferenceAPIContract(ctx, r.Client, r.restConfig, ref); err != nil {
 		return external.ReconcileOutput{}, err
 	}
 

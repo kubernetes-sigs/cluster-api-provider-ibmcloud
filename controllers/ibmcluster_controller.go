@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
+	infrastructurev1alpha4 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,13 +50,12 @@ type IBMClusterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 
-func (r *IBMClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.Background()
+func (r *IBMClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmcluster", req.NamespacedName)
 
 	// your logic here
 	// Fetch the IBMCluster instance
-	ibmCluster := &infrastructurev1alpha3.IBMCluster{}
+	ibmCluster := &infrastructurev1alpha4.IBMCluster{}
 	err := r.Client.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -99,7 +98,7 @@ func (r *IBMClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reter
 	return r.reconcile(ctx, ibmCluster)
 }
 
-func (r *IBMClusterReconciler) reconcile(ctx context.Context, ibmCluster *infrastructurev1alpha3.IBMCluster) (ctrl.Result, error) {
+func (r *IBMClusterReconciler) reconcile(ctx context.Context, ibmCluster *infrastructurev1alpha4.IBMCluster) (ctrl.Result, error) {
 	// Call generic external reconciler.
 	clusterReconcileResult, err := r.reconcileExternal(ctx, ibmCluster, ibmCluster.Spec.InfrastructureRef)
 	if err != nil {
@@ -124,21 +123,19 @@ func (r *IBMClusterReconciler) reconcile(ctx context.Context, ibmCluster *infras
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMClusterReconciler) reconcileDelete(ibmCluster *infrastructurev1alpha3.IBMCluster) (ctrl.Result, error) {
+func (r *IBMClusterReconciler) reconcileDelete(ibmCluster *infrastructurev1alpha4.IBMCluster) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
 func (r *IBMClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.restConfig = mgr.GetConfig()
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha3.IBMCluster{}).
+		For(&infrastructurev1alpha4.IBMCluster{}).
 		Complete(r)
 }
 
-func (r *IBMClusterReconciler) reconcileExternal(ctx context.Context, cluster *infrastructurev1alpha3.IBMCluster, ref *corev1.ObjectReference) (external.ReconcileOutput, error) {
-	logger := r.Log.WithValues("ibmcluster", cluster.Name)
-
-	if err := utilconversion.ConvertReferenceAPIContract(ctx, logger, r.Client, r.restConfig, ref); err != nil {
+func (r *IBMClusterReconciler) reconcileExternal(ctx context.Context, cluster *infrastructurev1alpha4.IBMCluster, ref *corev1.ObjectReference) (external.ReconcileOutput, error) {
+	if err := utilconversion.ConvertReferenceAPIContract(ctx, r.Client, r.restConfig, ref); err != nil {
 		return external.ReconcileOutput{}, err
 	}
 

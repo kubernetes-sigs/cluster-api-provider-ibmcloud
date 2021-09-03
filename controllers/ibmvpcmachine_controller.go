@@ -23,7 +23,7 @@ import (
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
+	infrastructurev1alpha4 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
 	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
@@ -31,7 +31,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,15 +47,17 @@ type IBMVPCMachineReconciler struct {
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=machines;machines/status,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
-func (r *IBMVPCMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.Background()
+func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmvpcmachine", req.NamespacedName)
 
 	// your logic here
 	// Fetch the IBM VPC instance.
 
-	ibmVpcMachine := &infrastructurev1alpha3.IBMVPCMachine{}
+	ibmVpcMachine := &infrastructurev1alpha4.IBMVPCMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmVpcMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -82,7 +84,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	ibmCluster := &infrastructurev1alpha3.IBMVPCCluster{}
+	ibmCluster := &infrastructurev1alpha4.IBMVPCCluster{}
 	ibmVpcClusterName := client.ObjectKey{
 		Namespace: ibmVpcMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
@@ -128,12 +130,12 @@ func (r *IBMVPCMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 
 func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha3.IBMVPCMachine{}).
+		For(&infrastructurev1alpha4.IBMVPCMachine{}).
 		Complete(r)
 }
 
 func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
-	controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrastructurev1alpha3.MachineFinalizer)
+	controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrastructurev1alpha4.MachineFinalizer)
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
@@ -142,7 +144,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 	}
 
 	if machineScope.IBMVPCCluster.Status.Subnet.ID != nil {
-		machineScope.IBMVPCMachine.Spec.PrimaryNetworkInterface = infrastructurev1alpha3.NetworkInterface{
+		machineScope.IBMVPCMachine.Spec.PrimaryNetworkInterface = infrastructurev1alpha4.NetworkInterface{
 			Subnet: *machineScope.IBMVPCCluster.Status.Subnet.ID,
 		}
 	}
@@ -200,7 +202,7 @@ func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ 
 	defer func() {
 		if reterr == nil {
 			// VSI is deleted so remove the finalizer.
-			controllerutil.RemoveFinalizer(scope.IBMVPCMachine, infrastructurev1alpha3.MachineFinalizer)
+			controllerutil.RemoveFinalizer(scope.IBMVPCMachine, infrastructurev1alpha4.MachineFinalizer)
 		}
 	}()
 

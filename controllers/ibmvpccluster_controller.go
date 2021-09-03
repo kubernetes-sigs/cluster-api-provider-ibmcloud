@@ -21,14 +21,14 @@ import (
 	"os"
 
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
+	infrastructurev1alpha4 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
 	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,13 +47,12 @@ type IBMVPCClusterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 
-func (r *IBMVPCClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, reterr error) {
-	ctx := context.Background()
+func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmvpccluster", req.NamespacedName)
 
 	// your logic here
 	// Fetch the IBMVPCCluster instance
-	ibmVPCCluster := &infrastructurev1alpha3.IBMVPCCluster{}
+	ibmVPCCluster := &infrastructurev1alpha4.IBMVPCCluster{}
 	err := r.Get(ctx, req.NamespacedName, ibmVPCCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -114,8 +113,8 @@ func (r *IBMVPCClusterReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, re
 }
 
 func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.VPCClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.VPCClusterFinalizer)
+	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha4.VPCClusterFinalizer) {
+		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha4.VPCClusterFinalizer)
 		//_ = r.Update(ctx, clusterScope.IBMVPCCluster)
 		return ctrl.Result{}, nil
 	}
@@ -125,7 +124,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VPC for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
 	}
 	if vpc != nil {
-		clusterScope.IBMVPCCluster.Status.VPC = infrastructurev1alpha3.VPC{
+		clusterScope.IBMVPCCluster.Status.VPC = infrastructurev1alpha4.VPC{
 			ID:   *vpc.ID,
 			Name: *vpc.Name,
 		}
@@ -143,7 +142,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 				Port: 6443,
 			}
 
-			clusterScope.IBMVPCCluster.Status.APIEndpoint = infrastructurev1alpha3.APIEndpoint{
+			clusterScope.IBMVPCCluster.Status.APIEndpoint = infrastructurev1alpha4.APIEndpoint{
 				Address: fip.Address,
 				FIPID:   fip.ID,
 			}
@@ -156,7 +155,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Subnet for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
 		}
 		if subnet != nil {
-			clusterScope.IBMVPCCluster.Status.Subnet = infrastructurev1alpha3.Subnet{
+			clusterScope.IBMVPCCluster.Status.Subnet = infrastructurev1alpha4.Subnet{
 				Ipv4CidrBlock: subnet.Ipv4CIDRBlock,
 				Name:          subnet.Name,
 				ID:            subnet.ID,
@@ -173,19 +172,19 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	if err := clusterScope.DeleteVPC(); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to delete VPC")
 	} else {
-		controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer)
+		controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha4.ClusterFinalizer)
 		return ctrl.Result{}, nil
 	}
 }
 
 func (r *IBMVPCClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha3.IBMVPCCluster{}).
+		For(&infrastructurev1alpha4.IBMVPCCluster{}).
 		Complete(r)
 }
 
 // GetOwnerCluster returns the Cluster object owning the current resource.
-func GetOwnerIBMCluster(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*infrastructurev1alpha3.IBMCluster, error) {
+func GetOwnerIBMCluster(ctx context.Context, c client.Client, obj metav1.ObjectMeta) (*infrastructurev1alpha4.IBMCluster, error) {
 	for _, ref := range obj.OwnerReferences {
 		if ref.Kind != "IBMCluster" {
 			continue
@@ -203,8 +202,8 @@ func GetOwnerIBMCluster(ctx context.Context, c client.Client, obj metav1.ObjectM
 }
 
 // GetClusterByName finds and return a Cluster object using the specified params.
-func GetIBMClusterByName(ctx context.Context, c client.Client, namespace, name string) (*infrastructurev1alpha3.IBMCluster, error) {
-	ibmCluster := &infrastructurev1alpha3.IBMCluster{}
+func GetIBMClusterByName(ctx context.Context, c client.Client, namespace, name string) (*infrastructurev1alpha4.IBMCluster, error) {
+	ibmCluster := &infrastructurev1alpha4.IBMCluster{}
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
