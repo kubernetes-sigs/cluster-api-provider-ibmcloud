@@ -1,3 +1,18 @@
+# Copyright 2021 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+include versions.mk
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
@@ -9,6 +24,20 @@ GO_INSTALL = ./scripts/go_install.sh
 GOLANGCI_LINT_VER := v1.31.0
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
+
+STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
+REGISTRY ?= $(STAGING_REGISTRY)
+RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
+PULL_BASE_REF ?= $(RELEASE_TAG) # PULL_BASE_REF will be provided by Prow
+RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
+
+TAG ?= dev
+ARCH ?= amd64
+ALL_ARCH ?= amd64 ppc64le
+
+# main controller
+CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
+CORE_CONTROLLER_IMG ?= $(REGISTRY)/$(CORE_IMAGE_NAME)
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -60,14 +89,6 @@ vet:
 generate: controller-gen
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-# Build the docker image
-docker-build: 
-	docker build . -t ${IMG}
-
-# Push the docker image
-docker-push:
-	docker push ${IMG}
-
 images: docker-build
 # find or download controller-gen
 # download controller-gen if necessary
@@ -96,3 +117,63 @@ lint: $(GOLANGCI_LINT) ## Lint codebase
 
 $(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
 	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
+
+## --------------------------------------
+## Docker
+## --------------------------------------
+
+.PHONY: docker-build
+docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
+	docker build --build-arg ARCH=$(ARCH) . -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+
+.PHONY: docker-push
+docker-push: ## Push the docker image
+	docker push $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+
+.PHONY: docker-pull-prerequisites
+docker-pull-prerequisites:
+	docker pull docker.io/docker/dockerfile:1.1-experimental
+	docker pull docker.io/library/golang:$(GOLANG_VERSION)
+	docker pull gcr.io/distroless/static:latest
+
+## --------------------------------------
+## Docker - All ARCH
+## --------------------------------------
+
+.PHONY: docker-build-all ## Build all the architecture docker images
+docker-build-all: $(addprefix docker-build-,$(ALL_ARCH))
+
+docker-build-%:
+	$(MAKE) ARCH=$* docker-build
+
+.PHONY: docker-push-all ## Push all the architecture docker images
+docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))
+	$(MAKE) docker-push-core-manifest
+
+docker-push-%:
+	$(MAKE) ARCH=$* docker-push
+
+.PHONY: docker-push-core-manifest
+docker-push-core-manifest: ## Push the fat manifest docker image.
+	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
+	$(MAKE) docker-push-manifest CONTROLLER_IMG=$(CORE_CONTROLLER_IMG) MANIFEST_FILE=$(CORE_MANIFEST_FILE)
+
+.PHONY: docker-push-manifest
+docker-push-manifest:
+	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
+	docker manifest push --purge ${CONTROLLER_IMG}:${TAG}
+
+## --------------------------------------
+## Release
+## --------------------------------------
+
+.PHONY: release-alias-tag
+release-alias-tag: # Adds the tag to the last build tag.
+	gcloud container images add-tag -q $(CORE_CONTROLLER_IMG):$(TAG) $(CORE_CONTROLLER_IMG):$(RELEASE_ALIAS_TAG)
+
+.PHONY: release-staging
+release-staging: ## Builds and push container images to the staging image registry.
+	$(MAKE) docker-build-all
+	$(MAKE) docker-push-all
+	$(MAKE) release-alias-tag
