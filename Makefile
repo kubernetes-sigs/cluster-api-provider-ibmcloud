@@ -21,7 +21,7 @@ CRD_OPTIONS ?= "crd:crdVersions=v1"
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/bin)
 GO_INSTALL = ./scripts/go_install.sh
-GOLANGCI_LINT_VER := v1.31.0
+GOLANGCI_LINT_VER := v1.42.1
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
