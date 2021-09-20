@@ -22,8 +22,29 @@ REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 # shellcheck source=../hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 
+# Directory to store JUnit XML test report.
+JUNIT_REPORT_DIR=${JUNIT_REPORT_DIR:-}
+
+# If JUNIT_REPORT_DIR is unset, and ARTIFACTS is set, then have them match.
+if [[ -z "${JUNIT_REPORT_DIR:-}" && -n "${ARTIFACTS:-}" ]]; then
+  JUNIT_REPORT_DIR="${ARTIFACTS}"
+fi
+
+#Add Junit test reports to ARTIFACTS directory.
+function addJunitFiles(){
+  declare -a junitFileList
+  readarray -t junitFileList <<< "$(find "${REPO_ROOT}" -name 'junit-*.xml')"
+
+  for i in "${junitFileList[@]}"
+  do 
+    mv "${i}" "${ARTIFACTS}" 
+  done
+}
+
 cd "${REPO_ROOT}" && \
 	source ./scripts/fetch_ext_bins.sh && \
 	fetch_tools && \
 	setup_envs && \
 	make generate lint test
+
+addJunitFiles

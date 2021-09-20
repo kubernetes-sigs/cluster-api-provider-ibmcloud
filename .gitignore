@@ -22,5 +22,8 @@ cmd/clusterctl/examples/ibmcloud/provider-component/user-data/ubuntu/worker-user
 # test coverage out
 cover.out
 
+# JUnit test output from ginkgo unit tests
+junit*.xml
+
 # dep ensured 3rd code
 vendor/sigs.k8s.io/cluster-api/docs/book/*.json
