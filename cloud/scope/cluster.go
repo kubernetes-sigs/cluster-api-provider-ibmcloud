@@ -2,6 +2,7 @@ package scope
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/IBM/go-sdk-core/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
@@ -194,14 +195,9 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 	}
 
 	options := &vpcv1.CreateSubnetOptions{}
-	var cidrBlock string
-	switch s.IBMVPCCluster.Spec.Zone {
-	case "us-south-1":
-		cidrBlock = "10.240.0.0/24"
-	case "us-south-2":
-		cidrBlock = "10.240.64.0/24"
-	case "us-south-3":
-		cidrBlock = "10.240.128.0/24"
+	cidrBlock, err := s.getSubnetAddrPrefix(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone)
+	if err != nil {
+		return nil, err
 	}
 	subnetName = s.IBMVPCCluster.Name + "-subnet"
 	options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
@@ -227,6 +223,24 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 		}
 	}
 	return subnet, err
+}
+
+func (s *ClusterScope) getSubnetAddrPrefix(vpcID, zone string) (string, error) {
+	options := &vpcv1.ListVPCAddressPrefixesOptions{
+		VPCID: &vpcID,
+	}
+	addrCollection, _, err := s.IBMVPCClients.VPCService.ListVPCAddressPrefixes(options)
+
+	if err != nil {
+		return "", err
+	} else {
+		for _, addrPrefix := range addrCollection.AddressPrefixes {
+			if *addrPrefix.Zone.Name == zone {
+				return *addrPrefix.CIDR, nil
+			}
+		}
+		return "", fmt.Errorf("not found a valid CIDR for VPC %s in zone %s", vpcID, zone)
+	}
 }
 
 func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, error) {
