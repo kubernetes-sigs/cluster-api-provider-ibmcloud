@@ -30,8 +30,8 @@ import (
 
 	utils "github.com/ppc64le-cloud/powervs-utils"
 
-	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
-	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/pkg"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
 type PowerVSClusterScopeParams struct {

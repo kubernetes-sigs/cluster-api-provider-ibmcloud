@@ -18,8 +18,8 @@ package controllers
 
 import (
 	"context"
-	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha4"
-	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/cluster-api/util"

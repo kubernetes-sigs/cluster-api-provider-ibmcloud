@@ -23,8 +23,8 @@ import (
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
-	"github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/cloud/scope"
+	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
 	v1 "k8s.io/api/core/v1"
