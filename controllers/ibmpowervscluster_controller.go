@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,18 +18,20 @@ package controllers
 
 import (
 	"context"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/cluster-api/util"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 )
 
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object

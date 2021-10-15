@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,11 +19,13 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/IBM-Cloud/power-go-client/power/models"
+	"time"
+
 	"github.com/go-logr/logr"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
+
+	"github.com/IBM-Cloud/power-go-client/power/models"
+
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,7 +34,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 )
 
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object

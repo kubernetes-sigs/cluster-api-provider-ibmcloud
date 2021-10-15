@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,22 +20,26 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
-	"github.com/IBM-Cloud/power-go-client/power/models"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 	"github.com/pkg/errors"
+
 	"github.com/ppc64le-cloud/powervs-utils"
+
+	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
+	"github.com/IBM-Cloud/power-go-client/power/models"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
 type PowerVSMachineScopeParams struct {
