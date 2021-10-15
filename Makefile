@@ -177,3 +177,41 @@ release-staging: ## Builds and push container images to the staging image regist
 	$(MAKE) docker-build-all
 	$(MAKE) docker-push-all
 	$(MAKE) release-alias-tag
+
+.PHONY: verify
+verify:
+	./hack/verify-boilerplate.sh
+	./hack/verify-doctoc.sh
+	./hack/verify-shellcheck.sh
+	#TODO(mkumatag): looking for tiltfile, fix it when we use tilt
+	#./hack/verify-starlark.sh
+	$(MAKE) verify-modules
+	$(MAKE) verify-gen
+	$(MAKE) verify-conversions
+
+.PHONY: modules
+modules: ## Runs go mod to ensure modules are up to date.
+	go mod tidy
+	cd $(TOOLS_DIR); go mod tidy
+
+.PHONY: verify-modules
+verify-modules: modules
+	@if !(git diff --quiet HEAD -- go.sum go.mod $(TOOLS_DIR)/go.mod $(TOOLS_DIR)/go.sum); then \
+		git diff; \
+		echo "go module files are out of date"; exit 1; \
+	fi
+	@if (find . -name 'go.mod' | xargs -n1 grep -q -i 'k8s.io/client-go.*+incompatible'); then \
+		find . -name "go.mod" -exec grep -i 'k8s.io/client-go.*+incompatible' {} \; -print; \
+		echo "go module contains an incompatible client-go version"; exit 1; \
+	fi
+
+.PHONY: verify-gen
+verify-gen: generate
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "generated files are out of date, run make generate"; exit 1; \
+	fi
+
+.PHONY: verify-conversions
+verify-conversions: $(CONVERSION_VERIFIER)
+	$(CONVERSION_VERIFIER)
