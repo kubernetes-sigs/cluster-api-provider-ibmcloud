@@ -1,16 +1,17 @@
 package pkg
 
 import (
-	//"gopkg.in/square/go-jose.v2/jwt"
 	gohttp "net/http"
 	"strings"
+
+	"github.com/golang-jwt/jwt"
 
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/authentication"
 	"github.com/IBM-Cloud/bluemix-go/http"
 	"github.com/IBM-Cloud/bluemix-go/rest"
 	bxsession "github.com/IBM-Cloud/bluemix-go/session"
-	"github.com/dgrijalva/jwt-go"
+
 	"k8s.io/klog/v2"
 )
 

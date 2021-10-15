@@ -3,7 +3,7 @@ package scope
 import (
 	"context"
 
-	"github.com/IBM/go-sdk-core/core"
+	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/go-logr/logr"
 	infrav1 "github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/api/v1alpha3"
