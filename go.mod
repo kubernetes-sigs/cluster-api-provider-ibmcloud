@@ -1,4 +1,4 @@
-module github.com/kubernetes-sigs/cluster-api-provider-ibmcloud
+module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.16
 

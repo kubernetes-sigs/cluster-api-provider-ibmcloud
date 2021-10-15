@@ -1,5 +1,5 @@
 domain: cluster.x-k8s.io
-repo: github.com/kubernetes-sigs/cluster-api-provider-ibmcloud
+repo: sigs.k8s.io/cluster-api-provider-ibmcloud
 resources:
 - group: infrastructure
   kind: IBMPowerVSCluster
