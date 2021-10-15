@@ -1,5 +1,5 @@
 /*
-
+Copyright 2021 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,11 +20,11 @@ import (
 	"context"
 	"os"
 
-	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"github.com/go-logr/logr"
-	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"github.com/pkg/errors"
+
+	"github.com/IBM/vpc-go-sdk/vpcv1"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
@@ -34,6 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 )
 
 // IBMVPCClusterReconciler reconciles a IBMVPCCluster object
