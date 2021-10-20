@@ -8,14 +8,14 @@
 
 - [Kubernetes Cluster API Provider IBM Cloud](#kubernetes-cluster-api-provider-ibm-cloud)
   - [What is the Cluster API Provider IBM Cloud](#what-is-the-cluster-api-provider-ibm-cloud)
-  - [Community, discussion, contribution, and support](#community-discussion-contribution-and-support)
-    - [Code of conduct](#code-of-conduct)
   - [Getting Started](#getting-started)
     - [Prerequisites](#prerequisites)
   - [How to provision a simple workload cluster in IBM Cloud VPC Gen2 from local bootstrap cluster](#how-to-provision-a-simple-workload-cluster-in-ibm-cloud-vpc-gen2-from-local-bootstrap-cluster)
     - [Build workload cluster image:](#build-workload-cluster-image)
     - [Provision local boostrap management cluster:](#provision-local-boostrap-management-cluster)
     - [Provision Workload Cluster in IBM Cloud VPC](#provision-workload-cluster-in-ibm-cloud-vpc)
+  - [Community, discussion, contribution, and support](#community-discussion-contribution-and-support)
+    - [Code of conduct](#code-of-conduct)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -30,21 +30,6 @@ This repository hosts a concrete implementation of an IBM Cloud provider for the
 ## What is the Cluster API Provider IBM Cloud
 
 The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declarative, Kubernetes-style APIs to cluster creation, configuration and management. The API itself is shared across multiple cloud providers allowing for true IBM Cloud hybrid deployments of Kubernetes.
-
-## Community, discussion, contribution, and support
-
-Learn how to engage with the Kubernetes community on the [community page](http://kubernetes.io/community/).
-
-You can reach the maintainers of this project at:
-
-- [#provider-ibmcloud on Kubernetes Slack](https://kubernetes.slack.com/messages/provider-ibmcloud)
-- [SIG-Cluster-Lifecycle Mailing List](https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle)
-
-### Code of conduct
-
-Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
-
-------
 
 ## Getting Started
 
@@ -244,3 +229,35 @@ Participation in the Kubernetes community is governed by the [Kubernetes Code of
     ```
 
     Increase / decrease the `replicas: 2` count in the spec section to see the machine replicas reconciled within the workload cluster.
+
+<!-- ANCHOR: Community -->
+
+## Community, discussion, contribution, and support
+
+If you have questions or want to get the latest project news, you can connect with us in the following ways:
+
+- Chat with us on the Kubernetes [Slack](http://slack.k8s.io/) in the [#cluster-api-ibmcloud][slack] channel
+- Subscribe to the [SIG Cluster Lifecycle](https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle) Google Group for access to documents and calendars
+- Join our Weekly meeting sessions where we share the latest project news, demos, answer questions, and triage issues
+    - Weekly on Friday @ 09:00 IST on [Zoom][zoomMeeting]
+    - Previous meetings: \[ [notes][notes] \]
+
+Pull Requests and feedback on issues are very welcome!
+See the [issue tracker] if you're unsure where to start, especially the [Good first issue] and [Help wanted] tags, and
+also feel free to reach out to discuss.
+
+See also our [contributor guide](CONTRIBUTING.md) and the Kubernetes [community page] for more details on how to get involved.
+
+[slack]: https://kubernetes.slack.com/messages/C02F4CX3ALF
+[zoomMeeting]: https://zoom.us/j/9392903494
+[notes]: https://docs.google.com/document/d/1oWnqXy1VFv0E3kovQoZfS6IlVP0L4eaQsN-2HYC_6_A/edit
+[issue tracker]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues
+[Good first issue]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
+[Help wanted]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+
+[community page]: https://kubernetes.io/community
+
+### Code of conduct
+
+Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
+
+<!-- ANCHOR_END: Community -->
