@@ -16,7 +16,7 @@ require (
 	github.com/prometheus/common v0.26.0
 	k8s.io/api v0.21.5
 	k8s.io/apimachinery v0.21.5
-	k8s.io/client-go v0.21.4
+	k8s.io/client-go v0.21.5
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
 	sigs.k8s.io/cluster-api v0.0.0-20210526191338-0e1629b75111
