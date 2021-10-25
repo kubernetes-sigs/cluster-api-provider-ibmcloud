@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
@@ -142,7 +141,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
-		log.Info("Bootstrap data secret reference is not yet available")
+		machineScope.Info("Bootstrap data secret reference is not yet available")
 		return ctrl.Result{}, nil
 	}
 
@@ -183,7 +182,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 			})
 		}
 		machineScope.IBMVPCMachine.Status.Ready = true
-		log.Info(*instance.ID)
+		machineScope.Info(*instance.ID)
 	}
 
 	return ctrl.Result{}, nil
@@ -198,7 +197,7 @@ func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ 
 	scope.Info("Handling deleted IBMVPCMachine")
 
 	if err := scope.DeleteMachine(); err != nil {
-		log.Info("error deleting IBMVPCMachine")
+		scope.Info("error deleting IBMVPCMachine")
 		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMVPCMachine %s/%s", scope.IBMVPCMachine.Namespace, scope.IBMVPCMachine.Spec.Name)
 	}
 
