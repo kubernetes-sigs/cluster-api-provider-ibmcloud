@@ -155,7 +155,6 @@ metadata:
 spec:
   template:
     spec:
-      name: "${CLUSTER_NAME}-control-plane"
       serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       imageID: "${IBMPOWERVS_IMAGE_ID}"
@@ -195,7 +194,6 @@ metadata:
 spec:
   template:
     spec:
-      name: "${CLUSTER_NAME}-md-0"
       serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       imageID: "${IBMPOWERVS_IMAGE_ID}"
