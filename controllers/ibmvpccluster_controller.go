@@ -37,6 +37,7 @@ import (
 
 	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
 // IBMVPCClusterReconciler reconciles a IBMVPCCluster object
@@ -75,16 +76,20 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Create the scope.
-	iamEndpoint := os.Getenv("IAM_ENDPOINT")
-	apiKey := os.Getenv("API_KEY")
+	// TODO: Will be removed once we find a better way of overriding the service endpoint, generate via spec
 	svcEndpoint := os.Getenv("SERVICE_ENDPOINT")
+
+	authenticator, err := pkg.GetAuthenticator()
+	if err != nil {
+		return ctrl.Result{}, errors.Wrapf(err, "failed to get authenticator")
+	}
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:        r.Client,
 		Logger:        log,
 		Cluster:       cluster,
 		IBMVPCCluster: ibmCluster,
-	}, iamEndpoint, apiKey, svcEndpoint)
+	}, authenticator, svcEndpoint)
 
 	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
 	defer func() {

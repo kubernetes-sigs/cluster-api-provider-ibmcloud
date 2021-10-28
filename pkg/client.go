@@ -22,11 +22,13 @@ import (
 
 	"github.com/golang-jwt/jwt"
 
+	"github.com/IBM-Cloud/bluemix-go"
 	"github.com/IBM-Cloud/bluemix-go/api/resource/resourcev2/controllerv2"
 	"github.com/IBM-Cloud/bluemix-go/authentication"
 	"github.com/IBM-Cloud/bluemix-go/http"
 	"github.com/IBM-Cloud/bluemix-go/rest"
 	bxsession "github.com/IBM-Cloud/bluemix-go/session"
+	"github.com/IBM/go-sdk-core/v5/core"
 
 	"k8s.io/klog/v2"
 )
@@ -98,7 +100,16 @@ func fetchUserDetails(sess *bxsession.Session, generation int) (*User, error) {
 func NewClient() *Client {
 	c := &Client{}
 
-	bxSess, err := bxsession.New()
+	authenticator, err := GetAuthenticator()
+	if err != nil {
+		klog.Fatal(err)
+	}
+	//TODO: this will be removed once power-go-client migrated to go-sdk-core
+	auth, ok := authenticator.(*core.IamAuthenticator)
+	if !ok {
+		klog.Fatal("failed to assert the authenticator as IAM type, please check the ibm-credentials.env file")
+	}
+	bxSess, err := bxsession.New(&bluemix.Config{BluemixAPIKey: auth.ApiKey})
 	if err != nil {
 		klog.Fatal(err)
 	}
