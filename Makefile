@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include versions.mk
-
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
@@ -133,7 +131,6 @@ docker-push: ## Push the docker image
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
 	docker pull docker.io/docker/dockerfile:1.1-experimental
-	docker pull docker.io/library/golang:$(GOLANG_VERSION)
 	docker pull gcr.io/distroless/static:latest
 
 ## --------------------------------------
