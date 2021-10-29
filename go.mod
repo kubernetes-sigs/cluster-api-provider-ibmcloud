@@ -13,9 +13,9 @@ require (
 	github.com/onsi/gomega v1.16.0
 	github.com/pkg/errors v0.9.1
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210106101518-5d3f965b0344
-	k8s.io/api v0.21.5
-	k8s.io/apimachinery v0.21.5
-	k8s.io/client-go v0.21.5
+	k8s.io/api v0.21.6
+	k8s.io/apimachinery v0.21.6
+	k8s.io/client-go v0.21.6
 	k8s.io/klog/v2 v2.9.0
 	k8s.io/utils v0.0.0-20210802155522-efc7438f0176
 	sigs.k8s.io/cluster-api v0.0.0-20210526191338-0e1629b75111
