@@ -52,7 +52,7 @@ type ClusterScope struct {
 	IBMVPCCluster *infrav1.IBMVPCCluster
 }
 
-func NewClusterScope(params ClusterScopeParams, iamEndpoint string, apiKey string, svcEndpoint string) (*ClusterScope, error) {
+func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator, svcEndpoint string) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -69,7 +69,7 @@ func NewClusterScope(params ClusterScopeParams, iamEndpoint string, apiKey strin
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	vpcErr := params.IBMVPCClients.setIBMVPCService(iamEndpoint, svcEndpoint, apiKey)
+	vpcErr := params.IBMVPCClients.setIBMVPCService(authenticator, svcEndpoint)
 	if vpcErr != nil {
 		return nil, errors.Wrap(vpcErr, "failed to create IBM VPC session")
 	}

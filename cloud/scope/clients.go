@@ -28,14 +28,11 @@ type IBMVPCClients struct {
 	//ServiceEndPoint string
 }
 
-func (c *IBMVPCClients) setIBMVPCService(iamEndpoint string, svcEndpoint string, apiKey string) error {
+func (c *IBMVPCClients) setIBMVPCService(authenticator core.Authenticator, svcEndpoint string) error {
 	var err error
 	c.VPCService, err = vpcv1.NewVpcV1(&vpcv1.VpcV1Options{
-		Authenticator: &core.IamAuthenticator{
-			ApiKey: apiKey,
-			URL:    iamEndpoint,
-		},
-		URL: svcEndpoint,
+		Authenticator: authenticator,
+		URL:           svcEndpoint,
 	})
 
 	return err

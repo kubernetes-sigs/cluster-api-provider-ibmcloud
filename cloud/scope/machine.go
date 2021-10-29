@@ -23,6 +23,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -58,7 +59,7 @@ type MachineScope struct {
 	IBMVPCMachine *infrav1.IBMVPCMachine
 }
 
-func NewMachineScope(params MachineScopeParams, iamEndpoint string, apiKey string, svcEndpoint string) (*MachineScope, error) {
+func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator, svcEndpoint string) (*MachineScope, error) {
 	if params.Machine == nil {
 		return nil, errors.New("failed to generate new scope from nil Machine")
 	}
@@ -75,7 +76,7 @@ func NewMachineScope(params MachineScopeParams, iamEndpoint string, apiKey strin
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	vpcErr := params.IBMVPCClients.setIBMVPCService(iamEndpoint, svcEndpoint, apiKey)
+	vpcErr := params.IBMVPCClients.setIBMVPCService(authenticator, svcEndpoint)
 	if vpcErr != nil {
 		return nil, errors.Wrap(vpcErr, "failed to create IBM VPC session")
 	}
