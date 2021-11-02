@@ -27,3 +27,6 @@ junit*.xml
 
 # dep ensured 3rd code
 vendor/sigs.k8s.io/cluster-api/docs/book/*.json
+
+# tilt
+.tiltbuild
