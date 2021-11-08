@@ -30,3 +30,7 @@ vendor/sigs.k8s.io/cluster-api/docs/book/*.json
 
 # tilt
 .tiltbuild
+
+# release
+_artifacts/
+out/
