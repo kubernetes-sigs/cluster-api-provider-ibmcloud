@@ -12,22 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+ROOT_DIR_RELATIVE := .
+
+include $(ROOT_DIR_RELATIVE)/common.mk
+
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1"
+
+# Directories.
+REPO_ROOT := $(shell git rev-parse --show-toplevel)
+ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 TOOLS_DIR := hack/tools
-TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/bin)
+TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
-GOLANGCI_LINT_VER := v1.31.0
-GOLANGCI_LINT_BIN := golangci-lint
-GOLANGCI_LINT := $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
+
+GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
+GOJQ := $(TOOLS_BIN_DIR)/gojq
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
+PROD_REGISTRY := k8s.gcr.io/capi-ibmcloud
 REGISTRY ?= $(STAGING_REGISTRY)
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 PULL_BASE_REF ?= $(RELEASE_TAG) # PULL_BASE_REF will be provided by Prow
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
+RELEASE_DIR := out
 
 TAG ?= dev
 ARCH ?= amd64
@@ -36,6 +47,11 @@ ALL_ARCH ?= amd64 ppc64le
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
 CORE_CONTROLLER_IMG ?= $(REGISTRY)/$(CORE_IMAGE_NAME)
+CORE_CONTROLLER_ORIGINAL_IMG := gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller
+CORE_CONTROLLER_NAME := controller-manager
+CORE_MANIFEST_FILE := infrastructure-components
+CORE_CONFIG_DIR := config/default
+CORE_NAMESPACE := capi-ibmcloud-system
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -113,9 +129,6 @@ endif
 lint: $(GOLANGCI_LINT) ## Lint codebase
 	$(GOLANGCI_LINT) run -v --fast=false
 
-$(GOLANGCI_LINT): ## Build golangci-lint from tools folder.
-	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
-
 ## --------------------------------------
 ## Docker
 ## --------------------------------------
@@ -165,15 +178,126 @@ docker-push-manifest:
 ## Release
 ## --------------------------------------
 
+$(RELEASE_DIR):
+	mkdir -p $@
+
+$(ARTIFACTS):
+	mkdir -p $@
+
+.PHONY: list-staging-releases
+list-staging-releases: ## List staging images for image promotion
+	@echo $(CORE_IMAGE_NAME):
+	$(MAKE) list-image RELEASE_TAG=$(RELEASE_TAG) IMAGE=$(CORE_IMAGE_NAME)
+
+list-image:
+	gcloud container images list-tags $(STAGING_REGISTRY)/$(IMAGE) --filter="tags=('$(RELEASE_TAG)')" --format=json
+
+.PHONY: check-release-tag
+check-release-tag:
+	@if [ -z "${RELEASE_TAG}" ]; then echo "RELEASE_TAG is not set"; exit 1; fi
+	@if ! [ -z "$$(git status --porcelain)" ]; then echo "Your local git repository contains uncommitted changes, use git clean before proceeding."; exit 1; fi
+
+.PHONY: check-previous-release-tag
+check-previous-release-tag:
+	@if [ -z "${PREVIOUS_VERSION}" ]; then echo "PREVIOUS_VERSION is not set"; exit 1; fi
+
+.PHONY: check-github-token
+check-github-token:
+	@if [ -z "${GITHUB_TOKEN}" ]; then echo "GITHUB_TOKEN is not set"; exit 1; fi
+
+.PHONY: release
+release: clean-release check-release-tag $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
+	git checkout "${RELEASE_TAG}"
+	CORE_CONTROLLER_IMG=$(PROD_REGISTRY)/$(CORE_IMAGE_NAME) $(MAKE) release-manifests
+	$(MAKE) release-templates
+
+.PHONY: release-manifests
+release-manifests:
+	$(MAKE) $(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml TAG=$(RELEASE_TAG)
+	# Add metadata to the release artifacts
+	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
+
+.PHONY: release-staging
+release-staging: ## Builds and push container images and manifests to the staging bucket.
+	$(MAKE) docker-build-all
+	$(MAKE) docker-push-all
+	$(MAKE) release-alias-tag
+	$(MAKE) staging-manifests
+	$(MAKE) release-templates
+	$(MAKE) upload-staging-artifacts
+
+.PHONY: staging-manifests
+staging-manifests:
+	$(MAKE) $(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml TAG=$(RELEASE_ALIAS_TAG)
+	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
+
+.PHONY: upload-staging-artifacts
+upload-staging-artifacts: ## Upload release artifacts to the staging bucket
+	gsutil cp $(RELEASE_DIR)/* gs://$(BUCKET)/components/$(RELEASE_ALIAS_TAG)
+
 .PHONY: release-alias-tag
 release-alias-tag: # Adds the tag to the last build tag.
 	gcloud container images add-tag -q $(CORE_CONTROLLER_IMG):$(TAG) $(CORE_CONTROLLER_IMG):$(RELEASE_ALIAS_TAG)
 
-.PHONY: release-staging
-release-staging: ## Builds and push container images to the staging image registry.
-	$(MAKE) docker-build-all
-	$(MAKE) docker-push-all
-	$(MAKE) release-alias-tag
+.PHONY: release-templates
+release-templates: $(RELEASE_DIR) ## Generate release templates
+	cp templates/cluster-template*.yaml $(RELEASE_DIR)/
+
+IMAGE_PATCH_DIR := $(ARTIFACTS)/image-patch
+
+$(IMAGE_PATCH_DIR): $(ARTIFACTS)
+	mkdir -p $@
+
+.PHONY: $(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml
+$(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml:
+	$(MAKE) compiled-manifest \
+		PROVIDER=$(CORE_MANIFEST_FILE) \
+		OLD_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG) \
+		MANIFEST_IMG=$(CORE_CONTROLLER_IMG) \
+		CONTROLLER_NAME=$(CORE_CONTROLLER_NAME) \
+		PROVIDER_CONFIG_DIR=$(CORE_CONFIG_DIR) \
+		NAMESPACE=$(CORE_NAMESPACE) \
+
+.PHONY: compiled-manifest
+compiled-manifest: $(RELEASE_DIR) $(KUSTOMIZE)
+	$(MAKE) image-patch-source-manifest
+	$(MAKE) image-patch-kustomization
+	$(KUSTOMIZE) build $(IMAGE_PATCH_DIR)/$(PROVIDER) > $(RELEASE_DIR)/$(PROVIDER).yaml
+
+.PHONY: image-patch-source-manifest
+image-patch-source-manifest: $(IMAGE_PATCH_DIR) $(KUSTOMIZE)
+	mkdir -p $(IMAGE_PATCH_DIR)/$(PROVIDER)
+	$(KUSTOMIZE) build $(PROVIDER_CONFIG_DIR) > $(IMAGE_PATCH_DIR)/$(PROVIDER)/source-manifest.yaml
+
+.PHONY: image-patch-kustomization
+image-patch-kustomization: $(IMAGE_PATCH_DIR)
+	mkdir -p $(IMAGE_PATCH_DIR)/$(PROVIDER)
+	$(MAKE) image-patch-kustomization-without-webhook
+
+.PHONY: image-patch-kustomization-without-webhook
+image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
+	mkdir -p $(IMAGE_PATCH_DIR)/$(PROVIDER)
+	$(GOJQ) --yaml-input --yaml-output '.images[0]={"name":"$(OLD_IMG)","newName":"$(MANIFEST_IMG)","newTag":"$(TAG)"}' \
+		"hack/image-patch/kustomization.yaml" > $(IMAGE_PATCH_DIR)/$(PROVIDER)/kustomization.yaml
+
+## --------------------------------------
+## Cleanup / Verification
+## --------------------------------------
+
+.PHONY: clean
+clean: ## Remove all generated files
+	$(MAKE) -C hack/tools clean
+	$(MAKE) clean-temporary
+
+.PHONY: clean-temporary
+clean-temporary: ## Remove all temporary files and folders
+	rm -f minikube.kubeconfig
+	rm -f kubeconfig
+	rm -rf _artifacts
+
+.PHONY: clean-release
+clean-release: ## Remove the release folder
+	rm -rf $(RELEASE_DIR)
 
 .PHONY: verify
 verify:

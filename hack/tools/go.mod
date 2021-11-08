@@ -5,7 +5,9 @@ go 1.16
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/drone/envsubst/v2 v2.0.0-20210615175204-7bf45dbf5372
-	github.com/hashicorp/go-multierror v1.0.0
+	github.com/golangci/golangci-lint v1.41.1
+	github.com/hashicorp/go-multierror v1.1.1
+	github.com/itchyny/gojq v0.12.5
 	github.com/joelanford/go-apidiff v0.1.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/pkg/errors v0.9.1
@@ -18,4 +20,5 @@ require (
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20210827150604-1730628f118b
 	sigs.k8s.io/controller-tools v0.7.0
 	sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20210702145813-742983631190
+	sigs.k8s.io/kustomize/kustomize/v3 v3.10.0
 )
