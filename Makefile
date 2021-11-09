@@ -33,6 +33,8 @@ KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 GOJQ := $(TOOLS_BIN_DIR)/gojq
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
+STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
+BUCKET ?= $(STAGING_BUCKET)
 PROD_REGISTRY := k8s.gcr.io/capi-ibmcloud
 REGISTRY ?= $(STAGING_REGISTRY)
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
