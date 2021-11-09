@@ -49,6 +49,7 @@ type IBMPowerVSMachineReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachines/status,verbs=get;update;patch
 
+// Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMPowerVSMachine.
 func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmpowervsmachine", req.NamespacedName)
 
@@ -119,6 +120,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, machineScope)
 }
 
+// SetupWithManager creates a new IBMPowerVSMachine controller for a manager.
 func (r *IBMPowerVSMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha4.IBMPowerVSMachine{}).

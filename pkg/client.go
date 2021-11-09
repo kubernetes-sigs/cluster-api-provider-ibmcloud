@@ -33,6 +33,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// Client is used to communicate with IBM Cloud holds the session and user information
 type Client struct {
 	*bxsession.Session
 	User           *User
@@ -52,6 +53,7 @@ func authenticateAPIKey(sess *bxsession.Session) error {
 	return tokenRefresher.AuthenticateAPIKey(config.BluemixAPIKey)
 }
 
+// User holds the user specific information
 type User struct {
 	ID         string
 	Email      string
@@ -97,6 +99,7 @@ func fetchUserDetails(sess *bxsession.Session, generation int) (*User, error) {
 	return &user, nil
 }
 
+// NewClient instantiates and returns an IBM Cloud Client object with session, resource controller and userDetails
 func NewClient() *Client {
 	c := &Client{}
 

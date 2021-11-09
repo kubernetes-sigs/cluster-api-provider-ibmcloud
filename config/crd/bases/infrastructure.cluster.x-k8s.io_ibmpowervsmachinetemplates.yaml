@@ -39,6 +39,8 @@ spec:
               IBMPowerVSMachineTemplate
             properties:
               template:
+                description: IBMPowerVSMachineTemplateResource holds the IBMPowerVSMachine
+                  spec
                 properties:
                   spec:
                     description: IBMPowerVSMachineSpec defines the desired state of

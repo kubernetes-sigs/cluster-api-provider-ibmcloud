@@ -63,6 +63,7 @@ type IBMVPCClusterStatus struct {
 	APIEndpoint APIEndpoint `json:"apiEndpoint,omitempty"`
 }
 
+// VPC holds the VPC information
 type VPC struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`

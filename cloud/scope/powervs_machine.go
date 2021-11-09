@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
+// PowerVSMachineScopeParams defines the input parameters used to create a new PowerVSMachineScope.
 type PowerVSMachineScopeParams struct {
 	Logger            logr.Logger
 	Client            client.Client
@@ -51,6 +52,7 @@ type PowerVSMachineScopeParams struct {
 	IBMPowerVSMachine *v1alpha4.IBMPowerVSMachine
 }
 
+// PowerVSMachineScope defines a scope defined around a Power VS Machine.
 type PowerVSMachineScope struct {
 	logr.Logger
 	client      client.Client
@@ -63,6 +65,7 @@ type PowerVSMachineScope struct {
 	IBMPowerVSMachine *v1alpha4.IBMPowerVSMachine
 }
 
+// NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
 func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineScope, error) {
 	if params.Client == nil {
 		return nil, errors.New("client is required when creating a MachineScope")
@@ -129,17 +132,16 @@ func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models
 	return nil, nil
 }
 
+// CreateMachine creates a power vs machine
 func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, error) {
 	s := m.IBMPowerVSMachine.Spec
 
 	instanceReply, err := m.ensureInstanceUnique(m.IBMPowerVSMachine.Name)
 	if err != nil {
 		return nil, err
-	} else {
-		if instanceReply != nil {
-			//TODO need a resonable wraped error
-			return instanceReply, nil
-		}
+	} else if instanceReply != nil {
+		//TODO need a reasonable wrapped error
+		return instanceReply, nil
 	}
 	cloudInitData, err := m.GetBootstrapData()
 	if err != nil {
@@ -190,6 +192,7 @@ func (m *PowerVSMachineScope) PatchObject() error {
 	return m.patchHelper.Patch(context.TODO(), m.IBMPowerVSMachine)
 }
 
+// DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
 func (m *PowerVSMachineScope) DeleteMachine() error {
 	return m.IBMPowerVSClient.InstanceClient.Delete(m.IBMPowerVSMachine.Status.InstanceID, m.IBMPowerVSMachine.Spec.ServiceInstanceID, time.Hour)
 }

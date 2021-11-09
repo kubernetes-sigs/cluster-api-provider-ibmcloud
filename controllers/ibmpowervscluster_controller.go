@@ -44,6 +44,7 @@ type IBMPowerVSClusterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters/status,verbs=get;update;patch
 
+// Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMPowerVSCluster.
 func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmpowervscluster", req.NamespacedName)
 
@@ -89,9 +90,8 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
-	} else {
-		return r.reconcile(ctx, clusterScope)
 	}
+	return r.reconcile(ctx, clusterScope)
 }
 
 func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
@@ -110,6 +110,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(clusterScope *scope.PowerV
 	return ctrl.Result{}, nil
 }
 
+// SetupWithManager creates a new IBMPowerVSCluster controller for a manager.
 func (r *IBMPowerVSClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha4.IBMPowerVSCluster{}).

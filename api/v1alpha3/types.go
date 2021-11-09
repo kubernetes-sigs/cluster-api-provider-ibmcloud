@@ -16,11 +16,13 @@ limitations under the License.
 
 package v1alpha3
 
+// NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface
 	Subnet string `json:"subnet,omitempty"`
 }
 
+// Subnet describes a subnet
 type Subnet struct {
 	Ipv4CidrBlock *string `json:"cidr"`
 	Name          *string `json:"name"`
@@ -28,6 +30,7 @@ type Subnet struct {
 	Zone          *string `json:"zone"`
 }
 
+// APIEndpoint describes a APIEndpoint
 type APIEndpoint struct {
 	Address *string `json:"address"`
 	FIPID   *string `json:"floatingIPID"`
