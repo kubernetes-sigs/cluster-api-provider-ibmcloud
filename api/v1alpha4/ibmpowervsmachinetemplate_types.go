@@ -28,6 +28,7 @@ type IBMPowerVSMachineTemplateSpec struct {
 	Template IBMPowerVSMachineTemplateResource `json:"template"`
 }
 
+// IBMPowerVSMachineTemplateResource holds the IBMPowerVSMachine spec
 type IBMPowerVSMachineTemplateResource struct {
 	Spec IBMPowerVSMachineSpec `json:"spec"`
 }

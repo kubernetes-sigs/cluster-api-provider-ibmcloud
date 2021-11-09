@@ -36,6 +36,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
 )
 
+// MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
 	IBMVPCClients
 	Client        client.Client
@@ -46,6 +47,7 @@ type MachineScopeParams struct {
 	IBMVPCMachine *infrav1.IBMVPCMachine
 }
 
+// MachineScope defines a scope defined around a machine and its cluster.
 type MachineScope struct {
 	logr.Logger
 	client      client.Client
@@ -59,6 +61,7 @@ type MachineScope struct {
 	IBMVPCMachine *infrav1.IBMVPCMachine
 }
 
+// NewMachineScope creates a new MachineScope from the supplied parameters.
 func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator, svcEndpoint string) (*MachineScope, error) {
 	if params.Machine == nil {
 		return nil, errors.New("failed to generate new scope from nil Machine")
@@ -93,15 +96,14 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 	}, nil
 }
 
+// CreateMachine creates a vpc machine
 func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	instanceReply, err := m.ensureInstanceUnique(m.IBMVPCMachine.Name)
 	if err != nil {
 		return nil, err
-	} else {
-		if instanceReply != nil {
-			//TODO need a resonable wraped error
-			return instanceReply, nil
-		}
+	} else if instanceReply != nil {
+		//TODO need a reasonable wrapped error
+		return instanceReply, nil
 	}
 
 	cloudInitData, err := m.GetBootstrapData()
@@ -146,6 +148,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	return instance, err
 }
 
+// DeleteMachine deletes the vpc machine associated with machine instance id.
 func (m *MachineScope) DeleteMachine() error {
 	options := &vpcv1.DeleteInstanceOptions{}
 	options.SetID(m.IBMVPCMachine.Status.InstanceID)
@@ -169,6 +172,7 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 	}
 }
 
+// GetMachine returns a machine associated with a machine instanceID
 func (m *MachineScope) GetMachine(instanceID string) (*vpcv1.Instance, error) {
 	options := &vpcv1.GetInstanceOptions{}
 	options.SetID(instanceID)

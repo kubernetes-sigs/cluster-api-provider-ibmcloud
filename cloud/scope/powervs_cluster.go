@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
+// PowerVSClusterScopeParams defines the input parameters used to create a new PowerVSClusterScope.
 type PowerVSClusterScopeParams struct {
 	Client            client.Client
 	Logger            logr.Logger
@@ -41,6 +42,7 @@ type PowerVSClusterScopeParams struct {
 	IBMPowerVSCluster *v1alpha4.IBMPowerVSCluster
 }
 
+// PowerVSClusterScope defines a scope defined around a Power VS Cluster.
 type PowerVSClusterScope struct {
 	logr.Logger
 	client      client.Client
@@ -51,6 +53,7 @@ type PowerVSClusterScope struct {
 	IBMPowerVSCluster *v1alpha4.IBMPowerVSCluster
 }
 
+// NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.
 func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")

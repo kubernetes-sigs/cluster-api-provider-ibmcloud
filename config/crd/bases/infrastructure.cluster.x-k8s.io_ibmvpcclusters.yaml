@@ -83,6 +83,7 @@ spec:
             description: IBMVPCClusterStatus defines the observed state of IBMVPCCluster
             properties:
               apiEndpoint:
+                description: APIEndpoint describes a APIEndpoint
                 properties:
                   address:
                     type: string
@@ -96,6 +97,7 @@ spec:
                 description: Bastion Instance `json:"bastion,omitempty"`
                 type: boolean
               subnet:
+                description: Subnet describes a subnet
                 properties:
                   cidr:
                     type: string
@@ -197,6 +199,7 @@ spec:
             description: IBMVPCClusterStatus defines the observed state of IBMVPCCluster
             properties:
               apiEndpoint:
+                description: APIEndpoint describes a APIEndpoint
                 properties:
                   address:
                     type: string
@@ -210,6 +213,7 @@ spec:
                 description: Bastion Instance `json:"bastion,omitempty"`
                 type: boolean
               subnet:
+                description: Subnet describes a subnet
                 properties:
                   cidr:
                     type: string

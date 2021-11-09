@@ -51,6 +51,7 @@ type IBMVPCClusterReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=cluster.x-k8s.io,resources=clusters;clusters/status,verbs=get;list;watch
 
+// Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMVPCCluster.
 func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmvpccluster", req.NamespacedName)
 
@@ -105,9 +106,8 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
-	} else {
-		return r.reconcile(ctx, clusterScope)
 	}
+	return r.reconcile(ctx, clusterScope)
 }
 
 func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
@@ -190,12 +190,12 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 
 	if err := clusterScope.DeleteVPC(); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to delete VPC")
-	} else {
-		controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer)
-		return ctrl.Result{}, nil
 	}
+	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer)
+	return ctrl.Result{}, nil
 }
 
+// SetupWithManager creates a new IBMVPCCluster controller for a manager.
 func (r *IBMVPCClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrastructurev1alpha3.IBMVPCCluster{}).

@@ -54,11 +54,11 @@ type IBMVPCMachineReconciler struct {
 // +kubebuilder:rbac:groups="",resources=secrets;,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=get;list;watch;create;update;patch
 
+// Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMVPCMachine.
 func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmvpcmachine", req.NamespacedName)
 
-	// your logic here
-	// Fetch the GCPMachine instance.
+	// Fetch the IBMVPCMachine instance.
 
 	ibmVpcMachine := &infrastructurev1alpha3.IBMVPCMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmVpcMachine)
@@ -117,7 +117,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
+	// Always close the scope when exiting this function, so we can persist any IBMVPCMachine changes.
 
 	defer func() {
 		if err := machineScope.Close(); err != nil && reterr == nil {
@@ -134,6 +134,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return r.reconcileNormal(ctx, machineScope)
 }
 
+// SetupWithManager creates a new IBMVPCMachine controller for a manager.
 func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrastructurev1alpha3.IBMVPCMachine{}).

@@ -34,6 +34,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
 )
 
+// ClusterScopeParams defines the input parameters used to create a new ClusterScope.
 type ClusterScopeParams struct {
 	IBMVPCClients
 	Client        client.Client
@@ -42,6 +43,7 @@ type ClusterScopeParams struct {
 	IBMVPCCluster *infrav1.IBMVPCCluster
 }
 
+// ClusterScope defines a scope defined around a cluster.
 type ClusterScope struct {
 	logr.Logger
 	client      client.Client
@@ -52,6 +54,7 @@ type ClusterScope struct {
 	IBMVPCCluster *infrav1.IBMVPCCluster
 }
 
+// NewClusterScope creates a new ClusterScope from the supplied parameters.
 func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator, svcEndpoint string) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
@@ -84,15 +87,14 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 	}, nil
 }
 
+// CreateVPC creates a new IBM VPC in specified resource group
 func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	vpcReply, err := s.ensureVPCUnique(s.IBMVPCCluster.Spec.VPC)
 	if err != nil {
 		return nil, err
-	} else {
-		if vpcReply != nil {
-			//TODO need a resonable wraped error
-			return vpcReply, nil
-		}
+	} else if vpcReply != nil {
+		//TODO need a reasonable wrapped error
+		return vpcReply, nil
 	}
 
 	options := &vpcv1.CreateVPCOptions{}
@@ -112,6 +114,7 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	}
 }
 
+// DeleteVPC deletes IBM VPC associated with a VPC id
 func (s *ClusterScope) DeleteVPC() error {
 	deleteVpcOptions := &vpcv1.DeleteVPCOptions{}
 	deleteVpcOptions.SetID(s.IBMVPCCluster.Status.VPC.ID)
@@ -147,18 +150,16 @@ func (s *ClusterScope) updateDefaultSG(sgID string) error {
 	return err
 }
 
+// ReserveFIP creates a Floating IP in a provided resource group and zone
 func (s *ClusterScope) ReserveFIP() (*vpcv1.FloatingIP, error) {
 	fipName := s.IBMVPCCluster.Name + "-control-plane"
 	fipReply, err := s.ensureFIPUnique(fipName)
 	if err != nil {
 		return nil, err
-	} else {
-		if fipReply != nil {
-			//TODO need a resonable wraped error
-			return fipReply, nil
-		}
+	} else if fipReply != nil {
+		//TODO need a reasonable wrapped error
+		return fipReply, nil
 	}
-
 	options := &vpcv1.CreateFloatingIPOptions{}
 
 	options.SetFloatingIPPrototype(&vpcv1.FloatingIPPrototype{
@@ -190,6 +191,7 @@ func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error
 	}
 }
 
+// DeleteFloatingIP deletes a Floating IP associated with floating ip id
 func (s *ClusterScope) DeleteFloatingIP() error {
 	fipID := *s.IBMVPCCluster.Status.APIEndpoint.FIPID
 	if fipID != "" {
@@ -201,16 +203,15 @@ func (s *ClusterScope) DeleteFloatingIP() error {
 	return nil
 }
 
+// CreateSubnet creates a subnet within provided vpc and zone
 func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 	subnetName := s.IBMVPCCluster.Name + "-subnet"
 	subnetReply, err := s.ensureSubnetUnique(subnetName)
 	if err != nil {
 		return nil, err
-	} else {
-		if subnetReply != nil {
-			//TODO need a resonable wraped error
-			return subnetReply, nil
-		}
+	} else if subnetReply != nil {
+		//TODO need a reasonable wrapped error
+		return subnetReply, nil
 	}
 
 	options := &vpcv1.CreateSubnetOptions{}
@@ -278,6 +279,7 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 	}
 }
 
+// DeleteSubnet deletes a subnet associated with subnet id
 func (s *ClusterScope) DeleteSubnet() error {
 	subnetID := *s.IBMVPCCluster.Status.Subnet.ID
 
@@ -285,8 +287,8 @@ func (s *ClusterScope) DeleteSubnet() error {
 	getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{}
 	getPGWOptions.SetID(subnetID)
 	pgw, _, err := s.IBMVPCClients.VPCService.GetSubnetPublicGateway(getPGWOptions)
-	if pgw != nil && err == nil { // publicgateway found
-		// Unset the publicgateway for subnet first
+	if pgw != nil && err == nil { // public gateway found
+		// Unset the public gateway for subnet first
 		err = s.detachPublicGateway(subnetID, *pgw.ID)
 		if err != nil {
 			return errors.Wrap(err, "Error when detaching publicgateway for subnet "+subnetID)
