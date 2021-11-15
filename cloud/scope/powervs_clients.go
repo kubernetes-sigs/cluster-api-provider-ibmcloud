@@ -23,14 +23,17 @@ import (
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 )
 
+// TIMEOUT is used while creating IBM Power VS client
 const TIMEOUT = 1 * time.Hour
 
+// IBMPowerVSClient used to store IBM Power VS client information
 type IBMPowerVSClient struct {
 	session        *ibmpisession.IBMPISession
 	InstanceClient *instance.IBMPIInstanceClient
 	NetworkClient  *instance.IBMPINetworkClient
 }
 
+// NewIBMPowerVSClient creates and returns a IBM Power VS client
 func NewIBMPowerVSClient(token, account, cloudInstanceID, region, zone string, debug bool) (_ *IBMPowerVSClient, err error) {
 	client := &IBMPowerVSClient{}
 	client.session, err = ibmpisession.New(token, region, debug, TIMEOUT, account, zone)
