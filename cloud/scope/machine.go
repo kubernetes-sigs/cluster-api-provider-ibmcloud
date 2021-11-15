@@ -162,14 +162,13 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 
 	if err != nil {
 		return nil, err
-	} else {
-		for _, instance := range instances.Instances {
-			if *instance.Name == instanceName {
-				return &instance, nil
-			}
-		}
-		return nil, nil
 	}
+	for _, instance := range instances.Instances {
+		if *instance.Name == instanceName {
+			return &instance, nil
+		}
+	}
+	return nil, nil
 }
 
 // GetMachine returns a machine associated with a machine instanceID

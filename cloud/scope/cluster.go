@@ -105,13 +105,10 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	vpc, _, err := s.IBMVPCClients.VPCService.CreateVPC(options)
 	if err != nil {
 		return nil, err
-	} else {
-		if err := s.updateDefaultSG(*vpc.DefaultSecurityGroup.ID); err != nil {
-			return nil, err
-		} else {
-			return vpc, nil
-		}
+	} else if err := s.updateDefaultSG(*vpc.DefaultSecurityGroup.ID); err != nil {
+		return nil, err
 	}
+	return vpc, nil
 }
 
 // DeleteVPC deletes IBM VPC associated with a VPC id
@@ -128,14 +125,13 @@ func (s *ClusterScope) ensureVPCUnique(vpcName string) (*vpcv1.VPC, error) {
 	vpcs, _, err := s.IBMVPCClients.VPCService.ListVpcs(listVpcsOptions)
 	if err != nil {
 		return nil, err
-	} else {
-		for _, vpc := range vpcs.Vpcs {
-			if (*vpc.Name) == vpcName {
-				return &vpc, nil
-			}
-		}
-		return nil, nil
 	}
+	for _, vpc := range vpcs.Vpcs {
+		if (*vpc.Name) == vpcName {
+			return &vpc, nil
+		}
+	}
+	return nil, nil
 }
 
 func (s *ClusterScope) updateDefaultSG(sgID string) error {
@@ -181,14 +177,13 @@ func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error
 	floatingIPs, _, err := s.IBMVPCClients.VPCService.ListFloatingIps(listFloatingIpsOptions)
 	if err != nil {
 		return nil, err
-	} else {
-		for _, fip := range floatingIPs.FloatingIps {
-			if *fip.Name == fipName {
-				return &fip, nil
-			}
-		}
-		return nil, nil
 	}
+	for _, fip := range floatingIPs.FloatingIps {
+		if *fip.Name == fipName {
+			return &fip, nil
+		}
+	}
+	return nil, nil
 }
 
 // DeleteFloatingIP deletes a Floating IP associated with floating ip id
@@ -253,14 +248,13 @@ func (s *ClusterScope) getSubnetAddrPrefix(vpcID, zone string) (string, error) {
 
 	if err != nil {
 		return "", err
-	} else {
-		for _, addrPrefix := range addrCollection.AddressPrefixes {
-			if *addrPrefix.Zone.Name == zone {
-				return *addrPrefix.CIDR, nil
-			}
-		}
-		return "", fmt.Errorf("not found a valid CIDR for VPC %s in zone %s", vpcID, zone)
 	}
+	for _, addrPrefix := range addrCollection.AddressPrefixes {
+		if *addrPrefix.Zone.Name == zone {
+			return *addrPrefix.CIDR, nil
+		}
+	}
+	return "", fmt.Errorf("not found a valid CIDR for VPC %s in zone %s", vpcID, zone)
 }
 
 func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, error) {
@@ -269,14 +263,13 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 
 	if err != nil {
 		return nil, err
-	} else {
-		for _, subnet := range subnets.Subnets {
-			if *subnet.Name == subnetName {
-				return &subnet, nil
-			}
-		}
-		return nil, nil
 	}
+	for _, subnet := range subnets.Subnets {
+		if *subnet.Name == subnetName {
+			return &subnet, nil
+		}
+	}
+	return nil, nil
 }
 
 // DeleteSubnet deletes a subnet associated with subnet id
