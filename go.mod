@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/IBM-Cloud/bluemix-go v0.0.0-20200921095234-26d1d0148c62
 	github.com/IBM-Cloud/power-go-client v1.0.78
-	github.com/IBM/go-sdk-core/v5 v5.8.0
+	github.com/IBM/go-sdk-core/v5 v5.8.1
 	github.com/IBM/vpc-go-sdk v0.13.0
 	github.com/go-logr/logr v0.4.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
