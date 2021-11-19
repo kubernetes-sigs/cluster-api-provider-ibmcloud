@@ -1,4 +1,5 @@
 
+include $(ROOT_DIR_RELATIVE)/versions.mk
 
 TOOLS_DIR := $(ROOT_DIR_RELATIVE)/hack/tools
 TOOLS_DIR_DEPS := $(TOOLS_DIR)/go.sum $(TOOLS_DIR)/go.mod $(TOOLS_DIR)/Makefile
