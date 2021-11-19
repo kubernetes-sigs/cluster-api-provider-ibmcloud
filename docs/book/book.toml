@@ -1,0 +1,19 @@
+[book]
+authors = ["The Cluster API Provider IBMCloud Maintainers"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Kubernetes Cluster API Provider IBMCloud"
+
+[output.html]
+curly-quotes = true
+git-repository-url = "https://sigs.k8s.io/cluster-api-provider-ibmcloud"
+
+[preprocessor.tabulate]
+command = "mdbook-tabulate"
+
+[preprocessor.embed]
+command = "mdbook-embed"
+
+[preprocessor.releaselink]
+command = "mdbook-releaselink"
