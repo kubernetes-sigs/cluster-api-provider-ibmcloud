@@ -13,5 +13,5 @@ require (
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20211118171502-aafa086da595
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.7.1-0.20211110210727-ab52f76cc7d1
-	sigs.k8s.io/kustomize/kustomize/v3 v3.10.0
+	sigs.k8s.io/kustomize/kustomize/v4 v4.4.1
 )
