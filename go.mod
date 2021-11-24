@@ -7,7 +7,7 @@ require (
 	github.com/IBM-Cloud/power-go-client v1.0.78
 	github.com/IBM/go-sdk-core/v5 v5.8.1
 	github.com/IBM/vpc-go-sdk v0.13.0
-	github.com/go-logr/logr v0.4.0
+	github.com/go-logr/logr v1.2.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
