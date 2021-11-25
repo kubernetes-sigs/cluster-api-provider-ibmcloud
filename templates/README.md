@@ -25,9 +25,9 @@ IBMPOWERVS_SSHKEY_NAME="mkumatag-pub-key" \
 IBMPOWERVS_VIP="192.168.150.125" \
 IBMPOWERVS_VIP_EXTERNAL="158.175.161.125" \
 IBMPOWERVS_VIP_CIDR="29" \
-IBMPOWERVS_IMAGE_ID="fb2f75d1-1157-40b9-af2f-5459685ca089" \
+IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-8-1-22-4" \
 IBMPOWERVS_SERVICE_INSTANCE_ID="e449d86e-c3a0-4c07-959e-8557fdf55482" \
-IBMPOWERVS_NETWORK_ID="07ba61c2-64a4-42ce-911e-a3b3656eab7c" \
+IBMPOWERVS_NETWORK_NAME="capi-test-3" \
 clusterctl generate cluster ibm-powervs-1 --kubernetes-version v1.21.2 \
 --target-namespace default \
 --control-plane-machine-count=3 \

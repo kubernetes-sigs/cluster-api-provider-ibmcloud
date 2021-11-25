@@ -31,6 +31,7 @@ type IBMPowerVSClient struct {
 	session        *ibmpisession.IBMPISession
 	InstanceClient *instance.IBMPIInstanceClient
 	NetworkClient  *instance.IBMPINetworkClient
+	ImageClient    *instance.IBMPIImageClient
 }
 
 // NewIBMPowerVSClient creates and returns a IBM Power VS client
@@ -43,5 +44,6 @@ func NewIBMPowerVSClient(token, account, cloudInstanceID, region, zone string, d
 
 	client.InstanceClient = instance.NewIBMPIInstanceClient(client.session, cloudInstanceID)
 	client.NetworkClient = instance.NewIBMPINetworkClient(client.session, cloudInstanceID)
+	client.ImageClient = instance.NewIBMPIImageClient(client.session, cloudInstanceID)
 	return client, nil
 }
