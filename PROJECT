@@ -10,4 +10,13 @@ resources:
 - group: infrastructure
   kind: IBMPowerVSMachineTemplate
   version: v1alpha4
+- group: infrastructure
+  kind: IBMPowerVSCluster
+  version: v1beta1
+- group: infrastructure
+  kind: IBMPowerVSMachine
+  version: v1beta1
+- group: infrastructure
+  kind: IBMPowerVSMachineTemplate
+  version: v1beta1
 version: "2"

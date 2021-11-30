@@ -30,6 +30,7 @@ import (
 
 	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
 	infrastructurev1alpha4 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	infrastructurev1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
 	// +kubebuilder:scaffold:imports
 )
@@ -44,6 +45,7 @@ func init() {
 
 	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	_ = infrastructurev1alpha4.AddToScheme(scheme)
+	_ = infrastructurev1beta1.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }

@@ -114,6 +114,105 @@ spec:
             type: object
         type: object
     served: true
+    storage: false
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: IBMPowerVSMachineTemplate is the Schema for the ibmpowervsmachinetemplates
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: IBMPowerVSMachineTemplateSpec defines the desired state of
+              IBMPowerVSMachineTemplate
+            properties:
+              template:
+                description: IBMPowerVSMachineTemplateResource holds the IBMPowerVSMachine
+                  spec
+                properties:
+                  spec:
+                    description: IBMPowerVSMachineSpec defines the desired state of
+                      IBMPowerVSMachine
+                    properties:
+                      image:
+                        description: Image is the reference to the Image from which
+                          to create the machine instance.
+                        properties:
+                          id:
+                            description: ID of resource
+                            type: string
+                          name:
+                            description: Name of resource
+                            type: string
+                        type: object
+                      memory:
+                        description: Memory is Amount of memory allocated (in GB)
+                        type: string
+                      network:
+                        description: Network is the reference to the Network to use
+                          for this instance.
+                        properties:
+                          id:
+                            description: ID of resource
+                            type: string
+                          name:
+                            description: Name of resource
+                            type: string
+                        type: object
+                      procType:
+                        description: 'ProcType is the processor type, e.g: dedicated,
+                          shared, capped'
+                        type: string
+                      processors:
+                        description: Processors is Number of processors allocated
+                        type: string
+                      providerID:
+                        description: ProviderID is the unique identifier as specified
+                          by the cloud provider.
+                        type: string
+                      serviceInstanceID:
+                        description: ServiceInstanceID is the id of the power cloud
+                          instance where the vsi instance will get deployed
+                        type: string
+                      sshKey:
+                        description: SSHKey is the name of the SSH key pair provided
+                          to the vsi for authenticating users
+                        type: string
+                      sysType:
+                        description: SysType is the System type used to host the vsi
+                        type: string
+                    required:
+                    - image
+                    - memory
+                    - network
+                    - procType
+                    - processors
+                    - serviceInstanceID
+                    - sysType
+                    type: object
+                required:
+                - spec
+                type: object
+            required:
+            - template
+            type: object
+          status:
+            description: IBMPowerVSMachineTemplateStatus defines the observed state
+              of IBMPowerVSMachineTemplate
+            type: object
+        type: object
+    served: true
     storage: true
 status:
   acceptedNames:
