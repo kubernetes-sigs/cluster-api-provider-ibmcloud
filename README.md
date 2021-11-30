@@ -154,7 +154,7 @@ The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declara
     IBMVPC_IMAGE_ID=r134-ea84bbec-7986-4ff5-8489-d9ec34611dd4 \
     IBMVPC_PROFILE=bx2-4x16 \
     IBMVPC_SSHKEY_ID=r134-2a82b725-e570-43d3-8b23-9539e8641944 \
-    clusterctl config cluster ibm-vpc-0 --kubernetes-version v1.19.9 \
+    clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.19.9 \
     --target-namespace default \
     --control-plane-machine-count=1 \
     --worker-machine-count=2 \

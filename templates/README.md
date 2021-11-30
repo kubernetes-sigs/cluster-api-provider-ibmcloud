@@ -11,7 +11,7 @@ IBMVPC_NAME=ibm-vpc-1 \
 IBMVPC_IMAGE_ID=r134-ea84bbec-7986-4ff5-8489-d9ec34611dd4 \
 IBMVPC_PROFILE=bx2-4x16 \
 IBMVPC_SSHKEY_ID=r134-2a82b725-e570-43d3-8b23-9539e8641944 \
-clusterctl config cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
+clusterctl generate cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
 --target-namespace default \
 --control-plane-machine-count=1 \
 --worker-machine-count=2 \
@@ -28,7 +28,7 @@ IBMPOWERVS_VIP_CIDR="29" \
 IBMPOWERVS_IMAGE_ID="fb2f75d1-1157-40b9-af2f-5459685ca089" \
 IBMPOWERVS_SERVICE_INSTANCE_ID="e449d86e-c3a0-4c07-959e-8557fdf55482" \
 IBMPOWERVS_NETWORK_ID="07ba61c2-64a4-42ce-911e-a3b3656eab7c" \
-clusterctl config cluster ibm-powervs-1 --kubernetes-version v1.21.2 \
+clusterctl generate cluster ibm-powervs-1 --kubernetes-version v1.21.2 \
 --target-namespace default \
 --control-plane-machine-count=3 \
 --worker-machine-count=1 \
