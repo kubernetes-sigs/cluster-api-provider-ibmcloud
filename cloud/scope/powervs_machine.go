@@ -25,9 +25,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	utils "github.com/ppc64le-cloud/powervs-utils"
 
-	"github.com/ppc64le-cloud/powervs-utils"
-
+	"github.com/IBM-Cloud/power-go-client/ibmpisession"
+	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_networks"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
@@ -157,13 +158,23 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		return nil, fmt.Errorf("failed to convert Processors(%s) to float64", s.Processors)
 	}
 
+	imageID, err := getImageID(s.Image, m)
+	if err != nil {
+		return nil, fmt.Errorf("error getting image ID: %v", err)
+	}
+
+	networkID, err := getNetworkID(s.Network, m)
+	if err != nil {
+		return nil, fmt.Errorf("error getting network ID: %v", err)
+	}
+
 	params := &p_cloud_p_vm_instances.PcloudPvminstancesPostParams{
 		Body: &models.PVMInstanceCreate{
-			ImageID:     &s.ImageID,
+			ImageID:     imageID,
 			KeyPairName: s.SSHKey,
 			Networks: []*models.PVMInstanceAddNetwork{
 				{
-					NetworkID: &s.NetworkID,
+					NetworkID: networkID,
 					//IPAddress: address,
 				},
 			},
@@ -215,4 +226,61 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(value), nil
+}
+
+func getImageID(image v1alpha4.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+	if image.ID != nil {
+		return image.ID, nil
+	} else if image.Name != nil {
+		images, err := m.GetImages()
+		if err != nil {
+			m.Logger.Error(err, "failed to get images")
+			return nil, err
+		}
+		for _, img := range images.Images {
+			if *image.Name == *img.Name {
+				m.Logger.Info("image found with ID", "Image", *image.Name, "ID", *img.ImageID)
+				return img.ImageID, nil
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("both ID and Name can't be nil")
+	}
+	return nil, fmt.Errorf("failed to find an image ID")
+}
+
+func (m *PowerVSMachineScope) GetImages() (*models.Images, error) {
+	return m.IBMPowerVSClient.ImageClient.GetAll(m.IBMPowerVSMachine.Spec.ServiceInstanceID)
+}
+
+func getNetworkID(network v1alpha4.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+	if network.ID != nil {
+		return network.ID, nil
+	} else if network.Name != nil {
+		networks, err := m.GetNetworks()
+		if err != nil {
+			m.Logger.Error(err, "failed to get networks")
+			return nil, err
+		}
+		for _, nw := range networks.Networks {
+			if *network.Name == *nw.Name {
+				m.Logger.Info("network found with ID", "Network", *network.Name, "ID", *nw.NetworkID)
+				return nw.NetworkID, nil
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("both ID and Name can't be nil")
+	}
+
+	return nil, fmt.Errorf("failed to find a network ID")
+}
+
+func (m *PowerVSMachineScope) GetNetworks() (*models.Networks, error) {
+	params := p_cloud_networks.NewPcloudNetworksGetallParamsWithTimeout(TIMEOUT).WithCloudInstanceID(m.IBMPowerVSMachine.Spec.ServiceInstanceID)
+	resp, err := m.IBMPowerVSClient.session.Power.PCloudNetworks.PcloudNetworksGetall(params, ibmpisession.NewAuth(m.IBMPowerVSClient.session, m.IBMPowerVSMachine.Spec.ServiceInstanceID))
+
+	if err != nil || resp.Payload == nil {
+		return nil, err
+	}
+	return resp.Payload, nil
 }

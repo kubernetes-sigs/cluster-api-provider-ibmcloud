@@ -30,7 +30,8 @@ metadata:
   name: "${CLUSTER_NAME}"
 spec:
   serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
-  networkID: "${IBMPOWERVS_NETWORK_ID}"
+  network:
+    name: "${IBMPOWERVS_NETWORK_NAME}"
   controlPlaneEndpoint:
     host: "${IBMPOWERVS_VIP_EXTERNAL}"
     port: 6443
@@ -157,12 +158,14 @@ spec:
     spec:
       serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
-      imageID: "${IBMPOWERVS_IMAGE_ID}"
+      image:
+        name: "${IBMPOWERVS_IMAGE_NAME}"
       sysType: s922
       procType: shared
       processors: "0.25"
       memory: "8"
-      networkID: "${IBMPOWERVS_NETWORK_ID}"
+      network:
+        name: "${IBMPOWERVS_NETWORK_NAME}"
 ---
 apiVersion: cluster.x-k8s.io/v1alpha4
 kind: MachineDeployment
@@ -196,12 +199,14 @@ spec:
     spec:
       serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
-      imageID: "${IBMPOWERVS_IMAGE_ID}"
+      image:
+        name: "${IBMPOWERVS_IMAGE_NAME}"
       sysType: s922
       procType: shared
       processors: "0.25"
       memory: "8"
-      networkID: "${IBMPOWERVS_NETWORK_ID}"
+      network:
+        name: "${IBMPOWERVS_NETWORK_NAME}"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1alpha4
 kind: KubeadmConfigTemplate

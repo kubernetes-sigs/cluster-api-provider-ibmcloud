@@ -38,8 +38,8 @@ type IBMPowerVSClusterSpec struct {
 	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
-	// Network is network ID used for the VSI
-	NetworkID string `json:"networkID"`
+	// Network is the reference to the Network to use for this cluster.
+	Network IBMPowerVSResourceReference `json:"network"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional

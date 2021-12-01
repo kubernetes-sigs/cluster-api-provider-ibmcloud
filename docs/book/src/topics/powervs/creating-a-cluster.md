@@ -101,9 +101,9 @@
     IBMPOWERVS_VIP="192.168.151.22" \
     IBMPOWERVS_VIP_EXTERNAL="158.175.162.22" \
     IBMPOWERVS_VIP_CIDR="29" \
-    IBMPOWERVS_IMAGE_ID="505f57d8-1143-4a99-b67f-7e82d73342bf" \
+    IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-8-1-22-4" \
     IBMPOWERVS_SERVICE_INSTANCE_ID="7845d372-d4e1-46b8-91fc-41051c984601" \
-    IBMPOWERVS_NETWORK_ID="0ad342f5-f461-414a-a870-e2f2a2b7fa0c" \
+    IBMPOWERVS_NETWORK_NAME="capi-test-3" \
     clusterctl generate cluster ibm-powervs-1 --kubernetes-version v1.22.4 \
     --target-namespace default \
     --control-plane-machine-count=3 \
