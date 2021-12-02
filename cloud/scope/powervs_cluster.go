@@ -26,11 +26,11 @@ import (
 	utils "github.com/ppc64le-cloud/powervs-utils"
 
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
@@ -39,7 +39,7 @@ type PowerVSClusterScopeParams struct {
 	Client            client.Client
 	Logger            logr.Logger
 	Cluster           *clusterv1.Cluster
-	IBMPowerVSCluster *v1alpha4.IBMPowerVSCluster
+	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
 }
 
 // PowerVSClusterScope defines a scope defined around a Power VS Cluster.
@@ -50,7 +50,7 @@ type PowerVSClusterScope struct {
 
 	IBMPowerVSClient  *IBMPowerVSClient
 	Cluster           *clusterv1.Cluster
-	IBMPowerVSCluster *v1alpha4.IBMPowerVSCluster
+	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
 }
 
 // NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.

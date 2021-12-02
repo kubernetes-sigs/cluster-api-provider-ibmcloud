@@ -77,4 +77,4 @@ $(GOJQ): $(BIN_DIR) go.mod go.sum
 
 CONVERSION_GEN := $(BIN_DIR)/conversion-gen
 $(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum
-	go build -tags=tools -o $(BIN_DIR)/conversion-gen k8s.io/code-generator/cmd/conversion-gen
+	go build -tags=tools -o $@ k8s.io/code-generator/cmd/conversion-gen

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha4
+package v1beta1
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -80,6 +80,7 @@ type IBMVPCMachineStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=ibmvpcmachines,scope=Namespaced,categories=cluster-api
+// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready for IBM VPC instances"
 
@@ -92,7 +93,7 @@ type IBMVPCMachine struct {
 	Status IBMVPCMachineStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 
 // IBMVPCMachineList contains a list of IBMVPCMachine
 type IBMVPCMachineList struct {

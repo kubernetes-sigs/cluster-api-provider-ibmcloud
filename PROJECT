@@ -1,6 +1,16 @@
 domain: cluster.x-k8s.io
 repo: sigs.k8s.io/cluster-api-provider-ibmcloud
 resources:
+# v1alpha4 types
+- group: infrastructure
+  kind: IBMVPCCluster
+  version: v1alpha4
+- group: infrastructure
+  kind: IBMVPCMachine
+  version: v1alpha4
+- group: infrastructure
+  kind: IBMVPCMachineTemplate
+  version: v1alpha4
 - group: infrastructure
   kind: IBMPowerVSCluster
   version: v1alpha4
@@ -10,6 +20,16 @@ resources:
 - group: infrastructure
   kind: IBMPowerVSMachineTemplate
   version: v1alpha4
+# v1beta1 types
+- group: infrastructure
+  kind: IBMVPCCluster
+  version: v1beta1
+- group: infrastructure
+  kind: IBMVPCMachine
+  version: v1beta1
+- group: infrastructure
+  kind: IBMVPCMachineTemplate
+  version: v1beta1
 - group: infrastructure
   kind: IBMPowerVSCluster
   version: v1beta1

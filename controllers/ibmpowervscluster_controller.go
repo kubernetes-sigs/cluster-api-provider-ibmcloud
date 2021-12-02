@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 )
 
@@ -49,7 +49,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log := r.Log.WithValues("ibmpowervscluster", req.NamespacedName)
 
 	// Fetch the IBMPowerVSCluster instance
-	ibmCluster := &v1alpha4.IBMPowerVSCluster{}
+	ibmCluster := &v1beta1.IBMPowerVSCluster{}
 	err := r.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -95,8 +95,8 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 }
 
 func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMPowerVSCluster, v1alpha4.IBMPowerVSClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMPowerVSCluster, v1alpha4.IBMPowerVSClusterFinalizer)
+	if !controllerutil.ContainsFinalizer(clusterScope.IBMPowerVSCluster, v1beta1.IBMPowerVSClusterFinalizer) {
+		controllerutil.AddFinalizer(clusterScope.IBMPowerVSCluster, v1beta1.IBMPowerVSClusterFinalizer)
 		return ctrl.Result{}, nil
 	}
 
@@ -106,13 +106,13 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 }
 
 func (r *IBMPowerVSClusterReconciler) reconcileDelete(clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
-	controllerutil.RemoveFinalizer(clusterScope.IBMPowerVSCluster, v1alpha4.IBMPowerVSClusterFinalizer)
+	controllerutil.RemoveFinalizer(clusterScope.IBMPowerVSCluster, v1beta1.IBMPowerVSClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager creates a new IBMPowerVSCluster controller for a manager.
 func (r *IBMPowerVSClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha4.IBMPowerVSCluster{}).
+		For(&v1beta1.IBMPowerVSCluster{}).
 		Complete(r)
 }

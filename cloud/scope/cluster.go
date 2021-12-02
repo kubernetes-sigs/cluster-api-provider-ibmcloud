@@ -27,11 +27,11 @@ import (
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.

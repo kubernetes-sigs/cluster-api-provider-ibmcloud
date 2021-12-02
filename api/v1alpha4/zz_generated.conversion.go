@@ -36,6 +36,16 @@ func init() {
 // RegisterConversions adds conversion functions to the given scheme.
 // Public to allow building arbitrary schemes.
 func RegisterConversions(s *runtime.Scheme) error {
+	if err := s.AddGeneratedConversionFunc((*APIEndpoint)(nil), (*v1beta1.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(a.(*APIEndpoint), b.(*v1beta1.APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.APIEndpoint)(nil), (*APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(a.(*v1beta1.APIEndpoint), b.(*APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddGeneratedConversionFunc((*IBMPowerVSCluster)(nil), (*v1beta1.IBMPowerVSCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1alpha4_IBMPowerVSCluster_To_v1beta1_IBMPowerVSCluster(a.(*IBMPowerVSCluster), b.(*v1beta1.IBMPowerVSCluster), scope)
 	}); err != nil {
@@ -176,7 +186,179 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCCluster)(nil), (*v1beta1.IBMVPCCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCCluster_To_v1beta1_IBMVPCCluster(a.(*IBMVPCCluster), b.(*v1beta1.IBMVPCCluster), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCCluster)(nil), (*IBMVPCCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCCluster_To_v1alpha4_IBMVPCCluster(a.(*v1beta1.IBMVPCCluster), b.(*IBMVPCCluster), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCClusterList)(nil), (*v1beta1.IBMVPCClusterList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCClusterList_To_v1beta1_IBMVPCClusterList(a.(*IBMVPCClusterList), b.(*v1beta1.IBMVPCClusterList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCClusterList)(nil), (*IBMVPCClusterList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCClusterList_To_v1alpha4_IBMVPCClusterList(a.(*v1beta1.IBMVPCClusterList), b.(*IBMVPCClusterList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCClusterSpec)(nil), (*v1beta1.IBMVPCClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCClusterSpec_To_v1beta1_IBMVPCClusterSpec(a.(*IBMVPCClusterSpec), b.(*v1beta1.IBMVPCClusterSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCClusterSpec)(nil), (*IBMVPCClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCClusterSpec_To_v1alpha4_IBMVPCClusterSpec(a.(*v1beta1.IBMVPCClusterSpec), b.(*IBMVPCClusterSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCClusterStatus)(nil), (*v1beta1.IBMVPCClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(a.(*IBMVPCClusterStatus), b.(*v1beta1.IBMVPCClusterStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCClusterStatus)(nil), (*IBMVPCClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCClusterStatus_To_v1alpha4_IBMVPCClusterStatus(a.(*v1beta1.IBMVPCClusterStatus), b.(*IBMVPCClusterStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachine)(nil), (*v1beta1.IBMVPCMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachine_To_v1beta1_IBMVPCMachine(a.(*IBMVPCMachine), b.(*v1beta1.IBMVPCMachine), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachine)(nil), (*IBMVPCMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachine_To_v1alpha4_IBMVPCMachine(a.(*v1beta1.IBMVPCMachine), b.(*IBMVPCMachine), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineList)(nil), (*v1beta1.IBMVPCMachineList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList(a.(*IBMVPCMachineList), b.(*v1beta1.IBMVPCMachineList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineList)(nil), (*IBMVPCMachineList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineList_To_v1alpha4_IBMVPCMachineList(a.(*v1beta1.IBMVPCMachineList), b.(*IBMVPCMachineList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineSpec)(nil), (*v1beta1.IBMVPCMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(a.(*IBMVPCMachineSpec), b.(*v1beta1.IBMVPCMachineSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineSpec)(nil), (*IBMVPCMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(a.(*v1beta1.IBMVPCMachineSpec), b.(*IBMVPCMachineSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineStatus)(nil), (*v1beta1.IBMVPCMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(a.(*IBMVPCMachineStatus), b.(*v1beta1.IBMVPCMachineStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineStatus)(nil), (*IBMVPCMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineStatus_To_v1alpha4_IBMVPCMachineStatus(a.(*v1beta1.IBMVPCMachineStatus), b.(*IBMVPCMachineStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineTemplate)(nil), (*v1beta1.IBMVPCMachineTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(a.(*IBMVPCMachineTemplate), b.(*v1beta1.IBMVPCMachineTemplate), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineTemplate)(nil), (*IBMVPCMachineTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineTemplate_To_v1alpha4_IBMVPCMachineTemplate(a.(*v1beta1.IBMVPCMachineTemplate), b.(*IBMVPCMachineTemplate), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineTemplateList)(nil), (*v1beta1.IBMVPCMachineTemplateList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineTemplateList_To_v1beta1_IBMVPCMachineTemplateList(a.(*IBMVPCMachineTemplateList), b.(*v1beta1.IBMVPCMachineTemplateList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineTemplateList)(nil), (*IBMVPCMachineTemplateList)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineTemplateList_To_v1alpha4_IBMVPCMachineTemplateList(a.(*v1beta1.IBMVPCMachineTemplateList), b.(*IBMVPCMachineTemplateList), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineTemplateResource)(nil), (*v1beta1.IBMVPCMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineTemplateResource_To_v1beta1_IBMVPCMachineTemplateResource(a.(*IBMVPCMachineTemplateResource), b.(*v1beta1.IBMVPCMachineTemplateResource), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineTemplateResource)(nil), (*IBMVPCMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineTemplateResource_To_v1alpha4_IBMVPCMachineTemplateResource(a.(*v1beta1.IBMVPCMachineTemplateResource), b.(*IBMVPCMachineTemplateResource), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineTemplateSpec)(nil), (*v1beta1.IBMVPCMachineTemplateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_IBMVPCMachineTemplateSpec_To_v1beta1_IBMVPCMachineTemplateSpec(a.(*IBMVPCMachineTemplateSpec), b.(*v1beta1.IBMVPCMachineTemplateSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.IBMVPCMachineTemplateSpec)(nil), (*IBMVPCMachineTemplateSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineTemplateSpec_To_v1alpha4_IBMVPCMachineTemplateSpec(a.(*v1beta1.IBMVPCMachineTemplateSpec), b.(*IBMVPCMachineTemplateSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*NetworkInterface)(nil), (*v1beta1.NetworkInterface)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_NetworkInterface_To_v1beta1_NetworkInterface(a.(*NetworkInterface), b.(*v1beta1.NetworkInterface), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.NetworkInterface)(nil), (*NetworkInterface)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_NetworkInterface_To_v1alpha4_NetworkInterface(a.(*v1beta1.NetworkInterface), b.(*NetworkInterface), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*Subnet)(nil), (*v1beta1.Subnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_Subnet_To_v1beta1_Subnet(a.(*Subnet), b.(*v1beta1.Subnet), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.Subnet)(nil), (*Subnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Subnet_To_v1alpha4_Subnet(a.(*v1beta1.Subnet), b.(*Subnet), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*VPC)(nil), (*v1beta1.VPC)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1alpha4_VPC_To_v1beta1_VPC(a.(*VPC), b.(*v1beta1.VPC), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddGeneratedConversionFunc((*v1beta1.VPC)(nil), (*VPC)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_VPC_To_v1alpha4_VPC(a.(*v1beta1.VPC), b.(*VPC), scope)
+	}); err != nil {
+		return err
+	}
 	return nil
+}
+
+func autoConvert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in *APIEndpoint, out *v1beta1.APIEndpoint, s conversion.Scope) error {
+	out.Address = (*string)(unsafe.Pointer(in.Address))
+	out.FIPID = (*string)(unsafe.Pointer(in.FIPID))
+	return nil
+}
+
+// Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint is an autogenerated conversion function.
+func Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in *APIEndpoint, out *v1beta1.APIEndpoint, s conversion.Scope) error {
+	return autoConvert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in, out, s)
+}
+
+func autoConvert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in *v1beta1.APIEndpoint, out *APIEndpoint, s conversion.Scope) error {
+	out.Address = (*string)(unsafe.Pointer(in.Address))
+	out.FIPID = (*string)(unsafe.Pointer(in.FIPID))
+	return nil
+}
+
+// Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint is an autogenerated conversion function.
+func Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in *v1beta1.APIEndpoint, out *APIEndpoint, s conversion.Scope) error {
+	return autoConvert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in, out, s)
 }
 
 func autoConvert_v1alpha4_IBMPowerVSCluster_To_v1beta1_IBMPowerVSCluster(in *IBMPowerVSCluster, out *v1beta1.IBMPowerVSCluster, s conversion.Scope) error {
@@ -549,4 +731,404 @@ func autoConvert_v1beta1_IBMPowerVSResourceReference_To_v1alpha4_IBMPowerVSResou
 // Convert_v1beta1_IBMPowerVSResourceReference_To_v1alpha4_IBMPowerVSResourceReference is an autogenerated conversion function.
 func Convert_v1beta1_IBMPowerVSResourceReference_To_v1alpha4_IBMPowerVSResourceReference(in *v1beta1.IBMPowerVSResourceReference, out *IBMPowerVSResourceReference, s conversion.Scope) error {
 	return autoConvert_v1beta1_IBMPowerVSResourceReference_To_v1alpha4_IBMPowerVSResourceReference(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCCluster_To_v1beta1_IBMVPCCluster(in *IBMVPCCluster, out *v1beta1.IBMVPCCluster, s conversion.Scope) error {
+	out.ObjectMeta = in.ObjectMeta
+	if err := Convert_v1alpha4_IBMVPCClusterSpec_To_v1beta1_IBMVPCClusterSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_v1alpha4_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCCluster_To_v1beta1_IBMVPCCluster is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCCluster_To_v1beta1_IBMVPCCluster(in *IBMVPCCluster, out *v1beta1.IBMVPCCluster, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCCluster_To_v1beta1_IBMVPCCluster(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCCluster_To_v1alpha4_IBMVPCCluster(in *v1beta1.IBMVPCCluster, out *IBMVPCCluster, s conversion.Scope) error {
+	out.ObjectMeta = in.ObjectMeta
+	if err := Convert_v1beta1_IBMVPCClusterSpec_To_v1alpha4_IBMVPCClusterSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_v1beta1_IBMVPCClusterStatus_To_v1alpha4_IBMVPCClusterStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCCluster_To_v1alpha4_IBMVPCCluster is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCCluster_To_v1alpha4_IBMVPCCluster(in *v1beta1.IBMVPCCluster, out *IBMVPCCluster, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCCluster_To_v1alpha4_IBMVPCCluster(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCClusterList_To_v1beta1_IBMVPCClusterList(in *IBMVPCClusterList, out *v1beta1.IBMVPCClusterList, s conversion.Scope) error {
+	out.ListMeta = in.ListMeta
+	out.Items = *(*[]v1beta1.IBMVPCCluster)(unsafe.Pointer(&in.Items))
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCClusterList_To_v1beta1_IBMVPCClusterList is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCClusterList_To_v1beta1_IBMVPCClusterList(in *IBMVPCClusterList, out *v1beta1.IBMVPCClusterList, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCClusterList_To_v1beta1_IBMVPCClusterList(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCClusterList_To_v1alpha4_IBMVPCClusterList(in *v1beta1.IBMVPCClusterList, out *IBMVPCClusterList, s conversion.Scope) error {
+	out.ListMeta = in.ListMeta
+	out.Items = *(*[]IBMVPCCluster)(unsafe.Pointer(&in.Items))
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCClusterList_To_v1alpha4_IBMVPCClusterList is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCClusterList_To_v1alpha4_IBMVPCClusterList(in *v1beta1.IBMVPCClusterList, out *IBMVPCClusterList, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCClusterList_To_v1alpha4_IBMVPCClusterList(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCClusterSpec_To_v1beta1_IBMVPCClusterSpec(in *IBMVPCClusterSpec, out *v1beta1.IBMVPCClusterSpec, s conversion.Scope) error {
+	out.Region = in.Region
+	out.ResourceGroup = in.ResourceGroup
+	out.VPC = in.VPC
+	out.Zone = in.Zone
+	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCClusterSpec_To_v1beta1_IBMVPCClusterSpec is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCClusterSpec_To_v1beta1_IBMVPCClusterSpec(in *IBMVPCClusterSpec, out *v1beta1.IBMVPCClusterSpec, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCClusterSpec_To_v1beta1_IBMVPCClusterSpec(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCClusterSpec_To_v1alpha4_IBMVPCClusterSpec(in *v1beta1.IBMVPCClusterSpec, out *IBMVPCClusterSpec, s conversion.Scope) error {
+	out.Region = in.Region
+	out.ResourceGroup = in.ResourceGroup
+	out.VPC = in.VPC
+	out.Zone = in.Zone
+	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCClusterSpec_To_v1alpha4_IBMVPCClusterSpec is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCClusterSpec_To_v1alpha4_IBMVPCClusterSpec(in *v1beta1.IBMVPCClusterSpec, out *IBMVPCClusterSpec, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCClusterSpec_To_v1alpha4_IBMVPCClusterSpec(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(in *IBMVPCClusterStatus, out *v1beta1.IBMVPCClusterStatus, s conversion.Scope) error {
+	if err := Convert_v1alpha4_VPC_To_v1beta1_VPC(&in.VPC, &out.VPC, s); err != nil {
+		return err
+	}
+	out.Ready = in.Ready
+	if err := Convert_v1alpha4_Subnet_To_v1beta1_Subnet(&in.Subnet, &out.Subnet, s); err != nil {
+		return err
+	}
+	if err := Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(&in.APIEndpoint, &out.APIEndpoint, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(in *IBMVPCClusterStatus, out *v1beta1.IBMVPCClusterStatus, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCClusterStatus_To_v1alpha4_IBMVPCClusterStatus(in *v1beta1.IBMVPCClusterStatus, out *IBMVPCClusterStatus, s conversion.Scope) error {
+	if err := Convert_v1beta1_VPC_To_v1alpha4_VPC(&in.VPC, &out.VPC, s); err != nil {
+		return err
+	}
+	out.Ready = in.Ready
+	if err := Convert_v1beta1_Subnet_To_v1alpha4_Subnet(&in.Subnet, &out.Subnet, s); err != nil {
+		return err
+	}
+	if err := Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(&in.APIEndpoint, &out.APIEndpoint, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCClusterStatus_To_v1alpha4_IBMVPCClusterStatus is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCClusterStatus_To_v1alpha4_IBMVPCClusterStatus(in *v1beta1.IBMVPCClusterStatus, out *IBMVPCClusterStatus, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCClusterStatus_To_v1alpha4_IBMVPCClusterStatus(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachine_To_v1beta1_IBMVPCMachine(in *IBMVPCMachine, out *v1beta1.IBMVPCMachine, s conversion.Scope) error {
+	out.ObjectMeta = in.ObjectMeta
+	if err := Convert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_v1alpha4_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachine_To_v1beta1_IBMVPCMachine is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachine_To_v1beta1_IBMVPCMachine(in *IBMVPCMachine, out *v1beta1.IBMVPCMachine, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachine_To_v1beta1_IBMVPCMachine(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachine_To_v1alpha4_IBMVPCMachine(in *v1beta1.IBMVPCMachine, out *IBMVPCMachine, s conversion.Scope) error {
+	out.ObjectMeta = in.ObjectMeta
+	if err := Convert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_v1beta1_IBMVPCMachineStatus_To_v1alpha4_IBMVPCMachineStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachine_To_v1alpha4_IBMVPCMachine is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachine_To_v1alpha4_IBMVPCMachine(in *v1beta1.IBMVPCMachine, out *IBMVPCMachine, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachine_To_v1alpha4_IBMVPCMachine(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList(in *IBMVPCMachineList, out *v1beta1.IBMVPCMachineList, s conversion.Scope) error {
+	out.ListMeta = in.ListMeta
+	out.Items = *(*[]v1beta1.IBMVPCMachine)(unsafe.Pointer(&in.Items))
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList(in *IBMVPCMachineList, out *v1beta1.IBMVPCMachineList, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineList_To_v1alpha4_IBMVPCMachineList(in *v1beta1.IBMVPCMachineList, out *IBMVPCMachineList, s conversion.Scope) error {
+	out.ListMeta = in.ListMeta
+	out.Items = *(*[]IBMVPCMachine)(unsafe.Pointer(&in.Items))
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineList_To_v1alpha4_IBMVPCMachineList is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineList_To_v1alpha4_IBMVPCMachineList(in *v1beta1.IBMVPCMachineList, out *IBMVPCMachineList, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineList_To_v1alpha4_IBMVPCMachineList(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *IBMVPCMachineSpec, out *v1beta1.IBMVPCMachineSpec, s conversion.Scope) error {
+	out.Name = in.Name
+	out.Image = in.Image
+	out.Zone = in.Zone
+	out.Profile = in.Profile
+	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
+	if err := Convert_v1alpha4_NetworkInterface_To_v1beta1_NetworkInterface(&in.PrimaryNetworkInterface, &out.PrimaryNetworkInterface, s); err != nil {
+		return err
+	}
+	out.SSHKeys = *(*[]*string)(unsafe.Pointer(&in.SSHKeys))
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *IBMVPCMachineSpec, out *v1beta1.IBMVPCMachineSpec, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(in *v1beta1.IBMVPCMachineSpec, out *IBMVPCMachineSpec, s conversion.Scope) error {
+	out.Name = in.Name
+	out.Image = in.Image
+	out.Zone = in.Zone
+	out.Profile = in.Profile
+	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))
+	if err := Convert_v1beta1_NetworkInterface_To_v1alpha4_NetworkInterface(&in.PrimaryNetworkInterface, &out.PrimaryNetworkInterface, s); err != nil {
+		return err
+	}
+	out.SSHKeys = *(*[]*string)(unsafe.Pointer(&in.SSHKeys))
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(in *v1beta1.IBMVPCMachineSpec, out *IBMVPCMachineSpec, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(in *IBMVPCMachineStatus, out *v1beta1.IBMVPCMachineStatus, s conversion.Scope) error {
+	out.InstanceID = in.InstanceID
+	out.Ready = in.Ready
+	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
+	out.InstanceStatus = in.InstanceStatus
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(in *IBMVPCMachineStatus, out *v1beta1.IBMVPCMachineStatus, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineStatus_To_v1alpha4_IBMVPCMachineStatus(in *v1beta1.IBMVPCMachineStatus, out *IBMVPCMachineStatus, s conversion.Scope) error {
+	out.InstanceID = in.InstanceID
+	out.Ready = in.Ready
+	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
+	out.InstanceStatus = in.InstanceStatus
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineStatus_To_v1alpha4_IBMVPCMachineStatus is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineStatus_To_v1alpha4_IBMVPCMachineStatus(in *v1beta1.IBMVPCMachineStatus, out *IBMVPCMachineStatus, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineStatus_To_v1alpha4_IBMVPCMachineStatus(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(in *IBMVPCMachineTemplate, out *v1beta1.IBMVPCMachineTemplate, s conversion.Scope) error {
+	out.ObjectMeta = in.ObjectMeta
+	if err := Convert_v1alpha4_IBMVPCMachineTemplateSpec_To_v1beta1_IBMVPCMachineTemplateSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(in *IBMVPCMachineTemplate, out *v1beta1.IBMVPCMachineTemplate, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineTemplate_To_v1alpha4_IBMVPCMachineTemplate(in *v1beta1.IBMVPCMachineTemplate, out *IBMVPCMachineTemplate, s conversion.Scope) error {
+	out.ObjectMeta = in.ObjectMeta
+	if err := Convert_v1beta1_IBMVPCMachineTemplateSpec_To_v1alpha4_IBMVPCMachineTemplateSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineTemplate_To_v1alpha4_IBMVPCMachineTemplate is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineTemplate_To_v1alpha4_IBMVPCMachineTemplate(in *v1beta1.IBMVPCMachineTemplate, out *IBMVPCMachineTemplate, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineTemplate_To_v1alpha4_IBMVPCMachineTemplate(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineTemplateList_To_v1beta1_IBMVPCMachineTemplateList(in *IBMVPCMachineTemplateList, out *v1beta1.IBMVPCMachineTemplateList, s conversion.Scope) error {
+	out.ListMeta = in.ListMeta
+	out.Items = *(*[]v1beta1.IBMVPCMachineTemplate)(unsafe.Pointer(&in.Items))
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineTemplateList_To_v1beta1_IBMVPCMachineTemplateList is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineTemplateList_To_v1beta1_IBMVPCMachineTemplateList(in *IBMVPCMachineTemplateList, out *v1beta1.IBMVPCMachineTemplateList, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineTemplateList_To_v1beta1_IBMVPCMachineTemplateList(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineTemplateList_To_v1alpha4_IBMVPCMachineTemplateList(in *v1beta1.IBMVPCMachineTemplateList, out *IBMVPCMachineTemplateList, s conversion.Scope) error {
+	out.ListMeta = in.ListMeta
+	out.Items = *(*[]IBMVPCMachineTemplate)(unsafe.Pointer(&in.Items))
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineTemplateList_To_v1alpha4_IBMVPCMachineTemplateList is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineTemplateList_To_v1alpha4_IBMVPCMachineTemplateList(in *v1beta1.IBMVPCMachineTemplateList, out *IBMVPCMachineTemplateList, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineTemplateList_To_v1alpha4_IBMVPCMachineTemplateList(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineTemplateResource_To_v1beta1_IBMVPCMachineTemplateResource(in *IBMVPCMachineTemplateResource, out *v1beta1.IBMVPCMachineTemplateResource, s conversion.Scope) error {
+	if err := Convert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineTemplateResource_To_v1beta1_IBMVPCMachineTemplateResource is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineTemplateResource_To_v1beta1_IBMVPCMachineTemplateResource(in *IBMVPCMachineTemplateResource, out *v1beta1.IBMVPCMachineTemplateResource, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineTemplateResource_To_v1beta1_IBMVPCMachineTemplateResource(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineTemplateResource_To_v1alpha4_IBMVPCMachineTemplateResource(in *v1beta1.IBMVPCMachineTemplateResource, out *IBMVPCMachineTemplateResource, s conversion.Scope) error {
+	if err := Convert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineTemplateResource_To_v1alpha4_IBMVPCMachineTemplateResource is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineTemplateResource_To_v1alpha4_IBMVPCMachineTemplateResource(in *v1beta1.IBMVPCMachineTemplateResource, out *IBMVPCMachineTemplateResource, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineTemplateResource_To_v1alpha4_IBMVPCMachineTemplateResource(in, out, s)
+}
+
+func autoConvert_v1alpha4_IBMVPCMachineTemplateSpec_To_v1beta1_IBMVPCMachineTemplateSpec(in *IBMVPCMachineTemplateSpec, out *v1beta1.IBMVPCMachineTemplateSpec, s conversion.Scope) error {
+	if err := Convert_v1alpha4_IBMVPCMachineTemplateResource_To_v1beta1_IBMVPCMachineTemplateResource(&in.Template, &out.Template, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1alpha4_IBMVPCMachineTemplateSpec_To_v1beta1_IBMVPCMachineTemplateSpec is an autogenerated conversion function.
+func Convert_v1alpha4_IBMVPCMachineTemplateSpec_To_v1beta1_IBMVPCMachineTemplateSpec(in *IBMVPCMachineTemplateSpec, out *v1beta1.IBMVPCMachineTemplateSpec, s conversion.Scope) error {
+	return autoConvert_v1alpha4_IBMVPCMachineTemplateSpec_To_v1beta1_IBMVPCMachineTemplateSpec(in, out, s)
+}
+
+func autoConvert_v1beta1_IBMVPCMachineTemplateSpec_To_v1alpha4_IBMVPCMachineTemplateSpec(in *v1beta1.IBMVPCMachineTemplateSpec, out *IBMVPCMachineTemplateSpec, s conversion.Scope) error {
+	if err := Convert_v1beta1_IBMVPCMachineTemplateResource_To_v1alpha4_IBMVPCMachineTemplateResource(&in.Template, &out.Template, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Convert_v1beta1_IBMVPCMachineTemplateSpec_To_v1alpha4_IBMVPCMachineTemplateSpec is an autogenerated conversion function.
+func Convert_v1beta1_IBMVPCMachineTemplateSpec_To_v1alpha4_IBMVPCMachineTemplateSpec(in *v1beta1.IBMVPCMachineTemplateSpec, out *IBMVPCMachineTemplateSpec, s conversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineTemplateSpec_To_v1alpha4_IBMVPCMachineTemplateSpec(in, out, s)
+}
+
+func autoConvert_v1alpha4_NetworkInterface_To_v1beta1_NetworkInterface(in *NetworkInterface, out *v1beta1.NetworkInterface, s conversion.Scope) error {
+	out.Subnet = in.Subnet
+	return nil
+}
+
+// Convert_v1alpha4_NetworkInterface_To_v1beta1_NetworkInterface is an autogenerated conversion function.
+func Convert_v1alpha4_NetworkInterface_To_v1beta1_NetworkInterface(in *NetworkInterface, out *v1beta1.NetworkInterface, s conversion.Scope) error {
+	return autoConvert_v1alpha4_NetworkInterface_To_v1beta1_NetworkInterface(in, out, s)
+}
+
+func autoConvert_v1beta1_NetworkInterface_To_v1alpha4_NetworkInterface(in *v1beta1.NetworkInterface, out *NetworkInterface, s conversion.Scope) error {
+	out.Subnet = in.Subnet
+	return nil
+}
+
+// Convert_v1beta1_NetworkInterface_To_v1alpha4_NetworkInterface is an autogenerated conversion function.
+func Convert_v1beta1_NetworkInterface_To_v1alpha4_NetworkInterface(in *v1beta1.NetworkInterface, out *NetworkInterface, s conversion.Scope) error {
+	return autoConvert_v1beta1_NetworkInterface_To_v1alpha4_NetworkInterface(in, out, s)
+}
+
+func autoConvert_v1alpha4_Subnet_To_v1beta1_Subnet(in *Subnet, out *v1beta1.Subnet, s conversion.Scope) error {
+	out.Ipv4CidrBlock = (*string)(unsafe.Pointer(in.Ipv4CidrBlock))
+	out.Name = (*string)(unsafe.Pointer(in.Name))
+	out.ID = (*string)(unsafe.Pointer(in.ID))
+	out.Zone = (*string)(unsafe.Pointer(in.Zone))
+	return nil
+}
+
+// Convert_v1alpha4_Subnet_To_v1beta1_Subnet is an autogenerated conversion function.
+func Convert_v1alpha4_Subnet_To_v1beta1_Subnet(in *Subnet, out *v1beta1.Subnet, s conversion.Scope) error {
+	return autoConvert_v1alpha4_Subnet_To_v1beta1_Subnet(in, out, s)
+}
+
+func autoConvert_v1beta1_Subnet_To_v1alpha4_Subnet(in *v1beta1.Subnet, out *Subnet, s conversion.Scope) error {
+	out.Ipv4CidrBlock = (*string)(unsafe.Pointer(in.Ipv4CidrBlock))
+	out.Name = (*string)(unsafe.Pointer(in.Name))
+	out.ID = (*string)(unsafe.Pointer(in.ID))
+	out.Zone = (*string)(unsafe.Pointer(in.Zone))
+	return nil
+}
+
+// Convert_v1beta1_Subnet_To_v1alpha4_Subnet is an autogenerated conversion function.
+func Convert_v1beta1_Subnet_To_v1alpha4_Subnet(in *v1beta1.Subnet, out *Subnet, s conversion.Scope) error {
+	return autoConvert_v1beta1_Subnet_To_v1alpha4_Subnet(in, out, s)
+}
+
+func autoConvert_v1alpha4_VPC_To_v1beta1_VPC(in *VPC, out *v1beta1.VPC, s conversion.Scope) error {
+	out.ID = in.ID
+	out.Name = in.Name
+	return nil
+}
+
+// Convert_v1alpha4_VPC_To_v1beta1_VPC is an autogenerated conversion function.
+func Convert_v1alpha4_VPC_To_v1beta1_VPC(in *VPC, out *v1beta1.VPC, s conversion.Scope) error {
+	return autoConvert_v1alpha4_VPC_To_v1beta1_VPC(in, out, s)
+}
+
+func autoConvert_v1beta1_VPC_To_v1alpha4_VPC(in *v1beta1.VPC, out *VPC, s conversion.Scope) error {
+	out.ID = in.ID
+	out.Name = in.Name
+	return nil
+}
+
+// Convert_v1beta1_VPC_To_v1alpha4_VPC is an autogenerated conversion function.
+func Convert_v1beta1_VPC_To_v1alpha4_VPC(in *v1beta1.VPC, out *VPC, s conversion.Scope) error {
+	return autoConvert_v1beta1_VPC_To_v1alpha4_VPC(in, out, s)
 }
