@@ -1,67 +1,9 @@
-# Creating a cluster
+### Provision workload cluster in IBM Cloud PowerVS
 
-### Provision local boostrap management cluster:
+Now that we have a management cluster ready, you can create your workload cluster by 
+following the steps below. 
 
-1. Create simple, local bootstrap cluster with a control-plane and worker node
-
-    Using [kind](https://kind.sigs.k8s.io/docs/user/quick-start/):
-
-    ```console
-    ~ kind create cluster --name my-bootstrap --config bootstrap.yaml
-    ```
-
-    Example bootstrap.yaml:
-    ```yaml
-    kind: Cluster
-    apiVersion: kind.x-k8s.io/v1alpha4
-    nodes:
-       - role: control-plane
-       - role: worker
-    ```
-
-    Make sure the nodes are in `Ready` state before moving on.
-
-    ```console
-    ~ kubectl get nodes
-    NAME                         STATUS   ROLES                  AGE   VERSION
-    my-bootstrap-control-plane   Ready    control-plane,master   46h   v1.20.2
-    my-bootstrap-worker          Ready    <none>                 46h   v1.20.2
-    ```
-
-2. Set workload cluster environment variables
-
-    Make sure these value reflects your API Key for PowerVS environment in IBM Cloud.
-
-    ```console
-    export IBMCLOUD_API_KEY=<YOUR_API_KEY>
-    ```
-
-3. Initialize local bootstrap cluter as a management cluster
-
-    This cluster will be used to provision a workload cluster in IBM Cloud.
-
-    ```console
-    ~ clusterctl init --infrastructure ibmcloud:<TAG>
-    ```
-
-    Output:
-    ```console
-    Fetching providers
-    Installing cert-manager Version="v1.5.3"
-    Waiting for cert-manager to be available...
-    Installing Provider="cluster-api" Version="v0.4.4" TargetNamespace="capi-system"
-    Installing Provider="bootstrap-kubeadm" Version="v0.4.4" TargetNamespace="capi-kubeadm-bootstrap-system"
-    Installing Provider="control-plane-kubeadm" Version="v0.4.4" TargetNamespace="capi-kubeadm-control-plane-system"
-    Installing Provider="infrastructure-ibmcloud" Version="v0.1.0-alpha.2" TargetNamespace="capi-ibmcloud-system"
-
-    Your management cluster has been initialized successfully!
-
-    You can now create your first workload cluster by running the following:
-
-    clusterctl generate cluster [name] --kubernetes-version [version] | kubectl apply -f -
-    ```
-
-4. Create PowerVS network port
+1. Create PowerVS network port 
 
     ```console
     ~ pvsadm create port --description "capi-port" --network <NETWORK_NAME> --instance-id <SERVICE_INSTANCE_ID>
@@ -90,9 +32,7 @@
     +-------------------+-----------------+-----------------+-------------------+--------------------------------------+--------+
     ```
 
-4. Provision workload cluster in IBM Cloud PowerVS
-
-    You can use clusterctl to render the yaml through templates.
+2. Use clusterctl to render the yaml through templates and deploy the cluster
 
     **Note:** the `IBMPOWERVS_IMAGE_ID` value below should reflect the ID of the custom qcow2 image, the `kubernetes-version` value below should reflect the kubernetes version of the custom qcow2 image.
 
@@ -122,7 +62,7 @@
     kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-powervs-1-md-0 created
     ```
 
-5. Deploy Container Network Interface (CNI)
+3. Deploy Container Network Interface (CNI)
 
     Example: calico
     ```console
@@ -130,7 +70,7 @@
     ```
 
 
-6. Check the state of the provisioned cluster and machine objects within the local management cluster
+4. Check the state of the provisioned cluster and machine objects within the local management cluster
 
     Clusters
     ```console
@@ -154,7 +94,7 @@
     ibm-powervs-1-md-0-5444cfcbcd-7kr9x   ibmpowervs://ibm-powervs-1/ibm-powervs-1-md-0-k7blr            Running        v1.22.4
     ```
 
-7.  Check the state of the newly provisioned cluster within IBM Cloud
+5.  Check the state of the newly provisioned cluster within IBM Cloud
 
     ```console
     ~ clusterctl get kubeconfig ibm-powervs-1 > ~/.kube/ibm-powervs-1
