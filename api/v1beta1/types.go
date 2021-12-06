@@ -30,8 +30,8 @@ type Subnet struct {
 	Zone          *string `json:"zone"`
 }
 
-// APIEndpoint describes a APIEndpoint
-type APIEndpoint struct {
+// VPCEndpoint describes a VPCEndpoint
+type VPCEndpoint struct {
 	Address *string `json:"address"`
 	FIPID   *string `json:"floatingIPID"`
 }

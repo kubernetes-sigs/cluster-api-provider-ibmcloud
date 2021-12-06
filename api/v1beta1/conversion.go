@@ -22,3 +22,9 @@ func (*IBMPowerVSMachine) Hub()             {}
 func (*IBMPowerVSMachineList) Hub()         {}
 func (*IBMPowerVSMachineTemplate) Hub()     {}
 func (*IBMPowerVSMachineTemplateList) Hub() {}
+func (*IBMVPCCluster) Hub()                 {}
+func (*IBMVPCClusterList) Hub()             {}
+func (*IBMVPCMachine) Hub()                 {}
+func (*IBMVPCMachineList) Hub()             {}
+func (*IBMVPCMachineTemplate) Hub()         {}
+func (*IBMVPCMachineTemplateList) Hub()     {}

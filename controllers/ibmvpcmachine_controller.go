@@ -173,7 +173,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 		machineScope.IBMVPCMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmvpc://%s/%s", machineScope.Machine.Spec.ClusterName, machineScope.IBMVPCMachine.Name))
 		if ok {
 			options := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}
-			options.SetID(*machineScope.IBMVPCCluster.Status.APIEndpoint.FIPID)
+			options.SetID(*machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID)
 			options.SetInstanceID(*instance.ID)
 			options.SetNetworkInterfaceID(*instance.PrimaryNetworkInterface.ID)
 			floatingIP, _, err :=

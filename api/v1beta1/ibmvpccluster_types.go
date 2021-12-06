@@ -60,7 +60,7 @@ type IBMVPCClusterStatus struct {
 	// Bastion Instance `json:"bastion,omitempty"`
 	Ready       bool        `json:"ready"`
 	Subnet      Subnet      `json:"subnet,omitempty"`
-	APIEndpoint APIEndpoint `json:"apiEndpoint,omitempty"`
+	VPCEndpoint VPCEndpoint `json:"vpcEndpoint,omitempty"`
 }
 
 // VPC holds the VPC information

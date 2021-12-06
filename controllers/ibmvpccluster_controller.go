@@ -140,7 +140,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 				Port: 6443,
 			}
 
-			clusterScope.IBMVPCCluster.Status.APIEndpoint = infrastructurev1beta1.APIEndpoint{
+			clusterScope.IBMVPCCluster.Status.VPCEndpoint = infrastructurev1beta1.VPCEndpoint{
 				Address: fip.Address,
 				FIPID:   fip.ID,
 			}
