@@ -17,6 +17,7 @@ limitations under the License.
 package scope
 
 import (
+	"context"
 	"time"
 
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
@@ -37,12 +38,13 @@ type IBMPowerVSClient struct {
 // NewIBMPowerVSClient creates and returns a IBM Power VS client
 func NewIBMPowerVSClient(token, account, cloudInstanceID, region, zone string, debug bool) (_ *IBMPowerVSClient, err error) {
 	client := &IBMPowerVSClient{}
+	ctx := context.Background()
 	client.session, err = ibmpisession.New(token, region, debug, TIMEOUT, account, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	client.InstanceClient = instance.NewIBMPIInstanceClient(client.session, cloudInstanceID)
+	client.InstanceClient = instance.NewIBMPIInstanceClient(ctx, client.session, cloudInstanceID)
 	client.NetworkClient = instance.NewIBMPINetworkClient(client.session, cloudInstanceID)
 	client.ImageClient = instance.NewIBMPIImageClient(client.session, cloudInstanceID)
 	return client, nil
