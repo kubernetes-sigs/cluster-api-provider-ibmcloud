@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -169,7 +168,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	}
 
 	if ins != nil {
-		instance, err := machineScope.IBMPowerVSClient.InstanceClient.Get(*ins.PvmInstanceID, machineScope.IBMPowerVSMachine.Spec.ServiceInstanceID, 60*time.Minute)
+		instance, err := machineScope.IBMPowerVSClient.InstanceClient.Get(*ins.PvmInstanceID)
 		if err != nil {
 			return ctrl.Result{}, err
 		}

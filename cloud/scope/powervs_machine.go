@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -121,7 +120,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 }
 
 func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models.PVMInstanceReference, error) {
-	instances, err := m.IBMPowerVSClient.InstanceClient.GetAll(m.IBMPowerVSMachine.Spec.ServiceInstanceID, 60*time.Minute)
+	instances, err := m.IBMPowerVSClient.InstanceClient.GetAll()
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +185,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 			UserData:   cloudInitData,
 		},
 	}
-	_, err = m.IBMPowerVSClient.InstanceClient.Create(params, s.ServiceInstanceID, time.Hour)
+	_, err = m.IBMPowerVSClient.InstanceClient.Create(params.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +204,7 @@ func (m *PowerVSMachineScope) PatchObject() error {
 
 // DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
 func (m *PowerVSMachineScope) DeleteMachine() error {
-	return m.IBMPowerVSClient.InstanceClient.Delete(m.IBMPowerVSMachine.Status.InstanceID, m.IBMPowerVSMachine.Spec.ServiceInstanceID, time.Hour)
+	return m.IBMPowerVSClient.InstanceClient.Delete(m.IBMPowerVSMachine.Status.InstanceID)
 }
 
 // GetBootstrapData returns the base64 encoded bootstrap data from the secret in the Machine's bootstrap.dataSecretName
