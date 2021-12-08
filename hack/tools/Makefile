@@ -74,3 +74,7 @@ $(MDBOOK_TABULATE): $(BIN_DIR) go.mod go.sum
 GOJQ := $(BIN_DIR)/gojq
 $(GOJQ): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $@ github.com/itchyny/gojq/cmd/gojq
+
+CONVERSION_GEN := $(BIN_DIR)/conversion-gen
+$(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ k8s.io/code-generator/cmd/conversion-gen

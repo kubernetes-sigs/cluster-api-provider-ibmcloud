@@ -35,11 +35,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
@@ -49,8 +49,8 @@ type PowerVSMachineScopeParams struct {
 	Client            client.Client
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
-	IBMPowerVSCluster *v1alpha4.IBMPowerVSCluster
-	IBMPowerVSMachine *v1alpha4.IBMPowerVSMachine
+	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
+	IBMPowerVSMachine *v1beta1.IBMPowerVSMachine
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -62,8 +62,8 @@ type PowerVSMachineScope struct {
 	IBMPowerVSClient  *IBMPowerVSClient
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
-	IBMPowerVSCluster *v1alpha4.IBMPowerVSCluster
-	IBMPowerVSMachine *v1alpha4.IBMPowerVSMachine
+	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
+	IBMPowerVSMachine *v1beta1.IBMPowerVSMachine
 }
 
 // NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
@@ -228,7 +228,7 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-func getImageID(image v1alpha4.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getImageID(image v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if image.ID != nil {
 		return image.ID, nil
 	} else if image.Name != nil {
@@ -253,7 +253,7 @@ func (m *PowerVSMachineScope) GetImages() (*models.Images, error) {
 	return m.IBMPowerVSClient.ImageClient.GetAll(m.IBMPowerVSMachine.Spec.ServiceInstanceID)
 }
 
-func getNetworkID(network v1alpha4.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if network.ID != nil {
 		return network.ID, nil
 	} else if network.Name != nil {

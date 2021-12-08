@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,7 +41,7 @@ var _ = Describe("IBMPowerVSClusterReconciler", func() {
 				Log:    klogr.New(),
 			}
 
-			instance := &v1alpha4.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
+			instance := &v1beta1.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 
 			// Create the IBMPowerVSCluster object and expect the Reconcile to be created
 			Expect(k8sClient.Create(ctx, instance)).To(Succeed())

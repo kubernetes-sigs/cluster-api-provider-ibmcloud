@@ -27,7 +27,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
+	infrastructurev1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
@@ -57,7 +57,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// your logic here
 	// Fetch the IBMVPCCluster instance
-	ibmCluster := &infrastructurev1alpha3.IBMVPCCluster{}
+	ibmCluster := &infrastructurev1beta1.IBMVPCCluster{}
 	err := r.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -111,8 +111,8 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer)
+	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1beta1.ClusterFinalizer) {
+		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1beta1.ClusterFinalizer)
 		//_ = r.Update(ctx, clusterScope.IBMVPCCluster)
 		return ctrl.Result{}, nil
 	}
@@ -122,7 +122,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VPC for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
 	}
 	if vpc != nil {
-		clusterScope.IBMVPCCluster.Status.VPC = infrastructurev1alpha3.VPC{
+		clusterScope.IBMVPCCluster.Status.VPC = infrastructurev1beta1.VPC{
 			ID:   *vpc.ID,
 			Name: *vpc.Name,
 		}
@@ -140,7 +140,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 				Port: 6443,
 			}
 
-			clusterScope.IBMVPCCluster.Status.APIEndpoint = infrastructurev1alpha3.APIEndpoint{
+			clusterScope.IBMVPCCluster.Status.VPCEndpoint = infrastructurev1beta1.VPCEndpoint{
 				Address: fip.Address,
 				FIPID:   fip.ID,
 			}
@@ -153,7 +153,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Subnet for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
 		}
 		if subnet != nil {
-			clusterScope.IBMVPCCluster.Status.Subnet = infrastructurev1alpha3.Subnet{
+			clusterScope.IBMVPCCluster.Status.Subnet = infrastructurev1beta1.Subnet{
 				Ipv4CidrBlock: subnet.Ipv4CIDRBlock,
 				Name:          subnet.Name,
 				ID:            subnet.ID,
@@ -191,14 +191,14 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	if err := clusterScope.DeleteVPC(); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to delete VPC")
 	}
-	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1alpha3.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1beta1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager creates a new IBMVPCCluster controller for a manager.
 func (r *IBMVPCClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1alpha3.IBMVPCCluster{}).
+		For(&infrastructurev1beta1.IBMVPCCluster{}).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(context.TODO()))).
 		Complete(r)
 }

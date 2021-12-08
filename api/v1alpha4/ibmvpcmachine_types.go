@@ -80,7 +80,6 @@ type IBMVPCMachineStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=ibmvpcmachines,scope=Namespaced,categories=cluster-api
-// +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready for IBM VPC instances"
 
