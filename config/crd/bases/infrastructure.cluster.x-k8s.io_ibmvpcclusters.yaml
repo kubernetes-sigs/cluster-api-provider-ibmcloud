@@ -82,17 +82,6 @@ spec:
           status:
             description: IBMVPCClusterStatus defines the observed state of IBMVPCCluster
             properties:
-              apiEndpoint:
-                description: APIEndpoint describes a APIEndpoint
-                properties:
-                  address:
-                    type: string
-                  floatingIPID:
-                    type: string
-                required:
-                - address
-                - floatingIPID
-                type: object
               ready:
                 description: Bastion Instance `json:"bastion,omitempty"`
                 type: boolean
@@ -125,6 +114,17 @@ spec:
                 required:
                 - id
                 - name
+                type: object
+              vpcEndpoint:
+                description: VPCEndpoint describes a VPCEndpoint
+                properties:
+                  address:
+                    type: string
+                  floatingIPID:
+                    type: string
+                required:
+                - address
+                - floatingIPID
                 type: object
             required:
             - ready
@@ -198,17 +198,6 @@ spec:
           status:
             description: IBMVPCClusterStatus defines the observed state of IBMVPCCluster
             properties:
-              apiEndpoint:
-                description: APIEndpoint describes a APIEndpoint
-                properties:
-                  address:
-                    type: string
-                  floatingIPID:
-                    type: string
-                required:
-                - address
-                - floatingIPID
-                type: object
               ready:
                 description: Bastion Instance `json:"bastion,omitempty"`
                 type: boolean
@@ -241,6 +230,17 @@ spec:
                 required:
                 - id
                 - name
+                type: object
+              vpcEndpoint:
+                description: VPCEndpoint describes a VPCEndpoint
+                properties:
+                  address:
+                    type: string
+                  floatingIPID:
+                    type: string
+                required:
+                - address
+                - floatingIPID
                 type: object
             required:
             - ready

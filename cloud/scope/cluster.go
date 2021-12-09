@@ -188,7 +188,7 @@ func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error
 
 // DeleteFloatingIP deletes a Floating IP associated with floating ip id
 func (s *ClusterScope) DeleteFloatingIP() error {
-	fipID := *s.IBMVPCCluster.Status.APIEndpoint.FIPID
+	fipID := *s.IBMVPCCluster.Status.VPCEndpoint.FIPID
 	if fipID != "" {
 		deleteFIPOption := &vpcv1.DeleteFloatingIPOptions{}
 		deleteFIPOption.SetID(fipID)
