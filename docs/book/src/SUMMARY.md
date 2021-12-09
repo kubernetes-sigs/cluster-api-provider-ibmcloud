@@ -11,6 +11,7 @@
     - [Creating a cluster](./topics/powervs/creating-a-cluster.md)
 - [Developer Guide](./developer/index.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
+  - [Guide for API conversions](./developer/conversion.md)
   - [Release Process](./developer/release.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
