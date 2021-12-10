@@ -78,3 +78,11 @@ $(GOJQ): $(BIN_DIR) go.mod go.sum
 CONVERSION_GEN := $(BIN_DIR)/conversion-gen
 $(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $@ k8s.io/code-generator/cmd/conversion-gen
+
+GINKGO := $(BIN_DIR)/ginkgo
+$(GINKGO): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ github.com/onsi/ginkgo/ginkgo
+
+ENVSUBST := $(BIN_DIR)/envsubst
+$(ENVSUBST): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ github.com/drone/envsubst/v2/cmd/envsubst

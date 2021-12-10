@@ -1,0 +1,62 @@
+managementClusterName: capi-ibmcloud-e2e
+
+images:
+  # Use local built images for e2e tests
+  - name: gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller:e2e
+    loadBehavior: mustLoad
+
+providers:
+  - name: cluster-api
+    type: CoreProvider
+    versions:
+    - name: v1.0.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.2/core-components.yaml
+      type: url
+      files:
+      - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
+  - name: kubeadm
+    type: BootstrapProvider
+    versions:
+    - name: v1.0.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.2/bootstrap-components.yaml
+      type: url
+      files:
+      - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
+  - name: kubeadm
+    type: ControlPlaneProvider
+    versions:
+    - name: v1.0.2
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.0.2/control-plane-components.yaml
+      type: url
+      files:
+      - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
+  - name: ibmcloud
+    type: InfrastructureProvider
+    versions:
+    - name: v0.2.0
+      value: "${PWD}/config/default"
+      files:
+      - sourcePath: "${PWD}/metadata.yaml"
+        targetName: "metadata.yaml"
+      - sourcePath: "${PWD}/templates/cluster-template-powervs.yaml"
+        targetName: "cluster-template-powervs.yaml"
+      - sourcePath: "${PWD}/templates/cluster-template.yaml"
+        targetName: "cluster-template-vpc.yaml"
+
+variables:
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.4}"
+  # Cluster Addons
+  CNI: "${PWD}/test/e2e/data/cni/calico/calico.yaml"
+  IP_FAMILY: "IPv4"
+
+intervals:
+  default/wait-controllers: ["3m", "10s"]
+  default/wait-cluster: ["20m", "10s"]
+  default/wait-control-plane: ["30m", "10s"]
+  default/wait-worker-nodes: ["30m", "10s"]
+  default/wait-delete-cluster: ["20m", "10s"]
+  default/wait-machine-upgrade: ["50m", "10s"]
+  default/wait-machine-remediation: ["30m", "10s"]
+  default/wait-deployment: ["5m", "10s"]
+  default/wait-job: ["5m", "10s"]
+  default/wait-service: ["3m", "10s"]

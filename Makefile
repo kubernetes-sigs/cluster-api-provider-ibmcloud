@@ -27,11 +27,15 @@ ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
+E2E_CONF_FILE ?= $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e.yaml
+E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
 
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 GOJQ := $(TOOLS_BIN_DIR)/gojq
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
+GINKGO := $(TOOLS_BIN_DIR)/ginkgo
+ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -46,6 +50,7 @@ RELEASE_DIR := out
 TAG ?= dev
 ARCH ?= amd64
 ALL_ARCH ?= amd64 ppc64le
+PULL_POLICY ?= Always
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
@@ -71,10 +76,6 @@ else
 endif
 
 all: manager
-
-# Run tests
-test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
 
 # Build manager binary
 manager: generate fmt vet
@@ -150,6 +151,33 @@ lint: $(GOLANGCI_LINT) ## Lint codebase
 	$(GOLANGCI_LINT) run -v --fast=false
 
 ## --------------------------------------
+## Testing
+## --------------------------------------
+
+# Run unit tests
+test: generate fmt vet manifests
+	go test ./... -coverprofile cover.out
+
+# Allow overriding the e2e configurations
+GINKGO_FOCUS ?= Workload cluster creation
+GINKGO_NODES ?= 3
+GINKGO_NOCOLOR ?= false
+GINKGO_ARGS ?= -v -trace -progress -v -tags=e2e -focus=$(GINKGO_FOCUS) -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR)
+ARTIFACTS ?= $(REPO_ROOT)/_artifacts
+SKIP_CLEANUP ?= false
+SKIP_CREATE_MGMT_CLUSTER ?= false
+
+#Run the end-to-end tests
+.PHONY: test-e2e
+test-e2e: $(KUBECTL) $(GINKGO) $(ENVSUBST) e2e-image 
+	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) 
+	$(GINKGO) $(GINKGO_ARGS) ./test/e2e -- \
+        -e2e.artifacts-folder="$(ARTIFACTS)" \
+        -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+        -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \
+        -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
+
+## --------------------------------------
 ## Docker
 ## --------------------------------------
 
@@ -165,6 +193,22 @@ docker-push: ## Push the docker image
 docker-pull-prerequisites:
 	docker pull docker.io/docker/dockerfile:1.1-experimental
 	docker pull gcr.io/distroless/static:latest
+
+.PHONY: e2e-image
+e2e-image: docker-pull-prerequisites
+	docker build --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
+
+.PHONY: set-manifest-image
+set-manifest-image:
+	$(info Updating kustomize image patch file for default resource)
+	sed -i'' -e 's@image: .*@image: '"${MANIFEST_IMG}"'@' ./config/default/manager_image_patch.yaml
+
+.PHONY: set-manifest-pull-policy
+set-manifest-pull-policy:
+	$(info Updating kustomize pull policy file for default resource)
+	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' ./config/default/manager_pull_policy.yaml	
 
 ## --------------------------------------
 ## Docker - All ARCH
