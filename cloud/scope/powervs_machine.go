@@ -249,7 +249,7 @@ func getImageID(image v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScop
 }
 
 func (m *PowerVSMachineScope) GetImages() (*models.Images, error) {
-	return m.IBMPowerVSClient.ImageClient.GetAll(m.IBMPowerVSMachine.Spec.ServiceInstanceID)
+	return m.IBMPowerVSClient.ImageClient.GetAll()
 }
 
 func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {

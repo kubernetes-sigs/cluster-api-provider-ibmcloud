@@ -39,13 +39,13 @@ type IBMPowerVSClient struct {
 func NewIBMPowerVSClient(token, account, cloudInstanceID, region, zone string, debug bool) (_ *IBMPowerVSClient, err error) {
 	client := &IBMPowerVSClient{}
 	ctx := context.Background()
-	client.session, err = ibmpisession.New(token, region, debug, TIMEOUT, account, zone)
+	client.session, err = ibmpisession.New(token, region, debug, account, zone)
 	if err != nil {
 		return nil, err
 	}
 
 	client.InstanceClient = instance.NewIBMPIInstanceClient(ctx, client.session, cloudInstanceID)
-	client.NetworkClient = instance.NewIBMPINetworkClient(client.session, cloudInstanceID)
-	client.ImageClient = instance.NewIBMPIImageClient(client.session, cloudInstanceID)
+	client.NetworkClient = instance.NewIBMPINetworkClient(ctx, client.session, cloudInstanceID)
+	client.ImageClient = instance.NewIBMPIImageClient(ctx, client.session, cloudInstanceID)
 	return client, nil
 }
