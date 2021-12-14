@@ -21,7 +21,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const (
@@ -45,16 +44,20 @@ type IBMPowerVSMachineSpec struct {
 	Image IBMPowerVSResourceReference `json:"image"`
 
 	// SysType is the System type used to host the vsi
-	SysType string `json:"sysType"`
+	// +optional
+	SysType string `json:"sysType,omitempty"`
 
 	// ProcType is the processor type, e.g: dedicated, shared, capped
-	ProcType string `json:"procType"`
+	// +optional
+	ProcType string `json:"procType,omitempty"`
 
 	// Processors is Number of processors allocated
-	Processors string `json:"processors"`
+	// +optional
+	Processors string `json:"processors,omitempty"`
 
 	// Memory is Amount of memory allocated (in GB)
-	Memory string `json:"memory"`
+	// +optional
+	Memory string `json:"memory,omitempty"`
 
 	// Network is the reference to the Network to use for this instance.
 	Network IBMPowerVSResourceReference `json:"network"`

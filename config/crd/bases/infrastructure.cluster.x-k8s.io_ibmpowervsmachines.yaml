@@ -237,12 +237,8 @@ spec:
                 type: string
             required:
             - image
-            - memory
             - network
-            - procType
-            - processors
             - serviceInstanceID
-            - sysType
             type: object
           status:
             description: IBMPowerVSMachineStatus defines the observed state of IBMPowerVSMachine

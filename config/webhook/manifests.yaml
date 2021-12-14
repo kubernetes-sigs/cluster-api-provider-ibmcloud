@@ -1,0 +1,142 @@
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-ibmpowervscluster
+  failurePolicy: Fail
+  name: mibmpowervscluster.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsclusters
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-ibmpowervsmachine
+  failurePolicy: Fail
+  name: mibmpowervsmachine.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsmachines
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta1-ibmpowervsmachinetemplate
+  failurePolicy: Fail
+  name: mibmpowervsmachinetemplate.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsmachinetemplates
+  sideEffects: None
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-ibmpowervscluster
+  failurePolicy: Fail
+  name: vibmpowervscluster.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsclusters
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-ibmpowervsmachine
+  failurePolicy: Fail
+  name: vibmpowervsmachine.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsmachines
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta1-ibmpowervsmachinetemplate
+  failurePolicy: Fail
+  name: vibmpowervsmachinetemplate.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsmachinetemplates
+  sideEffects: None

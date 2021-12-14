@@ -160,10 +160,6 @@ spec:
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
         name: "${IBMPOWERVS_IMAGE_NAME}"
-      sysType: s922
-      procType: shared
-      processors: "0.25"
-      memory: "8"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
 ---
@@ -201,10 +197,6 @@ spec:
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
         name: "${IBMPOWERVS_IMAGE_NAME}"
-      sysType: s922
-      procType: shared
-      processors: "0.25"
-      memory: "8"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
 ---

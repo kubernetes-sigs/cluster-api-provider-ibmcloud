@@ -22,9 +22,9 @@ patchesStrategicMerge:
 # patches here are for enabling the conversion webhook for each CRD
 #- patches/webhook_in_ibmvpcclusters.yaml
 #- patches/webhook_in_ibmvpcmachines.yaml
-#- patches/webhook_in_ibmpowervsclusters.yaml
-#- patches/webhook_in_ibmpowervsmachines.yaml
-#- patches/webhook_in_ibmpowervsmachinetemplates.yaml
+- patches/webhook_in_ibmpowervsclusters.yaml
+- patches/webhook_in_ibmpowervsmachines.yaml
+- patches/webhook_in_ibmpowervsmachinetemplates.yaml
 #- patches/webhook_in_ibmvpcmachinetemplates.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
@@ -32,9 +32,9 @@ patchesStrategicMerge:
 # patches here are for enabling the CA injection for each CRD
 #- patches/cainjection_in_ibmvpcclusters.yaml
 #- patches/cainjection_in_ibmvpcmachines.yaml
-#- patches/cainjection_in_ibmpowervsclusters.yaml
-#- patches/cainjection_in_ibmpowervsmachines.yaml
-#- patches/cainjection_in_ibmpowervsmachinetemplates.yaml
+- patches/cainjection_in_ibmpowervsclusters.yaml
+- patches/cainjection_in_ibmpowervsmachines.yaml
+- patches/cainjection_in_ibmpowervsmachinetemplates.yaml
 #- patches/cainjection_in_ibmvpcmachinetemplates.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
 
