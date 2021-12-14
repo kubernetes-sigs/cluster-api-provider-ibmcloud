@@ -21,12 +21,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/pflag"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	infrastructurev1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
 	infrastructurev1alpha4 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
@@ -36,7 +39,9 @@ import (
 )
 
 var (
-	watchNamespace string
+	watchNamespace       string
+	metricsAddr          string
+	enableLeaderElection bool
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -53,21 +58,13 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	flag.StringVar(&metricsAddr, "metrics-bind-addr", ":8080", "The address the metric endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(
-		&watchNamespace,
-		"namespace",
-		"",
-		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.",
-	)
-	flag.Parse()
+	klog.InitFlags(nil)
 
-	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	initFlags(pflag.CommandLine)
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+
+	ctrl.SetLogger(klogr.New())
 
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
@@ -127,4 +124,28 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func initFlags(fs *pflag.FlagSet) {
+	fs.StringVar(
+		&metricsAddr,
+		"metrics-bind-addr",
+		":8080",
+		"The address the metric endpoint binds to.",
+	)
+
+	fs.BoolVar(
+		&enableLeaderElection,
+		"leader-elect",
+		false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.",
+	)
+
+	fs.StringVar(
+		&watchNamespace,
+		"namespace",
+		"",
+		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.",
+	)
 }
