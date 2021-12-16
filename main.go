@@ -117,6 +117,18 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)
 	}
+	if err = (&infrastructurev1beta1.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSCluster")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1beta1.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachine")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1beta1.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachineTemplate")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

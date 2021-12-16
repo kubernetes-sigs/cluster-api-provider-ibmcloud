@@ -194,12 +194,8 @@ spec:
                         type: string
                     required:
                     - image
-                    - memory
                     - network
-                    - procType
-                    - processors
                     - serviceInstanceID
-                    - sysType
                     type: object
                 required:
                 - spec
