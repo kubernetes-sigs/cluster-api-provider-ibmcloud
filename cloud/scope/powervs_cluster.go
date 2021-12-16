@@ -62,7 +62,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		return nil, errors.New("failed to generate new scope from nil IBMVPCCluster")
 	}
 
-	if params.Logger == nil {
+	if params.Logger == (logr.Logger{}) {
 		params.Logger = klogr.New()
 	}
 
