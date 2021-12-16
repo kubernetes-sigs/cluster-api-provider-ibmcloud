@@ -42,6 +42,7 @@ var (
 	watchNamespace       string
 	metricsAddr          string
 	enableLeaderElection bool
+	healthAddr           string
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -72,13 +73,14 @@ func main() {
 
 	syncPeriod := 15 * time.Second
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		Port:               9443,
-		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "effcf9b8.cluster.x-k8s.io",
-		SyncPeriod:         &syncPeriod,
-		Namespace:          watchNamespace,
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		Port:                   9443,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "effcf9b8.cluster.x-k8s.io",
+		SyncPeriod:             &syncPeriod,
+		Namespace:              watchNamespace,
+		HealthProbeBindAddress: healthAddr,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -131,6 +133,16 @@ func main() {
 	}
 	// +kubebuilder:scaffold:builder
 
+	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+		setupLog.Error(err, "unable to create ready check")
+		os.Exit(1)
+	}
+
+	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+		setupLog.Error(err, "unable to create health check")
+		os.Exit(1)
+	}
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -159,5 +171,12 @@ func initFlags(fs *pflag.FlagSet) {
 		"namespace",
 		"",
 		"Namespace that the controller watches to reconcile cluster-api objects. If unspecified, the controller watches for cluster-api objects across all namespaces.",
+	)
+
+	fs.StringVar(
+		&healthAddr,
+		"health-addr",
+		":9440",
+		"The address the health endpoint binds to.",
 	)
 }
