@@ -70,7 +70,7 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 		return nil, errors.New("failed to generate new scope from nil IBMVPCCluster")
 	}
 
-	if params.Logger == nil {
+	if params.Logger == (logr.Logger{}) {
 		params.Logger = klogr.New()
 	}
 

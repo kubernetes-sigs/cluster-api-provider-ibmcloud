@@ -80,7 +80,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 		return nil, errors.New("aws machine is required when creating a MachineScope")
 	}
 
-	if params.Logger == nil {
+	if params.Logger == (logr.Logger{}) {
 		params.Logger = klogr.New()
 	}
 
