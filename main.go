@@ -131,6 +131,18 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachineTemplate")
 		os.Exit(1)
 	}
+	if err = (&infrastructurev1beta1.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachine")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1beta1.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachineTemplate")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1beta1.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCCluster")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {

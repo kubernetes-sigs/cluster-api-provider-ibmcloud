@@ -58,3 +58,9 @@ func validateIBMPowerVSNetwork(network IBMPowerVSResourceReference) (bool, IBMPo
 	}
 	return true, IBMPowerVSResourceReference{}
 }
+
+func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {
+	if spec.Profile == "" {
+		spec.Profile = "bx2-4x16"
+	}
+}
