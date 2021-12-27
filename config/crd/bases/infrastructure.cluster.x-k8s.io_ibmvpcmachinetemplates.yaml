@@ -249,7 +249,6 @@ spec:
                         type: string
                     required:
                     - image
-                    - profile
                     - zone
                     type: object
                 required:
