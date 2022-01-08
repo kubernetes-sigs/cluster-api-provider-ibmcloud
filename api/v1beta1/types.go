@@ -33,6 +33,17 @@ var (
 	PowerVSInstanceStateREBOOT = PowerVSInstanceState("REBOOT")
 )
 
+// PowerVSImageState describes the state of an IBM Power VS image.
+type PowerVSImageState string
+
+var (
+	// PowerVSImageStateACTIVE is the string representing an image in a active state.
+	PowerVSImageStateACTIVE = PowerVSImageState("active")
+
+	// PowerVSInstanceStateQue is the string representing an image in a queued state.
+	PowerVSInstanceStateQue = PowerVSImageState("queued")
+)
+
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface
