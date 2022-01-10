@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
+	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.41.1
 	github.com/itchyny/gojq v0.12.5
 	github.com/joelanford/go-apidiff v0.1.0

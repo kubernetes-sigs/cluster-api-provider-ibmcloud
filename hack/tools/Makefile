@@ -86,3 +86,7 @@ $(GINKGO): $(BIN_DIR) go.mod go.sum
 ENVSUBST := $(BIN_DIR)/envsubst
 $(ENVSUBST): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $@ github.com/drone/envsubst/v2/cmd/envsubst
+
+MOCKGEN := $(BIN_DIR)/mockgen
+$(MOCKGEN): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ github.com/golang/mock/mockgen

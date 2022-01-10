@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"os"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -37,7 +38,6 @@ import (
 
 	infrastructurev1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
 )
 
 // IBMVPCClusterReconciler reconciles a IBMVPCCluster object
@@ -80,7 +80,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// TODO: Will be removed once we find a better way of overriding the service endpoint, generate via spec
 	svcEndpoint := os.Getenv("SERVICE_ENDPOINT")
 
-	authenticator, err := pkg.GetAuthenticator()
+	authenticator, err := authenticator.GetAuthenticator()
 	if err != nil {
 		return ctrl.Result{}, errors.Wrapf(err, "failed to get authenticator")
 	}

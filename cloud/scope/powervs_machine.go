@@ -27,9 +27,10 @@ import (
 	utils "github.com/ppc64le-cloud/powervs-utils"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
-	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_networks"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
+	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -39,7 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 // PowerVSMachineScopeParams defines the input parameters used to create a new PowerVSMachineScope.
@@ -58,7 +62,7 @@ type PowerVSMachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMPowerVSClient  *IBMPowerVSClient
+	IBMPowerVSClient  *powervs.Service
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
@@ -85,21 +89,47 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 	}
 
 	m := params.IBMPowerVSMachine
-	client := pkg.NewClient()
 
-	resource, err := client.ResourceClient.GetInstance(m.Spec.ServiceInstanceID)
+	auth, err := authenticator.GetAuthenticator()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get authenticator")
+	}
+
+	account, err := servicesutils.GetAccount(auth)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get account")
+	}
+
+	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
 		return nil, err
 	}
-	region, err := utils.GetRegion(resource.RegionID)
-	if err != nil {
-		return nil, err
-	}
-	zone := resource.RegionID
 
-	c, err := NewIBMPowerVSClient(client.Config.IAMAccessToken, client.User.Account, m.Spec.ServiceInstanceID, region, zone, true)
+	res, _, err := rc.GetResourceInstance(
+		&resourcecontrollerv2.GetResourceInstanceOptions{
+			ID: core.StringPtr(m.Spec.ServiceInstanceID),
+		})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create NewIBMPowerVSClient")
+		return nil, errors.Wrap(err, "failed to get resource instance")
+	}
+
+	region, err := utils.GetRegion(*res.RegionID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get region")
+	}
+
+	options := powervs.ServiceOptions{
+		PIOptions: &ibmpisession.PIOptions{
+			Debug:       true,
+			UserAccount: account,
+			Region:      region,
+			Zone:        *res.RegionID,
+		},
+		CloudInstanceID: m.Spec.ServiceInstanceID,
+	}
+	c, err := powervs.NewService(options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PowerVS service")
 	}
 
 	helper, err := patch.NewHelper(params.IBMPowerVSMachine, params.Client)
@@ -120,7 +150,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 }
 
 func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models.PVMInstanceReference, error) {
-	instances, err := m.IBMPowerVSClient.InstanceClient.GetAll()
+	instances, err := m.IBMPowerVSClient.GetAllInstance()
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +215,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 			UserData:   cloudInitData,
 		},
 	}
-	_, err = m.IBMPowerVSClient.InstanceClient.Create(params.Body)
+	_, err = m.IBMPowerVSClient.CreateInstance(params.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +234,7 @@ func (m *PowerVSMachineScope) PatchObject() error {
 
 // DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
 func (m *PowerVSMachineScope) DeleteMachine() error {
-	return m.IBMPowerVSClient.InstanceClient.Delete(m.IBMPowerVSMachine.Status.InstanceID)
+	return m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID)
 }
 
 // GetBootstrapData returns the base64 encoded bootstrap data from the secret in the Machine's bootstrap.dataSecretName
@@ -249,7 +279,7 @@ func getImageID(image v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScop
 }
 
 func (m *PowerVSMachineScope) GetImages() (*models.Images, error) {
-	return m.IBMPowerVSClient.ImageClient.GetAll()
+	return m.IBMPowerVSClient.GetAllImage()
 }
 
 func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
@@ -275,11 +305,5 @@ func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachine
 }
 
 func (m *PowerVSMachineScope) GetNetworks() (*models.Networks, error) {
-	params := p_cloud_networks.NewPcloudNetworksGetallParamsWithTimeout(TIMEOUT).WithCloudInstanceID(m.IBMPowerVSMachine.Spec.ServiceInstanceID)
-	resp, err := m.IBMPowerVSClient.session.Power.PCloudNetworks.PcloudNetworksGetall(params, ibmpisession.NewAuth(m.IBMPowerVSClient.session, m.IBMPowerVSMachine.Spec.ServiceInstanceID))
-
-	if err != nil || resp.Payload == nil {
-		return nil, err
-	}
-	return resp.Payload, nil
+	return m.IBMPowerVSClient.GetAllNetwork()
 }

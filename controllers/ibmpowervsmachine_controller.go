@@ -168,7 +168,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	}
 
 	if ins != nil {
-		instance, err := machineScope.IBMPowerVSClient.InstanceClient.Get(*ins.PvmInstanceID)
+		instance, err := machineScope.IBMPowerVSClient.GetInstance(*ins.PvmInstanceID)
 		if err != nil {
 			return ctrl.Result{}, err
 		}

@@ -3,12 +3,13 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 go 1.17
 
 require (
-	github.com/IBM-Cloud/bluemix-go v0.0.0-20200921095234-26d1d0148c62
 	github.com/IBM-Cloud/power-go-client v1.0.88
 	github.com/IBM/go-sdk-core/v5 v5.9.1
+	github.com/IBM/platform-services-go-sdk v0.22.7
 	github.com/IBM/vpc-go-sdk v0.14.0
 	github.com/go-logr/logr v1.2.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
+	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	github.com/pkg/errors v0.9.1
@@ -69,7 +70,7 @@ require (
 	github.com/google/go-github/v33 v33.0.0 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.2.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
