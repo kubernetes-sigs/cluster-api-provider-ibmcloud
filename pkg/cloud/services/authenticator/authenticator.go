@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The Kubernetes Authors.
+Copyright 2022 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,12 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pkg
+package authenticator
 
 import (
 	"fmt"
 
 	"github.com/IBM/go-sdk-core/v5/core"
+)
+
+const (
+	serviceIBMCloud = "IBMCLOUD"
 )
 
 // This expects the credential file in the following search order:
@@ -33,20 +37,13 @@ import (
 // IBMCLOUD_APIKEY=xxxxxxxxxxxxx
 // IBMCLOUD_AUTH_URL=https://iam.cloud.ibm.com
 
-const (
-	serviceIBMCloud = "IBMCLOUD"
-)
-
-// GetAuthenticator instantiates an Authenticator from external config file
 func GetAuthenticator() (core.Authenticator, error) {
 	auth, err := core.GetAuthenticatorFromEnvironment(serviceIBMCloud)
 	if err != nil {
 		return nil, err
 	}
-	switch auth.(type) {
-	case *core.IamAuthenticator:
-		return auth, nil
-	default:
-		return nil, fmt.Errorf("only IAM authenticator is supported")
+	if auth == nil {
+		return nil, fmt.Errorf("authenticator can't be nil, please set proper authentication")
 	}
+	return auth, nil
 }

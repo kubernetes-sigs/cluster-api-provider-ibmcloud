@@ -36,6 +36,7 @@ GOJQ := $(TOOLS_BIN_DIR)/gojq
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
 GINKGO := $(TOOLS_BIN_DIR)/ginkgo
 ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
+MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -124,7 +125,12 @@ vet:
 
 # Generate code
 generate: controller-gen
+	$(MAKE) generate-go
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+
+.PHONY: generate-go
+generate-go: $(MOCKGEN)
+	go generate ./...
 
 images: docker-build
 # find or download controller-gen

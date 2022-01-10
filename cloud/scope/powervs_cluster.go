@@ -23,6 +23,9 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	"github.com/IBM-Cloud/power-go-client/ibmpisession"
+	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	utils "github.com/ppc64le-cloud/powervs-utils"
 
 	"k8s.io/klog/v2/klogr"
@@ -31,7 +34,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 // PowerVSClusterScopeParams defines the input parameters used to create a new PowerVSClusterScope.
@@ -48,7 +54,7 @@ type PowerVSClusterScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMPowerVSClient  *IBMPowerVSClient
+	IBMPowerVSClient  *powervs.Service
 	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
 }
@@ -66,20 +72,47 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		params.Logger = klogr.New()
 	}
 
-	client := pkg.NewClient()
-
 	spec := params.IBMPowerVSCluster.Spec
-	resource, err := client.ResourceClient.GetInstance(spec.ServiceInstanceID)
-	if err != nil {
-		return nil, err
-	}
-	region, err := utils.GetRegion(resource.RegionID)
-	if err != nil {
-		return nil, err
-	}
-	zone := resource.RegionID
 
-	c, err := NewIBMPowerVSClient(client.Config.IAMAccessToken, client.User.Account, spec.ServiceInstanceID, region, zone, true)
+	auth, err := authenticator.GetAuthenticator()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get authenticator")
+	}
+
+	account, err := servicesutils.GetAccount(auth)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get account")
+	}
+
+	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	res, _, err := rc.GetResourceInstance(
+		&resourcecontrollerv2.GetResourceInstanceOptions{
+			ID: core.StringPtr(spec.ServiceInstanceID),
+		})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get resource instance")
+	}
+
+	region, err := utils.GetRegion(*res.RegionID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get region")
+	}
+
+	options := powervs.ServiceOptions{
+		PIOptions: &ibmpisession.PIOptions{
+			Debug:       true,
+			UserAccount: account,
+			Region:      region,
+			Zone:        *res.RegionID,
+		},
+		CloudInstanceID: spec.ServiceInstanceID,
+	}
+	c, err := powervs.NewService(options)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create NewIBMPowerVSClient")
 	}
