@@ -90,3 +90,7 @@ $(ENVSUBST): $(BIN_DIR) go.mod go.sum
 MOCKGEN := $(BIN_DIR)/mockgen
 $(MOCKGEN): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $@ github.com/golang/mock/mockgen
+
+CONTROLLER_GEN := $(BIN_DIR)/controller-gen
+$(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen

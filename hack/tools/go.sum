@@ -1625,8 +1625,9 @@ sigs.k8s.io/cluster-api/hack/tools v0.0.0-20211118171502-aafa086da595 h1:zh9QwVI
 sigs.k8s.io/cluster-api/hack/tools v0.0.0-20211118171502-aafa086da595/go.mod h1:Bib3nYZoRjwPdZ1+X1MVRWcQL18dJ4q2U+Ok603lcAE=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9 h1:ylYUI5uaq/guUFerFRVG81FHSA5/3+fERCE1RQbQUZ4=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9/go.mod h1:+sJcI1F0QI0Cv+8fp5rH5B2fK1LxzrAQqYnaPx9nY8I=
-sigs.k8s.io/controller-tools v0.7.1-0.20211110210727-ab52f76cc7d1 h1:fsnXNyvliKAKkcOZ5l9gGinGqjGM8eKKT+4TW/LoI7A=
 sigs.k8s.io/controller-tools v0.7.1-0.20211110210727-ab52f76cc7d1/go.mod h1:h59umkqeBKj3TNpLmLoqDCwXDcbN+mkhQzlNjoUDJ3I=
+sigs.k8s.io/controller-tools v0.8.0 h1:uUkfTGEwrguqYYfcI2RRGUnC8mYdCFDqfwPKUcNJh1o=
+sigs.k8s.io/controller-tools v0.8.0/go.mod h1:qE2DXhVOiEq5ijmINcFbqi9GZrrUjzB1TuJU0xa6eoY=
 sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 h1:fD1pz4yfdADVNfFmcP2aBEtudwUQ1AlLnRBALr33v3s=
 sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6/go.mod h1:p4QtZmO4uMYipTQNzagwnNoseA6OxSUutVw05NhYDRs=
 sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20211028165026-57688c578b5d h1:KLiQzLW3RZJR19+j4pw2h5iioyAyqCkDBEAFdnGa3N8=
