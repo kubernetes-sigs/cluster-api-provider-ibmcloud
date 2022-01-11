@@ -1,3 +1,4 @@
+//go:build e2e
 // +build e2e
 
 /*
@@ -62,6 +63,9 @@ var (
 
 	// skipCleanup prevents cleanup of test resources e.g. for debug purposes.
 	skipCleanup bool
+
+	// flavor instructs the tests to be run on the passed infrastructure type
+	flavor string
 )
 
 // Test suite global vars.
@@ -86,6 +90,7 @@ func init() {
 	flag.StringVar(&artifactFolder, "e2e.artifacts-folder", "", "folder where e2e test artifact should be stored")
 	flag.BoolVar(&skipCleanup, "e2e.skip-resource-cleanup", false, "if true, the resource cleanup after tests will be skipped")
 	flag.BoolVar(&useExistingCluster, "e2e.use-existing-cluster", false, "if true, the test uses the current cluster instead of creating a new one (default discovery rules apply)")
+	flag.StringVar(&flavor, "e2e.flavor", "", "flavor of e2e tests to be run")
 }
 
 func TestE2E(t *testing.T) {
@@ -102,6 +107,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	// Before all ParallelNodes.
 
 	Expect(configPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
+	Expect(flavor).ToNot(BeNil(), "Invalid test argument. e2e.flavor should not be nil")
 	Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
 
 	By("Initializing a runtime.Scheme with all the GVK relevant for this test")

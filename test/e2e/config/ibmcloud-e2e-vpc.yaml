@@ -38,8 +38,6 @@ providers:
       files:
       - sourcePath: "${PWD}/metadata.yaml"
         targetName: "metadata.yaml"
-      - sourcePath: "${PWD}/templates/cluster-template-powervs.yaml"
-        targetName: "cluster-template-powervs.yaml"
       - sourcePath: "${PWD}/templates/cluster-template.yaml"
         targetName: "cluster-template-vpc.yaml"
 
@@ -48,7 +46,15 @@ variables:
   # Cluster Addons
   CNI: "${PWD}/test/e2e/data/cni/calico/calico.yaml"
   IP_FAMILY: "IPv4"
-
+  # Following variables should be set based on the flavour being tested
+  IBMVPC_REGION: "${IBMVPC_REGION:-}"
+  IBMVPC_ZONE: "${IBMVPC_ZONE:-}"
+  IBMVPC_RESOURCEGROUP: "${IBMVPC_RESOURCEGROUP:-}"
+  IBMVPC_NAME: "${IBMVPC_NAME:-}"
+  IBMVPC_IMAGE_ID: "${IBMVPC_IMAGE_ID:-}"
+  IBMVPC_PROFILE: "${IBMVPC_PROFILE:-}"
+  IBMVPC_SSHKEY_ID: "${IBMVPC_SSHKEY_ID:-}"
+  
 intervals:
   default/wait-controllers: ["3m", "10s"]
   default/wait-cluster: ["20m", "10s"]
