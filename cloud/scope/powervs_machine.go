@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"k8s.io/utils/pointer"
 	"strconv"
 
 	"github.com/go-logr/logr"
@@ -306,4 +307,57 @@ func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachine
 
 func (m *PowerVSMachineScope) GetNetworks() (*models.Networks, error) {
 	return m.IBMPowerVSClient.GetAllNetwork()
+}
+
+func (m *PowerVSMachineScope) SetReady() {
+	m.IBMPowerVSMachine.Status.Ready = true
+}
+
+func (m *PowerVSMachineScope) SetNotReady() {
+	m.IBMPowerVSMachine.Status.Ready = false
+}
+
+func (m *PowerVSMachineScope) SetInstanceID(id *string) {
+	if id != nil {
+		m.IBMPowerVSMachine.Status.InstanceID = *id
+	}
+}
+
+func (m *PowerVSMachineScope) GetInstanceID() string {
+	return m.IBMPowerVSMachine.Status.InstanceID
+}
+
+func (m *PowerVSMachineScope) SetHealth(health *models.PVMInstanceHealth) {
+	if health != nil {
+		m.IBMPowerVSMachine.Status.Health = health.Status
+	}
+}
+
+func (m *PowerVSMachineScope) SetAddresses(networks []*models.PVMInstanceNetwork) {
+	var addresses []corev1.NodeAddress
+	for _, network := range networks {
+		addresses = append(addresses, corev1.NodeAddress{
+			Type:    corev1.NodeInternalIP,
+			Address: network.IPAddress,
+		})
+		if network.ExternalIP != "" {
+			addresses = append(addresses, corev1.NodeAddress{
+				Type:    corev1.NodeExternalIP,
+				Address: network.ExternalIP,
+			})
+		}
+	}
+	m.IBMPowerVSMachine.Status.Addresses = addresses
+}
+
+func (m *PowerVSMachineScope) SetInstanceState(status *string) {
+	m.IBMPowerVSMachine.Status.InstanceState = v1beta1.PowerVSInstanceState(*status)
+}
+
+func (m *PowerVSMachineScope) GetInstanceState() v1beta1.PowerVSInstanceState {
+	return m.IBMPowerVSMachine.Status.InstanceState
+}
+
+func (m *PowerVSMachineScope) SetProviderID() {
+	m.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
 }
