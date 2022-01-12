@@ -18,18 +18,17 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -154,16 +153,27 @@ func (r *IBMPowerVSMachineReconciler) getOrCreate(scope *scope.PowerVSMachineSco
 }
 
 func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
-	controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, v1beta1.IBMPowerVSMachineFinalizer)
+	machineScope.Info("Reconciling IBMPowerVSMachine")
+
+	if !machineScope.Cluster.Status.InfrastructureReady {
+		machineScope.Info("Cluster infrastructure is not ready yet")
+		conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo, "")
+		return ctrl.Result{}, nil
+	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		machineScope.Info("Bootstrap data secret reference is not yet available")
+		conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.WaitingForBootstrapDataReason, clusterv1.ConditionSeverityInfo, "")
 		return ctrl.Result{}, nil
 	}
 
+	controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, v1beta1.IBMPowerVSMachineFinalizer)
+
 	ins, err := r.getOrCreate(machineScope)
 	if err != nil {
+		machineScope.Error(err, "unable to create instance")
+		conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.InstanceProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VSI for IBMPowerVSMachine %s/%s", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name)
 	}
 
@@ -172,31 +182,28 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		machineScope.IBMPowerVSMachine.Status.InstanceID = *instance.PvmInstanceID
-		var addresses []v1.NodeAddress
-		for _, network := range instance.Networks {
-			addresses = append(addresses, v1.NodeAddress{
-				Type:    v1.NodeInternalIP,
-				Address: network.IPAddress,
-			})
-			if network.ExternalIP != "" {
-				addresses = append(addresses, v1.NodeAddress{
-					Type:    v1.NodeExternalIP,
-					Address: network.ExternalIP,
-				})
-			}
-		}
-		machineScope.IBMPowerVSMachine.Status.Addresses = addresses
-		if instance.Health != nil {
-			machineScope.IBMPowerVSMachine.Status.Health = instance.Health.Status
-		}
-		machineScope.IBMPowerVSMachine.Status.InstanceState = *instance.Status
-		if machineScope.IBMPowerVSMachine.Status.InstanceState == "ACTIVE" {
-			machineScope.IBMPowerVSMachine.Status.Ready = true
+		machineScope.SetInstanceID(instance.PvmInstanceID)
+		machineScope.SetAddresses(instance.Networks)
+		machineScope.SetHealth(instance.Health)
+		machineScope.SetInstanceState(instance.Status)
+		switch machineScope.GetInstanceState() {
+		case v1beta1.PowerVSInstanceStateBUILD:
+			machineScope.SetNotReady()
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.InstanceNotReadyReason, clusterv1.ConditionSeverityWarning, "")
+		case v1beta1.PowerVSInstanceStateSHUTOFF:
+			machineScope.SetNotReady()
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.InstanceStoppedReason, clusterv1.ConditionSeverityError, "")
+		case v1beta1.PowerVSInstanceStateACTIVE:
+			machineScope.SetReady()
+			conditions.MarkTrue(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition)
+		default:
+			machineScope.SetNotReady()
+			machineScope.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
+			conditions.MarkUnknown(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, "", "")
 		}
 		machineScope.Info(*ins.PvmInstanceID)
 	}
-	machineScope.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s", machineScope.Machine.Spec.ClusterName, machineScope.IBMPowerVSMachine.Name))
+	machineScope.SetProviderID()
 
 	return ctrl.Result{}, nil
 }

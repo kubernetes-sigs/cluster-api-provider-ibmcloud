@@ -19,6 +19,8 @@ package v1beta1
 import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/errors"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -99,11 +101,54 @@ type IBMPowerVSMachineStatus struct {
 	Health string `json:"health,omitempty"`
 
 	// InstanceState is the status of the vsi
-	InstanceState string `json:"instanceState"`
+	// +optional
+	InstanceState PowerVSInstanceState `json:"instanceState,omitempty"`
 
 	// Fault will report if any fault messages for the vsi
 	// +optional
 	Fault string `json:"fault,omitempty"`
+
+	// FailureReason will be set in the event that there is a terminal problem
+	// reconciling the Machine and will contain a succinct value suitable
+	// for machine interpretation.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the Machine's spec or the configuration of
+	// the controller, and that manual intervention is required. Examples
+	// of terminal errors would be invalid combinations of settings in the
+	// spec, values that are unsupported by the controller, or the
+	// responsible controller itself being critically misconfigured.
+	//
+	// Any transient errors that occur during the reconciliation of Machines
+	// can be added as events to the Machine object and/or logged in the
+	// controller's output.
+	// +optional
+	FailureReason *errors.MachineStatusError `json:"failureReason,omitempty"`
+
+	// FailureMessage will be set in the event that there is a terminal problem
+	// reconciling the Machine and will contain a more verbose string suitable
+	// for logging and human consumption.
+	//
+	// This field should not be set for transitive errors that a controller
+	// faces that are expected to be fixed automatically over
+	// time (like service outages), but instead indicate that something is
+	// fundamentally wrong with the Machine's spec or the configuration of
+	// the controller, and that manual intervention is required. Examples
+	// of terminal errors would be invalid combinations of settings in the
+	// spec, values that are unsupported by the controller, or the
+	// responsible controller itself being critically misconfigured.
+	//
+	// Any transient errors that occur during the reconciliation of Machines
+	// can be added as events to the Machine object and/or logged in the
+	// controller's output.
+	// +optional
+	FailureMessage *string `json:"failureMessage,omitempty"`
+
+	// Conditions defines current service state of the IBMPowerVSMachine.
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -121,6 +166,16 @@ type IBMPowerVSMachine struct {
 
 	Spec   IBMPowerVSMachineSpec   `json:"spec,omitempty"`
 	Status IBMPowerVSMachineStatus `json:"status,omitempty"`
+}
+
+// GetConditions returns the observations of the operational state of the IBMPowerVSMachine resource.
+func (r *IBMPowerVSMachine) GetConditions() clusterv1.Conditions {
+	return r.Status.Conditions
+}
+
+// SetConditions sets the underlying service state of the IBMPowerVSMachine to the predescribed clusterv1.Conditions.
+func (r *IBMPowerVSMachine) SetConditions(conditions clusterv1.Conditions) {
+	r.Status.Conditions = conditions
 }
 
 //+kubebuilder:object:root=true

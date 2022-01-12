@@ -16,6 +16,23 @@ limitations under the License.
 
 package v1beta1
 
+// PowerVSInstanceState describes the state of an IBM Power VS instance.
+type PowerVSInstanceState string
+
+var (
+	// PowerVSInstanceStateACTIVE is the string representing an instance in a ACTIVE state.
+	PowerVSInstanceStateACTIVE = PowerVSInstanceState("ACTIVE")
+
+	// PowerVSInstanceStateBUILD is the string representing an instance in a BUILD state.
+	PowerVSInstanceStateBUILD = PowerVSInstanceState("BUILD")
+
+	// PowerVSInstanceStateSHUTOFF is the string representing an instance in a SHUTOFF state.
+	PowerVSInstanceStateSHUTOFF = PowerVSInstanceState("SHUTOFF")
+
+	// PowerVSInstanceStateREBOOT is the string representing an instance in a REBOOT state.
+	PowerVSInstanceStateREBOOT = PowerVSInstanceState("REBOOT")
+)
+
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface
