@@ -40,6 +40,10 @@ import (
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
+const (
+	DEBUGLEVEL = 5
+)
+
 // PowerVSClusterScopeParams defines the input parameters used to create a new PowerVSClusterScope.
 type PowerVSClusterScopeParams struct {
 	Client            client.Client
@@ -104,7 +108,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 
 	options := powervs.ServiceOptions{
 		PIOptions: &ibmpisession.PIOptions{
-			Debug:       true,
+			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
 			Region:      region,
 			Zone:        *res.RegionID,
