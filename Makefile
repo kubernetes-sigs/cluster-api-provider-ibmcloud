@@ -27,7 +27,6 @@ ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
-E2E_CONF_FILE ?= $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e.yaml
 E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
 
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
@@ -135,6 +134,14 @@ generate-go: $(MOCKGEN)
 
 images: docker-build
 
+set-flavor: 
+ifeq ($(E2E_FLAVOR), vpc)
+	 $(eval E2E_CONF_FILE=$(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-vpc.yaml)
+else
+	 $(eval E2E_CONF_FILE=$(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-powervs.yaml)
+endif
+	@echo "Setting e2e test flavour to ${E2E_CONF_FILE}"
+
 ## --------------------------------------
 ## Linting
 ## --------------------------------------
@@ -155,6 +162,7 @@ test: generate fmt vet manifests
 GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
+E2E_FLAVOR ?= powervs
 GINKGO_ARGS ?= -v -trace -progress -v -tags=e2e -focus=$(GINKGO_FOCUS) -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR)
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 SKIP_CLEANUP ?= false
@@ -162,13 +170,14 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 
 #Run the end-to-end tests
 .PHONY: test-e2e
-test-e2e: $(KUBECTL) $(GINKGO) $(ENVSUBST) e2e-image 
+test-e2e: $(KUBECTL) $(GINKGO) $(ENVSUBST) set-flavor e2e-image 
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) 
 	$(GINKGO) $(GINKGO_ARGS) ./test/e2e -- \
-        -e2e.artifacts-folder="$(ARTIFACTS)" \
-        -e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
-        -e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \
-        -e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER)
+		-e2e.artifacts-folder="$(ARTIFACTS)" \
+		-e2e.config="$(E2E_CONF_FILE_ENVSUBST)" \
+		-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \
+		-e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) \
+		-e2e.flavor="$(E2E_FLAVOR)"
 
 ## --------------------------------------
 ## Docker
