@@ -121,7 +121,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 
 	options := powervs.ServiceOptions{
 		PIOptions: &ibmpisession.PIOptions{
-			Debug:       true,
+			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
 			Region:      region,
 			Zone:        *res.RegionID,
