@@ -45,6 +45,16 @@ Make sure to replace the parameter `IBMCLOUD_API_KEY` with a valid API key.
     }
 }
 ```
+
+Add following extra_args to log Power VS REST API Requests/Responses
+
+```json
+{
+   "extra_args": {
+      "ibmcloud": ["-v=5"]
+   }
+}
+```
 **NOTE**: For information about all the fields that can be used in the `tilt-settings.json` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settingsjson-fields).
 
 ## Run Tilt
