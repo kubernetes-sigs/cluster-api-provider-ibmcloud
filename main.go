@@ -43,6 +43,7 @@ var (
 	metricsAddr          string
 	enableLeaderElection bool
 	healthAddr           string
+	syncPeriod           time.Duration
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -71,7 +72,6 @@ func main() {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
 	}
 
-	syncPeriod := 15 * time.Second
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -190,5 +190,12 @@ func initFlags(fs *pflag.FlagSet) {
 		"health-addr",
 		":9440",
 		"The address the health endpoint binds to.",
+	)
+
+	fs.DurationVar(
+		&syncPeriod,
+		"sync-period",
+		10*time.Minute,
+		"The minimum interval at which watched resources are reconciled.",
 	)
 }

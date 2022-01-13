@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -158,14 +159,14 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	if !machineScope.Cluster.Status.InfrastructureReady {
 		machineScope.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo, "")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		machineScope.Info("Bootstrap data secret reference is not yet available")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.WaitingForBootstrapDataReason, clusterv1.ConditionSeverityInfo, "")
-		return ctrl.Result{}, nil
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
 	controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, v1beta1.IBMPowerVSMachineFinalizer)
@@ -193,6 +194,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		case v1beta1.PowerVSInstanceStateSHUTOFF:
 			machineScope.SetNotReady()
 			conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.InstanceStoppedReason, clusterv1.ConditionSeverityError, "")
+			return ctrl.Result{}, nil
 		case v1beta1.PowerVSInstanceStateACTIVE:
 			machineScope.SetReady()
 			conditions.MarkTrue(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition)
@@ -205,5 +207,10 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	}
 	machineScope.SetProviderID()
 
-	return ctrl.Result{}, nil
+	// Requeue after 2 minute if machine is not ready to update status of the machine properly
+	if !machineScope.IsReady() {
+		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
+	} else {
+		return ctrl.Result{}, nil
+	}
 }

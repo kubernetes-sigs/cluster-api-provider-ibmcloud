@@ -317,6 +317,10 @@ func (m *PowerVSMachineScope) SetNotReady() {
 	m.IBMPowerVSMachine.Status.Ready = false
 }
 
+func (m *PowerVSMachineScope) IsReady() bool {
+	return m.IBMPowerVSMachine.Status.Ready
+}
+
 func (m *PowerVSMachineScope) SetInstanceID(id *string) {
 	if id != nil {
 		m.IBMPowerVSMachine.Status.InstanceID = *id
