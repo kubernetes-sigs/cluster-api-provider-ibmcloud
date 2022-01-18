@@ -20,8 +20,9 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"k8s.io/utils/pointer"
 	"strconv"
+
+	"k8s.io/utils/pointer"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -120,7 +121,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 	}
 
 	options := powervs.ServiceOptions{
-		PIOptions: &ibmpisession.PIOptions{
+		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
 			Region:      region,
