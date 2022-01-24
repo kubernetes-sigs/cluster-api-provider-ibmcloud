@@ -37,7 +37,7 @@ type Service struct {
 }
 
 type ServiceOptions struct {
-	*ibmpisession.PIOptions
+	*ibmpisession.IBMPIOptions
 
 	CloudInstanceID string
 }
@@ -79,7 +79,7 @@ func NewService(options ServiceOptions) (*Service, error) {
 		return nil, err
 	}
 	options.Authenticator = auth
-	session, err := ibmpisession.NewSession(options.PIOptions)
+	session, err := ibmpisession.NewIBMPISession(options.IBMPIOptions)
 	if err != nil {
 		return nil, err
 	}

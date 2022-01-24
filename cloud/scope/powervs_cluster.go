@@ -107,7 +107,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 	}
 
 	options := powervs.ServiceOptions{
-		PIOptions: &ibmpisession.PIOptions{
+		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
 			Region:      region,
