@@ -41,7 +41,7 @@ var _ = Describe("IBMPowerVSClusterReconciler", func() {
 				Log:    klogr.New(),
 			}
 
-			instance := &v1beta1.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
+			instance := &v1beta1.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}, Spec: v1beta1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"}}
 
 			// Create the IBMPowerVSCluster object and expect the Reconcile to be created
 			Expect(k8sClient.Create(ctx, instance)).To(Succeed())

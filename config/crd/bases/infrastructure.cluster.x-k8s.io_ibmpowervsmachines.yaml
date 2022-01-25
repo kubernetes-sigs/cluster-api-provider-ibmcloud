@@ -193,9 +193,11 @@ spec:
                 properties:
                   id:
                     description: ID of resource
+                    minLength: 1
                     type: string
                   name:
                     description: Name of resource
+                    minLength: 1
                     type: string
                 type: object
               memory:
@@ -207,9 +209,11 @@ spec:
                 properties:
                   id:
                     description: ID of resource
+                    minLength: 1
                     type: string
                   name:
                     description: Name of resource
+                    minLength: 1
                     type: string
                 type: object
               procType:
@@ -226,6 +230,7 @@ spec:
               serviceInstanceID:
                 description: ServiceInstanceID is the id of the power cloud instance
                   where the vsi instance will get deployed
+                minLength: 1
                 type: string
               sshKey:
                 description: SSHKey is the name of the SSH key pair provided to the

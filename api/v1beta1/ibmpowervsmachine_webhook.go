@@ -78,6 +78,9 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachine() error {
 	if err := r.validateIBMPowerVSMachineNetwork(); err != nil {
 		allErrs = append(allErrs, err)
 	}
+	if err := r.validateIBMPowerVSMachineImage(); err != nil {
+		allErrs = append(allErrs, err)
+	}
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -102,8 +105,15 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachineProcType() *field.Error {
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineNetwork() *field.Error {
-	if res, net := validateIBMPowerVSNetwork(r.Spec.Network); !res {
-		return field.Invalid(field.NewPath("spec", "network"), net, "Only one of Network - ID or Name may be specified")
+	if res, err := validateIBMPowerVSResourceReference(r.Spec.Network, "Network"); !res {
+		return err
+	}
+	return nil
+}
+
+func (r *IBMPowerVSMachine) validateIBMPowerVSMachineImage() *field.Error {
+	if res, err := validateIBMPowerVSResourceReference(r.Spec.Image, "Image"); !res {
+		return err
 	}
 	return nil
 }
