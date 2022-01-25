@@ -64,33 +64,56 @@ type PowerVSClusterScope struct {
 }
 
 // NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.
-func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterScope, error) {
+func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClusterScope, err error) {
+	scope = &PowerVSClusterScope{}
+
+	if params.Client == nil {
+		err = errors.New("failed to generate new scope from nil Client")
+		return
+	}
+	scope.client = params.Client
+
 	if params.Cluster == nil {
-		return nil, errors.New("failed to generate new scope from nil Cluster")
+		err = errors.New("failed to generate new scope from nil Cluster")
+		return
 	}
+	scope.Cluster = params.Cluster
+
 	if params.IBMPowerVSCluster == nil {
-		return nil, errors.New("failed to generate new scope from nil IBMVPCCluster")
+		err = errors.New("failed to generate new scope from nil IBMPowerVSCluster")
+		return
 	}
+	scope.IBMPowerVSCluster = params.IBMPowerVSCluster
 
 	if params.Logger == (logr.Logger{}) {
 		params.Logger = klogr.New()
 	}
+	scope.Logger = params.Logger
+
+	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)
+	if err != nil {
+		err = errors.Wrap(err, "failed to init patch helper")
+		return
+	}
+	scope.patchHelper = helper
 
 	spec := params.IBMPowerVSCluster.Spec
 
 	auth, err := authenticator.GetAuthenticator()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get authenticator")
+		err = errors.Wrap(err, "failed to get authenticator")
+		return
 	}
 
 	account, err := servicesutils.GetAccount(auth)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get account")
+		err = errors.Wrap(err, "failed to get account")
+		return
 	}
 
 	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	res, _, err := rc.GetResourceInstance(
@@ -98,12 +121,14 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 			ID: core.StringPtr(spec.ServiceInstanceID),
 		})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get resource instance")
+		err = errors.Wrap(err, "failed to get resource instance")
+		return
 	}
 
 	region, err := utils.GetRegion(*res.RegionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get region")
+		err = errors.Wrap(err, "failed to get region")
+		return
 	}
 
 	options := powervs.ServiceOptions{
@@ -116,24 +141,13 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		CloudInstanceID: spec.ServiceInstanceID,
 	}
 	c, err := powervs.NewService(options)
-
 	if err != nil {
-		return nil, fmt.Errorf("failed to create NewIBMPowerVSClient")
+		err = fmt.Errorf("failed to create NewIBMPowerVSClient")
+		return
 	}
+	scope.IBMPowerVSClient = c
 
-	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to init patch helper")
-	}
-
-	return &PowerVSClusterScope{
-		Logger:            params.Logger,
-		client:            params.Client,
-		IBMPowerVSClient:  c,
-		Cluster:           params.Cluster,
-		IBMPowerVSCluster: params.IBMPowerVSCluster,
-		patchHelper:       helper,
-	}, nil
+	return
 }
 
 // PatchObject persists the cluster configuration and status.
