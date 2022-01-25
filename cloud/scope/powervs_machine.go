@@ -72,39 +72,63 @@ type PowerVSMachineScope struct {
 }
 
 // NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
-func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineScope, error) {
+func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMachineScope, err error) {
+	scope = &PowerVSMachineScope{}
+
 	if params.Client == nil {
-		return nil, errors.New("client is required when creating a MachineScope")
+		err = errors.New("client is required when creating a MachineScope")
+		return
 	}
+	scope.client = params.Client
+
 	if params.Machine == nil {
-		return nil, errors.New("machine is required when creating a MachineScope")
+		err = errors.New("machine is required when creating a MachineScope")
+		return
 	}
+	scope.Machine = params.Machine
+
 	if params.Cluster == nil {
-		return nil, errors.New("cluster is required when creating a MachineScope")
+		err = errors.New("cluster is required when creating a MachineScope")
+		return
 	}
+	scope.Cluster = params.Cluster
+
 	if params.IBMPowerVSMachine == nil {
-		return nil, errors.New("aws machine is required when creating a MachineScope")
+		err = errors.New("aws machine is required when creating a MachineScope")
+		return
 	}
+	scope.IBMPowerVSMachine = params.IBMPowerVSMachine
+	scope.IBMPowerVSCluster = params.IBMPowerVSCluster
 
 	if params.Logger == (logr.Logger{}) {
 		params.Logger = klogr.New()
 	}
+	scope.Logger = params.Logger
+
+	helper, err := patch.NewHelper(params.IBMPowerVSMachine, params.Client)
+	if err != nil {
+		err = errors.Wrap(err, "failed to init patch helper")
+		return
+	}
+	scope.patchHelper = helper
 
 	m := params.IBMPowerVSMachine
 
 	auth, err := authenticator.GetAuthenticator()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get authenticator")
+		err = errors.Wrap(err, "failed to get authenticator")
+		return
 	}
 
 	account, err := servicesutils.GetAccount(auth)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get account")
+		err = errors.Wrap(err, "failed to get account")
+		return
 	}
 
 	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	res, _, err := rc.GetResourceInstance(
@@ -112,12 +136,14 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 			ID: core.StringPtr(m.Spec.ServiceInstanceID),
 		})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get resource instance")
+		err = errors.Wrap(err, "failed to get resource instance")
+		return
 	}
 
 	region, err := utils.GetRegion(*res.RegionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get region")
+		err = errors.Wrap(err, "failed to get region")
+		return
 	}
 
 	options := powervs.ServiceOptions{
@@ -131,24 +157,12 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (*PowerVSMachineSc
 	}
 	c, err := powervs.NewService(options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create PowerVS service")
+		err = fmt.Errorf("failed to create PowerVS service")
+		return
 	}
+	scope.IBMPowerVSClient = c
 
-	helper, err := patch.NewHelper(params.IBMPowerVSMachine, params.Client)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to init patch helper")
-	}
-	return &PowerVSMachineScope{
-		Logger:      params.Logger,
-		client:      params.Client,
-		patchHelper: helper,
-
-		IBMPowerVSClient:  c,
-		Cluster:           params.Cluster,
-		Machine:           params.Machine,
-		IBMPowerVSMachine: params.IBMPowerVSMachine,
-		IBMPowerVSCluster: params.IBMPowerVSCluster,
-	}, nil
+	return
 }
 
 func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models.PVMInstanceReference, error) {
