@@ -16,6 +16,8 @@ limitations under the License.
 
 package v1beta1
 
+import "k8s.io/apimachinery/pkg/util/validation/field"
+
 func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 
 	if spec.Memory == "" {
@@ -52,11 +54,11 @@ func validateIBMPowerVSProcType(spec IBMPowerVSMachineSpec) (bool, IBMPowerVSMac
 	return false, spec
 }
 
-func validateIBMPowerVSNetwork(network IBMPowerVSResourceReference) (bool, IBMPowerVSResourceReference) {
-	if network.ID != nil && network.Name != nil {
-		return false, network
+func validateIBMPowerVSResourceReference(res IBMPowerVSResourceReference, resType string) (bool, *field.Error) {
+	if res.ID != nil && res.Name != nil {
+		return false, field.Invalid(field.NewPath("spec", resType), res, "Only one of "+resType+" - ID or Name may be specified")
 	}
-	return true, IBMPowerVSResourceReference{}
+	return true, nil
 }
 
 func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {

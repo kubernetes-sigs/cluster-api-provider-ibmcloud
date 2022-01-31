@@ -82,8 +82,8 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSCluster() error {
 }
 
 func (r *IBMPowerVSCluster) validateIBMPowerVSClusterNetwork() *field.Error {
-	if res, net := validateIBMPowerVSNetwork(r.Spec.Network); !res {
-		return field.Invalid(field.NewPath("spec", "network"), net, "Only one of Network - ID or Name may be specified")
+	if res, err := validateIBMPowerVSResourceReference(r.Spec.Network, "Network"); !res {
+		return err
 	}
 	return nil
 }

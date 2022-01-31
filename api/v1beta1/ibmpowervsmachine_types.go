@@ -37,6 +37,7 @@ type IBMPowerVSMachineSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed
+	// +kubebuilder:validation:MinLength=1
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// SSHKey is the name of the SSH key pair provided to the vsi for authenticating users
@@ -74,10 +75,12 @@ type IBMPowerVSMachineSpec struct {
 // a validation error.
 type IBMPowerVSResourceReference struct {
 	// ID of resource
+	// +kubebuilder:validation:MinLength=1
 	// +optional
 	ID *string `json:"id,omitempty"`
 
 	// Name of resource
+	// +kubebuilder:validation:MinLength=1
 	// +optional
 	Name *string `json:"name,omitempty"`
 }
