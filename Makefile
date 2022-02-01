@@ -62,6 +62,7 @@ CORE_MANIFEST_FILE := infrastructure-components
 CORE_CONFIG_DIR := config/default
 CORE_NAMESPACE := capi-ibmcloud-system
 
+PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -168,9 +169,9 @@ ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
 
-#Run the end-to-end tests
+# Run the end-to-end tests
 .PHONY: test-e2e
-test-e2e: $(KUBECTL) $(GINKGO) $(ENVSUBST) set-flavor e2e-image 
+test-e2e: $(KUBECTL) $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image 
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) 
 	$(GINKGO) $(GINKGO_ARGS) ./test/e2e -- \
 		-e2e.artifacts-folder="$(ARTIFACTS)" \
@@ -178,6 +179,11 @@ test-e2e: $(KUBECTL) $(GINKGO) $(ENVSUBST) set-flavor e2e-image
 		-e2e.skip-resource-cleanup=$(SKIP_CLEANUP) \
 		-e2e.use-existing-cluster=$(SKIP_CREATE_MGMT_CLUSTER) \
 		-e2e.flavor="$(E2E_FLAVOR)"
+
+# Basic checks for deploying kind cluster and required providers
+.PHONY: test-sanity
+test-sanity:
+	GINKGO_FOCUS="Run Sanity tests" $(MAKE) test-e2e
 
 ## --------------------------------------
 ## Docker
