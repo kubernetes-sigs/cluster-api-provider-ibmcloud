@@ -1809,8 +1809,8 @@ sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.15/go.mod h1:LEScyz
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.25/go.mod h1:Mlj9PNLmG9bZ6BHFwFKDo5afkpWyUISkb9Me0GnK66I=
 sigs.k8s.io/cluster-api v1.1.0-rc.0 h1:YLNabhJpbfuujnJUsR2wONBy+GU5ji9RrZb2SokG4vQ=
 sigs.k8s.io/cluster-api v1.1.0-rc.0/go.mod h1:aSxmmNwDjmg9rDaL0RhRELpGX9uSTTwLF02AMtk/XGY=
-sigs.k8s.io/cluster-api/test v1.1.0-rc.0 h1:U0HK82eHJJq1H3uMSf26BOOGu8ioIXuGNIoUAhvISpE=
-sigs.k8s.io/cluster-api/test v1.1.0-rc.0/go.mod h1:ct7zQrWXsYIAhL/lMLFPfCAqGLDBTEzx+AtwIXpI45o=
+sigs.k8s.io/cluster-api/test v1.1.0 h1:eBVFCWxu9/fb/By02uFjOreG9GAd9eax9uZKsCXP58s=
+sigs.k8s.io/cluster-api/test v1.1.0/go.mod h1:ct7zQrWXsYIAhL/lMLFPfCAqGLDBTEzx+AtwIXpI45o=
 sigs.k8s.io/controller-runtime v0.11.0 h1:DqO+c8mywcZLFJWILq4iktoECTyn30Bkj0CwgqMpZWQ=
 sigs.k8s.io/controller-runtime v0.11.0/go.mod h1:KKwLiTooNGu+JmLZGn9Sl3Gjmfj66eMbCQznLP5zcqA=
 sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 h1:fD1pz4yfdADVNfFmcP2aBEtudwUQ1AlLnRBALr33v3s=
