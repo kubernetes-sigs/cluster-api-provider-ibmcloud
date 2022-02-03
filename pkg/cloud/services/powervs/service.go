@@ -21,6 +21,7 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
+	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_images"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
@@ -34,6 +35,7 @@ type Service struct {
 	InstanceClient *instance.IBMPIInstanceClient
 	NetworkClient  *instance.IBMPINetworkClient
 	ImageClient    *instance.IBMPIImageClient
+	JobClient      *instance.IBMPIJobClient
 }
 
 type ServiceOptions struct {
@@ -62,9 +64,39 @@ func (s *Service) GetInstance(id string) (*models.PVMInstance, error) {
 	return s.InstanceClient.Get(id)
 }
 
+// GetImage returns the image in the Power VS service instance.
+func (s *Service) GetImage(id string) (*models.Image, error) {
+	return s.ImageClient.Get(id)
+}
+
 // GetAllImage returns all the images in the Power VS service instance.
 func (s *Service) GetAllImage() (*models.Images, error) {
 	return s.ImageClient.GetAll()
+}
+
+// DeleteImage deletes the image in the Power VS service instance.
+func (s *Service) DeleteImage(id string) error {
+	return s.ImageClient.Delete(id)
+}
+
+// CreateCosImage creates a import job to import the image in the Power VS service instance.
+func (s *Service) CreateCosImage(body *models.CreateCosImageImportJob) (*models.JobReference, error) {
+	return s.ImageClient.CreateCosImage(body)
+}
+
+// GetCosImages returns the last import job in the Power VS service instance.
+func (s *Service) GetCosImages(id string) (*models.Job, error) {
+	params := p_cloud_images.NewPcloudV1CloudinstancesCosimagesGetParams().WithCloudInstanceID(id)
+	resp, err := s.session.Power.PCloudImages.PcloudV1CloudinstancesCosimagesGet(params, s.session.AuthInfo(id))
+	if err != nil || resp.Payload == nil {
+		return nil, err
+	}
+	return resp.Payload, nil
+}
+
+// GetJob returns the import job to in the Power VS service instance.
+func (s *Service) GetJob(id string) (*models.Job, error) {
+	return s.JobClient.Get(id)
 }
 
 // GetAllNetwork returns all the networks in the Power VS service instance.
@@ -91,5 +123,6 @@ func NewService(options ServiceOptions) (*Service, error) {
 		InstanceClient: instance.NewIBMPIInstanceClient(ctx, session, options.CloudInstanceID),
 		NetworkClient:  instance.NewIBMPINetworkClient(ctx, session, options.CloudInstanceID),
 		ImageClient:    instance.NewIBMPIImageClient(ctx, session, options.CloudInstanceID),
+		JobClient:      instance.NewIBMPIJobClient(ctx, session, options.CloudInstanceID),
 	}, nil
 }

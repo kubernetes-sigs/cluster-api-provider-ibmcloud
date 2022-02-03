@@ -32,6 +32,7 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY cloud/ cloud/
 COPY pkg/ pkg/
+COPY util/ util/
 
 # Build
 ARG ARCH

@@ -41,3 +41,13 @@ const (
 	// InstanceReadyCondition reports on current status of the instance. Ready indicates the instance is in a Running state.
 	InstanceReadyCondition clusterv1.ConditionType = "InstanceReady"
 )
+
+const (
+	// ImageNotReadyReason used when the image is in a queued state.
+	ImageNotReadyReason = "ImageNotReady"
+)
+
+const (
+	// ImageReadyCondition reports on current status of the image. Ready indicates the image is in a active state.
+	ImageReadyCondition clusterv1.ConditionType = "ImageReady"
+)

@@ -143,6 +143,18 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCCluster")
 		os.Exit(1)
 	}
+	if err = (&controllers.IBMPowerVSImageReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSImage")
+		os.Exit(1)
+	}
+	if err = (&infrastructurev1beta1.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {

@@ -37,4 +37,7 @@ resources:
 - group: infrastructure
   kind: IBMPowerVSMachineTemplate
   version: v1beta1
+- group: infrastructure
+  kind: IBMPowerVSImage
+  version: v1beta1
 version: "2"
