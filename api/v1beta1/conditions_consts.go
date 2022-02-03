@@ -45,9 +45,15 @@ const (
 const (
 	// ImageNotReadyReason used when the image is in a queued state.
 	ImageNotReadyReason = "ImageNotReady"
+
+	// ImageImportFailedReason used when the image import is failed.
+	ImageImportFailedReason = "ImageImportFailed"
 )
 
 const (
 	// ImageReadyCondition reports on current status of the image. Ready indicates the image is in a active state.
 	ImageReadyCondition clusterv1.ConditionType = "ImageReady"
+
+	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
+	ImageImportedCondition clusterv1.ConditionType = "ImageImported"
 )

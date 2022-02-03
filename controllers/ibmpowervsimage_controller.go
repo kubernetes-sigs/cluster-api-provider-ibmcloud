@@ -18,13 +18,13 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/IBM/go-sdk-core/v5/core"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -108,6 +108,33 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *v1be
 		return ctrl.Result{}, nil
 	}
 
+	if jobID := imageScope.GetJobID(); jobID != "" {
+		job, err := imageScope.IBMPowerVSClient.GetJob(jobID)
+		if err != nil {
+			imageScope.Info("Unable to get job details")
+			return ctrl.Result{RequeueAfter: 2 * time.Minute}, err
+		}
+		switch *job.Status.State {
+		case "completed":
+			conditions.MarkTrue(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition)
+		case "failed":
+			imageScope.SetNotReady()
+			imageScope.SetImageState(string(v1beta1.PowerVSImageStateFailed))
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition, v1beta1.ImageImportFailedReason, clusterv1.ConditionSeverityError, job.Status.Message)
+			return ctrl.Result{RequeueAfter: 2 * time.Minute}, fmt.Errorf("failed to import image, message: %s", job.Status.Message)
+		case "queued":
+			imageScope.SetNotReady()
+			imageScope.SetImageState(string(v1beta1.PowerVSImageStateQue))
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition, string(v1beta1.PowerVSImageStateQue), clusterv1.ConditionSeverityInfo, job.Status.Message)
+			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
+		default:
+			imageScope.SetNotReady()
+			imageScope.SetImageState(string(v1beta1.PowerVSImageStateImporting))
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition, *job.Status.State, clusterv1.ConditionSeverityInfo, job.Status.Message)
+			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
+		}
+	}
+
 	img, jobRef, err := r.getOrCreate(imageScope)
 	if err != nil {
 		imageScope.Error(err, "Unable to import image")
@@ -115,19 +142,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *v1be
 	}
 
 	if jobRef != nil {
-		job, err := imageScope.IBMPowerVSClient.GetJob(*jobRef.ID)
-		if err != nil {
-			imageScope.Info("Unable to get job details")
-			return ctrl.Result{RequeueAfter: 2 * time.Minute}, err
-		}
-
-		if *job.Status.State != "completed" && *job.Status.State != "failed" {
-			imageScope.Info("Import job not yet finished - " + *job.Status.State)
-			imageScope.SetNotReady()
-			imageScope.SetImageState(core.StringPtr(""))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageReadyCondition, v1beta1.ImageNotReadyReason, clusterv1.ConditionSeverityWarning, "")
-			return ctrl.Result{}, nil
-		}
+		imageScope.SetJobID(*jobRef.ID)
 	}
 	return reconcileImage(img, imageScope)
 }
@@ -142,11 +157,11 @@ func reconcileImage(img *models.ImageReference, imageScope *scope.PowerVSImageSc
 
 		imageScope.SetImageID(image.ImageID)
 		imageScope.Info("ImageID - " + imageScope.GetImageID())
-		imageScope.SetImageState(&image.State)
+		imageScope.SetImageState(image.State)
 		imageScope.Info("ImageState - " + image.State)
 
 		switch imageScope.GetImageState() {
-		case v1beta1.PowerVSInstanceStateQue:
+		case v1beta1.PowerVSImageStateQue:
 			imageScope.Info("Image is in queued state")
 			imageScope.SetNotReady()
 			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageReadyCondition, v1beta1.ImageNotReadyReason, clusterv1.ConditionSeverityWarning, "")
