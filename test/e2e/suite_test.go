@@ -223,6 +223,10 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 	}, config.GetIntervals(bootstrapClusterProxy.GetName(), "wait-controllers")...)
 }
 
+var _ = Describe("Run Sanity tests", func() {
+	// TO DO- Add additional testcases for sanity checks
+})
+
 func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
 	if bootstrapClusterProxy != nil {
 		bootstrapClusterProxy.Dispose(context.TODO())
