@@ -20,9 +20,13 @@ set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
+GOPATH_BIN="$(go env GOPATH)/bin/"
+export PATH="${GOPATH_BIN}:${PATH}"
 
 # shellcheck source=../hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
+# shellcheck source=../hack/ensure-kubectl.sh
+source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 
 ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs/"
