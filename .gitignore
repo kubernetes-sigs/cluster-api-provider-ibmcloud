@@ -5,6 +5,7 @@
 bin/
 cmd/clusterctl/clusterctl
 cmd/manager/manager
+pvsadm
 
 # command generated files
 kubeconfig
@@ -27,6 +28,7 @@ junit*.xml
 
 #e2e test files
 test/e2e/config/ibmcloud-e2e-envsubst.yaml
+pvsadm.log
 
 # dep ensured 3rd code
 vendor/sigs.k8s.io/cluster-api/docs/book/*.json
