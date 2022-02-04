@@ -229,10 +229,18 @@ func (i *PowerVSImageScope) GetImageID() string {
 	return i.IBMPowerVSImage.Status.ImageID
 }
 
-func (i *PowerVSImageScope) SetImageState(status *string) {
-	i.IBMPowerVSImage.Status.ImageState = v1beta1.PowerVSImageState(*status)
+func (i *PowerVSImageScope) SetImageState(status string) {
+	i.IBMPowerVSImage.Status.ImageState = v1beta1.PowerVSImageState(status)
 }
 
 func (i *PowerVSImageScope) GetImageState() v1beta1.PowerVSImageState {
 	return i.IBMPowerVSImage.Status.ImageState
+}
+
+func (i *PowerVSImageScope) SetJobID(id string) {
+	i.IBMPowerVSImage.Status.JobID = id
+}
+
+func (i *PowerVSImageScope) GetJobID() string {
+	return i.IBMPowerVSImage.Status.JobID
 }

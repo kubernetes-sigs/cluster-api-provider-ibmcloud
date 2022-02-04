@@ -131,6 +131,9 @@ spec:
               imageState:
                 description: ImageState is the status of the imported image
                 type: string
+              jobID:
+                description: JobID is the job ID of an import operation
+                type: string
               ready:
                 description: Ready is true when the provider resource is ready.
                 type: boolean

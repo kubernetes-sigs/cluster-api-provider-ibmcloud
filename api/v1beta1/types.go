@@ -40,8 +40,14 @@ var (
 	// PowerVSImageStateACTIVE is the string representing an image in a active state.
 	PowerVSImageStateACTIVE = PowerVSImageState("active")
 
-	// PowerVSInstanceStateQue is the string representing an image in a queued state.
-	PowerVSInstanceStateQue = PowerVSImageState("queued")
+	// PowerVSImageStateQue is the string representing an image in a queued state.
+	PowerVSImageStateQue = PowerVSImageState("queued")
+
+	// PowerVSImageStateFailed is the string representing an image in a failed state.
+	PowerVSImageStateFailed = PowerVSImageState("failed")
+
+	// PowerVSImageStateImporting is the string representing an image in a failed state.
+	PowerVSImageStateImporting = PowerVSImageState("importing")
 )
 
 // NetworkInterface holds the network interface information like subnet id.

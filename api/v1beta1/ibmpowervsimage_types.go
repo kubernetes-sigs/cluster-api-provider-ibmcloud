@@ -60,7 +60,7 @@ type IBMPowerVSImageStatus struct {
 
 	// Ready is true when the provider resource is ready.
 	// +optional
-	Ready bool `json:"ready,omitempty"`
+	Ready bool `json:"ready"`
 
 	// ImageID is the id of the imported image
 	ImageID string `json:"imageID,omitempty"`
@@ -68,6 +68,10 @@ type IBMPowerVSImageStatus struct {
 	// ImageState is the status of the imported image
 	// +optional
 	ImageState PowerVSImageState `json:"imageState,omitempty"`
+
+	// JobID is the job ID of an import operation
+	// +optional
+	JobID string `json:"jobID,omitempty"`
 
 	// Conditions defines current service state of the IBMPowerVSImage.
 	// +optional
