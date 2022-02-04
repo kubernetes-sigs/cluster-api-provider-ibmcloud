@@ -171,7 +171,7 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 
 # Run the end-to-end tests
 .PHONY: test-e2e
-test-e2e: $(KUBECTL) $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image 
+test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image 
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) 
 	$(GINKGO) $(GINKGO_ARGS) ./test/e2e -- \
 		-e2e.artifacts-folder="$(ARTIFACTS)" \
