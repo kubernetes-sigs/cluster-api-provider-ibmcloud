@@ -97,6 +97,15 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *v1beta1.IBMPowerVSCluster, imageScope *scope.PowerVSImageScope) (ctrl.Result, error) {
 	controllerutil.AddFinalizer(imageScope.IBMPowerVSImage, v1beta1.IBMPowerVSImageFinalizer)
 
+	// Create new labels section for IBMPowerVSImage metadata if nil
+	if imageScope.IBMPowerVSImage.Labels == nil {
+		imageScope.IBMPowerVSImage.Labels = make(map[string]string)
+	}
+
+	if _, ok := imageScope.IBMPowerVSImage.Labels[clusterv1.ClusterLabelName]; !ok {
+		imageScope.IBMPowerVSImage.Labels[clusterv1.ClusterLabelName] = imageScope.IBMPowerVSImage.Spec.ClusterName
+	}
+
 	if r.shouldAdopt(*imageScope.IBMPowerVSImage) {
 		imageScope.Info("Image Controller has not yet set OwnerRef")
 		imageScope.IBMPowerVSImage.OwnerReferences = clusterv1util.EnsureOwnerRef(imageScope.IBMPowerVSImage.OwnerReferences, metav1.OwnerReference{
