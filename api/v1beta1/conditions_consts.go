@@ -43,6 +43,11 @@ const (
 )
 
 const (
+	// WaitingForIBMPowerVSImageReason used when machine is waiting for powervs image to be ready before proceeding.
+	WaitingForIBMPowerVSImageReason = "WaitingForIBMPowerVSImage"
+)
+
+const (
 	// ImageNotReadyReason used when the image is in a queued state.
 	ImageNotReadyReason = "ImageNotReady"
 

@@ -44,7 +44,13 @@ type IBMPowerVSMachineSpec struct {
 	SSHKey string `json:"sshKey,omitempty"`
 
 	// Image is the reference to the Image from which to create the machine instance.
-	Image IBMPowerVSResourceReference `json:"image"`
+	// +optional
+	Image *IBMPowerVSResourceReference `json:"image,omitempty"`
+
+	// ImageRef is an optional reference to a provider-specific resource that holds
+	// the details for provisioning the Image for a Cluster.
+	// +optional
+	ImageRef *v1.ObjectReference `json:"imageRef,omitempty"`
 
 	// SysType is the System type used to host the vsi
 	// +optional
