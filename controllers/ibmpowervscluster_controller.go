@@ -18,12 +18,16 @@ package controllers
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,6 +36,7 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object
@@ -85,7 +90,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Handle deleted clusters
 	if !ibmCluster.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(clusterScope)
+		return r.reconcileDelete(ctx, clusterScope)
 	}
 
 	if err != nil {
@@ -105,9 +110,125 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcileDelete(clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
-	controllerutil.RemoveFinalizer(clusterScope.IBMPowerVSCluster, v1beta1.IBMPowerVSClusterFinalizer)
+func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	cluster := clusterScope.IBMPowerVSCluster
+	descendants, err := r.listDescendants(ctx, cluster)
+	if err != nil {
+		log.Error(err, "Failed to list descendants")
+		return reconcile.Result{}, err
+	}
+
+	children, err := descendants.filterOwnedDescendants(cluster)
+	if err != nil {
+		log.Error(err, "Failed to extract direct descendants")
+		return reconcile.Result{}, err
+	}
+
+	if len(children) > 0 {
+		log.Info("Cluster still has children - deleting them first", "count", len(children))
+
+		var errs []error
+
+		for _, child := range children {
+			if !child.GetDeletionTimestamp().IsZero() {
+				// Don't handle deleted child
+				continue
+			}
+			gvk := child.GetObjectKind().GroupVersionKind().String()
+
+			log.Info("Deleting child object", "gvk", gvk, "name", child.GetName())
+			if err := r.Client.Delete(ctx, child); err != nil {
+				err = errors.Wrapf(err, "error deleting cluster %s/%s: failed to delete %s %s", cluster.Namespace, cluster.Name, gvk, child.GetName())
+				log.Error(err, "Error deleting resource", "gvk", gvk, "name", child.GetName())
+				errs = append(errs, err)
+			}
+		}
+
+		if len(errs) > 0 {
+			return ctrl.Result{}, kerrors.NewAggregate(errs)
+		}
+	}
+
+	if descendantCount := descendants.length(); descendantCount > 0 {
+		indirect := descendantCount - len(children)
+		log.Info("Cluster still has descendants - need to requeue", "descendants", descendants.descendantNames(), "indirect descendants count", indirect)
+		// Requeue so we can check the next time to see if there are still any descendants left.
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+	}
+
+	controllerutil.RemoveFinalizer(cluster, v1beta1.IBMPowerVSClusterFinalizer)
 	return ctrl.Result{}, nil
+}
+
+type clusterDescendants struct {
+	ibmPowerVSImages v1beta1.IBMPowerVSImageList
+}
+
+// length returns the number of descendants.
+func (c *clusterDescendants) length() int {
+	return len(c.ibmPowerVSImages.Items)
+}
+
+func (c *clusterDescendants) descendantNames() string {
+	descendants := make([]string, 0)
+	ibmPowerVSImageNames := make([]string, len(c.ibmPowerVSImages.Items))
+	for i, ibmPowerVSImage := range c.ibmPowerVSImages.Items {
+		ibmPowerVSImageNames[i] = ibmPowerVSImage.Name
+	}
+	if len(ibmPowerVSImageNames) > 0 {
+		descendants = append(descendants, "IBM Powervs Images: "+strings.Join(ibmPowerVSImageNames, ","))
+	}
+
+	return strings.Join(descendants, ";")
+}
+
+// listDescendants returns a list of all IBMPowerVSImages for the cluster.
+func (r *IBMPowerVSClusterReconciler) listDescendants(ctx context.Context, cluster *v1beta1.IBMPowerVSCluster) (clusterDescendants, error) {
+	var descendants clusterDescendants
+
+	listOptions := []client.ListOption{
+		client.InNamespace(cluster.Namespace),
+		client.MatchingLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}),
+	}
+
+	if err := r.Client.List(ctx, &descendants.ibmPowerVSImages, listOptions...); err != nil {
+		return descendants, errors.Wrapf(err, "failed to list IBMPowerVSImages for cluster %s/%s", cluster.Namespace, cluster.Name)
+	}
+
+	return descendants, nil
+}
+
+// filterOwnedDescendants returns an array of runtime.Objects containing only those descendants that have the cluster
+// as an owner reference.
+func (c clusterDescendants) filterOwnedDescendants(cluster *v1beta1.IBMPowerVSCluster) ([]client.Object, error) {
+	var ownedDescendants []client.Object
+	eachFunc := func(o runtime.Object) error {
+		obj := o.(client.Object)
+		acc, err := meta.Accessor(obj)
+		if err != nil {
+			return nil //nolint:nilerr // We don't want to exit the EachListItem loop, just continue
+		}
+
+		if util.IsOwnedByObject(acc, cluster) {
+			ownedDescendants = append(ownedDescendants, obj)
+		}
+
+		return nil
+	}
+
+	lists := []client.ObjectList{
+		&c.ibmPowerVSImages,
+	}
+
+	for _, list := range lists {
+		if err := meta.EachListItem(list, eachFunc); err != nil {
+			return nil, errors.Wrapf(err, "error finding owned descendants of cluster %s/%s", cluster.Namespace, cluster.Name)
+		}
+	}
+
+	return ownedDescendants, nil
 }
 
 // SetupWithManager creates a new IBMPowerVSCluster controller for a manager.
