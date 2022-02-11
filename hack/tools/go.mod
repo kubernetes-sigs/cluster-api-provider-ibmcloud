@@ -11,7 +11,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	gotest.tools/gotestsum v1.6.4
 	k8s.io/code-generator v0.23.0
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220202130822-e2aafb60cdf7
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220210155947-810c2a67e71e
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.8.0
 	sigs.k8s.io/kustomize/kustomize/v4 v4.4.1
@@ -223,6 +223,6 @@ require (
 )
 
 replace (
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.0
-	sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.1.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.1.1
+	sigs.k8s.io/cluster-api/test => sigs.k8s.io/cluster-api/test v1.1.1
 )
