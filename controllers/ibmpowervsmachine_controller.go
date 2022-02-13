@@ -90,6 +90,18 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
+	var ibmPowerVSImage *v1beta1.IBMPowerVSImage
+	if ibmPowerVSMachine.Spec.ImageRef != nil {
+		ibmPowerVSImageName := client.ObjectKey{
+			Namespace: ibmPowerVSMachine.Namespace,
+			Name:      ibmPowerVSMachine.Spec.ImageRef.Name,
+		}
+		if err := r.Client.Get(ctx, ibmPowerVSImageName, ibmPowerVSImage); err != nil {
+			log.Info("IBMPowerVSImage is not available yet")
+			return ctrl.Result{}, nil
+		}
+	}
+
 	// Create the machine scope
 	machineScope, err := scope.NewPowerVSMachineScope(scope.PowerVSMachineScopeParams{
 		Client:            r.Client,
@@ -98,6 +110,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		IBMPowerVSCluster: ibmCluster,
 		Machine:           machine,
 		IBMPowerVSMachine: ibmPowerVSMachine,
+		IBMPowerVSImage:   ibmPowerVSImage,
 	})
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -160,6 +173,14 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		machineScope.Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.WaitingForClusterInfrastructureReason, clusterv1.ConditionSeverityInfo, "")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
+
+	if machineScope.IBMPowerVSImage != nil {
+		if !machineScope.IBMPowerVSImage.Status.Ready {
+			machineScope.Info("IBMPowerVSImage is not ready yet")
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.WaitingForIBMPowerVSImageReason, clusterv1.ConditionSeverityInfo, "")
+			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+		}
 	}
 
 	// Make sure bootstrap data is available and populated.

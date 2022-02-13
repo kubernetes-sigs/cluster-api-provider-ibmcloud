@@ -112,8 +112,18 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachineNetwork() *field.Error {
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineImage() *field.Error {
-	if res, err := validateIBMPowerVSResourceReference(r.Spec.Image, "Image"); !res {
-		return err
+	if r.Spec.Image == nil && r.Spec.ImageRef == nil {
+		return field.Invalid(field.NewPath(""), "", "One of - Image or ImageRef must be specified")
+	}
+
+	if r.Spec.Image != nil && r.Spec.ImageRef != nil {
+		return field.Invalid(field.NewPath(""), "", "Only one of - Image or ImageRef maybe be specified")
+	}
+
+	if r.Spec.Image != nil {
+		if res, err := validateIBMPowerVSResourceReference(*r.Spec.Image, "Image"); !res {
+			return err
+		}
 	}
 	return nil
 }

@@ -56,6 +56,7 @@ type PowerVSMachineScopeParams struct {
 	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
 	IBMPowerVSMachine *v1beta1.IBMPowerVSMachine
+	IBMPowerVSImage   *v1beta1.IBMPowerVSImage
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -69,6 +70,7 @@ type PowerVSMachineScope struct {
 	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
 	IBMPowerVSMachine *v1beta1.IBMPowerVSMachine
+	IBMPowerVSImage   *v1beta1.IBMPowerVSImage
 }
 
 // NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
@@ -94,11 +96,12 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	scope.Cluster = params.Cluster
 
 	if params.IBMPowerVSMachine == nil {
-		err = errors.New("aws machine is required when creating a MachineScope")
+		err = errors.New("PowerVS machine is required when creating a MachineScope")
 		return
 	}
 	scope.IBMPowerVSMachine = params.IBMPowerVSMachine
 	scope.IBMPowerVSCluster = params.IBMPowerVSCluster
+	scope.IBMPowerVSImage = params.IBMPowerVSImage
 
 	if params.Logger == (logr.Logger{}) {
 		params.Logger = klogr.New()
@@ -203,9 +206,14 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		return nil, fmt.Errorf("failed to convert Processors(%s) to float64", s.Processors)
 	}
 
-	imageID, err := getImageID(s.Image, m)
-	if err != nil {
-		return nil, fmt.Errorf("error getting image ID: %v", err)
+	var imageID *string
+	if m.IBMPowerVSImage != nil {
+		imageID = &m.IBMPowerVSImage.Status.ImageID
+	} else {
+		imageID, err = getImageID(s.Image, m)
+		if err != nil {
+			return nil, fmt.Errorf("error getting image ID: %v", err)
+		}
 	}
 
 	networkID, err := getNetworkID(s.Network, m)
@@ -273,7 +281,7 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-func getImageID(image v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getImageID(image *v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if image.ID != nil {
 		return image.ID, nil
 	} else if image.Name != nil {
