@@ -99,6 +99,11 @@ func (s *Service) GetJob(id string) (*models.Job, error) {
 	return s.JobClient.Get(id)
 }
 
+// DeleteJob deletes the image import job in the Power VS service instance.
+func (s *Service) DeleteJob(id string) error {
+	return s.JobClient.Delete(id)
+}
+
 // GetAllNetwork returns all the networks in the Power VS service instance.
 func (s *Service) GetAllNetwork() (*models.Networks, error) {
 	return s.NetworkClient.GetAll()

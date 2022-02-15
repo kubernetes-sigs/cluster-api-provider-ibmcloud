@@ -207,6 +207,14 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 
 	if scope.GetImageID() == "" {
 		scope.Info("ImageID is not yet set, hence not invoking the powervs API to delete the image")
+		if scope.GetJobID() == "" {
+			scope.Info("JobID is not yet set, hence not invoking the powervs API to delete the image import job")
+			return ctrl.Result{}, nil
+		}
+		if err := scope.DeleteImportJob(); err != nil {
+			scope.Info("error deleting IBMPowerVSImage Import Job")
+			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage Import Job")
+		}
 		return ctrl.Result{}, nil
 	}
 	if err := scope.DeleteImage(); err != nil {
