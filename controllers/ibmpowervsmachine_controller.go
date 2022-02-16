@@ -206,7 +206,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 			return ctrl.Result{}, err
 		}
 		machineScope.SetInstanceID(instance.PvmInstanceID)
-		machineScope.SetAddresses(instance.Networks)
+		machineScope.SetAddresses(instance)
 		machineScope.SetHealth(instance.Health)
 		machineScope.SetInstanceState(instance.Status)
 		switch machineScope.GetInstanceState() {
