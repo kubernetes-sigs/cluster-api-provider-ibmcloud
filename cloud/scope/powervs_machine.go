@@ -360,9 +360,18 @@ func (m *PowerVSMachineScope) SetHealth(health *models.PVMInstanceHealth) {
 	}
 }
 
-func (m *PowerVSMachineScope) SetAddresses(networks []*models.PVMInstanceNetwork) {
+func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	var addresses []corev1.NodeAddress
-	for _, network := range networks {
+	// Setting the name of the vm to the InternalDNS and Hostname as the vm uses that as hostname
+	addresses = append(addresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalDNS,
+		Address: *instance.ServerName,
+	})
+	addresses = append(addresses, corev1.NodeAddress{
+		Type:    corev1.NodeHostName,
+		Address: *instance.ServerName,
+	})
+	for _, network := range instance.Networks {
 		addresses = append(addresses, corev1.NodeAddress{
 			Type:    corev1.NodeInternalIP,
 			Address: network.IPAddress,
