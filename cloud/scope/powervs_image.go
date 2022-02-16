@@ -207,6 +207,10 @@ func (i *PowerVSImageScope) GetImportJob() (*models.Job, error) {
 	return i.IBMPowerVSClient.GetCosImages(i.IBMPowerVSImage.Spec.ServiceInstanceID)
 }
 
+func (i *PowerVSImageScope) DeleteImportJob() error {
+	return i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID)
+}
+
 func (i *PowerVSImageScope) SetReady() {
 	i.IBMPowerVSImage.Status.Ready = true
 }
