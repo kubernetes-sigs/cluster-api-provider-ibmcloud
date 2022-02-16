@@ -49,6 +49,21 @@ func (m *MockPowerVS) EXPECT() *MockPowerVSMockRecorder {
 	return m.recorder
 }
 
+// CreateCosImage mocks base method.
+func (m *MockPowerVS) CreateCosImage(body *models.CreateCosImageImportJob) (*models.JobReference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateCosImage", body)
+	ret0, _ := ret[0].(*models.JobReference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateCosImage indicates an expected call of CreateCosImage.
+func (mr *MockPowerVSMockRecorder) CreateCosImage(body interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCosImage", reflect.TypeOf((*MockPowerVS)(nil).CreateCosImage), body)
+}
+
 // CreateInstance mocks base method.
 func (m *MockPowerVS) CreateInstance(body *models.PVMInstanceCreate) (*models.PVMInstanceList, error) {
 	m.ctrl.T.Helper()
@@ -64,6 +79,20 @@ func (mr *MockPowerVSMockRecorder) CreateInstance(body interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockPowerVS)(nil).CreateInstance), body)
 }
 
+// DeleteImage mocks base method.
+func (m *MockPowerVS) DeleteImage(id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImage", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteImage indicates an expected call of DeleteImage.
+func (mr *MockPowerVSMockRecorder) DeleteImage(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockPowerVS)(nil).DeleteImage), id)
+}
+
 // DeleteInstance mocks base method.
 func (m *MockPowerVS) DeleteInstance(id string) error {
 	m.ctrl.T.Helper()
@@ -76,6 +105,20 @@ func (m *MockPowerVS) DeleteInstance(id string) error {
 func (mr *MockPowerVSMockRecorder) DeleteInstance(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstance", reflect.TypeOf((*MockPowerVS)(nil).DeleteInstance), id)
+}
+
+// DeleteJob mocks base method.
+func (m *MockPowerVS) DeleteJob(id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteJob", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteJob indicates an expected call of DeleteJob.
+func (mr *MockPowerVSMockRecorder) DeleteJob(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJob", reflect.TypeOf((*MockPowerVS)(nil).DeleteJob), id)
 }
 
 // GetAllImage mocks base method.
@@ -121,4 +164,64 @@ func (m *MockPowerVS) GetAllNetwork() (*models.Networks, error) {
 func (mr *MockPowerVSMockRecorder) GetAllNetwork() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllNetwork", reflect.TypeOf((*MockPowerVS)(nil).GetAllNetwork))
+}
+
+// GetCosImages mocks base method.
+func (m *MockPowerVS) GetCosImages(id string) (*models.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCosImages", id)
+	ret0, _ := ret[0].(*models.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCosImages indicates an expected call of GetCosImages.
+func (mr *MockPowerVSMockRecorder) GetCosImages(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCosImages", reflect.TypeOf((*MockPowerVS)(nil).GetCosImages), id)
+}
+
+// GetImage mocks base method.
+func (m *MockPowerVS) GetImage(id string) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImage", id)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImage indicates an expected call of GetImage.
+func (mr *MockPowerVSMockRecorder) GetImage(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockPowerVS)(nil).GetImage), id)
+}
+
+// GetInstance mocks base method.
+func (m *MockPowerVS) GetInstance(id string) (*models.PVMInstance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInstance", id)
+	ret0, _ := ret[0].(*models.PVMInstance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInstance indicates an expected call of GetInstance.
+func (mr *MockPowerVSMockRecorder) GetInstance(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockPowerVS)(nil).GetInstance), id)
+}
+
+// GetJob mocks base method.
+func (m *MockPowerVS) GetJob(id string) (*models.Job, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetJob", id)
+	ret0, _ := ret[0].(*models.Job)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetJob indicates an expected call of GetJob.
+func (mr *MockPowerVSMockRecorder) GetJob(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJob", reflect.TypeOf((*MockPowerVS)(nil).GetJob), id)
 }
