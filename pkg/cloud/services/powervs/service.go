@@ -32,10 +32,10 @@ var _ PowerVS = &Service{}
 // Service holds the PowerVS Service specific information
 type Service struct {
 	session        *ibmpisession.IBMPISession
-	InstanceClient *instance.IBMPIInstanceClient
-	NetworkClient  *instance.IBMPINetworkClient
-	ImageClient    *instance.IBMPIImageClient
-	JobClient      *instance.IBMPIJobClient
+	instanceClient *instance.IBMPIInstanceClient
+	networkClient  *instance.IBMPINetworkClient
+	imageClient    *instance.IBMPIImageClient
+	jobClient      *instance.IBMPIJobClient
 }
 
 type ServiceOptions struct {
@@ -46,42 +46,42 @@ type ServiceOptions struct {
 
 // CreateInstance creates the virtual machine in the Power VS service instance.
 func (s *Service) CreateInstance(body *models.PVMInstanceCreate) (*models.PVMInstanceList, error) {
-	return s.InstanceClient.Create(body)
+	return s.instanceClient.Create(body)
 }
 
 // DeleteInstance deletes the virtual machine in the Power VS service instance.
 func (s *Service) DeleteInstance(id string) error {
-	return s.InstanceClient.Delete(id)
+	return s.instanceClient.Delete(id)
 }
 
 // GetAllInstance returns all the virtual machine in the Power VS service instance.
 func (s *Service) GetAllInstance() (*models.PVMInstances, error) {
-	return s.InstanceClient.GetAll()
+	return s.instanceClient.GetAll()
 }
 
 // GetInstance returns the virtual machine in the Power VS service instance.
 func (s *Service) GetInstance(id string) (*models.PVMInstance, error) {
-	return s.InstanceClient.Get(id)
+	return s.instanceClient.Get(id)
 }
 
 // GetImage returns the image in the Power VS service instance.
 func (s *Service) GetImage(id string) (*models.Image, error) {
-	return s.ImageClient.Get(id)
+	return s.imageClient.Get(id)
 }
 
 // GetAllImage returns all the images in the Power VS service instance.
 func (s *Service) GetAllImage() (*models.Images, error) {
-	return s.ImageClient.GetAll()
+	return s.imageClient.GetAll()
 }
 
 // DeleteImage deletes the image in the Power VS service instance.
 func (s *Service) DeleteImage(id string) error {
-	return s.ImageClient.Delete(id)
+	return s.imageClient.Delete(id)
 }
 
 // CreateCosImage creates a import job to import the image in the Power VS service instance.
 func (s *Service) CreateCosImage(body *models.CreateCosImageImportJob) (*models.JobReference, error) {
-	return s.ImageClient.CreateCosImage(body)
+	return s.imageClient.CreateCosImage(body)
 }
 
 // GetCosImages returns the last import job in the Power VS service instance.
@@ -96,17 +96,17 @@ func (s *Service) GetCosImages(id string) (*models.Job, error) {
 
 // GetJob returns the import job to in the Power VS service instance.
 func (s *Service) GetJob(id string) (*models.Job, error) {
-	return s.JobClient.Get(id)
+	return s.jobClient.Get(id)
 }
 
 // DeleteJob deletes the image import job in the Power VS service instance.
 func (s *Service) DeleteJob(id string) error {
-	return s.JobClient.Delete(id)
+	return s.jobClient.Delete(id)
 }
 
 // GetAllNetwork returns all the networks in the Power VS service instance.
 func (s *Service) GetAllNetwork() (*models.Networks, error) {
-	return s.NetworkClient.GetAll()
+	return s.networkClient.GetAll()
 }
 
 // NewService returns a new service for the Power VS api client.
@@ -125,9 +125,9 @@ func NewService(options ServiceOptions) (*Service, error) {
 
 	return &Service{
 		session:        session,
-		InstanceClient: instance.NewIBMPIInstanceClient(ctx, session, options.CloudInstanceID),
-		NetworkClient:  instance.NewIBMPINetworkClient(ctx, session, options.CloudInstanceID),
-		ImageClient:    instance.NewIBMPIImageClient(ctx, session, options.CloudInstanceID),
-		JobClient:      instance.NewIBMPIJobClient(ctx, session, options.CloudInstanceID),
+		instanceClient: instance.NewIBMPIInstanceClient(ctx, session, options.CloudInstanceID),
+		networkClient:  instance.NewIBMPINetworkClient(ctx, session, options.CloudInstanceID),
+		imageClient:    instance.NewIBMPIImageClient(ctx, session, options.CloudInstanceID),
+		jobClient:      instance.NewIBMPIJobClient(ctx, session, options.CloudInstanceID),
 	}, nil
 }

@@ -29,4 +29,11 @@ type PowerVS interface {
 	GetAllInstance() (*models.PVMInstances, error)
 	GetAllImage() (*models.Images, error)
 	GetAllNetwork() (*models.Networks, error)
+	GetInstance(id string) (*models.PVMInstance, error)
+	GetImage(id string) (*models.Image, error)
+	DeleteImage(id string) error
+	CreateCosImage(body *models.CreateCosImageImportJob) (*models.JobReference, error)
+	GetCosImages(id string) (*models.Job, error)
+	GetJob(id string) (*models.Job, error)
+	DeleteJob(id string) error
 }
