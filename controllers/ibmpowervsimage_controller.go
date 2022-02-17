@@ -217,11 +217,13 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 		}
 		return ctrl.Result{}, nil
 	}
-	if err := scope.DeleteImage(); err != nil {
-		scope.Info("error deleting IBMPowerVSImage")
-		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage %s/%s", scope.IBMPowerVSImage.Namespace, scope.IBMPowerVSImage.Name)
-	}
 
+	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(v1beta1.DeletePolicyRetain) {
+		if err := scope.DeleteImage(); err != nil {
+			scope.Info("error deleting IBMPowerVSImage")
+			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage %s/%s", scope.IBMPowerVSImage.Namespace, scope.IBMPowerVSImage.Name)
+		}
+	}
 	return ctrl.Result{}, nil
 }
 

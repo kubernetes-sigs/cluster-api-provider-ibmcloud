@@ -50,6 +50,14 @@ var (
 	PowerVSImageStateImporting = PowerVSImageState("importing")
 )
 
+// DeletePolicy defines the policy used to identify images to be preserved.
+type DeletePolicy string
+
+var (
+	// DeletePolicyRetain is the string representing an image to be retained.
+	DeletePolicyRetain = DeletePolicy("retain")
+)
+
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface

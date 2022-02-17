@@ -52,6 +52,14 @@ spec:
                   to.
                 minLength: 1
                 type: string
+              deletePolicy:
+                default: delete
+                description: DeletePolicy defines the policy used to identify images
+                  to be preserved beyond the lifecycle of associated cluster.
+                enum:
+                - delete
+                - retain
+                type: string
               object:
                 description: Cloud Object Storage image filename
                 type: string
