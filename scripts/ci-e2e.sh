@@ -27,19 +27,26 @@ export PATH="${GOPATH_BIN}:${PATH}"
 source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=../hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
+# shellcheck source=../hack/boskos.sh
+source ${REPO_ROOT}/hack/boskos.sh
 
 ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs/"
 
 ARCH=$(uname -m)
-PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.3"}
+PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.4-alpha.3"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
+REGION=${REGION:-"us-south"}
+RESOURCE_GROUP=${RESOURCE_GROUP:-"prow-resource-group"}
 
 trap cleanup EXIT
 
 cleanup(){
     # Delete the created ports for the network instance
     [ -n "${NEW_PORT}" ] && ./pvsadm delete port --network ${IBMPOWERVS_NETWORK_NAME} --port-id ${PORT_ID} --instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+
+    # stop the boskos heartbeat
+    [[ -z ${HEART_BEAT_PID:-} ]] || kill -9 "${HEART_BEAT_PID}" || true
 }
 
 install_pvsadm(){
@@ -50,8 +57,26 @@ install_pvsadm(){
     chmod +x ./pvsadm
 }
 
+create_powervs_network_instance(){
+    # Install ibmcloud CLI tool
+    curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
+
+    # Login to IBM Cloud using the API Key
+    ibmcloud login -a cloud.ibm.com -r ${REGION} -g ${RESOURCE_GROUP}
+
+    # Install power-iaas command-line plug-in and target the required service instance
+    ibmcloud plugin install power-iaas
+    CRN=$(ibmcloud resource service-instance ${IBMPOWERVS_SERVICE_INSTANCE_ID} --output json | jq -r '.[].crn')
+    ibmcloud pi service-target ${CRN}
+
+    # Create the network instance
+    ibmcloud pi network-create-public ${IBMPOWERVS_NETWORK_NAME} --dns-servers "8.8.8.8 9.9.9.9"
+
+}
+
 init_network_powervs(){
     install_pvsadm
+    create_powervs_network_instance
 
     # Creating ports using the pvsadm tool
     ./pvsadm create port --description "capi-port-e2e" --network ${IBMPOWERVS_NETWORK_NAME} --instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID}
@@ -68,10 +93,37 @@ prerequisites_powervs(){
     # Assigning PowerVS variables
     export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams8-1-22-4"}
     export IBMPOWERVS_SERVICE_INSTANCE_ID=${IBMPOWERVS_SERVICE_INSTANCE_ID:-"0f28d13a-6e33-4d86-b6d7-a9b46ff7659e"}
-    export IBMPOWERVS_NETWORK_NAME=${IBMPOWERVS_NETWORK_NAME:-"capi-e2e-test"}
+    export IBMPOWERVS_NETWORK_NAME=${BOSKOS_RESOURCE_NAME:-"capi-e2e-test"}
 }
 
 main(){
+    # If BOSKOS_HOST is set then acquire an IBM Cloud resource from Boskos.
+    if [ -n "${BOSKOS_HOST:-}" ]; then
+        # Check out the resource from Boskos and store the produced environment
+        # variables in a temporary file.
+         account_env_var_file="$(mktemp)"
+         checkout_account 1> "${account_env_var_file}"
+         checkout_account_status="${?}"
+
+        # If the checkout process was a success then load the
+        # environment variables into this process.
+        [ "${checkout_account_status}" = "0" ] && . "${account_env_var_file}"
+
+        # Always remove the account environment variable file which
+        # could contain sensitive information.
+        rm -f "${account_env_var_file}"
+
+        if [ ! "${checkout_account_status}" = "0" ]; then
+            echo "error getting account from boskos" 1>&2
+            exit "${checkout_account_status}"
+        fi
+
+        # Run the heart beat process to tell Boskos that we are still
+        # using the checked out resource periodically.
+        heartbeat_account >> "$ARTIFACTS/logs/boskos.log" 2>&1 &
+        HEART_BEAT_PID=$(echo $!)
+    fi
+
     if [[ "${E2E_FLAVOR}" == "powervs" ]]; then
         prerequisites_powervs
         init_network_powervs
@@ -81,6 +133,9 @@ main(){
     make test-e2e
     test_status="${?}"
     echo TESTSTATUS="${test_status}"
+
+    # If Boskos is being used then release the IBM Cloud resource back to Boskos.
+    [ -z "${BOSKOS_HOST:-}" ] || release_account >> "$ARTIFACTS/logs/boskos.log" 2>&1
 }
 
 main "$@"
