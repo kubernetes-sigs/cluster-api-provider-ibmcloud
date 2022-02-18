@@ -53,6 +53,12 @@ type IBMPowerVSImageSpec struct {
 	// +kubebuilder:validation:Enum=tier1;tier3
 	// +optional
 	StorageType string `json:"storageType,omitempty"`
+
+	// DeletePolicy defines the policy used to identify images to be preserved beyond the lifecycle of associated cluster.
+	// +kubebuilder:default=delete
+	// +kubebuilder:validation:Enum=delete;retain
+	// +optional
+	DeletePolicy string `json:"deletePolicy,omitempty"`
 }
 
 // IBMPowerVSImageStatus defines the observed state of IBMPowerVSImage
