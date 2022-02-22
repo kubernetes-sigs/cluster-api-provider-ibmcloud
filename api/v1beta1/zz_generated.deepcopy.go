@@ -299,7 +299,7 @@ func (in *IBMPowerVSMachineSpec) DeepCopyInto(out *IBMPowerVSMachineSpec) {
 	}
 	if in.ImageRef != nil {
 		in, out := &in.ImageRef, &out.ImageRef
-		*out = new(v1.ObjectReference)
+		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
 	in.Network.DeepCopyInto(&out.Network)
