@@ -576,6 +576,7 @@ func autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1alpha4_IBMPowerVSMachineSpec
 	out.ProcType = in.ProcType
 	out.Processors = in.Processors
 	out.Memory = in.Memory
+	// WARNING: in.StoragePoolAffinity requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta1_IBMPowerVSResourceReference_To_v1alpha4_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
@@ -587,7 +588,7 @@ func autoConvert_v1alpha4_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineSt
 	out.InstanceID = in.InstanceID
 	out.Ready = in.Ready
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
-	out.Health = in.Health
+	out.Health = v1beta1.PowerVSInstanceHealth(in.Health)
 	out.InstanceState = v1beta1.PowerVSInstanceState(in.InstanceState)
 	out.Fault = in.Fault
 	return nil
@@ -602,7 +603,7 @@ func autoConvert_v1beta1_IBMPowerVSMachineStatus_To_v1alpha4_IBMPowerVSMachineSt
 	out.InstanceID = in.InstanceID
 	out.Ready = in.Ready
 	out.Addresses = *(*[]v1.NodeAddress)(unsafe.Pointer(&in.Addresses))
-	out.Health = in.Health
+	out.Health = string(in.Health)
 	out.InstanceState = string(in.InstanceState)
 	out.Fault = in.Fault
 	// WARNING: in.FailureReason requires manual conversion: does not exist in peer-type

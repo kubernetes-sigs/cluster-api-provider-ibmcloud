@@ -246,6 +246,22 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 	return nil, nil
 }
 
+// UpdateMachine updates a power vs machine
+func (m *PowerVSMachineScope) UpdateMachine() (*models.PVMInstanceReference, error) {
+	s := m.IBMPowerVSMachine.Spec
+
+	params := &p_cloud_p_vm_instances.PcloudPvminstancesPutParams{
+		Body: &models.PVMInstanceUpdate{
+			StoragePoolAffinity: &s.StoragePoolAffinity,
+		},
+	}
+	_, err := m.IBMPowerVSClient.UpdateInstance(m.GetInstanceID(), params.Body)
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
 // Close closes the current scope persisting the cluster configuration and status.
 func (m *PowerVSMachineScope) Close() error {
 	return m.PatchObject()
@@ -356,8 +372,12 @@ func (m *PowerVSMachineScope) GetInstanceID() string {
 
 func (m *PowerVSMachineScope) SetHealth(health *models.PVMInstanceHealth) {
 	if health != nil {
-		m.IBMPowerVSMachine.Status.Health = health.Status
+		m.IBMPowerVSMachine.Status.Health = v1beta1.PowerVSInstanceHealth(health.Status)
 	}
+}
+
+func (m *PowerVSMachineScope) GetHealth() v1beta1.PowerVSInstanceHealth {
+	return m.IBMPowerVSMachine.Status.Health
 }
 
 func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {

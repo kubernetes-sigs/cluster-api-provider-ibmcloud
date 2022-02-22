@@ -167,6 +167,11 @@ func (r *IBMPowerVSMachineReconciler) getOrCreate(scope *scope.PowerVSMachineSco
 	return instance, err
 }
 
+func (r *IBMPowerVSMachineReconciler) getOrUpdate(scope *scope.PowerVSMachineScope) (*models.PVMInstanceReference, error) {
+	instance, err := scope.UpdateMachine()
+	return instance, err
+}
+
 func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
 	machineScope.Info("Reconciling IBMPowerVSMachine")
 
@@ -209,6 +214,26 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		machineScope.SetAddresses(instance)
 		machineScope.SetHealth(instance.Health)
 		machineScope.SetInstanceState(instance.Status)
+
+		if machineScope.IBMPowerVSMachine.Spec.StoragePoolAffinity != *instance.StoragePoolAffinity {
+			switch machineScope.GetInstanceState() {
+			case v1beta1.PowerVSInstanceStateSHUTOFF, v1beta1.PowerVSInstanceStateACTIVE:
+				switch machineScope.GetHealth() {
+				case v1beta1.PowerVSInstanceHealthOK:
+					_, err := r.getOrUpdate(machineScope)
+					if err != nil {
+						machineScope.Error(err, "unable to update instance")
+						conditions.MarkFalse(machineScope.IBMPowerVSMachine, v1beta1.InstanceReadyCondition, v1beta1.InstanceProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
+						return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VSI for IBMPowerVSMachine %s/%s", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name)
+					}
+				default:
+					machineScope.Info("PowerVS instance health not OK yet")
+				}
+			default:
+				machineScope.Info("PowerVS instance state not ACTIVE/SHUTOFF yet")
+			}
+		}
+
 		switch machineScope.GetInstanceState() {
 		case v1beta1.PowerVSInstanceStateBUILD:
 			machineScope.SetNotReady()

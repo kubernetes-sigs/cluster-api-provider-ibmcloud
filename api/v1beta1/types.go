@@ -33,6 +33,20 @@ var (
 	PowerVSInstanceStateREBOOT = PowerVSInstanceState("REBOOT")
 )
 
+// PowerVSInstanceHealth describes the health of an IBM Power VS instance.
+type PowerVSInstanceHealth string
+
+var (
+	// PowerVSInstanceHealthOK is the string representing an instance health in a OK state.
+	PowerVSInstanceHealthOK = PowerVSInstanceHealth("OK")
+
+	// PowerVSInstanceHealthWARNING is the string representing an instance health in a WARNING state.
+	PowerVSInstanceHealthWARNING = PowerVSInstanceHealth("WARNING")
+
+	// PowerVSInstanceHealthPENDING is the string representing an instance health in a PENDING state.
+	PowerVSInstanceHealthPENDING = PowerVSInstanceHealth("PENDING")
+)
+
 // PowerVSImageState describes the state of an IBM Power VS image.
 type PowerVSImageState string
 

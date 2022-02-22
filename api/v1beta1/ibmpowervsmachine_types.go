@@ -68,6 +68,10 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	Memory string `json:"memory,omitempty"`
 
+	// StoragePoolAffinity indicates if all volumes attached to the server must reside in the same storage pool
+	// +optional
+	StoragePoolAffinity bool `json:"storagePoolAffinity"`
+
 	// Network is the reference to the Network to use for this instance.
 	Network IBMPowerVSResourceReference `json:"network"`
 
@@ -107,7 +111,7 @@ type IBMPowerVSMachineStatus struct {
 
 	// Health is the health of the vsi
 	// +optional
-	Health string `json:"health,omitempty"`
+	Health PowerVSInstanceHealth `json:"health,omitempty"`
 
 	// InstanceState is the status of the vsi
 	// +optional

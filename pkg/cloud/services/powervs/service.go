@@ -54,6 +54,11 @@ func (s *Service) DeleteInstance(id string) error {
 	return s.instanceClient.Delete(id)
 }
 
+// UpdateInstance updates the virtual machine in the Power VS service instance.
+func (s *Service) UpdateInstance(id string, body *models.PVMInstanceUpdate) (*models.PVMInstanceUpdateResponse, error) {
+	return s.instanceClient.Update(id, body)
+}
+
 // GetAllInstance returns all the virtual machine in the Power VS service instance.
 func (s *Service) GetAllInstance() (*models.PVMInstances, error) {
 	return s.instanceClient.GetAll()
