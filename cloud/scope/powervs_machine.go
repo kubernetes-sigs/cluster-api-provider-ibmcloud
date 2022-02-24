@@ -65,7 +65,7 @@ type PowerVSMachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMPowerVSClient  *powervs.Service
+	IBMPowerVSClient  powervs.PowerVS
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster

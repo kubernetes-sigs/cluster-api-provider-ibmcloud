@@ -55,7 +55,7 @@ type PowerVSImageScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMPowerVSClient *powervs.Service
+	IBMPowerVSClient powervs.PowerVS
 	IBMPowerVSImage  *v1beta1.IBMPowerVSImage
 }
 
