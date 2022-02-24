@@ -110,7 +110,7 @@ func (s *Service) GetAllNetwork() (*models.Networks, error) {
 }
 
 // NewService returns a new service for the Power VS api client.
-func NewService(options ServiceOptions) (*Service, error) {
+func NewService(options ServiceOptions) (PowerVS, error) {
 	auth, err := authenticator.GetAuthenticator()
 	if err != nil {
 		return nil, err
