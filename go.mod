@@ -3,7 +3,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 go 1.17
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.1.3
+	github.com/IBM-Cloud/power-go-client v1.1.4
 	github.com/IBM/go-sdk-core/v5 v5.9.2
 	github.com/IBM/platform-services-go-sdk v0.22.8
 	github.com/IBM/vpc-go-sdk v1.0.1
@@ -50,15 +50,15 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-openapi/analysis v0.21.1 // indirect
-	github.com/go-openapi/errors v0.20.1 // indirect
+	github.com/go-openapi/analysis v0.21.2 // indirect
+	github.com/go-openapi/errors v0.20.2 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.6 // indirect
-	github.com/go-openapi/loads v0.21.0 // indirect
-	github.com/go-openapi/runtime v0.21.0 // indirect
+	github.com/go-openapi/loads v0.21.1 // indirect
+	github.com/go-openapi/runtime v0.23.0 // indirect
 	github.com/go-openapi/spec v0.20.4 // indirect
-	github.com/go-openapi/strfmt v0.21.1 // indirect
-	github.com/go-openapi/swag v0.19.15 // indirect
+	github.com/go-openapi/strfmt v0.21.2 // indirect
+	github.com/go-openapi/swag v0.21.1 // indirect
 	github.com/go-openapi/validate v0.20.3 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
@@ -108,12 +108,12 @@ require (
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
-	go.mongodb.org/mongo-driver v1.8.2 // indirect
+	go.mongodb.org/mongo-driver v1.8.3 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d // indirect
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
-	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
+	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
