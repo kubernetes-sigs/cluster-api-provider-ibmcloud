@@ -122,6 +122,35 @@ func pstring(name string) *string {
 	return pointer.String(name)
 }
 
+func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
+	return &infrav1.IBMPowerVSImage{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      imageName,
+			Namespace: "default",
+		},
+		Spec: infrav1.IBMPowerVSImageSpec{
+			ClusterName:       "test-cluster",
+			ServiceInstanceID: "test-service-ID",
+			Object:            pstring("sample-image.ova.gz"),
+			Bucket:            pstring("sample-bucket"),
+			Region:            pstring("us-south"),
+		},
+	}
+}
+
+func setupPowerVSImageScope(imageName string) (*PowerVSImageScope, error) {
+	powervsImage := newPowervsImage(imageName)
+	initObjects := []client.Object{powervsImage}
+
+	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
+	return &PowerVSImageScope{
+		client:           client,
+		Logger:           klogr.New(),
+		IBMPowerVSClient: mockpowervs,
+		IBMPowerVSImage:  powervsImage,
+	}, nil
+}
+
 func setupPowerVSMachineScope(clusterName string, machineName string, imageID *string, networkID *string, isID bool) (*PowerVSMachineScope, error) {
 	cluster := newCluster(clusterName)
 	machine := newMachine(clusterName, machineName)
@@ -322,6 +351,73 @@ var _ = Describe("PowerVS machine and image creation", func() {
 			Expect(result).NotTo(BeNil())
 
 			_, err = base64.StdEncoding.DecodeString(result)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("Create or Delete IBMPowerVSImage", func() {
+		It("should not error and create an image import job", func() {
+			scope, err := setupPowerVSImageScope("sample-image")
+			Expect(err).NotTo(HaveOccurred())
+			spec := scope.IBMPowerVSImage.Spec
+
+			images := &models.Images{}
+			body := &models.CreateCosImageImportJob{
+				ImageName:     &scope.IBMPowerVSImage.ObjectMeta.Name,
+				BucketName:    spec.Bucket,
+				BucketAccess:  pstring("public"),
+				Region:        spec.Region,
+				ImageFilename: spec.Object,
+			}
+
+			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
+			mockpowervs.EXPECT().GetCosImages(scope.IBMPowerVSImage.Spec.ServiceInstanceID).Return(nil, nil)
+			mockpowervs.EXPECT().CreateCosImage(body).Return(&models.JobReference{ID: pstring("test-job-ID")}, nil)
+
+			_, jobRef, err := scope.CreateImageCOSBucket()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(jobRef).ToNot(BeNil())
+		})
+
+		It("should not error and use the existing image", func() {
+			scope, err := setupPowerVSImageScope("sample-image")
+			Expect(err).NotTo(HaveOccurred())
+
+			images := &models.Images{
+				Images: []*models.ImageReference{
+					{
+						ImageID: pstring("sample-image-ID"),
+						Name:    pstring("sample-image"),
+					},
+				},
+			}
+			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
+
+			imageRef, _, err := scope.CreateImageCOSBucket()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(imageRef).ToNot(BeNil())
+		})
+
+		It("should return as the previous job is not finished", func() {
+			scope, err := setupPowerVSImageScope("sample-image")
+			Expect(err).NotTo(HaveOccurred())
+
+			images := &models.Images{}
+			job := &models.Job{ID: pstring("test-job-ID"), Status: &models.Status{State: pstring("pending")}}
+			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
+			mockpowervs.EXPECT().GetCosImages(scope.IBMPowerVSImage.Spec.ServiceInstanceID).Return(job, nil)
+
+			_, _, err = scope.CreateImageCOSBucket()
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should not error and delete the image", func() {
+			scope, err := setupPowerVSImageScope("sample-image")
+			Expect(err).NotTo(HaveOccurred())
+
+			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf("sample-image-ID")).Return(nil)
+
+			err = scope.DeleteImage()
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
