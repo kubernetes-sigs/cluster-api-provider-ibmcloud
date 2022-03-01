@@ -205,6 +205,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+		machineScope.SetProviderID(instance.PvmInstanceID)
 		machineScope.SetInstanceID(instance.PvmInstanceID)
 		machineScope.SetAddresses(instance)
 		machineScope.SetHealth(instance.Health)
@@ -227,7 +228,6 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		}
 		machineScope.Info(*ins.PvmInstanceID)
 	}
-	machineScope.SetProviderID()
 
 	// Requeue after 2 minute if machine is not ready to update status of the machine properly
 	if !machineScope.IsReady() {

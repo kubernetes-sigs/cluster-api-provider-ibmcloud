@@ -22,11 +22,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"k8s.io/utils/pointer"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	utils "github.com/ppc64le-cloud/powervs-utils"
+	powerVSUtils "github.com/ppc64le-cloud/powervs-utils"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
@@ -37,6 +35,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -143,11 +143,13 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		return
 	}
 
-	region, err := utils.GetRegion(*res.RegionID)
+	region, err := powerVSUtils.GetRegion(*res.RegionID)
 	if err != nil {
 		err = errors.Wrap(err, "failed to get region")
 		return
 	}
+	scope.SetRegion(region)
+	scope.SetZone(*res.RegionID)
 
 	options := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
@@ -394,6 +396,36 @@ func (m *PowerVSMachineScope) GetInstanceState() v1beta1.PowerVSInstanceState {
 	return m.IBMPowerVSMachine.Status.InstanceState
 }
 
-func (m *PowerVSMachineScope) SetProviderID() {
-	m.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
+func (m *PowerVSMachineScope) SetRegion(region string) {
+	m.IBMPowerVSMachine.Status.Region = &region
+}
+
+func (m *PowerVSMachineScope) GetRegion() string {
+	if m.IBMPowerVSMachine.Status.Region == nil {
+		return ""
+	}
+	return *m.IBMPowerVSMachine.Status.Region
+}
+
+func (m *PowerVSMachineScope) SetZone(zone string) {
+	m.IBMPowerVSMachine.Status.Zone = &zone
+}
+
+func (m *PowerVSMachineScope) GetZone() string {
+	if m.IBMPowerVSMachine.Status.Zone == nil {
+		return ""
+	}
+	return *m.IBMPowerVSMachine.Status.Zone
+}
+
+// SetProviderID will set the provider id for the machine
+func (m *PowerVSMachineScope) SetProviderID(id *string) {
+	// Based on the ProviderIDFormat version the providerID format will be decided
+	if options.PowerVSProviderIDFormat == options.PowerVSProviderIDFormatV2 {
+		if id != nil {
+			m.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), m.IBMPowerVSMachine.Spec.ServiceInstanceID, *id))
+		}
+	} else {
+		m.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
+	}
 }
