@@ -608,6 +608,8 @@ func autoConvert_v1beta1_IBMPowerVSMachineStatus_To_v1alpha4_IBMPowerVSMachineSt
 	// WARNING: in.FailureReason requires manual conversion: does not exist in peer-type
 	// WARNING: in.FailureMessage requires manual conversion: does not exist in peer-type
 	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
+	// WARNING: in.Region requires manual conversion: does not exist in peer-type
+	// WARNING: in.Zone requires manual conversion: does not exist in peer-type
 	return nil
 }
 
