@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"k8s.io/utils/pointer"
 
@@ -372,14 +373,16 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 		Address: *instance.ServerName,
 	})
 	for _, network := range instance.Networks {
-		addresses = append(addresses, corev1.NodeAddress{
-			Type:    corev1.NodeInternalIP,
-			Address: network.IPAddress,
-		})
-		if network.ExternalIP != "" {
+		if strings.TrimSpace(network.IPAddress) != "" {
+			addresses = append(addresses, corev1.NodeAddress{
+				Type:    corev1.NodeInternalIP,
+				Address: strings.TrimSpace(network.IPAddress),
+			})
+		}
+		if strings.TrimSpace(network.ExternalIP) != "" {
 			addresses = append(addresses, corev1.NodeAddress{
 				Type:    corev1.NodeExternalIP,
-				Address: network.ExternalIP,
+				Address: strings.TrimSpace(network.ExternalIP),
 			})
 		}
 	}
