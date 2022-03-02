@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	infrastructurev1alpha4 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
 	infrastructurev1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -67,6 +69,11 @@ func main() {
 	pflag.Parse()
 
 	ctrl.SetLogger(klogr.New())
+
+	if err := validateFlags(); err != nil {
+		setupLog.Error(err, "Flag validation failure")
+		os.Exit(1)
+	}
 
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
@@ -210,4 +217,24 @@ func initFlags(fs *pflag.FlagSet) {
 		10*time.Minute,
 		"The minimum interval at which watched resources are reconciled.",
 	)
+
+	fs.StringVar(
+		&options.PowerVSProviderIDFormat,
+		"powervs-provider-id-fmt",
+		options.PowerVSProviderIDFormatV1,
+		"ProviderID format is used set the Provider ID format for Machine",
+	)
+}
+
+func validateFlags() error {
+	switch options.PowerVSProviderIDFormat {
+	case options.PowerVSProviderIDFormatV1:
+		setupLog.Info("Using v1 version of ProviderID format")
+	case options.PowerVSProviderIDFormatV2:
+		setupLog.Info("Using v2 version of ProviderID format")
+	default:
+		errStr := fmt.Errorf("Invalid value for flag powervs-provider-id-fmt: %s, Supported values: v1, v2 ", options.PowerVSProviderIDFormat)
+		return errStr
+	}
+	return nil
 }

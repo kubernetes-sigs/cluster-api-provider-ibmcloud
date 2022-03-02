@@ -158,6 +158,12 @@ type IBMPowerVSMachineStatus struct {
 	// Conditions defines current service state of the IBMPowerVSMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	// Region specifies the Power VS Service instance region
+	Region *string `json:"region,omitempty"`
+
+	// Zone specifies the Power VS Service instance zone
+	Zone *string `json:"zone,omitempty"`
 }
 
 //+kubebuilder:object:root=true
