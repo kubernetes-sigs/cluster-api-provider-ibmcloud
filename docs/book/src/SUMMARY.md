@@ -2,6 +2,9 @@
 
 - [Introduction](./introduction.md)
 - [Getting Started](./getting-started.md)
+- [Images](./machine-images/index.md)
+  - [VPC](./machine-images/vpc.md)
+  - [Power VS](./machine-images/powervs.md)
 - [Topics](./topics/index.md)
   - [VPC Cluster](./topics/vpc/index.md)
     - [Prerequisites](./topics/vpc/prerequisites.md)
