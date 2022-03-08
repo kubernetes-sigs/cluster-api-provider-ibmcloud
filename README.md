@@ -27,18 +27,13 @@ cluster on IBMCloud.
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                                   | v1alpha3 (v0.3) | v1alpha4 (v0.4) | v1beta1 (v1.0) |
-|-----------------------------------| --------------- | --------------- | -------------- |
+|                                   | v1alpha3 (v0.3) | v1alpha4 (v0.4) | v1beta1 (v1.x) |
+|-----------------------------------| --------------- | --------------- |----------------|
 | IBMCloud Provider v1alpha4 (v0.1) | ✓               | ✓               |                |
 | IBMCloud Provider v1beta1 (v0.2)  |                 |                 | ✓              |
 
 
-This provider's versions are able to install and manage the following versions of Kubernetes:
-
-|                                   | v1.21 | v1.22 |
-|-----------------------------------| ----- | ----- |
-| IBMCloud Provider v1alpha4 (v0.1) | ✓     | ✓     |
-| IBMCloud Provider v1beta1 (v0.2)  | ✓     | ✓     |
+(See [Kubernetes support matrix][cluster-api-supported-v] of Cluster API versions).
 
 <!-- ANCHOR: Community -->
 
@@ -65,6 +60,7 @@ See also our [contributor guide](CONTRIBUTING.md) and the Kubernetes [community 
 [Good first issue]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22
 [Help wanted]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+
 [community page]: https://kubernetes.io/community
+[cluster-api-supported-v]: https://cluster-api.sigs.k8s.io/reference/versions.html
 
 ### Code of conduct
 
