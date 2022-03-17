@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.1.4
-	github.com/IBM/go-sdk-core/v5 v5.9.2
+	github.com/IBM/go-sdk-core/v5 v5.9.3
 	github.com/IBM/platform-services-go-sdk v0.22.8
 	github.com/IBM/vpc-go-sdk v1.0.1
 	github.com/go-logr/logr v1.2.0
