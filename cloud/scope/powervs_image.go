@@ -115,7 +115,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	options := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug:       true,
+			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
 			Region:      region,
 			Zone:        *res.RegionID,
