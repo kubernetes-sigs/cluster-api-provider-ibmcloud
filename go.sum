@@ -66,8 +66,8 @@ github.com/Azure/go-autorest/tracing v0.6.0/go.mod h1:+vhtPC754Xsa23ID7GlGsrdKBp
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/IBM-Cloud/power-go-client v1.1.4 h1:E1sve+j7k3xHD9VKsQCrJ5Eth6Ndt7BC0tkeFhRFjOQ=
-github.com/IBM-Cloud/power-go-client v1.1.4/go.mod h1:YcAHrWuTvckGQYPLLReJ9ijcO/tQuRxAp2kCZ7fnnVk=
+github.com/IBM-Cloud/power-go-client v1.1.5 h1:fQL1y/E93MAueIdR0aX6gy362JIQBznLv27srIyvuaY=
+github.com/IBM-Cloud/power-go-client v1.1.5/go.mod h1:YcAHrWuTvckGQYPLLReJ9ijcO/tQuRxAp2kCZ7fnnVk=
 github.com/IBM/go-sdk-core/v4 v4.5.1/go.mod h1:lTUXbqIX6/aAbSCkP6q59+dyFsTwZAc0ewRS2vJWVbg=
 github.com/IBM/go-sdk-core/v5 v5.2.0/go.mod h1:vyNdbFujJtdTj9HbihtvKwwS3k/GKSKpOx9ZIQ6MWDY=
 github.com/IBM/go-sdk-core/v5 v5.9.1/go.mod h1:axE2JrRq79gIJTjKPBwV6gWHswvVptBjbcvvCPIxARM=
