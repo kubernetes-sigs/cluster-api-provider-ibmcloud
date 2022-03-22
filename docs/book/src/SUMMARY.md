@@ -18,3 +18,4 @@
   - [Release Process](./developer/release.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
+  - [Regions-Zones Mapping](./reference/regions-zones-mapping.md)

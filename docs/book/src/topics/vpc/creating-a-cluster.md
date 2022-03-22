@@ -33,6 +33,8 @@ following the steps below.
     kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-vpc-5-md-0 created
     ```
 
+    Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
+
 2. Deploy Container Network Interface (CNI)
 
     Example: calico
