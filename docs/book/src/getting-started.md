@@ -50,6 +50,8 @@ it into a management cluster using `clusterctl`.
     export SERVICE_ENDPOINT=https://us-south.iaas.cloud.ibm.com/v1
     ```
 
+    Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
+
 3. Initialize local bootstrap cluter as a management cluster
     
     When executed for the first time, the following command accepts the infrasturcture provider as an input to install. `clusterctl init` automatically adds to the list the cluster-api core provider, and if unspecified, it also adds the kubeadm bootstrap and kubeadm control-plane providers, thereby converting it into a management cluster which will be used to provision a workload cluster in IBM Cloud.   
