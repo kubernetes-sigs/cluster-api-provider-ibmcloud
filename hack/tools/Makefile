@@ -94,3 +94,7 @@ $(MOCKGEN): $(BIN_DIR) go.mod go.sum
 CONTROLLER_GEN := $(BIN_DIR)/controller-gen
 $(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen
+
+CONVERSION_VERIFIER := $(BIN_DIR)/conversion-verifier
+$(CONVERSION_VERIFIER): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier

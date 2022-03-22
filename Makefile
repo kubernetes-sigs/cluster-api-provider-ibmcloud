@@ -37,6 +37,7 @@ GINKGO := $(TOOLS_BIN_DIR)/ginkgo
 ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
+CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
