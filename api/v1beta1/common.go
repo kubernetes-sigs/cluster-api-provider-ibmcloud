@@ -21,7 +21,7 @@ import "k8s.io/apimachinery/pkg/util/validation/field"
 func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 
 	if spec.Memory == "" {
-		spec.Memory = "8"
+		spec.Memory = "4"
 	}
 	if spec.Processors == "" {
 		spec.Processors = "0.25"
@@ -63,6 +63,6 @@ func validateIBMPowerVSResourceReference(res IBMPowerVSResourceReference, resTyp
 
 func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {
 	if spec.Profile == "" {
-		spec.Profile = "bx2-4x16"
+		spec.Profile = "bx2-2x8"
 	}
 }
