@@ -72,8 +72,8 @@ github.com/IBM/go-sdk-core/v4 v4.5.1/go.mod h1:lTUXbqIX6/aAbSCkP6q59+dyFsTwZAc0e
 github.com/IBM/go-sdk-core/v5 v5.2.0/go.mod h1:vyNdbFujJtdTj9HbihtvKwwS3k/GKSKpOx9ZIQ6MWDY=
 github.com/IBM/go-sdk-core/v5 v5.9.1/go.mod h1:axE2JrRq79gIJTjKPBwV6gWHswvVptBjbcvvCPIxARM=
 github.com/IBM/go-sdk-core/v5 v5.9.3/go.mod h1:YlOwV9LeuclmT/qi/LAK2AsobbAP42veV0j68/rlZsE=
-github.com/IBM/go-sdk-core/v5 v5.9.4 h1:kaNE11yUwpLPFwPosxKLI12arlhQqPWhV2KDsq7uiFM=
-github.com/IBM/go-sdk-core/v5 v5.9.4/go.mod h1:YlOwV9LeuclmT/qi/LAK2AsobbAP42veV0j68/rlZsE=
+github.com/IBM/go-sdk-core/v5 v5.9.5 h1:+uMyHpOyBlFFd/I0PB+7JqqXOPY2DzRR0tbBjTc4d/g=
+github.com/IBM/go-sdk-core/v5 v5.9.5/go.mod h1:YlOwV9LeuclmT/qi/LAK2AsobbAP42veV0j68/rlZsE=
 github.com/IBM/platform-services-go-sdk v0.22.10 h1:jWim5cH/9j7DBRk/BGCEhLtMg67Gpy5/eP4ygh4rxHQ=
 github.com/IBM/platform-services-go-sdk v0.22.10/go.mod h1:oA2sXxvxurkPGH9zsGfPeuUv9UwLKrFBK8bodz8SL7U=
 github.com/IBM/vpc-go-sdk v1.0.1 h1:D2cu4KRsM8Q8bLWz/uxp8m7nzUm33mcgDv1sD0w/E8M=
