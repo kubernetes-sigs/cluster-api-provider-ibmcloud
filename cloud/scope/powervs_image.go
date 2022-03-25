@@ -20,33 +20,32 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	utils "github.com/ppc64le-cloud/powervs-utils"
-
 	"k8s.io/klog/v2/klogr"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
+// BucketAccess indicates if the bucket has public or private access public access.
 const BucketAccess = "public"
 
 // PowerVSImageScopeParams defines the input parameters used to create a new PowerVSImageScope.
 type PowerVSImageScopeParams struct {
 	Client          client.Client
 	Logger          logr.Logger
-	IBMPowerVSImage *v1beta1.IBMPowerVSImage
+	IBMPowerVSImage *infrav1beta1.IBMPowerVSImage
 }
 
 // PowerVSImageScope defines a scope defined around a Power VS Cluster.
@@ -56,7 +55,7 @@ type PowerVSImageScope struct {
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient powervs.PowerVS
-	IBMPowerVSImage  *v1beta1.IBMPowerVSImage
+	IBMPowerVSImage  *infrav1beta1.IBMPowerVSImage
 }
 
 // NewPowerVSImageScope creates a new PowerVSImageScope from the supplied parameters.
@@ -150,7 +149,7 @@ func (i *PowerVSImageScope) ensureImageUnique(imageName string) (*models.ImageRe
 	return nil, nil
 }
 
-// CreateImageCOSBucket creates a power vs image
+// CreateImageCOSBucket creates a power vs image.
 func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *models.JobReference, error) {
 	s := i.IBMPowerVSImage.Spec
 	m := i.IBMPowerVSImage.ObjectMeta
@@ -163,8 +162,7 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 		return imageReply, nil, nil
 	}
 
-	lastJob, _ := i.GetImportJob()
-	if lastJob != nil {
+	if lastJob, _ := i.GetImportJob(); lastJob != nil {
 		if *lastJob.Status.State != "completed" && *lastJob.Status.State != "failed" {
 			i.Info("Previous import job not yet fininshed - " + *lastJob.Status.State)
 			return nil, nil, nil
@@ -199,52 +197,64 @@ func (i *PowerVSImageScope) Close() error {
 	return i.PatchObject()
 }
 
+// DeleteImage will delete the image.
 func (i *PowerVSImageScope) DeleteImage() error {
 	return i.IBMPowerVSClient.DeleteImage(i.IBMPowerVSImage.Status.ImageID)
 }
 
+// GetImportJob will get the image import job.
 func (i *PowerVSImageScope) GetImportJob() (*models.Job, error) {
 	return i.IBMPowerVSClient.GetCosImages(i.IBMPowerVSImage.Spec.ServiceInstanceID)
 }
 
+// DeleteImportJob will delete the image import job.
 func (i *PowerVSImageScope) DeleteImportJob() error {
 	return i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID)
 }
 
+// SetReady will set the status as ready for the image.
 func (i *PowerVSImageScope) SetReady() {
 	i.IBMPowerVSImage.Status.Ready = true
 }
 
+// SetNotReady will set the status as not ready for the image.
 func (i *PowerVSImageScope) SetNotReady() {
 	i.IBMPowerVSImage.Status.Ready = false
 }
 
+// IsReady will return the status for the image.
 func (i *PowerVSImageScope) IsReady() bool {
 	return i.IBMPowerVSImage.Status.Ready
 }
 
+// SetImageID will set the id for the image.
 func (i *PowerVSImageScope) SetImageID(id *string) {
 	if id != nil {
 		i.IBMPowerVSImage.Status.ImageID = *id
 	}
 }
 
+// GetImageID will get the id for the image.
 func (i *PowerVSImageScope) GetImageID() string {
 	return i.IBMPowerVSImage.Status.ImageID
 }
 
+// SetImageState will set the state for the image.
 func (i *PowerVSImageScope) SetImageState(status string) {
-	i.IBMPowerVSImage.Status.ImageState = v1beta1.PowerVSImageState(status)
+	i.IBMPowerVSImage.Status.ImageState = infrav1beta1.PowerVSImageState(status)
 }
 
-func (i *PowerVSImageScope) GetImageState() v1beta1.PowerVSImageState {
+// GetImageState will get the state for the image.
+func (i *PowerVSImageScope) GetImageState() infrav1beta1.PowerVSImageState {
 	return i.IBMPowerVSImage.Status.ImageState
 }
 
+// SetJobID will set the id for the import image job.
 func (i *PowerVSImageScope) SetJobID(id string) {
 	i.IBMPowerVSImage.Status.JobID = id
 }
 
+// GetJobID will get the id for the import image job.
 func (i *PowerVSImageScope) GetJobID() string {
 	return i.IBMPowerVSImage.Status.JobID
 }

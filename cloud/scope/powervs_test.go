@@ -20,48 +20,49 @@ import (
 	"encoding/base64"
 	"errors"
 
-	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"github.com/IBM-Cloud/power-go-client/power/models"
+	"github.com/golang/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var (
 	mockpowervs *mock.MockPowerVS
 )
 
-func newMachine(clusterName, machineName string) *clusterv1.Machine {
-	return &clusterv1.Machine{
+func newMachine(machineName string) *capiv1beta1.Machine {
+	return &capiv1beta1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      machineName,
 			Namespace: "default",
 		},
-		Spec: clusterv1.MachineSpec{
-			Bootstrap: clusterv1.Bootstrap{
+		Spec: capiv1beta1.MachineSpec{
+			Bootstrap: capiv1beta1.Bootstrap{
 				DataSecretName: pstring(machineName),
 			},
 		},
 	}
 }
 
-func newCluster(name string) *clusterv1.Cluster {
-	return &clusterv1.Cluster{
+func newCluster(name string) *capiv1beta1.Cluster {
+	return &capiv1beta1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
 		},
-		Spec: clusterv1.ClusterSpec{},
+		Spec: capiv1beta1.ClusterSpec{},
 	}
 }
 
@@ -69,7 +70,7 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: clusterName,
+				capiv1beta1.ClusterLabelName: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",
@@ -80,8 +81,8 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 	}
 }
 
-func newPowerVSCluster(name string) *infrav1.IBMPowerVSCluster {
-	return &infrav1.IBMPowerVSCluster{
+func newPowerVSCluster(name string) *infrav1beta1.IBMPowerVSCluster {
+	return &infrav1beta1.IBMPowerVSCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -89,9 +90,9 @@ func newPowerVSCluster(name string) *infrav1.IBMPowerVSCluster {
 	}
 }
 
-func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1.IBMPowerVSMachine {
-	image := &infrav1.IBMPowerVSResourceReference{}
-	network := infrav1.IBMPowerVSResourceReference{}
+func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1beta1.IBMPowerVSMachine {
+	image := &infrav1beta1.IBMPowerVSResourceReference{}
+	network := infrav1beta1.IBMPowerVSResourceReference{}
 
 	if !isID {
 		image.Name = imageRef
@@ -101,15 +102,15 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 		network.ID = networkRef
 	}
 
-	return &infrav1.IBMPowerVSMachine{
+	return &infrav1beta1.IBMPowerVSMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				clusterv1.ClusterLabelName: clusterName,
+				capiv1beta1.ClusterLabelName: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",
 		},
-		Spec: infrav1.IBMPowerVSMachineSpec{
+		Spec: infrav1beta1.IBMPowerVSMachineSpec{
 			Memory:     "8",
 			Processors: "0.25",
 			Image:      image,
@@ -122,13 +123,13 @@ func pstring(name string) *string {
 	return pointer.String(name)
 }
 
-func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
-	return &infrav1.IBMPowerVSImage{
+func newPowervsImage(imageName string) *infrav1beta1.IBMPowerVSImage {
+	return &infrav1beta1.IBMPowerVSImage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      imageName,
 			Namespace: "default",
 		},
-		Spec: infrav1.IBMPowerVSImageSpec{
+		Spec: infrav1beta1.IBMPowerVSImageSpec{
 			ClusterName:       "test-cluster",
 			ServiceInstanceID: "test-service-ID",
 			Object:            pstring("sample-image.ova.gz"),
@@ -138,7 +139,7 @@ func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
 	}
 }
 
-func setupPowerVSImageScope(imageName string) (*PowerVSImageScope, error) {
+func setupPowerVSImageScope(imageName string) *PowerVSImageScope {
 	powervsImage := newPowervsImage(imageName)
 	initObjects := []client.Object{powervsImage}
 
@@ -148,12 +149,12 @@ func setupPowerVSImageScope(imageName string) (*PowerVSImageScope, error) {
 		Logger:           klogr.New(),
 		IBMPowerVSClient: mockpowervs,
 		IBMPowerVSImage:  powervsImage,
-	}, nil
+	}
 }
 
-func setupPowerVSMachineScope(clusterName string, machineName string, imageID *string, networkID *string, isID bool) (*PowerVSMachineScope, error) {
+func setupPowerVSMachineScope(clusterName string, machineName string, imageID *string, networkID *string, isID bool) *PowerVSMachineScope {
 	cluster := newCluster(clusterName)
-	machine := newMachine(clusterName, machineName)
+	machine := newMachine(machineName)
 	secret := newBootstrapSecret(clusterName, machineName)
 	powervsMachine := newPowerVSMachine(clusterName, machineName, imageID, networkID, isID)
 	powervsCluster := newPowerVSCluster(clusterName)
@@ -171,7 +172,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 		Machine:           machine,
 		IBMPowerVSCluster: powervsCluster,
 		IBMPowerVSMachine: powervsMachine,
-	}, nil
+	}
 }
 
 var _ = Describe("PowerVS machine and image creation", func() {
@@ -198,8 +199,7 @@ var _ = Describe("PowerVS machine and image creation", func() {
 
 		It("should not error and create a machine", func() {
 
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
 
 			instanceList := &models.PVMInstanceList{
 				{
@@ -217,18 +217,17 @@ var _ = Describe("PowerVS machine and image creation", func() {
 			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(body)).Return(instanceList, nil)
 
-			_, err = scope.CreateMachine()
+			_, err := scope.CreateMachine()
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should error with instance not getting created as bootstrap data is not available", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "", pstring("test-image-ID"), pstring("test-net-ID"), true)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "", pstring("test-image-ID"), pstring("test-net-ID"), true)
 
 			scope.Machine.Spec.Bootstrap.DataSecretName = nil
 			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
 
-			_, err = scope.CreateMachine()
+			_, err := scope.CreateMachine()
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -243,20 +242,18 @@ var _ = Describe("PowerVS machine and image creation", func() {
 		})
 
 		It("should not error and delete the machine", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
 
 			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(*instance.PvmInstanceID)).Return(nil)
-			err = scope.DeleteMachine()
+			err := scope.DeleteMachine()
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should error with machine not being deleted", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
 
 			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(*instance.PvmInstanceID)).Return(errors.New("Could not delete the macine"))
-			err = scope.DeleteMachine()
+			err := scope.DeleteMachine()
 			Expect(err).To(HaveOccurred())
 
 		})
@@ -264,8 +261,7 @@ var _ = Describe("PowerVS machine and image creation", func() {
 
 	Context("Get image ID or network ID", func() {
 		It("should not error and get imageID from name", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
 
 			images := &models.Images{
 				Images: []*models.ImageReference{
@@ -278,13 +274,12 @@ var _ = Describe("PowerVS machine and image creation", func() {
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 
 			mspec := scope.IBMPowerVSMachine.Spec
-			_, err = getImageID(mspec.Image, scope)
+			_, err := getImageID(mspec.Image, scope)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should error and not find the corresponding imageID", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
 
 			images := &models.Images{
 				Images: []*models.ImageReference{
@@ -297,13 +292,12 @@ var _ = Describe("PowerVS machine and image creation", func() {
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 
 			mspec := scope.IBMPowerVSMachine.Spec
-			_, err = getImageID(mspec.Image, scope)
+			_, err := getImageID(mspec.Image, scope)
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("should not error and get networkID from name", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
 
 			networks := &models.Networks{
 				Networks: []*models.NetworkReference{
@@ -316,13 +310,12 @@ var _ = Describe("PowerVS machine and image creation", func() {
 			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 
 			mspec := scope.IBMPowerVSMachine.Spec
-			_, err = getNetworkID(mspec.Network, scope)
+			_, err := getNetworkID(mspec.Network, scope)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should error and not find the corresponding networkID", func() {
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-name"), pstring("test-net-name"), false)
 
 			networks := &models.Networks{
 				Networks: []*models.NetworkReference{
@@ -335,7 +328,7 @@ var _ = Describe("PowerVS machine and image creation", func() {
 			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 
 			mspec := scope.IBMPowerVSMachine.Spec
-			_, err = getNetworkID(mspec.Network, scope)
+			_, err := getNetworkID(mspec.Network, scope)
 			Expect(err).To(HaveOccurred())
 		})
 	})
@@ -343,8 +336,7 @@ var _ = Describe("PowerVS machine and image creation", func() {
 	Context("Get Bootstrap Data", func() {
 		It("should not error and get base64 encoded bootstrap data", func() {
 
-			scope, err := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pstring("test-image-ID"), pstring("test-net-ID"), true)
 
 			result, err := scope.GetBootstrapData()
 			Expect(err).NotTo(HaveOccurred())
@@ -357,8 +349,7 @@ var _ = Describe("PowerVS machine and image creation", func() {
 
 	Context("Create or Delete IBMPowerVSImage", func() {
 		It("should not error and create an image import job", func() {
-			scope, err := setupPowerVSImageScope("sample-image")
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSImageScope("sample-image")
 			spec := scope.IBMPowerVSImage.Spec
 
 			images := &models.Images{}
@@ -380,8 +371,7 @@ var _ = Describe("PowerVS machine and image creation", func() {
 		})
 
 		It("should not error and use the existing image", func() {
-			scope, err := setupPowerVSImageScope("sample-image")
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSImageScope("sample-image")
 
 			images := &models.Images{
 				Images: []*models.ImageReference{
@@ -399,25 +389,23 @@ var _ = Describe("PowerVS machine and image creation", func() {
 		})
 
 		It("should return as the previous job is not finished", func() {
-			scope, err := setupPowerVSImageScope("sample-image")
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSImageScope("sample-image")
 
 			images := &models.Images{}
 			job := &models.Job{ID: pstring("test-job-ID"), Status: &models.Status{State: pstring("pending")}}
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetCosImages(scope.IBMPowerVSImage.Spec.ServiceInstanceID).Return(job, nil)
 
-			_, _, err = scope.CreateImageCOSBucket()
+			_, _, err := scope.CreateImageCOSBucket()
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should not error and delete the image", func() {
-			scope, err := setupPowerVSImageScope("sample-image")
-			Expect(err).NotTo(HaveOccurred())
+			scope := setupPowerVSImageScope("sample-image")
 
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf("sample-image-ID")).Return(nil)
 
-			err = scope.DeleteImage()
+			err := scope.DeleteImage()
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

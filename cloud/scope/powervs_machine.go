@@ -23,41 +23,39 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-	powerVSUtils "github.com/ppc64le-cloud/powervs-utils"
-
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
-
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	powerVSUtils "github.com/ppc64le-cloud/powervs-utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 )
 
 // PowerVSMachineScopeParams defines the input parameters used to create a new PowerVSMachineScope.
 type PowerVSMachineScopeParams struct {
 	Logger            logr.Logger
 	Client            client.Client
-	Cluster           *clusterv1.Cluster
-	Machine           *clusterv1.Machine
-	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
-	IBMPowerVSMachine *v1beta1.IBMPowerVSMachine
-	IBMPowerVSImage   *v1beta1.IBMPowerVSImage
+	Cluster           *capiv1beta1.Cluster
+	Machine           *capiv1beta1.Machine
+	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
+	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
+	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -67,11 +65,11 @@ type PowerVSMachineScope struct {
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient  powervs.PowerVS
-	Cluster           *clusterv1.Cluster
-	Machine           *clusterv1.Machine
-	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
-	IBMPowerVSMachine *v1beta1.IBMPowerVSMachine
-	IBMPowerVSImage   *v1beta1.IBMPowerVSImage
+	Cluster           *capiv1beta1.Cluster
+	Machine           *capiv1beta1.Machine
+	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
+	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
+	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
 }
 
 // NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
@@ -168,7 +166,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	}
 	scope.IBMPowerVSClient = c
 
-	return
+	return scope, nil
 }
 
 func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models.PVMInstanceReference, error) {
@@ -184,7 +182,7 @@ func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models
 	return nil, nil
 }
 
-// CreateMachine creates a power vs machine
+// CreateMachine creates a power vs machine.
 func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, error) {
 	s := m.IBMPowerVSMachine.Spec
 
@@ -192,7 +190,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 	if err != nil {
 		return nil, err
 	} else if instanceReply != nil {
-		//TODO need a reasonable wrapped error
+		// TODO need a reasonable wrapped error.
 		return instanceReply, nil
 	}
 	cloudInitData, err := m.GetBootstrapData()
@@ -264,7 +262,7 @@ func (m *PowerVSMachineScope) DeleteMachine() error {
 	return m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID)
 }
 
-// GetBootstrapData returns the base64 encoded bootstrap data from the secret in the Machine's bootstrap.dataSecretName
+// GetBootstrapData returns the base64 encoded bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
 func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	if m.Machine.Spec.Bootstrap.DataSecretName == nil {
 		return "", errors.New("error retrieving bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
@@ -284,7 +282,7 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-func getImageID(image *v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getImageID(image *infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if image.ID != nil {
 		return image.ID, nil
 	} else if image.Name != nil {
@@ -305,11 +303,12 @@ func getImageID(image *v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineSco
 	return nil, fmt.Errorf("failed to find an image ID")
 }
 
+// GetImages will get list of images for the powervs service instance.
 func (m *PowerVSMachineScope) GetImages() (*models.Images, error) {
 	return m.IBMPowerVSClient.GetAllImage()
 }
 
-func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getNetworkID(network infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if network.ID != nil {
 		return network.ID, nil
 	} else if network.Name != nil {
@@ -331,41 +330,49 @@ func getNetworkID(network v1beta1.IBMPowerVSResourceReference, m *PowerVSMachine
 	return nil, fmt.Errorf("failed to find a network ID")
 }
 
+// GetNetworks will get list of networks for the powervs service instance.
 func (m *PowerVSMachineScope) GetNetworks() (*models.Networks, error) {
 	return m.IBMPowerVSClient.GetAllNetwork()
 }
 
+// SetReady will set the status as ready for the machine.
 func (m *PowerVSMachineScope) SetReady() {
 	m.IBMPowerVSMachine.Status.Ready = true
 }
 
+// SetNotReady will set status as not ready for the machine.
 func (m *PowerVSMachineScope) SetNotReady() {
 	m.IBMPowerVSMachine.Status.Ready = false
 }
 
+// IsReady will return the status for the machine.
 func (m *PowerVSMachineScope) IsReady() bool {
 	return m.IBMPowerVSMachine.Status.Ready
 }
 
+// SetInstanceID will set the instance id for the machine.
 func (m *PowerVSMachineScope) SetInstanceID(id *string) {
 	if id != nil {
 		m.IBMPowerVSMachine.Status.InstanceID = *id
 	}
 }
 
+// GetInstanceID will get the instance id for the machine.
 func (m *PowerVSMachineScope) GetInstanceID() string {
 	return m.IBMPowerVSMachine.Status.InstanceID
 }
 
+// SetHealth will set the health status for the machine.
 func (m *PowerVSMachineScope) SetHealth(health *models.PVMInstanceHealth) {
 	if health != nil {
 		m.IBMPowerVSMachine.Status.Health = health.Status
 	}
 }
 
+// SetAddresses will set the addresses for the machine.
 func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	var addresses []corev1.NodeAddress
-	// Setting the name of the vm to the InternalDNS and Hostname as the vm uses that as hostname
+	// Setting the name of the vm to the InternalDNS and Hostname as the vm uses that as hostname.
 	addresses = append(addresses, corev1.NodeAddress{
 		Type:    corev1.NodeInternalDNS,
 		Address: *instance.ServerName,
@@ -391,18 +398,22 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	m.IBMPowerVSMachine.Status.Addresses = addresses
 }
 
+// SetInstanceState will set the state for the machine.
 func (m *PowerVSMachineScope) SetInstanceState(status *string) {
-	m.IBMPowerVSMachine.Status.InstanceState = v1beta1.PowerVSInstanceState(*status)
+	m.IBMPowerVSMachine.Status.InstanceState = infrav1beta1.PowerVSInstanceState(*status)
 }
 
-func (m *PowerVSMachineScope) GetInstanceState() v1beta1.PowerVSInstanceState {
+// GetInstanceState will get the state for the machine.
+func (m *PowerVSMachineScope) GetInstanceState() infrav1beta1.PowerVSInstanceState {
 	return m.IBMPowerVSMachine.Status.InstanceState
 }
 
+// SetRegion will set the region for the machine.
 func (m *PowerVSMachineScope) SetRegion(region string) {
 	m.IBMPowerVSMachine.Status.Region = &region
 }
 
+// GetRegion will get the region for the machine.
 func (m *PowerVSMachineScope) GetRegion() string {
 	if m.IBMPowerVSMachine.Status.Region == nil {
 		return ""
@@ -410,10 +421,12 @@ func (m *PowerVSMachineScope) GetRegion() string {
 	return *m.IBMPowerVSMachine.Status.Region
 }
 
+// SetZone will set the zone for the machine.
 func (m *PowerVSMachineScope) SetZone(zone string) {
 	m.IBMPowerVSMachine.Status.Zone = &zone
 }
 
+// GetZone will get the zone for the machine.
 func (m *PowerVSMachineScope) GetZone() string {
 	if m.IBMPowerVSMachine.Status.Zone == nil {
 		return ""
@@ -421,9 +434,9 @@ func (m *PowerVSMachineScope) GetZone() string {
 	return *m.IBMPowerVSMachine.Status.Zone
 }
 
-// SetProviderID will set the provider id for the machine
+// SetProviderID will set the provider id for the machine.
 func (m *PowerVSMachineScope) SetProviderID(id *string) {
-	// Based on the ProviderIDFormat version the providerID format will be decided
+	// Based on the ProviderIDFormat version the providerID format will be decided.
 	if options.PowerVSProviderIDFormat == options.PowerVSProviderIDFormatV2 {
 		if id != nil {
 			m.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), m.IBMPowerVSMachine.Spec.ServiceInstanceID, *id))

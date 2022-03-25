@@ -23,23 +23,22 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object
+// IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
 type IBMPowerVSClusterReconciler struct {
 	client.Client
 	Log    logr.Logger
@@ -53,8 +52,8 @@ type IBMPowerVSClusterReconciler struct {
 func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmpowervscluster", req.NamespacedName)
 
-	// Fetch the IBMPowerVSCluster instance
-	ibmCluster := &v1beta1.IBMPowerVSCluster{}
+	// Fetch the IBMPowerVSCluster instance.
+	ibmCluster := &infrav1beta1.IBMPowerVSCluster{}
 	err := r.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -88,7 +87,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	// Handle deleted clusters
+	// Handle deleted clusters.
 	if !ibmCluster.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, clusterScope)
 	}
@@ -96,18 +95,18 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
-	return r.reconcile(ctx, clusterScope)
+	return r.reconcile(clusterScope), nil
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMPowerVSCluster, v1beta1.IBMPowerVSClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMPowerVSCluster, v1beta1.IBMPowerVSClusterFinalizer)
-		return ctrl.Result{}, nil
+func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClusterScope) ctrl.Result {
+	if !controllerutil.ContainsFinalizer(clusterScope.IBMPowerVSCluster, infrav1beta1.IBMPowerVSClusterFinalizer) {
+		controllerutil.AddFinalizer(clusterScope.IBMPowerVSCluster, infrav1beta1.IBMPowerVSClusterFinalizer)
+		return ctrl.Result{}
 	}
 
 	clusterScope.IBMPowerVSCluster.Status.Ready = true
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}
 }
 
 func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
@@ -133,7 +132,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 
 		for _, child := range children {
 			if !child.GetDeletionTimestamp().IsZero() {
-				// Don't handle deleted child
+				// Don't handle deleted child.
 				continue
 			}
 			gvk := child.GetObjectKind().GroupVersionKind().String()
@@ -158,12 +157,12 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
 	}
 
-	controllerutil.RemoveFinalizer(cluster, v1beta1.IBMPowerVSClusterFinalizer)
+	controllerutil.RemoveFinalizer(cluster, infrav1beta1.IBMPowerVSClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
 type clusterDescendants struct {
-	ibmPowerVSImages v1beta1.IBMPowerVSImageList
+	ibmPowerVSImages infrav1beta1.IBMPowerVSImageList
 }
 
 // length returns the number of descendants.
@@ -185,12 +184,12 @@ func (c *clusterDescendants) descendantNames() string {
 }
 
 // listDescendants returns a list of all IBMPowerVSImages for the cluster.
-func (r *IBMPowerVSClusterReconciler) listDescendants(ctx context.Context, cluster *v1beta1.IBMPowerVSCluster) (clusterDescendants, error) {
+func (r *IBMPowerVSClusterReconciler) listDescendants(ctx context.Context, cluster *infrav1beta1.IBMPowerVSCluster) (clusterDescendants, error) {
 	var descendants clusterDescendants
 
 	listOptions := []client.ListOption{
 		client.InNamespace(cluster.Namespace),
-		client.MatchingLabels(map[string]string{clusterv1.ClusterLabelName: cluster.Name}),
+		client.MatchingLabels(map[string]string{capiv1beta1.ClusterLabelName: cluster.Name}),
 	}
 
 	if err := r.Client.List(ctx, &descendants.ibmPowerVSImages, listOptions...); err != nil {
@@ -202,7 +201,7 @@ func (r *IBMPowerVSClusterReconciler) listDescendants(ctx context.Context, clust
 
 // filterOwnedDescendants returns an array of runtime.Objects containing only those descendants that have the cluster
 // as an owner reference.
-func (c clusterDescendants) filterOwnedDescendants(cluster *v1beta1.IBMPowerVSCluster) ([]client.Object, error) {
+func (c clusterDescendants) filterOwnedDescendants(cluster *infrav1beta1.IBMPowerVSCluster) ([]client.Object, error) {
 	var ownedDescendants []client.Object
 	eachFunc := func(o runtime.Object) error {
 		obj := o.(client.Object)
@@ -234,6 +233,6 @@ func (c clusterDescendants) filterOwnedDescendants(cluster *v1beta1.IBMPowerVSCl
 // SetupWithManager creates a new IBMPowerVSCluster controller for a manager.
 func (r *IBMPowerVSClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.IBMPowerVSCluster{}).
+		For(&infrav1beta1.IBMPowerVSCluster{}).
 		Complete(r)
 }

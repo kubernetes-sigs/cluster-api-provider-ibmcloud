@@ -18,7 +18,7 @@ package v1alpha4
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	capiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -30,12 +30,12 @@ const (
 	IBMPowerVSClusterFinalizer = "ibmpowervscluster.infrastructure.cluster.x-k8s.io"
 )
 
-// IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster
+// IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster.
 type IBMPowerVSClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed
+	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// Network is the reference to the Network to use for this cluster.
@@ -43,10 +43,10 @@ type IBMPowerVSClusterSpec struct {
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint capiv1alpha4.APIEndpoint `json:"controlPlaneEndpoint"`
 }
 
-// IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster
+// IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
 type IBMPowerVSClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -56,7 +56,7 @@ type IBMPowerVSClusterStatus struct {
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true
 
-// IBMPowerVSCluster is the Schema for the ibmpowervsclusters API
+// IBMPowerVSCluster is the Schema for the ibmpowervsclusters API.
 type IBMPowerVSCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -67,7 +67,7 @@ type IBMPowerVSCluster struct {
 
 // +kubebuilder:object:root=true
 
-// IBMPowerVSClusterList contains a list of IBMPowerVSCluster
+// IBMPowerVSClusterList contains a list of IBMPowerVSCluster.
 type IBMPowerVSClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

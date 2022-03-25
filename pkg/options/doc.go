@@ -14,15 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resourcecontroller
-
-import (
-	"github.com/IBM/go-sdk-core/v5/core"
-	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
-)
-
-// ResourceController interface defines a method that a IBMCLOUD service object should implement in order to
-// use the resourcecontrollerv2 package for listing resource instances.
-type ResourceController interface {
-	ListResourceInstances(listResourceInstancesOptions *resourcecontrollerv2.ListResourceInstancesOptions) (result *resourcecontrollerv2.ResourceInstancesList, response *core.DetailedResponse, err error)
-}
+// Package options implements options code.
+package options

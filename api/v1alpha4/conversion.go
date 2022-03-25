@@ -18,14 +18,14 @@ package v1alpha4
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
-	clusterv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1alpha4 "sigs.k8s.io/cluster-api/api/v1alpha4"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-func Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in *clusterv1alpha4.APIEndpoint, out *clusterv1.APIEndpoint, s apiconversion.Scope) error {
-	return clusterv1alpha4.Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in, out, s)
+func Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in *capiv1alpha4.APIEndpoint, out *capiv1beta1.APIEndpoint, s apiconversion.Scope) error {
+	return capiv1alpha4.Convert_v1alpha4_APIEndpoint_To_v1beta1_APIEndpoint(in, out, s)
 }
 
-func Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in *clusterv1.APIEndpoint, out *clusterv1alpha4.APIEndpoint, s apiconversion.Scope) error {
-	return clusterv1alpha4.Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in, out, s)
+func Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in *capiv1beta1.APIEndpoint, out *capiv1alpha4.APIEndpoint, s apiconversion.Scope) error {
+	return capiv1alpha4.Convert_v1beta1_APIEndpoint_To_v1alpha4_APIEndpoint(in, out, s)
 }

@@ -20,20 +20,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	utils "github.com/ppc64le-cloud/powervs-utils"
-
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
@@ -41,6 +39,7 @@ import (
 )
 
 const (
+	// DEBUGLEVEL indicates the debug level of the logs.
 	DEBUGLEVEL = 5
 )
 
@@ -48,8 +47,8 @@ const (
 type PowerVSClusterScopeParams struct {
 	Client            client.Client
 	Logger            logr.Logger
-	Cluster           *clusterv1.Cluster
-	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
+	Cluster           *capiv1beta1.Cluster
+	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
 }
 
 // PowerVSClusterScope defines a scope defined around a Power VS Cluster.
@@ -59,8 +58,8 @@ type PowerVSClusterScope struct {
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient  powervs.PowerVS
-	Cluster           *clusterv1.Cluster
-	IBMPowerVSCluster *v1beta1.IBMPowerVSCluster
+	Cluster           *capiv1beta1.Cluster
+	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
 }
 
 // NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.
@@ -147,7 +146,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 	}
 	scope.IBMPowerVSClient = c
 
-	return
+	return scope, nil
 }
 
 // PatchObject persists the cluster configuration and status.

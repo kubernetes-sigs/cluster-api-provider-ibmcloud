@@ -29,19 +29,18 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	"github.com/onsi/ginkgo/reporters"
-	. "github.com/onsi/gomega"
-
 	"k8s.io/apimachinery/pkg/runtime"
-
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/bootstrap"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -64,7 +63,7 @@ var (
 	// skipCleanup prevents cleanup of test resources e.g. for debug purposes.
 	skipCleanup bool
 
-	// flavor instructs the tests to be run on the passed infrastructure type
+	// flavor instructs the tests to be run on the passed infrastructure type.
 	flavor string
 )
 
@@ -108,7 +107,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 
 	Expect(configPath).To(BeAnExistingFile(), "Invalid test suite argument. e2e.config should be an existing file.")
 	Expect(flavor).ToNot(BeNil(), "Invalid test argument. e2e.flavor should not be nil")
-	Expect(os.MkdirAll(artifactFolder, 0755)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
+	Expect(os.MkdirAll(artifactFolder, 0750)).To(Succeed(), "Invalid test suite argument. Can't create e2e.artifacts-folder %q", artifactFolder)
 
 	By("Initializing a runtime.Scheme with all the GVK relevant for this test")
 	scheme := initScheme()
@@ -164,7 +163,7 @@ var _ = SynchronizedAfterSuite(func() {
 func initScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	framework.TryAddDefaultSchemes(scheme)
-	Expect(infrav1.AddToScheme(scheme)).To(Succeed())
+	Expect(infrav1beta1.AddToScheme(scheme)).To(Succeed())
 
 	return scheme
 }

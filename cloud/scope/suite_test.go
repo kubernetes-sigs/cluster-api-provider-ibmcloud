@@ -19,14 +19,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
-	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var cfg *rest.Config
@@ -36,7 +38,6 @@ func TestScope(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit-scope.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "Cloud Suite", []Reporter{junitReporter})
-
 }
 
 var _ = BeforeSuite(func(done Done) {
@@ -52,8 +53,8 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	Expect(clusterv1.AddToScheme(scheme.Scheme)).To(Succeed())
-	Expect(infrav1.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(capiv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(infrav1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	close(done)
 }, 60)
