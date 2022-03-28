@@ -50,7 +50,7 @@ it into a management cluster using `clusterctl`.
     export SERVICE_ENDPOINT=https://us-south.iaas.cloud.ibm.com/v1
     ```
 
-    Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
+    > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 
 3. Initialize local bootstrap cluter as a management cluster
     
@@ -59,6 +59,9 @@ it into a management cluster using `clusterctl`.
     ```console
     ~ clusterctl init --infrastructure ibmcloud:<TAG>
     ```
+    > Note: If the latest release version of the provider is available, specifying TAG can be avoided.
+    In other cases, you can specify any prerelease version compatible with the supported API contract as the TAG.  
+    Example: clusterctl init --infrastructure ibmcloud:v0.2.0-alpha.5
 
     Output:
     ```console
