@@ -39,7 +39,7 @@ func (r *IBMPowerVSMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Defaulter = &IBMPowerVSMachine{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *IBMPowerVSMachine) Default() {
 	ibmpowervsmachinelog.Info("default", "name", r.Name)
 	defaultIBMPowerVSMachineSpec(&r.Spec)
@@ -49,19 +49,19 @@ func (r *IBMPowerVSMachine) Default() {
 
 var _ webhook.Validator = &IBMPowerVSMachine{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMPowerVSMachine) ValidateCreate() error {
 	ibmpowervsmachinelog.Info("validate create", "name", r.Name)
 	return r.validateIBMPowerVSMachine()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMPowerVSMachine) ValidateUpdate(old runtime.Object) error {
 	ibmpowervsmachinelog.Info("validate update", "name", r.Name)
 	return r.validateIBMPowerVSMachine()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMPowerVSMachine) ValidateDelete() error {
 	ibmpowervsmachinelog.Info("validate delete", "name", r.Name)
 	return nil

@@ -16,7 +16,7 @@ limitations under the License.
 
 package options
 
-// PowerVSProviderIDFormat is used to identify the Provider ID format for Machine
+// PowerVSProviderIDFormat is used to identify the Provider ID format for Machine.
 var PowerVSProviderIDFormat string
 
 // PowerVSProviderIDFormatV2 will set provider id to machine as ibmpowervs://<region>/<zone>/<service_instance_id>/<powervs_machine_id>

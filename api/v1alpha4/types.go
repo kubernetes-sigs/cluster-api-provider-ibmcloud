@@ -22,7 +22,7 @@ type NetworkInterface struct {
 	Subnet string `json:"subnet,omitempty"`
 }
 
-// Subnet describes a subnet
+// Subnet describes a subnet.
 type Subnet struct {
 	Ipv4CidrBlock *string `json:"cidr"`
 	Name          *string `json:"name"`
@@ -30,7 +30,7 @@ type Subnet struct {
 	Zone          *string `json:"zone"`
 }
 
-// VPCEndpoint describes a VPCEndpoint
+// VPCEndpoint describes a VPCEndpoint.
 type VPCEndpoint struct {
 	Address *string `json:"address"`
 	FIPID   *string `json:"floatingIPID"`

@@ -19,16 +19,13 @@ package controllers
 import (
 	"context"
 	"os"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
-
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
-
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/predicates"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -36,11 +33,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	infrastructurev1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 )
 
-// IBMVPCClusterReconciler reconciles a IBMVPCCluster object
+// IBMVPCClusterReconciler reconciles a IBMVPCCluster object.
 type IBMVPCClusterReconciler struct {
 	client.Client
 	Log    logr.Logger
@@ -55,9 +53,8 @@ type IBMVPCClusterReconciler struct {
 func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmvpccluster", req.NamespacedName)
 
-	// your logic here
-	// Fetch the IBMVPCCluster instance
-	ibmCluster := &infrastructurev1beta1.IBMVPCCluster{}
+	// Fetch the IBMVPCCluster instance.
+	ibmCluster := &infrav1beta1.IBMVPCCluster{}
 	err := r.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -77,7 +74,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Create the scope.
-	// TODO: Will be removed once we find a better way of overriding the service endpoint, generate via spec
+	// TODO: Will be removed once we find a better way of overriding the service endpoint, generate via spec.
 	svcEndpoint := os.Getenv("SERVICE_ENDPOINT")
 
 	authenticator, err := authenticator.GetAuthenticator()
@@ -99,7 +96,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}()
 
-	// Handle deleted clusters
+	// Handle deleted clusters.
 	if !ibmCluster.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(clusterScope)
 	}
@@ -107,13 +104,12 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
-	return r.reconcile(ctx, clusterScope)
+	return r.reconcile(clusterScope)
 }
 
-func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrastructurev1beta1.ClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrastructurev1beta1.ClusterFinalizer)
-		//_ = r.Update(ctx, clusterScope.IBMVPCCluster)
+func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrav1beta1.ClusterFinalizer) {
+		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrav1beta1.ClusterFinalizer)
 		return ctrl.Result{}, nil
 	}
 
@@ -122,7 +118,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VPC for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
 	}
 	if vpc != nil {
-		clusterScope.IBMVPCCluster.Status.VPC = infrastructurev1beta1.VPC{
+		clusterScope.IBMVPCCluster.Status.VPC = infrav1beta1.VPC{
 			ID:   *vpc.ID,
 			Name: *vpc.Name,
 		}
@@ -135,12 +131,12 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 		}
 
 		if fip != nil {
-			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
+			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
 				Host: *fip.Address,
 				Port: 6443,
 			}
 
-			clusterScope.IBMVPCCluster.Status.VPCEndpoint = infrastructurev1beta1.VPCEndpoint{
+			clusterScope.IBMVPCCluster.Status.VPCEndpoint = infrav1beta1.VPCEndpoint{
 				Address: fip.Address,
 				FIPID:   fip.ID,
 			}
@@ -153,7 +149,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Subnet for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
 		}
 		if subnet != nil {
-			clusterScope.IBMVPCCluster.Status.Subnet = infrastructurev1beta1.Subnet{
+			clusterScope.IBMVPCCluster.Status.Subnet = infrav1beta1.Subnet{
 				Ipv4CidrBlock: subnet.Ipv4CIDRBlock,
 				Name:          subnet.Name,
 				ID:            subnet.ID,
@@ -167,7 +163,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 }
 
 func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	// check if still have existing VSIs
+	// check if still have existing VSIs.
 	listVSIOpts := &vpcv1.ListInstancesOptions{
 		VPCID: &clusterScope.IBMVPCCluster.Status.VPC.ID,
 	}
@@ -175,7 +171,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	if err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "Error when listing VSIs when tried to delete subnet ")
 	}
-	// skip deleting other resources if still have vsis running
+	// skip deleting other resources if still have vsis running.
 	if *vsis.TotalCount != int64(0) {
 		return ctrl.Result{}, nil
 	}
@@ -191,14 +187,14 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	if err := clusterScope.DeleteVPC(); err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "failed to delete VPC")
 	}
-	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrastructurev1beta1.ClusterFinalizer)
+	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrav1beta1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager creates a new IBMVPCCluster controller for a manager.
 func (r *IBMVPCClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1beta1.IBMVPCCluster{}).
+		For(&infrav1beta1.IBMVPCCluster{}).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(context.TODO()))).
 		Complete(r)
 }

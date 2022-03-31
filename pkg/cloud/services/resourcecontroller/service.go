@@ -23,19 +23,22 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 )
 
-// Service holds the IBM Cloud Resource Controller Service specific information
+// Service holds the IBM Cloud Resource Controller Service specific information.
 type Service struct {
 	client *resourcecontrollerv2.ResourceControllerV2
 }
 
+// ServiceOptions holds the IBM Cloud Resource Controller Service Options specific information.
 type ServiceOptions struct {
 	*resourcecontrollerv2.ResourceControllerV2Options
 }
 
+// ListResourceInstances will list all the resorce instances.
 func (s *Service) ListResourceInstances(listResourceInstancesOptions *resourcecontrollerv2.ListResourceInstancesOptions) (result *resourcecontrollerv2.ResourceInstancesList, response *core.DetailedResponse, err error) {
 	return s.client.ListResourceInstances(listResourceInstancesOptions)
 }
 
+// GetResourceInstance will get the resource instance.
 func (s *Service) GetResourceInstance(getResourceInstanceOptions *resourcecontrollerv2.GetResourceInstanceOptions) (result *resourcecontrollerv2.ResourceInstance, response *core.DetailedResponse, err error) {
 	return s.client.GetResourceInstance(getResourceInstanceOptions)
 }

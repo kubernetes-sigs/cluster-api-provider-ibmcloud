@@ -20,28 +20,26 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
-
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
-
-	v1 "k8s.io/api/core/v1"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	infrastructurev1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 )
 
-// IBMVPCMachineReconciler reconciles a IBMVPCMachine object
+// IBMVPCMachineReconciler reconciles a IBMVPCMachine object.
 type IBMVPCMachineReconciler struct {
 	client.Client
 	Log    logr.Logger
@@ -60,7 +58,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Fetch the IBMVPCMachine instance.
 
-	ibmVpcMachine := &infrastructurev1beta1.IBMVPCMachine{}
+	ibmVpcMachine := &infrav1beta1.IBMVPCMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmVpcMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -87,7 +85,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	ibmCluster := &infrastructurev1beta1.IBMVPCCluster{}
+	ibmCluster := &infrav1beta1.IBMVPCCluster{}
 	ibmVpcClusterName := client.ObjectKey{
 		Namespace: ibmVpcMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
@@ -97,7 +95,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	// Create the cluster scope
+	// Create the cluster scope.
 	svcEndpoint := os.Getenv("SERVICE_ENDPOINT")
 
 	authenticator, err := authenticator.GetAuthenticator()
@@ -105,7 +103,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, errors.Wrapf(err, "failed to get authenticator")
 	}
 
-	// Create the machine scope
+	// Create the machine scope.
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Client:        r.Client,
 		Logger:        log,
@@ -125,24 +123,24 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}()
 
-	// Handle deleted machines
+	// Handle deleted machines.
 	if !ibmVpcMachine.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(machineScope)
 	}
 
-	// Handle non-deleted machines
-	return r.reconcileNormal(ctx, machineScope)
+	// Handle non-deleted machines.
+	return r.reconcileNormal(machineScope)
 }
 
 // SetupWithManager creates a new IBMVPCMachine controller for a manager.
 func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrastructurev1beta1.IBMVPCMachine{}).
+		For(&infrav1beta1.IBMVPCMachine{}).
 		Complete(r)
 }
 
-func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
-	controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrastructurev1beta1.MachineFinalizer)
+func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (ctrl.Result, error) {
+	controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1beta1.MachineFinalizer)
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
@@ -151,7 +149,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 	}
 
 	if machineScope.IBMVPCCluster.Status.Subnet.ID != nil {
-		machineScope.IBMVPCMachine.Spec.PrimaryNetworkInterface = infrastructurev1beta1.NetworkInterface{
+		machineScope.IBMVPCMachine.Spec.PrimaryNetworkInterface = infrav1beta1.NetworkInterface{
 			Subnet: *machineScope.IBMVPCCluster.Status.Subnet.ID,
 		}
 	}
@@ -163,13 +161,13 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 
 	if instance != nil {
 		machineScope.IBMVPCMachine.Status.InstanceID = *instance.ID
-		machineScope.IBMVPCMachine.Status.Addresses = []v1.NodeAddress{
-			v1.NodeAddress{
-				Type:    v1.NodeInternalIP,
+		machineScope.IBMVPCMachine.Status.Addresses = []corev1.NodeAddress{
+			{
+				Type:    corev1.NodeInternalIP,
 				Address: *instance.PrimaryNetworkInterface.PrimaryIpv4Address,
 			},
 		}
-		_, ok := machineScope.IBMVPCMachine.Labels[clusterv1.MachineControlPlaneLabelName]
+		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneLabelName]
 		machineScope.IBMVPCMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmvpc://%s/%s", machineScope.Machine.Spec.ClusterName, machineScope.IBMVPCMachine.Name))
 		if ok {
 			options := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}
@@ -181,8 +179,8 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 			if err != nil {
 				return ctrl.Result{}, errors.Wrapf(err, "failed to bind floating IP to control plane %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
 			}
-			machineScope.IBMVPCMachine.Status.Addresses = append(machineScope.IBMVPCMachine.Status.Addresses, v1.NodeAddress{
-				Type:    v1.NodeExternalIP,
+			machineScope.IBMVPCMachine.Status.Addresses = append(machineScope.IBMVPCMachine.Status.Addresses, corev1.NodeAddress{
+				Type:    corev1.NodeExternalIP,
 				Address: *floatingIP.Address,
 			})
 		}
@@ -209,7 +207,7 @@ func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ 
 	defer func() {
 		if reterr == nil {
 			// VSI is deleted so remove the finalizer.
-			controllerutil.RemoveFinalizer(scope.IBMVPCMachine, infrastructurev1beta1.MachineFinalizer)
+			controllerutil.RemoveFinalizer(scope.IBMVPCMachine, infrav1beta1.MachineFinalizer)
 		}
 	}()
 
