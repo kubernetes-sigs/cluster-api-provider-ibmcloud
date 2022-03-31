@@ -1,6 +1,6 @@
 # Dealing with images for VPC
 
-Build the Ubuntu image as described in the [VPC section](topics/vpc/prerequisites.md).
+Build the Ubuntu image as described in the [VPC section](../topics/vpc/prerequisites.md).
 Make sure to build the qcow2 version by following the instructions for [raw image build](https://image-builder.sigs.k8s.io/capi/providers/raw.html).
 
 Since the IBM Cloud does not support dots before the qcow2 extension, rename the file as follows:
@@ -54,7 +54,7 @@ target: service Cloud object storage in resource_group <your_resource_group_or_a
 
 Now you can provision a VM with your own VM image.
 Then please continue with 
-[create a cluster](topics/vpc/creating-a-cluster.md).
+[create a cluster](../topics/vpc/creating-a-cluster.md).
 
 Make sure you take the ImageID from your VM image. The ImageID can be determined using ibmcloud cli. In addition, the Kubernetes version must be set to match the image. In this example: 
 ```
