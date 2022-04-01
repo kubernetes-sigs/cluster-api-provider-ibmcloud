@@ -12,6 +12,7 @@
   - [Power VS Cluster](./topics/powervs/index.md)
     - [Prerequisites](./topics/powervs/prerequisites.md)
     - [Creating a cluster](./topics/powervs/creating-a-cluster.md)
+    - [Creating a cluster with External Cloud Provider](./topics/powervs/external-cloud-provider.md)
 - [Developer Guide](./developer/index.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)

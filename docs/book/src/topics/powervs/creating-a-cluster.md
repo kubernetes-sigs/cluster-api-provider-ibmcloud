@@ -34,6 +34,8 @@ following the steps below.
 
 2. Use clusterctl to render the yaml through templates and deploy the cluster
 
+    **Note:** To deploy workload cluster with Power VS cloud controller manager which is currently in experimental stage follow [these](/topics/powervs/external-cloud-provider.html) steps.
+
     **Note:** the `IBMPOWERVS_IMAGE_ID` value below should reflect the ID of the custom qcow2 image, the `kubernetes-version` value below should reflect the kubernetes version of the custom qcow2 image.
 
     ```console
