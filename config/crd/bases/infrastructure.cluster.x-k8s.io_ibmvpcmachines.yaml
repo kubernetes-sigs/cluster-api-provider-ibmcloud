@@ -25,7 +25,7 @@ spec:
     name: v1alpha3
     schema:
       openAPIV3Schema:
-        description: IBMVPCMachine is the Schema for the ibmvpcmachines API
+        description: IBMVPCMachine is the Schema for the ibmvpcmachines API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -40,7 +40,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: IBMVPCMachineSpec defines the desired state of IBMVPCMachine
+            description: IBMVPCMachineSpec defines the desired state of IBMVPCMachine.
             properties:
               image:
                 description: 'Image is the id of OS image which would be install on
@@ -49,10 +49,10 @@ spec:
                   ibm-ubuntu-18-04-1-minimal-amd64-2'
                 type: string
               name:
-                description: Name of the instance
+                description: Name of the instance.
                 type: string
               primaryNetworkInterface:
-                description: PrimaryNetworkInterface is required to specify subnet
+                description: PrimaryNetworkInterface is required to specify subnet.
                 properties:
                   subnet:
                     description: Subnet ID of the network interface
@@ -68,7 +68,7 @@ spec:
                 type: string
               sshKeys:
                 description: SSHKeys is the SSH pub keys that will be used to access
-                  VM
+                  VM.
                 items:
                   type: string
                 type: array
@@ -83,7 +83,7 @@ spec:
             - zone
             type: object
           status:
-            description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine
+            description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine.
             properties:
               addresses:
                 description: Addresses contains the GCP instance associated addresses.
@@ -126,7 +126,7 @@ spec:
     name: v1alpha4
     schema:
       openAPIV3Schema:
-        description: IBMVPCMachine is the Schema for the ibmvpcmachines API
+        description: IBMVPCMachine is the Schema for the ibmvpcmachines API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -141,7 +141,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: IBMVPCMachineSpec defines the desired state of IBMVPCMachine
+            description: IBMVPCMachineSpec defines the desired state of IBMVPCMachine.
             properties:
               image:
                 description: 'Image is the id of OS image which would be install on
@@ -153,7 +153,7 @@ spec:
                 description: Name of the instance
                 type: string
               primaryNetworkInterface:
-                description: PrimaryNetworkInterface is required to specify subnet
+                description: PrimaryNetworkInterface is required to specify subnet.
                 properties:
                   subnet:
                     description: Subnet ID of the network interface
@@ -169,7 +169,7 @@ spec:
                 type: string
               sshKeys:
                 description: SSHKeys is the SSH pub keys that will be used to access
-                  VM
+                  VM.
                 items:
                   type: string
                 type: array
@@ -184,7 +184,7 @@ spec:
             - zone
             type: object
           status:
-            description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine
+            description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine.
             properties:
               addresses:
                 description: Addresses contains the GCP instance associated addresses.
@@ -227,7 +227,7 @@ spec:
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: IBMVPCMachine is the Schema for the ibmvpcmachines API
+        description: IBMVPCMachine is the Schema for the ibmvpcmachines API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -242,7 +242,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: IBMVPCMachineSpec defines the desired state of IBMVPCMachine
+            description: IBMVPCMachineSpec defines the desired state of IBMVPCMachine.
             properties:
               image:
                 description: 'Image is the id of OS image which would be install on
@@ -251,13 +251,13 @@ spec:
                   ibm-ubuntu-18-04-1-minimal-amd64-2'
                 type: string
               name:
-                description: Name of the instance
+                description: Name of the instance.
                 type: string
               primaryNetworkInterface:
-                description: PrimaryNetworkInterface is required to specify subnet
+                description: PrimaryNetworkInterface is required to specify subnet.
                 properties:
                   subnet:
-                    description: Subnet ID of the network interface
+                    description: Subnet ID of the network interface.
                     type: string
                 type: object
               profile:
@@ -270,7 +270,7 @@ spec:
                 type: string
               sshKeys:
                 description: SSHKeys is the SSH pub keys that will be used to access
-                  VM
+                  VM.
                 items:
                   type: string
                 type: array
@@ -284,7 +284,7 @@ spec:
             - zone
             type: object
           status:
-            description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine
+            description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine.
             properties:
               addresses:
                 description: Addresses contains the GCP instance associated addresses.
