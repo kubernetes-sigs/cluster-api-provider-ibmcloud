@@ -125,6 +125,9 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 				ID: &m.IBMVPCMachine.Spec.PrimaryNetworkInterface.Subnet,
 			},
 		},
+		ResourceGroup: &vpcv1.ResourceGroupIdentity{
+			ID: &m.IBMVPCCluster.Spec.ResourceGroup,
+		},
 		UserData: &cloudInitData,
 	}
 
