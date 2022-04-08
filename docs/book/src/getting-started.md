@@ -41,14 +41,6 @@ it into a management cluster using `clusterctl`.
     ```console
     export IBMCLOUD_API_KEY=<YOUR_API_KEY>
     ```
-    - Additional varibles required for VPC
-    
-    The sample `IAM_ENDPOINT` below points to Production and the `SERVICE_ENDPOINT` points to the `us-east` VPC region.
-
-    ```console
-    export IAM_ENDPOINT=https://iam.cloud.ibm.com/identity/token
-    export SERVICE_ENDPOINT=https://us-south.iaas.cloud.ibm.com/v1
-    ```
 
     > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 

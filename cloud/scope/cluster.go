@@ -221,10 +221,13 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 		Zone: &vpcv1.ZoneIdentity{
 			Name: &s.IBMVPCCluster.Spec.Zone,
 		},
+		ResourceGroup: &vpcv1.ResourceGroupIdentity{
+			ID: &s.IBMVPCCluster.Spec.ResourceGroup,
+		},
 	})
 	subnet, _, err := s.IBMVPCClients.VPCService.CreateSubnet(options)
 	if subnet != nil {
-		pgw, err := s.createPublicGateWay(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone)
+		pgw, err := s.createPublicGateWay(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone, s.IBMVPCCluster.Spec.ResourceGroup)
 		if err != nil {
 			return subnet, err
 		}
@@ -295,13 +298,16 @@ func (s *ClusterScope) DeleteSubnet() error {
 	return err
 }
 
-func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string) (*vpcv1.PublicGateway, error) {
+func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string, resourceGroupID string) (*vpcv1.PublicGateway, error) {
 	options := &vpcv1.CreatePublicGatewayOptions{}
 	options.SetVPC(&vpcv1.VPCIdentity{
 		ID: &vpcID,
 	})
 	options.SetZone(&vpcv1.ZoneIdentity{
 		Name: &zoneName,
+	})
+	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
+		ID: &resourceGroupID,
 	})
 	publicGateway, _, err := s.IBMVPCClients.VPCService.CreatePublicGateway(options)
 	return publicGateway, err
