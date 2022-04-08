@@ -63,12 +63,14 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	scope = &PowerVSImageScope{}
 
 	if params.Client == nil {
-		return nil, errors.New("failed to generate new scope from nil Client")
+		err = errors.New("failed to generate new scope from nil Client")
+		return
 	}
 	scope.client = params.Client
 
 	if params.IBMPowerVSImage == nil {
-		return nil, errors.New("failed to generate new scope from nil IBMPowerVSImage")
+		err = errors.New("failed to generate new scope from nil IBMPowerVSImage")
+		return
 	}
 	scope.IBMPowerVSImage = params.IBMPowerVSImage
 
@@ -79,24 +81,28 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	helper, err := patch.NewHelper(params.IBMPowerVSImage, params.Client)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to init patch helper")
+		err = errors.Wrap(err, "failed to init patch helper")
+		return
 	}
+	scope.patchHelper = helper
 
 	spec := params.IBMPowerVSImage.Spec
 
 	auth, err := authenticator.GetAuthenticator()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get authenticator")
+		err = errors.Wrap(err, "failed to get authenticator")
+		return
 	}
 
 	account, err := servicesutils.GetAccount(auth)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get account")
+		err = errors.Wrap(err, "failed to get account")
+		return
 	}
 
 	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	res, _, err := rc.GetResourceInstance(
@@ -104,12 +110,14 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 			ID: core.StringPtr(spec.ServiceInstanceID),
 		})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get resource instance")
+		err = errors.Wrap(err, "failed to get resource instance")
+		return
 	}
 
 	region, err := utils.GetRegion(*res.RegionID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get region")
+		err = errors.Wrap(err, "failed to get region")
+		return
 	}
 
 	options := powervs.ServiceOptions{
@@ -124,16 +132,12 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	c, err := powervs.NewService(options)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create NewIBMPowerVSClient")
+		err = fmt.Errorf("failed to create NewIBMPowerVSClient")
+		return
 	}
+	scope.IBMPowerVSClient = c
 
-	return &PowerVSImageScope{
-		Logger:           params.Logger,
-		client:           params.Client,
-		IBMPowerVSClient: c,
-		IBMPowerVSImage:  params.IBMPowerVSImage,
-		patchHelper:      helper,
-	}, nil
+	return scope, nil
 }
 
 func (i *PowerVSImageScope) ensureImageUnique(imageName string) (*models.ImageReference, error) {
