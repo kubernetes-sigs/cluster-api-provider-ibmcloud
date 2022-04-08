@@ -62,6 +62,7 @@ type IBMPowerVSMachineSpec struct {
 
 	// Processors is Number of processors allocated.
 	// +optional
+	// +kubebuilder:validation:Pattern=^\d+(\.)?(\d)?(\d)?$
 	Processors string `json:"processors,omitempty"`
 
 	// Memory is Amount of memory allocated (in GB)
