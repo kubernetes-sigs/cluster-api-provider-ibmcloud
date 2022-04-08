@@ -13,7 +13,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
 	github.com/pkg/errors v0.9.1
-	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210106101518-5d3f965b0344
+	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210415051532-4cdd6a79c8fa
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.23.5
 	k8s.io/apimachinery v0.23.5
