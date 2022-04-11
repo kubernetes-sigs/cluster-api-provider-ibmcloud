@@ -20,18 +20,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
-
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.
@@ -39,8 +37,8 @@ type ClusterScopeParams struct {
 	IBMVPCClients
 	Client        client.Client
 	Logger        logr.Logger
-	Cluster       *clusterv1.Cluster
-	IBMVPCCluster *infrav1.IBMVPCCluster
+	Cluster       *capiv1beta1.Cluster
+	IBMVPCCluster *infrav1beta1.IBMVPCCluster
 }
 
 // ClusterScope defines a scope defined around a cluster.
@@ -50,8 +48,8 @@ type ClusterScope struct {
 	patchHelper *patch.Helper
 
 	IBMVPCClients
-	Cluster       *clusterv1.Cluster
-	IBMVPCCluster *infrav1.IBMVPCCluster
+	Cluster       *capiv1beta1.Cluster
+	IBMVPCCluster *infrav1beta1.IBMVPCCluster
 }
 
 // NewClusterScope creates a new ClusterScope from the supplied parameters.
@@ -87,13 +85,13 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 	}, nil
 }
 
-// CreateVPC creates a new IBM VPC in specified resource group
+// CreateVPC creates a new IBM VPC in specified resource group.
 func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	vpcReply, err := s.ensureVPCUnique(s.IBMVPCCluster.Spec.VPC)
 	if err != nil {
 		return nil, err
 	} else if vpcReply != nil {
-		//TODO need a reasonable wrapped error
+		// TODO need a reasonable wrapped error
 		return vpcReply, nil
 	}
 
@@ -111,7 +109,7 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	return vpc, nil
 }
 
-// DeleteVPC deletes IBM VPC associated with a VPC id
+// DeleteVPC deletes IBM VPC associated with a VPC id.
 func (s *ClusterScope) DeleteVPC() error {
 	deleteVpcOptions := &vpcv1.DeleteVPCOptions{}
 	deleteVpcOptions.SetID(s.IBMVPCCluster.Status.VPC.ID)
@@ -146,14 +144,14 @@ func (s *ClusterScope) updateDefaultSG(sgID string) error {
 	return err
 }
 
-// ReserveFIP creates a Floating IP in a provided resource group and zone
+// ReserveFIP creates a Floating IP in a provided resource group and zone.
 func (s *ClusterScope) ReserveFIP() (*vpcv1.FloatingIP, error) {
 	fipName := s.IBMVPCCluster.Name + "-control-plane"
 	fipReply, err := s.ensureFIPUnique(fipName)
 	if err != nil {
 		return nil, err
 	} else if fipReply != nil {
-		//TODO need a reasonable wrapped error
+		// TODO need a reasonable wrapped error
 		return fipReply, nil
 	}
 	options := &vpcv1.CreateFloatingIPOptions{}
@@ -186,10 +184,9 @@ func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error
 	return nil, nil
 }
 
-// DeleteFloatingIP deletes a Floating IP associated with floating ip id
+// DeleteFloatingIP deletes a Floating IP associated with floating ip id.
 func (s *ClusterScope) DeleteFloatingIP() error {
-	fipID := *s.IBMVPCCluster.Status.VPCEndpoint.FIPID
-	if fipID != "" {
+	if fipID := *s.IBMVPCCluster.Status.VPCEndpoint.FIPID; fipID != "" {
 		deleteFIPOption := &vpcv1.DeleteFloatingIPOptions{}
 		deleteFIPOption.SetID(fipID)
 		_, err := s.IBMVPCClients.VPCService.DeleteFloatingIP(deleteFIPOption)
@@ -198,14 +195,14 @@ func (s *ClusterScope) DeleteFloatingIP() error {
 	return nil
 }
 
-// CreateSubnet creates a subnet within provided vpc and zone
+// CreateSubnet creates a subnet within provided vpc and zone.
 func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 	subnetName := s.IBMVPCCluster.Name + "-subnet"
 	subnetReply, err := s.ensureSubnetUnique(subnetName)
 	if err != nil {
 		return nil, err
 	} else if subnetReply != nil {
-		//TODO need a reasonable wrapped error
+		// TODO need a reasonable wrapped error
 		return subnetReply, nil
 	}
 
@@ -224,10 +221,13 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 		Zone: &vpcv1.ZoneIdentity{
 			Name: &s.IBMVPCCluster.Spec.Zone,
 		},
+		ResourceGroup: &vpcv1.ResourceGroupIdentity{
+			ID: &s.IBMVPCCluster.Spec.ResourceGroup,
+		},
 	})
 	subnet, _, err := s.IBMVPCClients.VPCService.CreateSubnet(options)
 	if subnet != nil {
-		pgw, err := s.createPublicGateWay(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone)
+		pgw, err := s.createPublicGateWay(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone, s.IBMVPCCluster.Spec.ResourceGroup)
 		if err != nil {
 			return subnet, err
 		}
@@ -272,7 +272,7 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 	return nil, nil
 }
 
-// DeleteSubnet deletes a subnet associated with subnet id
+// DeleteSubnet deletes a subnet associated with subnet id.
 func (s *ClusterScope) DeleteSubnet() error {
 	subnetID := *s.IBMVPCCluster.Status.Subnet.ID
 
@@ -298,13 +298,16 @@ func (s *ClusterScope) DeleteSubnet() error {
 	return err
 }
 
-func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string) (*vpcv1.PublicGateway, error) {
+func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string, resourceGroupID string) (*vpcv1.PublicGateway, error) {
 	options := &vpcv1.CreatePublicGatewayOptions{}
 	options.SetVPC(&vpcv1.VPCIdentity{
 		ID: &vpcID,
 	})
 	options.SetZone(&vpcv1.ZoneIdentity{
 		Name: &zoneName,
+	})
+	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
+		ID: &resourceGroupID,
 	})
 	publicGateway, _, err := s.IBMVPCClients.VPCService.CreatePublicGateway(options)
 	return publicGateway, err

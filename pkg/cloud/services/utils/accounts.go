@@ -17,18 +17,19 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
-
 	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/golang-jwt/jwt"
 )
 
-// GetAccount is function parses the account number from the token and returns it
+// GetAccount is function parses the account number from the token and returns it.
 func GetAccount(auth core.Authenticator) (string, error) {
 	// fake request to get a barer token from the request header
-	req, err := http.NewRequest("GET", "http://example.com", nil)
+	ctx := context.TODO()
+	req, err := http.NewRequestWithContext(ctx, "GET", "http://example.com", http.NoBody)
 	if err != nil {
 		return "", err
 	}

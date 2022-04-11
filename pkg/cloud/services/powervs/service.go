@@ -29,7 +29,7 @@ import (
 
 var _ PowerVS = &Service{}
 
-// Service holds the PowerVS Service specific information
+// Service holds the PowerVS Service specific information.
 type Service struct {
 	session        *ibmpisession.IBMPISession
 	instanceClient *instance.IBMPIInstanceClient
@@ -38,6 +38,7 @@ type Service struct {
 	jobClient      *instance.IBMPIJobClient
 }
 
+// ServiceOptions holds the PowerVS Service Options specific information.
 type ServiceOptions struct {
 	*ibmpisession.IBMPIOptions
 

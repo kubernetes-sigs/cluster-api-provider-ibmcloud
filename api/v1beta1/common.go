@@ -19,7 +19,6 @@ package v1beta1
 import "k8s.io/apimachinery/pkg/util/validation/field"
 
 func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
-
 	if spec.Memory == "" {
 		spec.Memory = "4"
 	}

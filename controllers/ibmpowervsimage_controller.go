@@ -24,24 +24,23 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1util "sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/util"
-	clusterv1util "sigs.k8s.io/cluster-api/util"
 )
 
-// IBMPowerVSImageReconciler reconciles a IBMPowerVSImage object
+// IBMPowerVSImageReconciler reconciles a IBMPowerVSImage object.
 type IBMPowerVSImageReconciler struct {
 	client.Client
 	Log    logr.Logger
@@ -55,7 +54,7 @@ type IBMPowerVSImageReconciler struct {
 func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := r.Log.WithValues("ibmpowervsimage", req.NamespacedName)
 
-	ibmImage := &v1beta1.IBMPowerVSImage{}
+	ibmImage := &infrav1beta1.IBMPowerVSImage{}
 	err := r.Get(ctx, req.NamespacedName, ibmImage)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -83,7 +82,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		}
 	}()
 
-	// Handle deleted clusters
+	// Handle deleted clusters.
 	if !ibmImage.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(imageScope)
 	}
@@ -91,25 +90,25 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
-	return r.reconcile(ctx, cluster, imageScope)
+	return r.reconcile(cluster, imageScope)
 }
 
-func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *v1beta1.IBMPowerVSCluster, imageScope *scope.PowerVSImageScope) (ctrl.Result, error) {
-	controllerutil.AddFinalizer(imageScope.IBMPowerVSImage, v1beta1.IBMPowerVSImageFinalizer)
+func (r *IBMPowerVSImageReconciler) reconcile(cluster *infrav1beta1.IBMPowerVSCluster, imageScope *scope.PowerVSImageScope) (ctrl.Result, error) {
+	controllerutil.AddFinalizer(imageScope.IBMPowerVSImage, infrav1beta1.IBMPowerVSImageFinalizer)
 
-	// Create new labels section for IBMPowerVSImage metadata if nil
+	// Create new labels section for IBMPowerVSImage metadata if nil.
 	if imageScope.IBMPowerVSImage.Labels == nil {
 		imageScope.IBMPowerVSImage.Labels = make(map[string]string)
 	}
 
-	if _, ok := imageScope.IBMPowerVSImage.Labels[clusterv1.ClusterLabelName]; !ok {
-		imageScope.IBMPowerVSImage.Labels[clusterv1.ClusterLabelName] = imageScope.IBMPowerVSImage.Spec.ClusterName
+	if _, ok := imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterLabelName]; !ok {
+		imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterLabelName] = imageScope.IBMPowerVSImage.Spec.ClusterName
 	}
 
 	if r.shouldAdopt(*imageScope.IBMPowerVSImage) {
 		imageScope.Info("Image Controller has not yet set OwnerRef")
 		imageScope.IBMPowerVSImage.OwnerReferences = clusterv1util.EnsureOwnerRef(imageScope.IBMPowerVSImage.OwnerReferences, metav1.OwnerReference{
-			APIVersion: v1beta1.GroupVersion.String(),
+			APIVersion: infrav1beta1.GroupVersion.String(),
 			Kind:       "IBMPowerVSCluster",
 			Name:       cluster.Name,
 			UID:        cluster.UID,
@@ -125,21 +124,21 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *v1be
 		}
 		switch *job.Status.State {
 		case "completed":
-			conditions.MarkTrue(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition)
+			conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1beta1.ImageImportedCondition)
 		case "failed":
 			imageScope.SetNotReady()
-			imageScope.SetImageState(string(v1beta1.PowerVSImageStateFailed))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition, v1beta1.ImageImportFailedReason, clusterv1.ConditionSeverityError, job.Status.Message)
+			imageScope.SetImageState(string(infrav1beta1.PowerVSImageStateFailed))
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta1.ImageImportedCondition, infrav1beta1.ImageImportFailedReason, capiv1beta1.ConditionSeverityError, job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, fmt.Errorf("failed to import image, message: %s", job.Status.Message)
 		case "queued":
 			imageScope.SetNotReady()
-			imageScope.SetImageState(string(v1beta1.PowerVSImageStateQue))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition, string(v1beta1.PowerVSImageStateQue), clusterv1.ConditionSeverityInfo, job.Status.Message)
+			imageScope.SetImageState(string(infrav1beta1.PowerVSImageStateQue))
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta1.ImageImportedCondition, string(infrav1beta1.PowerVSImageStateQue), capiv1beta1.ConditionSeverityInfo, job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		default:
 			imageScope.SetNotReady()
-			imageScope.SetImageState(string(v1beta1.PowerVSImageStateImporting))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageImportedCondition, *job.Status.State, clusterv1.ConditionSeverityInfo, job.Status.Message)
+			imageScope.SetImageState(string(infrav1beta1.PowerVSImageStateImporting))
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta1.ImageImportedCondition, *job.Status.State, capiv1beta1.ConditionSeverityInfo, job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		}
 	}
@@ -170,29 +169,29 @@ func reconcileImage(img *models.ImageReference, imageScope *scope.PowerVSImageSc
 		imageScope.Info("ImageState - " + image.State)
 
 		switch imageScope.GetImageState() {
-		case v1beta1.PowerVSImageStateQue:
+		case infrav1beta1.PowerVSImageStateQue:
 			imageScope.Info("Image is in queued state")
 			imageScope.SetNotReady()
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, v1beta1.ImageReadyCondition, v1beta1.ImageNotReadyReason, clusterv1.ConditionSeverityWarning, "")
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta1.ImageReadyCondition, infrav1beta1.ImageNotReadyReason, capiv1beta1.ConditionSeverityWarning, "")
 			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
-		case v1beta1.PowerVSImageStateACTIVE:
+		case infrav1beta1.PowerVSImageStateACTIVE:
 			imageScope.Info("Image is in active state")
 			imageScope.SetReady()
-			conditions.MarkTrue(imageScope.IBMPowerVSImage, v1beta1.ImageReadyCondition)
+			conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1beta1.ImageReadyCondition)
 		default:
 			imageScope.SetNotReady()
 			imageScope.Info("PowerVS image state is undefined", "state", &image.State, "image-id", imageScope.GetImageID())
-			conditions.MarkUnknown(imageScope.IBMPowerVSImage, v1beta1.ImageReadyCondition, "", "")
+			conditions.MarkUnknown(imageScope.IBMPowerVSImage, infrav1beta1.ImageReadyCondition, "", "")
 		}
 	}
 
-	// Requeue after 1 minute if image is not ready to update status of the image properly
+	// Requeue after 1 minute if image is not ready to update status of the image properly.
 	if !imageScope.IsReady() {
 		imageScope.Info("Image is not yet ready")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
-	} else {
-		return ctrl.Result{}, nil
 	}
+
+	return ctrl.Result{}, nil
 }
 
 func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageScope) (_ ctrl.Result, reterr error) {
@@ -201,7 +200,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 	defer func() {
 		if reterr == nil {
 			// Image is deleted so remove the finalizer.
-			controllerutil.RemoveFinalizer(scope.IBMPowerVSImage, v1beta1.IBMPowerVSImageFinalizer)
+			controllerutil.RemoveFinalizer(scope.IBMPowerVSImage, infrav1beta1.IBMPowerVSImageFinalizer)
 		}
 	}()
 
@@ -218,7 +217,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 		return ctrl.Result{}, nil
 	}
 
-	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(v1beta1.DeletePolicyRetain) {
+	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1beta1.DeletePolicyRetain) {
 		if err := scope.DeleteImage(); err != nil {
 			scope.Info("error deleting IBMPowerVSImage")
 			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage %s/%s", scope.IBMPowerVSImage.Namespace, scope.IBMPowerVSImage.Name)
@@ -232,13 +231,13 @@ func (r *IBMPowerVSImageReconciler) getOrCreate(scope *scope.PowerVSImageScope) 
 	return image, job, err
 }
 
-func (r *IBMPowerVSImageReconciler) shouldAdopt(i v1beta1.IBMPowerVSImage) bool {
-	return !clusterv1util.HasOwner(i.OwnerReferences, v1beta1.GroupVersion.String(), []string{"IBMPowerVSCluster"})
+func (r *IBMPowerVSImageReconciler) shouldAdopt(i infrav1beta1.IBMPowerVSImage) bool {
+	return !clusterv1util.HasOwner(i.OwnerReferences, infrav1beta1.GroupVersion.String(), []string{"IBMPowerVSCluster"})
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *IBMPowerVSImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.IBMPowerVSImage{}).
+		For(&infrav1beta1.IBMPowerVSImage{}).
 		Complete(r)
 }

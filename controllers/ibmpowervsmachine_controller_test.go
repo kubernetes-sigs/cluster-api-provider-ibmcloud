@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -40,7 +40,7 @@ var _ = Describe("IBMPowerVSMachineReconciler", func() {
 			}
 			By("Calling reconcile")
 			ctx := context.Background()
-			instance := &v1beta1.IBMPowerVSMachine{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
+			instance := &infrav1beta1.IBMPowerVSMachine{ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "default"}}
 			result, err := reconciler.Reconcile(ctx, ctrl.Request{
 				NamespacedName: client.ObjectKey{
 					Namespace: instance.Namespace,

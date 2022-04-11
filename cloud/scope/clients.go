@@ -21,12 +21,12 @@ import (
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 )
 
-// IBMVPCClients hosts the IBM VPC service
+// IBMVPCClients hosts the IBM VPC service.
 type IBMVPCClients struct {
 	VPCService *vpcv1.VpcV1
-	//APIKey          string
-	//IAMEndpoint     string
-	//ServiceEndPoint string
+	// APIKey          string
+	// IAMEndpoint     string
+	// ServiceEndPoint string
 }
 
 func (c *IBMVPCClients) setIBMVPCService(authenticator core.Authenticator, svcEndpoint string) error {

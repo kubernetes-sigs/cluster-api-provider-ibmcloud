@@ -20,20 +20,18 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
-
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
-	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -41,10 +39,10 @@ type MachineScopeParams struct {
 	IBMVPCClients
 	Client        client.Client
 	Logger        logr.Logger
-	Cluster       *clusterv1.Cluster
-	Machine       *clusterv1.Machine
-	IBMVPCCluster *infrav1.IBMVPCCluster
-	IBMVPCMachine *infrav1.IBMVPCMachine
+	Cluster       *capiv1beta1.Cluster
+	Machine       *capiv1beta1.Machine
+	IBMVPCCluster *infrav1beta1.IBMVPCCluster
+	IBMVPCMachine *infrav1beta1.IBMVPCMachine
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -54,11 +52,10 @@ type MachineScope struct {
 	patchHelper *patch.Helper
 
 	IBMVPCClients
-	Cluster *clusterv1.Cluster
-	Machine *clusterv1.Machine
-
-	IBMVPCCluster *infrav1.IBMVPCCluster
-	IBMVPCMachine *infrav1.IBMVPCMachine
+	Cluster       *capiv1beta1.Cluster
+	Machine       *capiv1beta1.Machine
+	IBMVPCCluster *infrav1beta1.IBMVPCCluster
+	IBMVPCMachine *infrav1beta1.IBMVPCMachine
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -96,13 +93,13 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 	}, nil
 }
 
-// CreateMachine creates a vpc machine
+// CreateMachine creates a vpc machine.
 func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	instanceReply, err := m.ensureInstanceUnique(m.IBMVPCMachine.Name)
 	if err != nil {
 		return nil, err
 	} else if instanceReply != nil {
-		//TODO need a reasonable wrapped error
+		// TODO need a reasonable wrapped error.
 		return instanceReply, nil
 	}
 
@@ -128,6 +125,9 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 				ID: &m.IBMVPCMachine.Spec.PrimaryNetworkInterface.Subnet,
 			},
 		},
+		ResourceGroup: &vpcv1.ResourceGroupIdentity{
+			ID: &m.IBMVPCCluster.Spec.ResourceGroup,
+		},
 		UserData: &cloudInitData,
 	}
 
@@ -139,7 +139,6 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 			}
 			instancePrototype.Keys = append(instancePrototype.Keys, key)
 		}
-
 	}
 
 	options.SetInstancePrototype(instancePrototype)
@@ -171,7 +170,7 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 	return nil, nil
 }
 
-// GetMachine returns a machine associated with a machine instanceID
+// GetMachine returns a machine associated with a machine instanceID.
 func (m *MachineScope) GetMachine(instanceID string) (*vpcv1.Instance, error) {
 	options := &vpcv1.GetInstanceOptions{}
 	options.SetID(instanceID)

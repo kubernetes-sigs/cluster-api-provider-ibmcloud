@@ -37,6 +37,7 @@ const (
 // IBMCLOUD_APIKEY=xxxxxxxxxxxxx
 // IBMCLOUD_AUTH_URL=https://iam.cloud.ibm.com
 
+// GetAuthenticator will get the authenticator for ibmcloud.
 func GetAuthenticator() (core.Authenticator, error) {
 	auth, err := core.GetAuthenticatorFromEnvironment(serviceIBMCloud)
 	if err != nil {

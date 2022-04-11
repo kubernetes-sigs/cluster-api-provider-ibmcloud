@@ -23,6 +23,7 @@ import (
 //go:generate ../../../../hack/tools/bin/mockgen -source=./powervs.go -destination=./mock/powervs_generated.go -package=mock
 //go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt ./mock/powervs_generated.go > ./mock/_powervs_generated.go && mv ./mock/_powervs_generated.go ./mock/powervs_generated.go"
 
+// PowerVS interface defines methods that a Cluster API IBMCLOUD object should implement.
 type PowerVS interface {
 	CreateInstance(body *models.PVMInstanceCreate) (*models.PVMInstanceList, error)
 	DeleteInstance(id string) error
