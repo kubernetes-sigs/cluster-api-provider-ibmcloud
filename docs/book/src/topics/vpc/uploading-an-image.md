@@ -1,10 +1,10 @@
-# Dealing with images for VPC
+# Uploading an image to the IBM Cloud
 
 Build the Ubuntu image as described in the previous [VPC section](prerequisites.md).
 Make sure to build the qcow2 version by following the instructions for [raw image build](https://image-builder.sigs.k8s.io/capi/providers/raw.html).
 
 Since the IBM Cloud does not support dots before the qcow2 extension, rename the file as follows:
-```
+```console
 ubuntu-2004-ibmcloud-kube-v1-23-4.qcow2
 ```
 
@@ -33,13 +33,13 @@ ubuntu-2004-ibmcloud-kube-v1-23-4.qcow2
 
 1) Make sure you have editor rights for all/most VPC services
 2) Add additional read rights for:
-```
+```console
 src: service VPC Infrastructure Services resourceType equals image
 target: serviceInstance string equals <your-Cloud-Object Storage-VM-plain-name>
 ```
 
 Add write rights for:
-```
+```console
 Service VPC Infrastructure Services in Resource_group <your_resource_group_or_account> resourceType equals image
 target: service Cloud object storage in resource_group <your_resource_group_or_account>
 ```
@@ -57,6 +57,6 @@ Then please continue with
 [creating a cluster](creating-a-cluster.md).
 
 Make sure you take the ImageID from your VM image. The ImageID can be determined using ibmcloud cli. In addition, the Kubernetes version must be set to match the image. In this example:
-```
+```console
 v1.23.4
 ```
