@@ -465,8 +465,7 @@ data:
           serviceAccountName: cloud-controller-manager
           containers:
             - name: ibmpowervs-cloud-controller-manager
-              #TODO: Replace the image name
-              image: quay.io/kabhat/powervs-cloud-controller-manager:9b99b4e_a6bfa07
+              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:9b99b4e_a6bfa07
               args:
                 - --v=2
                 - --cloud-provider=ibm
