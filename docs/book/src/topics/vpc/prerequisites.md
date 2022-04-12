@@ -15,5 +15,4 @@
 
     **Note:** Rename the output image to add the `.qcow2` extension. This is required by the next step.
 
-
-2. Create a VPC Gen2 custom image based on the qcow2 image built in the previous step as detailed in the VPC [documentation](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images).
+2. Upload the VPC Gen2 custom image to IBM Cloud following [this section](uploading-an-image.md) or the detailed explainations in the VPC [documentation](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images).

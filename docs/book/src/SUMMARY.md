@@ -8,6 +8,7 @@
 - [Topics](./topics/index.md)
   - [VPC Cluster](./topics/vpc/index.md)
     - [Prerequisites](./topics/vpc/prerequisites.md)
+    - [Uploading an image](topics/vpc/uploading-an-image.md)
     - [Creating a cluster](./topics/vpc/creating-a-cluster.md)
   - [Power VS Cluster](./topics/powervs/index.md)
     - [Prerequisites](./topics/powervs/prerequisites.md)
