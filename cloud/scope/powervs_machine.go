@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // PowerVSMachineScopeParams defines the input parameters used to create a new PowerVSMachineScope.
@@ -213,12 +214,14 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 	} else {
 		imageID, err = getImageID(s.Image, m)
 		if err != nil {
+			record.Warnf(m.IBMPowerVSMachine, "FailedRetriveImage", "Failed image retrival - %v", err)
 			return nil, fmt.Errorf("error getting image ID: %v", err)
 		}
 	}
 
 	networkID, err := getNetworkID(s.Network, m)
 	if err != nil {
+		record.Warnf(m.IBMPowerVSMachine, "FailedRetriveNetwork", "Failed network retrival - %v", err)
 		return nil, fmt.Errorf("error getting network ID: %v", err)
 	}
 
@@ -242,8 +245,10 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 	}
 	_, err = m.IBMPowerVSClient.CreateInstance(params.Body)
 	if err != nil {
+		record.Warnf(m.IBMPowerVSMachine, "FailedCreateInstance", "Failed instance creation - %v", err)
 		return nil, err
 	}
+	record.Eventf(m.IBMPowerVSMachine, "SuccessfulCreateInstance", "Created Instance %q", m.IBMPowerVSMachine.Name)
 	return nil, nil
 }
 
@@ -259,7 +264,12 @@ func (m *PowerVSMachineScope) PatchObject() error {
 
 // DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
 func (m *PowerVSMachineScope) DeleteMachine() error {
-	return m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID)
+	if err := m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID); err != nil {
+		record.Warnf(m.IBMPowerVSMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
+		return err
+	}
+	record.Eventf(m.IBMPowerVSMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMPowerVSMachine.Name)
+	return nil
 }
 
 // GetBootstrapData returns the base64 encoded bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
