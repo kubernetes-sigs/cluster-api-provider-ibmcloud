@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
@@ -143,6 +144,11 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 
 	options.SetInstancePrototype(instancePrototype)
 	instance, response, err := m.IBMVPCClients.VPCService.CreateInstance(options)
+	if err != nil {
+		record.Warnf(m.IBMVPCMachine, "FailedCreateInstance", "Failed instance creation - %v", err)
+	} else {
+		record.Eventf(m.IBMVPCMachine, "SuccessfulCreateInstance", "Created Instance %q", *instance.Name)
+	}
 	fmt.Printf("%v\n", response)
 	return instance, err
 }
@@ -152,6 +158,11 @@ func (m *MachineScope) DeleteMachine() error {
 	options := &vpcv1.DeleteInstanceOptions{}
 	options.SetID(m.IBMVPCMachine.Status.InstanceID)
 	_, err := m.IBMVPCClients.VPCService.DeleteInstance(options)
+	if err != nil {
+		record.Warnf(m.IBMVPCMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
+	} else {
+		record.Eventf(m.IBMVPCMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMVPCMachine.Name)
+	}
 	return err
 }
 

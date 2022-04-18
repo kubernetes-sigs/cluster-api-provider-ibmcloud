@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -37,6 +38,7 @@ import (
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 var (
@@ -78,6 +80,12 @@ func main() {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
 	}
 
+	// Machine and cluster operations can create enough events to trigger the event recorder spam filter
+	// Setting the burst size higher ensures all events will be recorded and submitted to the API
+	broadcaster := cgrecord.NewBroadcasterWithCorrelatorOptions(cgrecord.CorrelatorOptions{
+		BurstSize: 100,
+	})
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -86,6 +94,7 @@ func main() {
 		LeaderElectionID:       "effcf9b8.cluster.x-k8s.io",
 		SyncPeriod:             &syncPeriod,
 		Namespace:              watchNamespace,
+		EventBroadcaster:       broadcaster,
 		HealthProbeBindAddress: healthAddr,
 	})
 	if err != nil {
@@ -93,34 +102,41 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Initialize event recorder.
+	record.InitFromRecorder(mgr.GetEventRecorderFor("ibmcloud-controller"))
+
 	if err = (&controllers.IBMVPCClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
+		Recorder: mgr.GetEventRecorderFor("ibmvpccluster-controller"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCCluster")
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMVPCMachineReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
+		Recorder: mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMPowerVSClusterReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
+		Recorder: mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSCluster")
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMPowerVSMachineReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
+		Recorder: mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)
@@ -150,9 +166,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMPowerVSImageReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
+		Recorder: mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
+		Scheme:   mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSImage")
 		os.Exit(1)

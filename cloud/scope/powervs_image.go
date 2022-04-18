@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // BucketAccess indicates if the bucket has public or private access public access.
@@ -160,9 +161,11 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 
 	imageReply, err := i.ensureImageUnique(m.Name)
 	if err != nil {
+		record.Warnf(i.IBMPowerVSImage, "FailedRetriveImage", "Failed to retrieve image %q", *imageReply.Name)
 		return nil, nil, err
 	} else if imageReply != nil {
 		i.Info("Image already exists")
+		record.Eventf(i.IBMPowerVSImage, "SuccessfulRetriveImage", "Retrieved Image %q", *imageReply.Name)
 		return imageReply, nil, nil
 	}
 
@@ -185,9 +188,11 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 	jobRef, err := i.IBMPowerVSClient.CreateCosImage(body)
 	if err != nil {
 		i.Info("Unable to create new import job request")
+		record.Warnf(i.IBMPowerVSImage, "FailedCreateImageImportJob", "Failed image import job creation - %v", err)
 		return nil, nil, err
 	}
 	i.Info("New import job request created")
+	record.Eventf(i.IBMPowerVSImage, "SuccessfulCreateImageImportJob", "Created image import job %q", *jobRef.ID)
 	return nil, jobRef, nil
 }
 
@@ -203,7 +208,12 @@ func (i *PowerVSImageScope) Close() error {
 
 // DeleteImage will delete the image.
 func (i *PowerVSImageScope) DeleteImage() error {
-	return i.IBMPowerVSClient.DeleteImage(i.IBMPowerVSImage.Status.ImageID)
+	if err := i.IBMPowerVSClient.DeleteImage(i.IBMPowerVSImage.Status.ImageID); err != nil {
+		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImage", "Failed image deletion - %v", err)
+		return err
+	}
+	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImage", "Deleted Image %q", i.IBMPowerVSImage.Status.ImageID)
+	return nil
 }
 
 // GetImportJob will get the image import job.
@@ -213,7 +223,12 @@ func (i *PowerVSImageScope) GetImportJob() (*models.Job, error) {
 
 // DeleteImportJob will delete the image import job.
 func (i *PowerVSImageScope) DeleteImportJob() error {
-	return i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID)
+	if err := i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID); err != nil {
+		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImoprtJob", "Failed image import job deletion - %v", err)
+		return err
+	}
+	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImageImoprtJob", "Deleted image import job %q", i.IBMPowerVSImage.Status.JobID)
+	return nil
 }
 
 // SetReady will set the status as ready for the image.
