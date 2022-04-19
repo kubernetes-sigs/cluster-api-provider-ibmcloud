@@ -82,6 +82,10 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 		return nil, errors.Wrap(vpcErr, "failed to create IBM VPC session")
 	}
 
+	if params.Logger.V(DEBUGLEVEL).Enabled() {
+		core.SetLoggingLevel(core.LevelDebug)
+	}
+
 	return &MachineScope{
 		Logger:        params.Logger,
 		client:        params.Client,
