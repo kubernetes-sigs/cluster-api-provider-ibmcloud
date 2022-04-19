@@ -220,13 +220,13 @@ func initFlags(fs *pflag.FlagSet) {
 	fs.StringVar(
 		&options.PowerVSProviderIDFormat,
 		"powervs-provider-id-fmt",
-		options.PowerVSProviderIDFormatV1,
+		string(options.PowerVSProviderIDFormatV1),
 		"ProviderID format is used set the Provider ID format for Machine",
 	)
 }
 
 func validateFlags() error {
-	switch options.PowerVSProviderIDFormat {
+	switch options.PowerVSProviderIDFormatType(options.PowerVSProviderIDFormat) {
 	case options.PowerVSProviderIDFormatV1:
 		setupLog.Info("Using v1 version of ProviderID format")
 	case options.PowerVSProviderIDFormatV2:

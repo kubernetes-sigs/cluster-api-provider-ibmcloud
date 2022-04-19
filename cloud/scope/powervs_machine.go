@@ -437,7 +437,7 @@ func (m *PowerVSMachineScope) GetZone() string {
 // SetProviderID will set the provider id for the machine.
 func (m *PowerVSMachineScope) SetProviderID(id *string) {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
-	if options.PowerVSProviderIDFormat == options.PowerVSProviderIDFormatV2 {
+	if options.PowerVSProviderIDFormatType(options.PowerVSProviderIDFormat) == options.PowerVSProviderIDFormatV2 {
 		if id != nil {
 			m.IBMPowerVSMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), m.IBMPowerVSMachine.Spec.ServiceInstanceID, *id))
 		}

@@ -44,9 +44,14 @@ it into a management cluster using `clusterctl`.
 
     > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 
-3. Initialize local bootstrap cluter as a management cluster
+   > Note: To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage. Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable
+    ```console
+      export POWERVS_PROVIDER_ID_FORMAT=v2
+    ```
+
+2. Initialize local bootstrap cluster as a management cluster
     
-    When executed for the first time, the following command accepts the infrasturcture provider as an input to install. `clusterctl init` automatically adds to the list the cluster-api core provider, and if unspecified, it also adds the kubeadm bootstrap and kubeadm control-plane providers, thereby converting it into a management cluster which will be used to provision a workload cluster in IBM Cloud.   
+    When executed for the first time, the following command accepts the infrastructure provider as an input to install. `clusterctl init` automatically adds to the list the cluster-api core provider, and if unspecified, it also adds the kubeadm bootstrap and kubeadm control-plane providers, thereby converting it into a management cluster which will be used to provision a workload cluster in IBM Cloud.
 
     ```console
     ~ clusterctl init --infrastructure ibmcloud:<TAG>
