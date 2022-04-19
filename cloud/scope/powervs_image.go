@@ -165,7 +165,6 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 		return nil, nil, err
 	} else if imageReply != nil {
 		i.Info("Image already exists")
-		record.Eventf(i.IBMPowerVSImage, "SuccessfulRetriveImage", "Retrieved Image %q", *imageReply.Name)
 		return imageReply, nil, nil
 	}
 
