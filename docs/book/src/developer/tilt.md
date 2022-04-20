@@ -55,6 +55,21 @@ Add following extra_args to log Power VS REST API Requests/Responses
    }
 }
 ```
+
+To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage, Set `POWERVS_PROVIDER_ID_FORMAT` to `v2` under kustomize_substitutions.
+
+```json
+{
+   "default_registry": "gcr.io/you-project-name-here",
+   "provider_repos": ["../cluster-api-provider-ibmcloud"],
+   "enable_providers": ["ibmcloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
+   "kustomize_substitutions": {
+      "IBMCLOUD_API_KEY": "XXXXXXXXXXXXXXXXXX",
+      "POWERVS_PROVIDER_ID_FORMAT": "v2"
+   }
+}
+```
+
 **NOTE**: For information about all the fields that can be used in the `tilt-settings.json` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settingsjson-fields).
 
 ## Run Tilt
