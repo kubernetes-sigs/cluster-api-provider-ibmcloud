@@ -33,6 +33,9 @@ const (
 	// InstanceStoppedReason instance is in a stopped state.
 	InstanceStoppedReason = "InstanceStopped"
 
+	// InstanceErroredReason instance is in a errored state.
+	InstanceErroredReason = "InstanceErrored"
+
 	// InstanceNotReadyReason used when the instance is in a pending state.
 	InstanceNotReadyReason = "InstanceNotReady"
 )
