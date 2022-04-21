@@ -94,6 +94,8 @@ prerequisites_powervs(){
     export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams8-1-22-4"}
     export IBMPOWERVS_SERVICE_INSTANCE_ID=${IBMPOWERVS_SERVICE_INSTANCE_ID:-"0f28d13a-6e33-4d86-b6d7-a9b46ff7659e"}
     export IBMPOWERVS_NETWORK_NAME=${BOSKOS_RESOURCE_NAME:-"capi-e2e-test"}
+    # Setting controller loglevel to allow debug logs from the PowerVS client
+    export LOGLEVEL=5
 }
 
 main(){
