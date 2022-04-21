@@ -35,6 +35,7 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object.
@@ -221,6 +222,15 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		case infrav1beta1.PowerVSInstanceStateACTIVE:
 			machineScope.SetReady()
 			conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition)
+		case infrav1beta1.PowerVSInstanceStateERROR:
+			msg := ""
+			if instance.Fault != nil {
+				msg = instance.Fault.Details
+			}
+			machineScope.SetNotReady()
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceErroredReason, capiv1beta1.ConditionSeverityError, msg)
+			capibmrecord.Warnf(machineScope.IBMPowerVSMachine, "FailedBuildInstance", "Failed to build the instance - %s", msg)
+			return ctrl.Result{}, nil
 		default:
 			machineScope.SetNotReady()
 			machineScope.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())

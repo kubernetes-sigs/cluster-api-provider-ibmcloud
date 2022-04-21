@@ -31,6 +31,9 @@ var (
 
 	// PowerVSInstanceStateREBOOT is the string representing an instance in a REBOOT state.
 	PowerVSInstanceStateREBOOT = PowerVSInstanceState("REBOOT")
+
+	// PowerVSInstanceStateERROR is the string representing an instance in a ERROR state.
+	PowerVSInstanceStateERROR = PowerVSInstanceState("ERROR")
 )
 
 // PowerVSImageState describes the state of an IBM Power VS image.
