@@ -103,10 +103,10 @@ spec:
               env:
               - name: vip_arp
                 value: "true"
-              - name: vip_interface
-                value: "env2"
               - name: port
                 value: "6443"
+              - name: vip_interface
+                value: env2
               - name: vip_cidr
                 value: "${IBMPOWERVS_VIP_CIDR}"
               - name: cp_enable
@@ -125,9 +125,9 @@ spec:
                 value: "3"
               - name: vip_retryperiod
                 value: "1"
-              - name: vip_address
+              - name: address
                 value: "${IBMPOWERVS_VIP}"
-              image: docker.io/plndr/kube-vip:v0.3.7
+              image: ghcr.io/kube-vip/kube-vip:v0.4.4
               imagePullPolicy: Always
               name: kube-vip
               resources: {}
@@ -136,10 +136,13 @@ spec:
                   add:
                   - NET_ADMIN
                   - NET_RAW
-                  - SYS_TIME
               volumeMounts:
               - mountPath: /etc/kubernetes/admin.conf
                 name: kubeconfig
+            hostAliases:
+            - hostnames:
+              - kubernetes
+              ip: 127.0.0.1
             hostNetwork: true
             volumes:
             - hostPath:
