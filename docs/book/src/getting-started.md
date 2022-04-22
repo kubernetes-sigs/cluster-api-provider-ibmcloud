@@ -41,6 +41,10 @@ it into a management cluster using `clusterctl`.
     ```console
     export IBMCLOUD_API_KEY=<YOUR_API_KEY>
     ```
+    For enabling debug level logs for the controller, set the `LOGLEVEL` environment variable(defaults to 0).
+    ```console
+    export LOGLEVEL=5
+    ```
 
     > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 
