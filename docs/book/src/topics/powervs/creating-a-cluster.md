@@ -64,6 +64,22 @@ following the steps below.
     kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-powervs-1-md-0 created
     ```
 
+    Additional parameters for modifying PowerVS Control-Plane spec
+    ```
+    IBMPOWERVS_CONTROL_PLANE_MEMORY
+    IBMPOWERVS_CONTROL_PLANE_PROCESSORS
+    IBMPOWERVS_CONTROL_PLANE_SYSTYPE
+    IBMPOWERVS_CONTROL_PLANE_PROCTYPE
+    ```
+
+    Additional parameters for modifying PowerVS Compute node spec
+    ```
+    IBMPOWERVS_COMPUTE_MEMORY
+    IBMPOWERVS_COMPUTE_PROCESSORS
+    IBMPOWERVS_COMPUTE_SYSTYPE
+    IBMPOWERVS_COMPUTE_PROCTYPE
+    ```
+
 3. Deploy Container Network Interface (CNI)
 
     Example: calico

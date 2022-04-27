@@ -34,3 +34,19 @@ clusterctl generate cluster ibm-powervs-1 --kubernetes-version v1.21.2 \
 --worker-machine-count=1 \
 --from ./cluster-template-powervs.yaml
 ```
+
+### Additional parameters for modifying PowerVS Control-Plane spec
+```
+IBMPOWERVS_CONTROL_PLANE_MEMORY
+IBMPOWERVS_CONTROL_PLANE_PROCESSORS
+IBMPOWERVS_CONTROL_PLANE_SYSTYPE
+IBMPOWERVS_CONTROL_PLANE_PROCTYPE
+```
+
+### Additional parameters for modifying PowerVS Compute node spec
+```
+IBMPOWERVS_COMPUTE_MEMORY
+IBMPOWERVS_COMPUTE_PROCESSORS
+IBMPOWERVS_COMPUTE_SYSTYPE
+IBMPOWERVS_COMPUTE_PROCTYPE
+```
