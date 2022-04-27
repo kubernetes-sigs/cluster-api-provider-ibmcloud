@@ -76,6 +76,10 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 		return nil, errors.Wrap(vpcErr, "failed to create IBM VPC session")
 	}
 
+	if params.Logger.V(DEBUGLEVEL).Enabled() {
+		core.SetLoggingLevel(core.LevelDebug)
+	}
+
 	return &ClusterScope{
 		Logger:        params.Logger,
 		client:        params.Client,
