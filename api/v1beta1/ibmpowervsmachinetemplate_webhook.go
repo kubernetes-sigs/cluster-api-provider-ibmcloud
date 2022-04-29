@@ -81,6 +81,12 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() error {
 	if err := r.validateIBMPowerVSMachineTemplateImage(); err != nil {
 		allErrs = append(allErrs, err)
 	}
+	if err := r.validateIBMPowerVSMachineTemplateMemory(); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if err := r.validateIBMPowerVSMachineTemplateProcessors(); err != nil {
+		allErrs = append(allErrs, err)
+	}
 	if len(allErrs) == 0 {
 		return nil
 	}
@@ -128,5 +134,19 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateImage() *fi
 		}
 	}
 
+	return nil
+}
+
+func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateMemory() *field.Error {
+	if res := validateIBMPowerVSMemoryValues(r.Spec.Template.Spec.Memory); !res {
+		return field.Invalid(field.NewPath("spec", "memory"), r.Spec.Template.Spec.Memory, "Invalid Memory value - must be non-empty and a positive integer no lesser than 2")
+	}
+	return nil
+}
+
+func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateProcessors() *field.Error {
+	if res := validateIBMPowerVSProcessorValues(r.Spec.Template.Spec.Processors); !res {
+		return field.Invalid(field.NewPath("spec", "processors"), r.Spec.Template.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
+	}
 	return nil
 }

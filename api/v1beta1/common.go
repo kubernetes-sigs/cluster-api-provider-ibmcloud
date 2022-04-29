@@ -16,7 +16,11 @@ limitations under the License.
 
 package v1beta1
 
-import "k8s.io/apimachinery/pkg/util/validation/field"
+import (
+	"strconv"
+
+	"k8s.io/apimachinery/pkg/util/validation/field"
+)
 
 func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 	if spec.Memory == "" {
@@ -58,6 +62,20 @@ func validateIBMPowerVSResourceReference(res IBMPowerVSResourceReference, resTyp
 		return false, field.Invalid(field.NewPath("spec", resType), res, "Only one of "+resType+" - ID or Name may be specified")
 	}
 	return true, nil
+}
+
+func validateIBMPowerVSMemoryValues(resValue string) bool {
+	if val, err := strconv.ParseUint(resValue, 10, 64); err != nil || val < 2 {
+		return false
+	}
+	return true
+}
+
+func validateIBMPowerVSProcessorValues(resValue string) bool {
+	if val, err := strconv.ParseFloat(resValue, 64); err != nil || val < 0.25 {
+		return false
+	}
+	return true
 }
 
 func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {

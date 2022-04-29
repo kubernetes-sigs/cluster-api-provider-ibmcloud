@@ -189,6 +189,7 @@ spec:
                         type: string
                       processors:
                         description: Processors is Number of processors allocated.
+                        pattern: ^\d+(\.)?(\d)?(\d)?$
                         type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified
