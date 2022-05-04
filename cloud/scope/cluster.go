@@ -30,12 +30,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.
 type ClusterScopeParams struct {
-	IBMVPCClients
+	IBMVPCClient  vpc.Vpc
 	Client        client.Client
 	Logger        logr.Logger
 	Cluster       *capiv1beta1.Cluster
@@ -48,7 +49,7 @@ type ClusterScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMVPCClients
+	IBMVPCClient  vpc.Vpc
 	Cluster       *capiv1beta1.Cluster
 	IBMVPCCluster *infrav1beta1.IBMVPCCluster
 }
@@ -71,9 +72,9 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	vpcErr := params.IBMVPCClients.setIBMVPCService(authenticator, svcEndpoint)
-	if vpcErr != nil {
-		return nil, errors.Wrap(vpcErr, "failed to create IBM VPC session")
+	vpcClient, err := vpc.NewService(svcEndpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create IBM VPC session")
 	}
 
 	if params.Logger.V(DEBUGLEVEL).Enabled() {
@@ -83,7 +84,7 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 	return &ClusterScope{
 		Logger:        params.Logger,
 		client:        params.Client,
-		IBMVPCClients: params.IBMVPCClients,
+		IBMVPCClient:  vpcClient,
 		Cluster:       params.Cluster,
 		IBMVPCCluster: params.IBMVPCCluster,
 		patchHelper:   helper,
@@ -105,7 +106,7 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 		ID: &s.IBMVPCCluster.Spec.ResourceGroup,
 	})
 	options.SetName(s.IBMVPCCluster.Spec.VPC)
-	vpc, _, err := s.IBMVPCClients.VPCService.CreateVPC(options)
+	vpc, _, err := s.IBMVPCClient.CreateVPC(options)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedCreateVPC", "Failed vpc creation - %v", err)
 		return nil, err
@@ -121,7 +122,7 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 func (s *ClusterScope) DeleteVPC() error {
 	deleteVpcOptions := &vpcv1.DeleteVPCOptions{}
 	deleteVpcOptions.SetID(s.IBMVPCCluster.Status.VPC.ID)
-	_, err := s.IBMVPCClients.VPCService.DeleteVPC(deleteVpcOptions)
+	_, err := s.IBMVPCClient.DeleteVPC(deleteVpcOptions)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDeleteVPC", "Failed vpc deletion - %v", err)
 	} else {
@@ -133,7 +134,7 @@ func (s *ClusterScope) DeleteVPC() error {
 
 func (s *ClusterScope) ensureVPCUnique(vpcName string) (*vpcv1.VPC, error) {
 	listVpcsOptions := &vpcv1.ListVpcsOptions{}
-	vpcs, _, err := s.IBMVPCClients.VPCService.ListVpcs(listVpcsOptions)
+	vpcs, _, err := s.IBMVPCClient.ListVpcs(listVpcsOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +154,7 @@ func (s *ClusterScope) updateDefaultSG(sgID string) error {
 		Protocol:  core.StringPtr("all"),
 		IPVersion: core.StringPtr("ipv4"),
 	})
-	_, _, err := s.IBMVPCClients.VPCService.CreateSecurityGroupRule(options)
+	_, _, err := s.IBMVPCClient.CreateSecurityGroupRule(options)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedCreateSecurityGroupRule", "Failed security group rule creation - %v", err)
 	}
@@ -182,7 +183,7 @@ func (s *ClusterScope) ReserveFIP() (*vpcv1.FloatingIP, error) {
 		},
 	})
 
-	floatingIP, _, err := s.IBMVPCClients.VPCService.CreateFloatingIP(options)
+	floatingIP, _, err := s.IBMVPCClient.CreateFloatingIP(options)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedCreateFloatingIP", "Failed floatingIP creation - %v", err)
 	}
@@ -190,8 +191,8 @@ func (s *ClusterScope) ReserveFIP() (*vpcv1.FloatingIP, error) {
 }
 
 func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error) {
-	listFloatingIpsOptions := s.IBMVPCClients.VPCService.NewListFloatingIpsOptions()
-	floatingIPs, _, err := s.IBMVPCClients.VPCService.ListFloatingIps(listFloatingIpsOptions)
+	listFloatingIpsOptions := &vpcv1.ListFloatingIpsOptions{}
+	floatingIPs, _, err := s.IBMVPCClient.ListFloatingIps(listFloatingIpsOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +209,7 @@ func (s *ClusterScope) DeleteFloatingIP() error {
 	if fipID := *s.IBMVPCCluster.Status.VPCEndpoint.FIPID; fipID != "" {
 		deleteFIPOption := &vpcv1.DeleteFloatingIPOptions{}
 		deleteFIPOption.SetID(fipID)
-		_, err := s.IBMVPCClients.VPCService.DeleteFloatingIP(deleteFIPOption)
+		_, err := s.IBMVPCClient.DeleteFloatingIP(deleteFIPOption)
 		if err != nil {
 			record.Warnf(s.IBMVPCCluster, "FailedDeleteFloatingIP", "Failed floatingIP deletion - %v", err)
 		}
@@ -247,7 +248,7 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 			ID: &s.IBMVPCCluster.Spec.ResourceGroup,
 		},
 	})
-	subnet, _, err := s.IBMVPCClients.VPCService.CreateSubnet(options)
+	subnet, _, err := s.IBMVPCClient.CreateSubnet(options)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedCreateSubnet", "Failed subnet creation - %v", err)
 	}
@@ -269,7 +270,7 @@ func (s *ClusterScope) getSubnetAddrPrefix(vpcID, zone string) (string, error) {
 	options := &vpcv1.ListVPCAddressPrefixesOptions{
 		VPCID: &vpcID,
 	}
-	addrCollection, _, err := s.IBMVPCClients.VPCService.ListVPCAddressPrefixes(options)
+	addrCollection, _, err := s.IBMVPCClient.ListVPCAddressPrefixes(options)
 
 	if err != nil {
 		return "", err
@@ -284,7 +285,7 @@ func (s *ClusterScope) getSubnetAddrPrefix(vpcID, zone string) (string, error) {
 
 func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, error) {
 	options := &vpcv1.ListSubnetsOptions{}
-	subnets, _, err := s.IBMVPCClients.VPCService.ListSubnets(options)
+	subnets, _, err := s.IBMVPCClient.ListSubnets(options)
 
 	if err != nil {
 		return nil, err
@@ -304,7 +305,7 @@ func (s *ClusterScope) DeleteSubnet() error {
 	// get the pgw id for given subnet, so we can delete it later
 	getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{}
 	getPGWOptions.SetID(subnetID)
-	pgw, _, err := s.IBMVPCClients.VPCService.GetSubnetPublicGateway(getPGWOptions)
+	pgw, _, err := s.IBMVPCClient.GetSubnetPublicGateway(getPGWOptions)
 	if pgw != nil && err == nil { // public gateway found
 		// Unset the public gateway for subnet first
 		err = s.detachPublicGateway(subnetID, *pgw.ID)
@@ -316,7 +317,7 @@ func (s *ClusterScope) DeleteSubnet() error {
 	// Delete subnet
 	deleteSubnetOption := &vpcv1.DeleteSubnetOptions{}
 	deleteSubnetOption.SetID(subnetID)
-	_, err = s.IBMVPCClients.VPCService.DeleteSubnet(deleteSubnetOption)
+	_, err = s.IBMVPCClient.DeleteSubnet(deleteSubnetOption)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDeleteSubnet", "Failed subnet deletion - %v", err)
 		return errors.Wrap(err, "Error when deleting subnet ")
@@ -335,7 +336,7 @@ func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string, resour
 	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
 		ID: &resourceGroupID,
 	})
-	publicGateway, _, err := s.IBMVPCClients.VPCService.CreatePublicGateway(options)
+	publicGateway, _, err := s.IBMVPCClient.CreatePublicGateway(options)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedCreatePublicGateway", "Failed publicgateway creation - %v", err)
 	}
@@ -348,7 +349,7 @@ func (s *ClusterScope) attachPublicGateWay(subnetID string, pgwID string) (*vpcv
 	options.SetPublicGatewayIdentity(&vpcv1.PublicGatewayIdentity{
 		ID: &pgwID,
 	})
-	publicGateway, _, err := s.IBMVPCClients.VPCService.SetSubnetPublicGateway(options)
+	publicGateway, _, err := s.IBMVPCClient.SetSubnetPublicGateway(options)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedAttachPublicGateway", "Failed publicgateway attachment - %v", err)
 	}
@@ -359,7 +360,7 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	// Unset the publicgateway first, and then delete it
 	unsetPGWOption := &vpcv1.UnsetSubnetPublicGatewayOptions{}
 	unsetPGWOption.SetID(subnetID)
-	_, err := s.IBMVPCClients.VPCService.UnsetSubnetPublicGateway(unsetPGWOption)
+	_, err := s.IBMVPCClient.UnsetSubnetPublicGateway(unsetPGWOption)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDetachPublicGateway", "Failed publicgateway detachment - %v", err)
 		return errors.Wrap(err, "Error when unsetting publicgateway for subnet "+subnetID)
@@ -368,7 +369,7 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	// Delete the public gateway
 	deletePGWOption := &vpcv1.DeletePublicGatewayOptions{}
 	deletePGWOption.SetID(pgwID)
-	_, err = s.IBMVPCClients.VPCService.DeletePublicGateway(deletePGWOption)
+	_, err = s.IBMVPCClient.DeletePublicGateway(deletePGWOption)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDeletePublicGateway", "Failed publicgateway deletion - %v", err)
 		return errors.Wrap(err, "Error when deleting publicgateway for subnet "+subnetID)

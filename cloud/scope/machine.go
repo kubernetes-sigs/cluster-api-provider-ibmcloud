@@ -32,12 +32,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	IBMVPCClients
+	IBMVPCClient  vpc.Vpc
 	Client        client.Client
 	Logger        logr.Logger
 	Cluster       *capiv1beta1.Cluster
@@ -52,7 +53,7 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMVPCClients
+	IBMVPCClient  vpc.Vpc
 	Cluster       *capiv1beta1.Cluster
 	Machine       *capiv1beta1.Machine
 	IBMVPCCluster *infrav1beta1.IBMVPCCluster
@@ -77,9 +78,9 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
 
-	vpcErr := params.IBMVPCClients.setIBMVPCService(authenticator, svcEndpoint)
-	if vpcErr != nil {
-		return nil, errors.Wrap(vpcErr, "failed to create IBM VPC session")
+	vpcClient, err := vpc.NewService(svcEndpoint)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create IBM VPC session")
 	}
 
 	if params.Logger.V(DEBUGLEVEL).Enabled() {
@@ -89,7 +90,7 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 	return &MachineScope{
 		Logger:        params.Logger,
 		client:        params.Client,
-		IBMVPCClients: params.IBMVPCClients,
+		IBMVPCClient:  vpcClient,
 		Cluster:       params.Cluster,
 		IBMVPCCluster: params.IBMVPCCluster,
 		patchHelper:   helper,
@@ -147,7 +148,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	}
 
 	options.SetInstancePrototype(instancePrototype)
-	instance, response, err := m.IBMVPCClients.VPCService.CreateInstance(options)
+	instance, response, err := m.IBMVPCClient.CreateInstance(options)
 	if err != nil {
 		record.Warnf(m.IBMVPCMachine, "FailedCreateInstance", "Failed instance creation - %v", err)
 	} else {
@@ -161,7 +162,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 func (m *MachineScope) DeleteMachine() error {
 	options := &vpcv1.DeleteInstanceOptions{}
 	options.SetID(m.IBMVPCMachine.Status.InstanceID)
-	_, err := m.IBMVPCClients.VPCService.DeleteInstance(options)
+	_, err := m.IBMVPCClient.DeleteInstance(options)
 	if err != nil {
 		record.Warnf(m.IBMVPCMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
 	} else {
@@ -172,7 +173,7 @@ func (m *MachineScope) DeleteMachine() error {
 
 func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instance, error) {
 	options := &vpcv1.ListInstancesOptions{}
-	instances, _, err := m.IBMVPCClients.VPCService.ListInstances(options)
+	instances, _, err := m.IBMVPCClient.ListInstances(options)
 
 	if err != nil {
 		return nil, err
@@ -190,7 +191,7 @@ func (m *MachineScope) GetMachine(instanceID string) (*vpcv1.Instance, error) {
 	options := &vpcv1.GetInstanceOptions{}
 	options.SetID(instanceID)
 
-	instance, _, err := m.IBMVPCClients.VPCService.GetInstance(options)
+	instance, _, err := m.IBMVPCClient.GetInstance(options)
 	return instance, err
 }
 
