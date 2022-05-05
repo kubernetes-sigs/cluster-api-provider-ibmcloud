@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -228,6 +229,8 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 				msg = instance.Fault.Details
 			}
 			machineScope.SetNotReady()
+			machineScope.SetFailureReason(capierrors.UpdateMachineError)
+			machineScope.SetFailureMessage(msg)
 			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceErroredReason, capiv1beta1.ConditionSeverityError, msg)
 			capibmrecord.Warnf(machineScope.IBMPowerVSMachine, "FailedBuildInstance", "Failed to build the instance - %s", msg)
 			return ctrl.Result{}, nil
