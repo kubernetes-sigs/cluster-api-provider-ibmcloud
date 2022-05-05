@@ -36,6 +36,7 @@ import (
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -353,6 +354,16 @@ func (m *PowerVSMachineScope) SetReady() {
 // SetNotReady will set status as not ready for the machine.
 func (m *PowerVSMachineScope) SetNotReady() {
 	m.IBMPowerVSMachine.Status.Ready = false
+}
+
+// SetFailureReason will set status FailureReason for the machine.
+func (m *PowerVSMachineScope) SetFailureReason(reason capierrors.MachineStatusError) {
+	m.IBMPowerVSMachine.Status.FailureReason = &reason
+}
+
+// SetFailureMessage will set status FailureMessage for the machine.
+func (m *PowerVSMachineScope) SetFailureMessage(message string) {
+	m.IBMPowerVSMachine.Status.FailureMessage = &message
 }
 
 // IsReady will return the status for the machine.
