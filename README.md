@@ -1,5 +1,5 @@
 [![LICENSE](https://img.shields.io/badge/license-apache2.0-green.svg)](https://sigs.k8s.io/cluster-api-provider-ibmcloud/blob/master/LICENSE)
-[![Releases](https://img.shields.io/badge/version-v0.0.1-orange.svg)](https://sigs.k8s.io/cluster-api-provider-ibmcloud/releases "Cluster API provider IBM Cloud latest release")
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/kubernetes-sigs/cluster-api-provider-ibmcloud?label=version)
 [![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-ibmcloud)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-ibmcloud)
 
 # Kubernetes Cluster API Provider IBM Cloud
