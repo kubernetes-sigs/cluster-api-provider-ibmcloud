@@ -27,10 +27,10 @@ cluster on IBMCloud.
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                                   | v1alpha3 (v0.3) | v1alpha4 (v0.4) | v1beta1 (v1.x) |
-|-----------------------------------| --------------- | --------------- |----------------|
-| IBMCloud Provider v1alpha4 (v0.1) | ✓               | ✓               |                |
-| IBMCloud Provider v1beta1 (v0.2)  |                 |                 | ✓              |
+|                                        | v1alpha3 (v0.3) | v1alpha4 (v0.4) | v1beta1 (v1.x) |
+|----------------------------------------| --------------- | --------------- |----------------|
+| IBMCloud Provider v1alpha4 (v0.1)      | ✓               | ✓               |                |
+| IBMCloud Provider v1beta1 (v0.2, main) |                 |                 | ✓              |
 
 
 (See [Kubernetes support matrix][cluster-api-supported-v] of Cluster API versions).
@@ -44,7 +44,7 @@ If you have questions or want to get the latest project news, you can connect wi
 - Chat with us on the Kubernetes [Slack](http://slack.k8s.io/) in the [#cluster-api-ibmcloud][slack] channel
 - Subscribe to the [SIG Cluster Lifecycle](https://groups.google.com/forum/#!forum/kubernetes-sig-cluster-lifecycle) Google Group for access to documents and calendars
 - Join our Weekly meeting sessions where we share the latest project news, demos, answer questions, and triage issues
-    - Weekly on Friday @ 09:00 IST on [Zoom][zoomMeeting]
+    - Biweekly on Friday @ 09:00 IST on [Zoom][zoomMeeting]
     - Previous meetings: \[ [notes][notes] \]
 
 Pull Requests and feedback on issues are very welcome!
