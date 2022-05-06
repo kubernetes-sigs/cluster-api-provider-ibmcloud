@@ -167,6 +167,10 @@ spec:
         name: "${IBMPOWERVS_IMAGE_NAME}"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
+      memory: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:="4"}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      sysType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      procType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="shared"}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -204,6 +208,10 @@ spec:
         name: "${IBMPOWERVS_IMAGE_NAME}"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
+      memory: ${IBMPOWERVS_COMPUTE_MEMORY:="4"}
+      processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
+      sysType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
+      procType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="shared"}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
