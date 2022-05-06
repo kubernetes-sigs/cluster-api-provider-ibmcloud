@@ -98,3 +98,7 @@ $(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum
 CONVERSION_VERIFIER := $(BIN_DIR)/conversion-verifier
 $(CONVERSION_VERIFIER): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
+
+SETUP_ENVTEST := $(BIN_DIR)/setup-envtest
+$(SETUP_ENVTEST): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ sigs.k8s.io/controller-runtime/tools/setup-envtest
