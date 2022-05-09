@@ -38,6 +38,7 @@ ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
+SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -53,6 +54,8 @@ TAG ?= dev
 ARCH ?= amd64
 ALL_ARCH ?= amd64 ppc64le
 PULL_POLICY ?= Always
+
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.23.3
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
@@ -160,9 +163,19 @@ lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported
 ## Testing
 ## --------------------------------------
 
+.PHONY: setup-envtest
+setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder.
+	@if [ $(shell go env GOOS) == "darwin" ]; then \
+		$(eval KUBEBUILDER_ASSETS := $(shell $(SETUP_ENVTEST) use --use-env -p path --arch amd64 $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))) \
+		echo "kube-builder assets set using darwin OS"; \
+	else \
+		$(eval KUBEBUILDER_ASSETS := $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))) \
+		echo "kube-builder assets set using other OS"; \
+	fi
+
 # Run unit tests
-test: generate fmt vet manifests
-	go test ./... -coverprofile cover.out
+test: generate fmt vet manifests setup-envtest ## Run tests
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... -coverprofile cover.out
 
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
