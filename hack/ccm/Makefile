@@ -15,18 +15,16 @@
 REGISTRY=gcr.io/k8s-staging-capi-ibmcloud
 IMG=powervs-cloud-controller-manager
 
-# VPC_CONTROLLER_COMMIT can be fetched from here https://github.com/openshift/cloud-provider-vpc-controller/commits/master
-VPC_CONTROLLER_COMMIT?=9b99b4e
 # POWERVS_CLOUD_CONTROLLER_COMMIT can be fetched from here https://github.com/openshift/cloud-provider-powervs/commits/main
-POWERVS_CLOUD_CONTROLLER_COMMIT?=a6bfa07
-TAG?=$(VPC_CONTROLLER_COMMIT)_$(POWERVS_CLOUD_CONTROLLER_COMMIT)
+POWERVS_CLOUD_CONTROLLER_COMMIT?=0b18bec
+TAG?=$(POWERVS_CLOUD_CONTROLLER_COMMIT)
 
 build-image-and-push-linux-amd64: init-buildx
 	{                                                                   \
 	set -e ;                                                            \
 	docker buildx build \
 		--build-arg TARGETPLATFORM=linux/amd64 --build-arg ARCH=amd64 \
-		--build-arg VPC_CONTROLLER_COMMIT=$(VPC_CONTROLLER_COMMIT) --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
+		--build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
 		-t $(REGISTRY)/$(IMG):$(TAG)_linux_amd64 . --push --target centos-base; \
 	}
 
@@ -35,7 +33,7 @@ build-image-and-push-linux-ppc64le: init-buildx
 	set -e ;                                                             \
 	docker buildx build \
 		--build-arg TARGETPLATFORM=linux/ppc64le --build-arg ARCH=ppc64le\
-		--build-arg VPC_CONTROLLER_COMMIT=$(VPC_CONTROLLER_COMMIT) --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
+		--build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
 		-t $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le . --push --target centos-base; \
 	}
 

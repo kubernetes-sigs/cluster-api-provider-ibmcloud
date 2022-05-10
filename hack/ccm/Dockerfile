@@ -18,15 +18,6 @@ ARG GOLANG_IMAGE=golang:1.17
 ARG TARGETPLATFORM=linux/amd64
 ARG ARCH=amd64
 
-# Build vpcctl binary
-FROM ${GOLANG_IMAGE} as vpc-builder
-ARG ARCH
-ARG VPC_CONTROLLER_COMMIT
-WORKDIR /build
-RUN git clone https://github.com/openshift/cloud-provider-vpc-controller
-RUN cd cloud-provider-vpc-controller/cmd && git checkout $VPC_CONTROLLER_COMMIT && CGO_ENABLED=0 GOARCH=$ARCH  go build \
-     -ldflags "-s -w" -o /build/vpcctl .
-
 # Build IBM cloud controller manager binary
 FROM ${GOLANG_IMAGE} AS ccm-builder
 ARG ARCH
@@ -39,6 +30,5 @@ RUN cd cloud-provider-powervs && git checkout $POWERVS_CLOUD_CONTROLLER_COMMIT &
 # Assemble the final image
 FROM --platform=$TARGETPLATFORM quay.io/centos/centos:stream8 AS centos-base
 LABEL description="IBM PowerVS Cloud Controller Manager"
-COPY --from=vpc-builder /build/vpcctl /bin/vpcctl
 COPY --from=ccm-builder /build/ibm-cloud-controller-manager /bin/ibm-cloud-controller-manager
 ENTRYPOINT [ "/bin/ibm-cloud-controller-manager" ]
