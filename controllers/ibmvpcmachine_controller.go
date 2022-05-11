@@ -176,7 +176,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			options.SetInstanceID(*instance.ID)
 			options.SetNetworkInterfaceID(*instance.PrimaryNetworkInterface.ID)
 			floatingIP, _, err :=
-				machineScope.IBMVPCClients.VPCService.AddInstanceNetworkInterfaceFloatingIP(options)
+				machineScope.IBMVPCClient.AddInstanceNetworkInterfaceFloatingIP(options)
 			if err != nil {
 				return ctrl.Result{}, errors.Wrapf(err, "failed to bind floating IP to control plane %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
 			}

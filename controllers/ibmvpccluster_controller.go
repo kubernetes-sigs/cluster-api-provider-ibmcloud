@@ -167,7 +167,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	listVSIOpts := &vpcv1.ListInstancesOptions{
 		VPCID: &clusterScope.IBMVPCCluster.Status.VPC.ID,
 	}
-	vsis, _, err := clusterScope.VPCService.ListInstances(listVSIOpts)
+	vsis, _, err := clusterScope.IBMVPCClient.ListInstances(listVSIOpts)
 	if err != nil {
 		return ctrl.Result{}, errors.Wrap(err, "Error when listing VSIs when tried to delete subnet ")
 	}
