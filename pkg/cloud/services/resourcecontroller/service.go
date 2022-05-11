@@ -43,6 +43,16 @@ func (s *Service) GetResourceInstance(getResourceInstanceOptions *resourcecontro
 	return s.client.GetResourceInstance(getResourceInstanceOptions)
 }
 
+// SetServiceURL sets the service URL.
+func (s *Service) SetServiceURL(url string) error {
+	return s.client.SetServiceURL(url)
+}
+
+// GetServiceURL will get the service URL.
+func (s *Service) GetServiceURL() string {
+	return s.client.GetServiceURL()
+}
+
 // NewService returns a new service for the IBM Cloud Resource Controller api client.
 func NewService(options ServiceOptions) (*Service, error) {
 	if options.ResourceControllerV2Options == nil {

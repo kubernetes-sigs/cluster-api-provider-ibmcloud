@@ -43,6 +43,8 @@ providers:
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.4}"
+  # Below variable should be set based on the targeted environment
+  SERVICE_ENDPOINT: "${SERVICE_ENDPOINT:-}"
   # Cluster Addons
   CNI: "${PWD}/test/e2e/data/cni/calico/calico.yaml"
   IP_FAMILY: "IPv4"

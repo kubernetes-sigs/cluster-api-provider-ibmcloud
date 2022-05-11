@@ -33,18 +33,20 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	IBMVPCClient  vpc.Vpc
-	Client        client.Client
-	Logger        logr.Logger
-	Cluster       *capiv1beta1.Cluster
-	Machine       *capiv1beta1.Machine
-	IBMVPCCluster *infrav1beta1.IBMVPCCluster
-	IBMVPCMachine *infrav1beta1.IBMVPCMachine
+	IBMVPCClient    vpc.Vpc
+	Client          client.Client
+	Logger          logr.Logger
+	Cluster         *capiv1beta1.Cluster
+	Machine         *capiv1beta1.Machine
+	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
+	IBMVPCMachine   *infrav1beta1.IBMVPCMachine
+	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -53,15 +55,16 @@ type MachineScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMVPCClient  vpc.Vpc
-	Cluster       *capiv1beta1.Cluster
-	Machine       *capiv1beta1.Machine
-	IBMVPCCluster *infrav1beta1.IBMVPCCluster
-	IBMVPCMachine *infrav1beta1.IBMVPCMachine
+	IBMVPCClient    vpc.Vpc
+	Cluster         *capiv1beta1.Cluster
+	Machine         *capiv1beta1.Machine
+	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
+	IBMVPCMachine   *infrav1beta1.IBMVPCMachine
+	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
-func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator, svcEndpoint string) (*MachineScope, error) {
+func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator) (*MachineScope, error) {
 	if params.Machine == nil {
 		return nil, errors.New("failed to generate new scope from nil Machine")
 	}
@@ -77,6 +80,9 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
+
+	// Fetch the service endpoint.
+	svcEndpoint := endpoints.FetchVPCEndpoint(params.IBMVPCCluster.Spec.Region, params.ServiceEndpoint)
 
 	vpcClient, err := vpc.NewService(svcEndpoint)
 	if err != nil {

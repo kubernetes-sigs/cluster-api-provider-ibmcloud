@@ -70,6 +70,20 @@ To deploy workload cluster with [Power VS cloud controller manager](/topics/powe
 }
 ```
 
+To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format: `${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2...}`
+```json
+{
+   "default_registry": "gcr.io/you-project-name-here",
+   "provider_repos": ["../cluster-api-provider-ibmcloud"],
+   "enable_providers": ["ibmcloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
+   "kustomize_substitutions": {
+      "IBMCLOUD_API_KEY": "XXXXXXXXXXXXXXXXXX",
+      "SERVICE_ENDPOINT":"us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com",
+      "IBMCLOUD_AUTH_URL":"https://iam.test.cloud.ibm.com"
+   }
+}
+```
+
 **NOTE**: For information about all the fields that can be used in the `tilt-settings.json` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settingsjson-fields).
 
 ## Run Tilt

@@ -37,6 +37,7 @@ import (
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
@@ -70,6 +71,13 @@ func main() {
 	pflag.Parse()
 
 	ctrl.SetLogger(klogr.New())
+
+	// Parse service endpoints.
+	serviceEndpoint, err := endpoints.ParseServiceEndpointFlag(endpoints.ServiceEndpointFormat)
+	if err != nil {
+		setupLog.Error(err, "unable to parse service endpoint flag", "controller", "cluster")
+		os.Exit(1)
+	}
 
 	if err := validateFlags(); err != nil {
 		setupLog.Error(err, "Flag validation failure")
@@ -106,37 +114,41 @@ func main() {
 	record.InitFromRecorder(mgr.GetEventRecorderFor("ibmcloud-controller"))
 
 	if err = (&controllers.IBMVPCClusterReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
-		Recorder: mgr.GetEventRecorderFor("ibmvpccluster-controller"),
-		Scheme:   mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
+		Recorder:        mgr.GetEventRecorderFor("ibmvpccluster-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCCluster")
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMVPCMachineReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
-		Recorder: mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
-		Scheme:   mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
+		Recorder:        mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMPowerVSClusterReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
-		Recorder: mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
-		Scheme:   mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
+		Recorder:        mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSCluster")
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMPowerVSMachineReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
-		Recorder: mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
-		Scheme:   mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
+		Recorder:        mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)
@@ -166,10 +178,11 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.IBMPowerVSImageReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
-		Recorder: mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
-		Scheme:   mgr.GetScheme(),
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
+		Recorder:        mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSImage")
 		os.Exit(1)
@@ -239,6 +252,13 @@ func initFlags(fs *pflag.FlagSet) {
 		"powervs-provider-id-fmt",
 		string(options.PowerVSProviderIDFormatV1),
 		"ProviderID format is used set the Provider ID format for Machine",
+	)
+
+	fs.StringVar(
+		&endpoints.ServiceEndpointFormat,
+		"service-endpoint",
+		"",
+		"Set custom service endpoint in semi-colon separated format: ${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1}",
 	)
 }
 

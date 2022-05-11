@@ -37,14 +37,16 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
 type IBMPowerVSClusterReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Log             logr.Logger
+	Recorder        record.EventRecorder
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Scheme          *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,verbs=get;list;watch;create;update;patch;delete
@@ -80,6 +82,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		Logger:            log,
 		Cluster:           cluster,
 		IBMPowerVSCluster: ibmCluster,
+		ServiceEndpoint:   r.ServiceEndpoint,
 	})
 
 	// Always close the scope when exiting this function so we can persist any GCPMachine changes.

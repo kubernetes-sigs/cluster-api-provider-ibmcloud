@@ -53,6 +53,15 @@ it into a management cluster using `clusterctl`.
       export POWERVS_PROVIDER_ID_FORMAT=v2
     ```
 
+   > Note: To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format:
+    ```console
+   `${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1...}`.
+    ```
+   Supported ServiceIDs include - `vpc, powervs, rc`
+    ```console
+      export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
+    ```
+
 2. Initialize local bootstrap cluster as a management cluster
     
     When executed for the first time, the following command accepts the infrastructure provider as an input to install. `clusterctl init` automatically adds to the list the cluster-api core provider, and if unspecified, it also adds the kubeadm bootstrap and kubeadm control-plane providers, thereby converting it into a management cluster which will be used to provision a workload cluster in IBM Cloud.

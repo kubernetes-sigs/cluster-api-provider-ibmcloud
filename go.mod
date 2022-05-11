@@ -13,8 +13,9 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
 	github.com/pkg/errors v0.9.1
-	github.com/ppc64le-cloud/powervs-utils v0.0.0-20210415051532-4cdd6a79c8fa
+	github.com/ppc64le-cloud/powervs-utils v0.0.0-20220607051746-a593c549605b
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.7.1
 	golang.org/x/text v0.3.7
 	k8s.io/api v0.23.5
 	k8s.io/apimachinery v0.23.5
@@ -101,6 +102,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.28.0 // indirect
