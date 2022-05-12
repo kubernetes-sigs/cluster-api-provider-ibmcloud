@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+.DEFAULT_GOAL:=help
+
 ROOT_DIR_RELATIVE := .
 
 include $(ROOT_DIR_RELATIVE)/common.mk
@@ -83,8 +85,14 @@ endif
 
 all: manager
 
+## --------------------------------------
+## Binaries
+## --------------------------------------
+
+##@ build:
+
 # Build manager binary
-manager: generate fmt vet
+manager: generate fmt vet ## Build the manager binary into the ./bin folder
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
@@ -104,6 +112,32 @@ deploy: manifests $(KUSTOMIZE)
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
+# Run go fmt against code
+fmt:
+	go fmt ./...
+
+# Run go vet against code
+vet:
+	go vet ./...
+
+help:  # Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[0-9A-Za-z_-]+:.*?##/ { printf "  \033[36m%-45s\033[0m %s\n", $$1, $$2 } /^\$$\([0-9A-Za-z_-]+\):.*?##/ { gsub("_","-", $$1); printf "  \033[36m%-45s\033[0m %s\n", tolower(substr($$1, 3, length($$1)-7)), $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+## --------------------------------------
+## Generate / Manifests
+## --------------------------------------
+
+##@ generate:
+
+# Generate code
+generate: $(CONTROLLER_GEN)
+	$(MAKE) generate-go
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+
+.PHONY: generate-go
+generate-go: $(MOCKGEN)
+	go generate ./...
+
 # Generate manifests e.g. CRD, RBAC etc.
 manifests: $(CONTROLLER_GEN)
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -120,22 +154,10 @@ generate-go-conversions-core: $(CONVERSION_GEN)
 		--output-file-base=zz_generated.conversion $(CONVERSION_GEN_OUTPUT_BASE) \
 		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
 
-# Run go fmt against code
-fmt:
-	go fmt ./...
-
-# Run go vet against code
-vet:
-	go vet ./...
-
-# Generate code
-generate: $(CONTROLLER_GEN)
-	$(MAKE) generate-go
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
-
-.PHONY: generate-go
-generate-go: $(MOCKGEN)
-	go generate ./...
+.PHONY: modules
+modules: ## Runs go mod to ensure modules are up to date
+	go mod tidy
+	cd $(TOOLS_DIR); go mod tidy
 
 images: docker-build
 
@@ -148,23 +170,13 @@ endif
 	@echo "Setting e2e test flavour to ${E2E_CONF_FILE}"
 
 ## --------------------------------------
-## Linting
-## --------------------------------------
-
-.PHONY: lint
-lint: $(GOLANGCI_LINT) ## Lint codebase
-	$(GOLANGCI_LINT) run -v --fast=false
-
-.PHONY: lint-fix
-lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
-	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
-
-## --------------------------------------
 ## Testing
 ## --------------------------------------
 
+##@ test:
+
 .PHONY: setup-envtest
-setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder.
+setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder
 	@if [ $(shell go env GOOS) == "darwin" ]; then \
 		$(eval KUBEBUILDER_ASSETS := $(shell $(SETUP_ENVTEST) use --use-env -p path --arch amd64 $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))) \
 		echo "kube-builder assets set using darwin OS"; \
@@ -189,7 +201,7 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 
 # Run the end-to-end tests
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image 
+test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image ## Run e2e tests
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) 
 	$(GINKGO) $(GINKGO_ARGS) ./test/e2e -- \
 		-e2e.artifacts-folder="$(ARTIFACTS)" \
@@ -200,73 +212,14 @@ test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image
 
 # Basic checks for deploying kind cluster and required providers
 .PHONY: test-sanity
-test-sanity:
+test-sanity: ## Run sanity tests
 	GINKGO_FOCUS="Run Sanity tests" $(MAKE) test-e2e
-
-## --------------------------------------
-## Docker
-## --------------------------------------
-
-.PHONY: docker-build
-docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
-	docker build --build-arg ARCH=$(ARCH) . -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
-
-.PHONY: docker-push
-docker-push: ## Push the docker image
-	docker push $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
-
-.PHONY: docker-pull-prerequisites
-docker-pull-prerequisites:
-	docker pull docker.io/docker/dockerfile:1.1-experimental
-	docker pull gcr.io/distroless/static:latest
-
-.PHONY: e2e-image
-e2e-image: docker-pull-prerequisites
-	docker build --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
-	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
-	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
-
-.PHONY: set-manifest-image
-set-manifest-image:
-	$(info Updating kustomize image patch file for default resource)
-	sed -i'' -e 's@image: .*@image: '"${MANIFEST_IMG}"'@' ./config/default/manager_image_patch.yaml
-
-.PHONY: set-manifest-pull-policy
-set-manifest-pull-policy:
-	$(info Updating kustomize pull policy file for default resource)
-	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' ./config/default/manager_pull_policy.yaml	
-
-## --------------------------------------
-## Docker - All ARCH
-## --------------------------------------
-
-.PHONY: docker-build-all ## Build all the architecture docker images
-docker-build-all: $(addprefix docker-build-,$(ALL_ARCH))
-
-docker-build-%:
-	$(MAKE) ARCH=$* docker-build
-
-.PHONY: docker-push-all ## Push all the architecture docker images
-docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))
-	$(MAKE) docker-push-core-manifest
-
-docker-push-%:
-	$(MAKE) ARCH=$* docker-push
-
-.PHONY: docker-push-core-manifest
-docker-push-core-manifest: ## Push the fat manifest docker image.
-	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
-	$(MAKE) docker-push-manifest CONTROLLER_IMG=$(CORE_CONTROLLER_IMG) MANIFEST_FILE=$(CORE_MANIFEST_FILE)
-
-.PHONY: docker-push-manifest
-docker-push-manifest:
-	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
-	docker manifest push --purge ${CONTROLLER_IMG}:${TAG}
 
 ## --------------------------------------
 ## Release
 ## --------------------------------------
+
+##@ release:
 
 $(RELEASE_DIR):
 	mkdir -p $@
@@ -296,19 +249,19 @@ check-github-token:
 	@if [ -z "${GITHUB_TOKEN}" ]; then echo "GITHUB_TOKEN is not set"; exit 1; fi
 
 .PHONY: release
-release: clean-release check-release-tag $(RELEASE_DIR)  ## Builds and push container images using the latest git tag for the commit.
+release: clean-release check-release-tag $(RELEASE_DIR)  ## Build and push container images using the latest git tag for the commit
 	git checkout "${RELEASE_TAG}"
 	CORE_CONTROLLER_IMG=$(PROD_REGISTRY)/$(CORE_IMAGE_NAME) $(MAKE) release-manifests
 	$(MAKE) release-templates
 
 .PHONY: release-manifests
-release-manifests:
+release-manifests: ## Build the manifests to publish with a release
 	$(MAKE) $(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml TAG=$(RELEASE_TAG)
 	# Add metadata to the release artifacts
 	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
 
 .PHONY: release-staging
-release-staging: ## Builds and push container images and manifests to the staging bucket.
+release-staging: ## Build and push container images to the staging bucket
 	$(MAKE) docker-build-all
 	$(MAKE) docker-push-all
 	$(MAKE) release-alias-tag
@@ -326,7 +279,7 @@ upload-staging-artifacts: ## Upload release artifacts to the staging bucket
 	gsutil cp $(RELEASE_DIR)/* gs://$(BUCKET)/components/$(RELEASE_ALIAS_TAG)
 
 .PHONY: release-alias-tag
-release-alias-tag: # Adds the tag to the last build tag.
+release-alias-tag: ## Add the release alias tag to the last build tag
 	gcloud container images add-tag -q $(CORE_CONTROLLER_IMG):$(TAG) $(CORE_CONTROLLER_IMG):$(RELEASE_ALIAS_TAG)
 
 .PHONY: release-templates
@@ -371,13 +324,142 @@ image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
 		"hack/image-patch/kustomization.yaml" > $(IMAGE_PATCH_DIR)/$(PROVIDER)/kustomization.yaml
 
 ## --------------------------------------
+## Docker
+## --------------------------------------
+
+.PHONY: docker-build
+docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
+	docker build --build-arg ARCH=$(ARCH) . -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+
+.PHONY: docker-push
+docker-push: ## Push the docker image
+	docker push $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+
+.PHONY: docker-pull-prerequisites
+docker-pull-prerequisites:
+	docker pull docker.io/docker/dockerfile:1.1-experimental
+	docker pull gcr.io/distroless/static:latest
+
+.PHONY: e2e-image
+e2e-image: docker-pull-prerequisites
+	docker build --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
+	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
+	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
+
+.PHONY: set-manifest-image
+set-manifest-image:
+	$(info Updating kustomize image patch file for default resource)
+	sed -i'' -e 's@image: .*@image: '"${MANIFEST_IMG}"'@' ./config/default/manager_image_patch.yaml
+
+.PHONY: set-manifest-pull-policy
+set-manifest-pull-policy:
+	$(info Updating kustomize pull policy file for default resource)
+	sed -i'' -e 's@imagePullPolicy: .*@imagePullPolicy: '"$(PULL_POLICY)"'@' ./config/default/manager_pull_policy.yaml	
+
+## --------------------------------------
+## Docker - All ARCH
+## --------------------------------------
+
+.PHONY: docker-build-all ## Build docker images for all architectures
+docker-build-all: $(addprefix docker-build-,$(ALL_ARCH))
+
+docker-build-%:
+	$(MAKE) ARCH=$* docker-build
+
+.PHONY: docker-push-all ## Push all the architecture docker images
+docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))
+	$(MAKE) docker-push-core-manifest
+
+docker-push-%:
+	$(MAKE) ARCH=$* docker-push
+
+.PHONY: docker-push-core-manifest
+docker-push-core-manifest: ## Push the multiarch manifest for the core docker images
+	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
+	$(MAKE) docker-push-manifest CONTROLLER_IMG=$(CORE_CONTROLLER_IMG) MANIFEST_FILE=$(CORE_MANIFEST_FILE)
+
+.PHONY: docker-push-manifest
+docker-push-manifest:
+	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
+	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
+	docker manifest push --purge ${CONTROLLER_IMG}:${TAG}
+
+## --------------------------------------
+## Lint / Verify
+## --------------------------------------
+
+##@ lint and verify:
+
+.PHONY: lint
+lint: $(GOLANGCI_LINT) ## Lint codebase
+	$(GOLANGCI_LINT) run -v --fast=false
+
+.PHONY: lint-fix
+lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
+	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
+
+ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen conversions #tiltfile
+
+.PHONY: verify
+verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
+
+.PHONY: verify-doctoc
+verify-doctoc:
+	./hack/verify-doctoc.sh
+
+.PHONY: verify-boilerplate
+verify-boilerplate: ## Verify boilerplate text exists in each file
+	./hack/verify-boilerplate.sh
+
+.PHONY: verify-shellcheck
+verify-shellcheck: ## Verify shell files
+	./hack/verify-shellcheck.sh
+
+.PHONY: verify-tiltfile
+verify-tiltfile: ## Verify Tiltfile format
+	./hack/verify-starlark.sh
+
+.PHONY: verify-modules
+verify-modules: modules ## Verify go modules are up to date
+	@if !(git diff --quiet HEAD -- go.sum go.mod $(TOOLS_DIR)/go.mod $(TOOLS_DIR)/go.sum); then \
+		git diff; \
+		echo "go module files are out of date"; exit 1; \
+	fi
+	@if (find . -name 'go.mod' | xargs -n1 grep -q -i 'k8s.io/client-go.*+incompatible'); then \
+		find . -name "go.mod" -exec grep -i 'k8s.io/client-go.*+incompatible' {} \; -print; \
+		echo "go module contains an incompatible client-go version"; exit 1; \
+	fi
+
+.PHONY: verify-gen
+verify-gen: generate ## Verfiy go generated files are up to date
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "generated files are out of date, run make generate"; exit 1; \
+	fi
+
+.PHONY: verify-conversions
+verify-conversions: $(CONVERSION_VERIFIER) ## Verifies expected API conversion are in place
+	$(CONVERSION_VERIFIER)
+
+## --------------------------------------
 ## Cleanup / Verification
 ## --------------------------------------
 
+##@ clean:
+
 .PHONY: clean
 clean: ## Remove all generated files
-	$(MAKE) -C hack/tools clean
+	$(MAKE) clean-bin
+	$(MAKE) clean-book
 	$(MAKE) clean-temporary
+
+.PHONY: clean-bin
+clean-bin: ## Remove all generated binaries
+	rm -rf $(TOOLS_BIN_DIR)
+
+.PHONY: clean-book
+clean-book: ## Remove all generated GitBook files
+	rm -rf ./docs/book/_book
 
 .PHONY: clean-temporary
 clean-temporary: ## Remove all temporary files and folders
@@ -392,41 +474,3 @@ clean-release: ## Remove the release folder
 .PHONY: clean-generated-conversions
 clean-generated-conversions: ## Remove files generated by conversion-gen from the mentioned dirs
 	(IFS=','; for i in $(SRC_DIRS); do find $$i -type f -name 'zz_generated.conversion*' -exec rm -f {} \;; done)
-
-.PHONY: verify
-verify:
-	./hack/verify-boilerplate.sh
-	./hack/verify-doctoc.sh
-	./hack/verify-shellcheck.sh
-	#TODO(mkumatag): looking for tiltfile, fix it when we use tilt
-	#./hack/verify-starlark.sh
-	$(MAKE) verify-modules
-	$(MAKE) verify-gen
-	$(MAKE) verify-conversions
-
-.PHONY: modules
-modules: ## Runs go mod to ensure modules are up to date.
-	go mod tidy
-	cd $(TOOLS_DIR); go mod tidy
-
-.PHONY: verify-modules
-verify-modules: modules
-	@if !(git diff --quiet HEAD -- go.sum go.mod $(TOOLS_DIR)/go.mod $(TOOLS_DIR)/go.sum); then \
-		git diff; \
-		echo "go module files are out of date"; exit 1; \
-	fi
-	@if (find . -name 'go.mod' | xargs -n1 grep -q -i 'k8s.io/client-go.*+incompatible'); then \
-		find . -name "go.mod" -exec grep -i 'k8s.io/client-go.*+incompatible' {} \; -print; \
-		echo "go module contains an incompatible client-go version"; exit 1; \
-	fi
-
-.PHONY: verify-gen
-verify-gen: generate
-	@if !(git diff --quiet HEAD); then \
-		git diff; \
-		echo "generated files are out of date, run make generate"; exit 1; \
-	fi
-
-.PHONY: verify-conversions
-verify-conversions: $(CONVERSION_VERIFIER)
-	$(CONVERSION_VERIFIER)

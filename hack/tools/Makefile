@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+.DEFAULT_GOAL:=help
+
 ROOT_DIR_RELATIVE := ../..
 include $(ROOT_DIR_RELATIVE)/common.mk
 
@@ -41,12 +43,21 @@ ifeq ($(OS), windows)
 	MDBOOK_EXTRACT_COMMAND := unzip -d /tmp
 endif
 
+help:  # Display this help
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[0-9A-Za-z_-]+:.*?##/ { printf "  \033[36m%-45s\033[0m %s\n", $$1, $$2 } /^\$$\([0-9A-Za-z_-]+\):.*?##/ { gsub("_","-", $$1); printf "  \033[36m%-45s\033[0m %s\n", tolower(substr($$1, 3, length($$1)-3)), $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+## --------------------------------------
+## Hack / Tools
+## --------------------------------------
+
+##@ hack/tools:
+
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
-$(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum # Build golangci-lint from tools folder.
+$(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lint.
 	go build -tags=tools -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
 KUSTOMIZE := $(BIN_DIR)/kustomize
-$(KUSTOMIZE): $(BIN_DIR) go.mod go.sum # Build kustomize from tools folder.
+$(KUSTOMIZE): $(BIN_DIR) go.mod go.sum ## Build a local copy of kustomize.
 	CGO_ENABLED=0 go build -tags=tools -o $@ sigs.k8s.io/kustomize/kustomize/v4
 
 MDBOOK_SHARE := $(SHARE_DIR)/mdbook$(MDBOOK_ARCHIVE_EXT)
@@ -72,33 +83,33 @@ $(MDBOOK_TABULATE): $(BIN_DIR) go.mod go.sum
 	go build -tags=tools -o $(BIN_DIR)/mdbook-tabulate sigs.k8s.io/cluster-api/hack/tools/mdbook/tabulate
 
 GOJQ := $(BIN_DIR)/gojq
-$(GOJQ): $(BIN_DIR) go.mod go.sum
+$(GOJQ): $(BIN_DIR) go.mod go.sum ## Build a local copy of gojq.
 	go build -tags=tools -o $@ github.com/itchyny/gojq/cmd/gojq
 
 CONVERSION_GEN := $(BIN_DIR)/conversion-gen
-$(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum
+$(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of conversion-gen.
 	go build -tags=tools -o $@ k8s.io/code-generator/cmd/conversion-gen
 
 GINKGO := $(BIN_DIR)/ginkgo
-$(GINKGO): $(BIN_DIR) go.mod go.sum
+$(GINKGO): $(BIN_DIR) go.mod go.sum ## Build a local copy of ginkgo.
 	go build -tags=tools -o $@ github.com/onsi/ginkgo/ginkgo
 
 ENVSUBST := $(BIN_DIR)/envsubst
-$(ENVSUBST): $(BIN_DIR) go.mod go.sum
+$(ENVSUBST): $(BIN_DIR) go.mod go.sum ## Build a local copy of envsubst.
 	go build -tags=tools -o $@ github.com/drone/envsubst/v2/cmd/envsubst
 
 MOCKGEN := $(BIN_DIR)/mockgen
-$(MOCKGEN): $(BIN_DIR) go.mod go.sum
+$(MOCKGEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of mockgen.
 	go build -tags=tools -o $@ github.com/golang/mock/mockgen
 
 CONTROLLER_GEN := $(BIN_DIR)/controller-gen
-$(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum
+$(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of controller-gen.
 	go build -tags=tools -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen
 
 CONVERSION_VERIFIER := $(BIN_DIR)/conversion-verifier
-$(CONVERSION_VERIFIER): $(BIN_DIR) go.mod go.sum
+$(CONVERSION_VERIFIER): $(BIN_DIR) go.mod go.sum ## Build a local copy of conversion-verifier.
 	go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
 
 SETUP_ENVTEST := $(BIN_DIR)/setup-envtest
-$(SETUP_ENVTEST): $(BIN_DIR) go.mod go.sum
+$(SETUP_ENVTEST): $(BIN_DIR) go.mod go.sum ## Build a local copy of setup-envtest.
 	go build -tags=tools -o $@ sigs.k8s.io/controller-runtime/tools/setup-envtest
