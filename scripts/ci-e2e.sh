@@ -37,14 +37,10 @@ ARCH=$(uname -m)
 PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.4-alpha.3"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 REGION=${REGION:-"us-south"}
-RESOURCE_GROUP=${RESOURCE_GROUP:-"prow-resource-group"}
 
 trap cleanup EXIT
 
 cleanup(){
-    # Delete the created ports for the network instance
-    [ -n "${NEW_PORT}" ] && ./pvsadm delete port --network ${IBMPOWERVS_NETWORK_NAME} --port-id ${PORT_ID} --instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID}
-
     # stop the boskos heartbeat
     [[ -z ${HEART_BEAT_PID:-} ]] || kill -9 "${HEART_BEAT_PID}" || true
 }
@@ -91,9 +87,10 @@ init_network_powervs(){
 
 prerequisites_powervs(){
     # Assigning PowerVS variables
-    export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams8-1-22-4"}
-    export IBMPOWERVS_SERVICE_INSTANCE_ID=${IBMPOWERVS_SERVICE_INSTANCE_ID:-"0f28d13a-6e33-4d86-b6d7-a9b46ff7659e"}
-    export IBMPOWERVS_NETWORK_NAME=${BOSKOS_RESOURCE_NAME:-"capi-e2e-test"}
+    export IBMPOWERVS_SSHKEY_NAME=${IBMPOWERVS_SSHKEY_NAME:-"powercloud-bot-key"}
+    export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams8-1-24-2"}
+    export IBMPOWERVS_SERVICE_INSTANCE_ID=${BOSKOS_RESOURCE_ID:-"0f28d13a-6e33-4d86-b6d7-a9b46ff7659e"}
+    export IBMPOWERVS_NETWORK_NAME="capi-net-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
     # Setting controller loglevel to allow debug logs from the PowerVS client
     export LOGLEVEL=5
 }
@@ -126,7 +123,7 @@ main(){
         HEART_BEAT_PID=$(echo $!)
     fi
 
-    if [[ "${E2E_FLAVOR}" == "powervs" ]]; then
+    if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "md-remediation" ]]; then
         prerequisites_powervs
         init_network_powervs
     fi
