@@ -3,7 +3,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 go 1.17
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.1.8
+	github.com/IBM-Cloud/power-go-client v1.1.9
 	github.com/IBM/go-sdk-core/v5 v5.10.0
 	github.com/IBM/platform-services-go-sdk v0.25.1
 	github.com/IBM/vpc-go-sdk v1.0.1
