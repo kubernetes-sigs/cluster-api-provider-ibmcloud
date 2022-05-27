@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.1.9
-	github.com/IBM/go-sdk-core/v5 v5.10.0
+	github.com/IBM/go-sdk-core/v5 v5.10.1
 	github.com/IBM/platform-services-go-sdk v0.25.1
 	github.com/IBM/vpc-go-sdk v1.0.1
 	github.com/go-logr/logr v1.2.0
@@ -79,7 +79,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
