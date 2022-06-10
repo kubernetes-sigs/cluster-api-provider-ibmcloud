@@ -9,7 +9,7 @@ require (
 	github.com/itchyny/gojq v0.12.5
 	github.com/joelanford/go-apidiff v0.4.0
 	github.com/onsi/ginkgo v1.16.5
-	gotest.tools/gotestsum v1.6.4
+	gotest.tools/gotestsum v1.8.1
 	k8s.io/code-generator v0.23.5
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220603170822-1c3a1526f101
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
