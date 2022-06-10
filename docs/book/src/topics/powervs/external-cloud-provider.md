@@ -25,7 +25,7 @@
   --target-namespace default \
   --control-plane-machine-count=3 \
   --worker-machine-count=1 \
-  --from ./cluster-template-powervs-cloud-provider.yaml | kubectl apply -f -
+  --flavor=powervs-cloud-provider | kubectl apply -f -
   ```
 
 When the cluster is created with above parameters, The IBM Power VS cloud provider will 

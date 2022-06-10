@@ -15,7 +15,7 @@ clusterctl generate cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
 --target-namespace default \
 --control-plane-machine-count=1 \
 --worker-machine-count=2 \
---from ~/.cluster-api/dev-repository/infrastructure-ibmvpccloud/v0.3.8/cluster-template.yaml
+--from ./cluster-template.yaml
 ```
 
 ## Power VS
