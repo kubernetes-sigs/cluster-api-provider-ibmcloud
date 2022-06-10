@@ -37,14 +37,16 @@ import (
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
 // IBMVPCMachineReconciler reconciles a IBMVPCMachine object.
 type IBMVPCMachineReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Log             logr.Logger
+	Recorder        record.EventRecorder
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Scheme          *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=get;list;watch;create;update;patch;delete
@@ -96,9 +98,6 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	// Create the service endpoint.
-	svcEndpoint := "https://" + ibmCluster.Spec.Region + ".iaas.cloud.ibm.com/v1"
-
 	authenticator, err := authenticator.GetAuthenticator()
 	if err != nil {
 		return ctrl.Result{}, errors.Wrapf(err, "failed to get authenticator")
@@ -106,13 +105,14 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Create the machine scope.
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
-		Client:        r.Client,
-		Logger:        log,
-		Cluster:       cluster,
-		IBMVPCCluster: ibmCluster,
-		Machine:       machine,
-		IBMVPCMachine: ibmVpcMachine,
-	}, authenticator, svcEndpoint)
+		Client:          r.Client,
+		Logger:          log,
+		Cluster:         cluster,
+		IBMVPCCluster:   ibmCluster,
+		Machine:         machine,
+		IBMVPCMachine:   ibmVpcMachine,
+		ServiceEndpoint: r.ServiceEndpoint,
+	}, authenticator)
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}

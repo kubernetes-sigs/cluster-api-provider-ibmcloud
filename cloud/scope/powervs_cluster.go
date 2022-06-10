@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
 const (
@@ -49,6 +50,7 @@ type PowerVSClusterScopeParams struct {
 	Logger            logr.Logger
 	Cluster           *capiv1beta1.Cluster
 	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
+	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
 // PowerVSClusterScope defines a scope defined around a Power VS Cluster.
@@ -60,6 +62,7 @@ type PowerVSClusterScope struct {
 	IBMPowerVSClient  powervs.PowerVS
 	Cluster           *capiv1beta1.Cluster
 	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
+	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
 // NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.
@@ -115,6 +118,14 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 		return
 	}
 
+	// Fetch the resource controller endpoint.
+	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
+		if err := rc.SetServiceURL(rcEndpoint); err != nil {
+			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
+		}
+		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
+	}
+
 	res, _, err := rc.GetResourceInstance(
 		&resourcecontrollerv2.GetResourceInstanceOptions{
 			ID: core.StringPtr(spec.ServiceInstanceID),
@@ -139,6 +150,13 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 		},
 		CloudInstanceID: spec.ServiceInstanceID,
 	}
+
+	// Fetch the service endpoint.
+	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
+		options.IBMPIOptions.URL = svcEndpoint
+		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
+	}
+
 	c, err := powervs.NewService(options)
 	if err != nil {
 		err = fmt.Errorf("failed to create NewIBMPowerVSClient")

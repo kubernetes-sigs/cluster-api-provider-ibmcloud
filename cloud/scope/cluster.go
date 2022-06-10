@@ -31,16 +31,18 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.
 type ClusterScopeParams struct {
-	IBMVPCClient  vpc.Vpc
-	Client        client.Client
-	Logger        logr.Logger
-	Cluster       *capiv1beta1.Cluster
-	IBMVPCCluster *infrav1beta1.IBMVPCCluster
+	IBMVPCClient    vpc.Vpc
+	Client          client.Client
+	Logger          logr.Logger
+	Cluster         *capiv1beta1.Cluster
+	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
+	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
 // ClusterScope defines a scope defined around a cluster.
@@ -49,13 +51,14 @@ type ClusterScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMVPCClient  vpc.Vpc
-	Cluster       *capiv1beta1.Cluster
-	IBMVPCCluster *infrav1beta1.IBMVPCCluster
+	IBMVPCClient    vpc.Vpc
+	Cluster         *capiv1beta1.Cluster
+	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
+	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
 // NewClusterScope creates a new ClusterScope from the supplied parameters.
-func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator, svcEndpoint string) (*ClusterScope, error) {
+func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -71,6 +74,9 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init patch helper")
 	}
+
+	// Fetch the service endpoint.
+	svcEndpoint := endpoints.FetchVPCEndpoint(params.IBMVPCCluster.Spec.Region, params.ServiceEndpoint)
 
 	vpcClient, err := vpc.NewService(svcEndpoint)
 	if err != nil {

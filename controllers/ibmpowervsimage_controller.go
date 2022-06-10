@@ -38,15 +38,17 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
 // IBMPowerVSImageReconciler reconciles a IBMPowerVSImage object.
 type IBMPowerVSImageReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Log             logr.Logger
+	Recorder        record.EventRecorder
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Scheme          *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages,verbs=get;list;watch;create;update;patch;delete
@@ -72,9 +74,11 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Create the scope.
 	imageScope, err := scope.NewPowerVSImageScope(scope.PowerVSImageScopeParams{
-		Client:          r.Client,
-		Logger:          log,
-		IBMPowerVSImage: ibmImage,
+		Client:            r.Client,
+		Logger:            log,
+		IBMPowerVSImage:   ibmImage,
+		IBMPowerVSCluster: cluster,
+		ServiceEndpoint:   r.ServiceEndpoint,
 	})
 
 	// Always close the scope when exiting this function so we can persist any GCPMachine changes.

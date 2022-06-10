@@ -36,14 +36,16 @@ import (
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
 // IBMVPCClusterReconciler reconciles a IBMVPCCluster object.
 type IBMVPCClusterReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Log             logr.Logger
+	Recorder        record.EventRecorder
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Scheme          *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,verbs=get;list;watch;create;update;patch;delete
@@ -74,20 +76,18 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	// Create the service endpoint.
-	svcEndpoint := "https://" + ibmCluster.Spec.Region + ".iaas.cloud.ibm.com/v1"
-
 	authenticator, err := authenticator.GetAuthenticator()
 	if err != nil {
 		return ctrl.Result{}, errors.Wrapf(err, "failed to get authenticator")
 	}
 
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
-		Client:        r.Client,
-		Logger:        log,
-		Cluster:       cluster,
-		IBMVPCCluster: ibmCluster,
-	}, authenticator, svcEndpoint)
+		Client:          r.Client,
+		Logger:          log,
+		Cluster:         cluster,
+		IBMVPCCluster:   ibmCluster,
+		ServiceEndpoint: r.ServiceEndpoint,
+	}, authenticator)
 
 	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
 	defer func() {

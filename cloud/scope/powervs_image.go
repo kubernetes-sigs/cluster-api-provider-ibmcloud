@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
@@ -44,9 +45,11 @@ const BucketAccess = "public"
 
 // PowerVSImageScopeParams defines the input parameters used to create a new PowerVSImageScope.
 type PowerVSImageScopeParams struct {
-	Client          client.Client
-	Logger          logr.Logger
-	IBMPowerVSImage *infrav1beta1.IBMPowerVSImage
+	Client            client.Client
+	Logger            logr.Logger
+	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
+	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
 // PowerVSImageScope defines a scope defined around a Power VS Cluster.
@@ -55,8 +58,10 @@ type PowerVSImageScope struct {
 	client      client.Client
 	patchHelper *patch.Helper
 
-	IBMPowerVSClient powervs.PowerVS
-	IBMPowerVSImage  *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSClient  powervs.PowerVS
+	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
+	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
 // NewPowerVSImageScope creates a new PowerVSImageScope from the supplied parameters.
@@ -106,6 +111,14 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 		return
 	}
 
+	// Fetch the resource controller endpoint.
+	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
+		if err := rc.SetServiceURL(rcEndpoint); err != nil {
+			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
+		}
+		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
+	}
+
 	res, _, err := rc.GetResourceInstance(
 		&resourcecontrollerv2.GetResourceInstanceOptions{
 			ID: core.StringPtr(spec.ServiceInstanceID),
@@ -130,8 +143,20 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 		},
 		CloudInstanceID: spec.ServiceInstanceID,
 	}
-	c, err := powervs.NewService(options)
 
+	if params.IBMPowerVSCluster == nil {
+		err = errors.New("failed to generate new scope from nil IBMPowerVSCluster")
+		return
+	}
+	scope.IBMPowerVSCluster = params.IBMPowerVSCluster
+
+	// Fetch the service endpoint.
+	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
+		options.IBMPIOptions.URL = svcEndpoint
+		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
+	}
+
+	c, err := powervs.NewService(options)
 	if err != nil {
 		err = fmt.Errorf("failed to create NewIBMPowerVSClient")
 		return

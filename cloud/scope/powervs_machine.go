@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
@@ -58,6 +59,7 @@ type PowerVSMachineScopeParams struct {
 	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
 	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
+	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -72,6 +74,7 @@ type PowerVSMachineScope struct {
 	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
 	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
+	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
 // NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
@@ -135,6 +138,14 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		return
 	}
 
+	// Fetch the resource controller endpoint.
+	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
+		if err := rc.SetServiceURL(rcEndpoint); err != nil {
+			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
+		}
+		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
+	}
+
 	res, _, err := rc.GetResourceInstance(
 		&resourcecontrollerv2.GetResourceInstanceOptions{
 			ID: core.StringPtr(m.Spec.ServiceInstanceID),
@@ -161,6 +172,13 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		},
 		CloudInstanceID: m.Spec.ServiceInstanceID,
 	}
+
+	// Fetch the service endpoint.
+	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
+		options.IBMPIOptions.URL = svcEndpoint
+		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
+	}
+
 	c, err := powervs.NewService(options)
 	if err != nil {
 		err = fmt.Errorf("failed to create PowerVS service")
