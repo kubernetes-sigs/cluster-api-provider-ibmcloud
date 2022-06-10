@@ -50,7 +50,7 @@ following the steps below.
     --target-namespace default \
     --control-plane-machine-count=3 \
     --worker-machine-count=1 \
-    --from ./cluster-template-powervs.yaml | kubectl apply -f -
+    --flavor=powervs | kubectl apply -f -
     ```
 
     Output:

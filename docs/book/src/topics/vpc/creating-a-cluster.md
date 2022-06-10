@@ -18,8 +18,7 @@ following the steps below.
     clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.19.9 \
     --target-namespace default \
     --control-plane-machine-count=1 \
-    --worker-machine-count=2 \
-    --from ./templates/cluster-template.yaml | kubectl apply -f -
+    --worker-machine-count=2 | kubectl apply -f -
     ```
 
     Output:
