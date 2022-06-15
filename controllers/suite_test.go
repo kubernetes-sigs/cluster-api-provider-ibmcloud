@@ -17,63 +17,76 @@ limitations under the License.
 package controllers
 
 import (
-	"path/filepath"
+	"fmt"
+	"path"
 	"testing"
 
-	// +kubebuilder:scaffold:imports
-	"github.com/onsi/ginkgo/reporters"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	ctrl "sigs.k8s.io/controller-runtime"
 
+	// +kubebuilder:scaffold:imports
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+var (
+	testEnv *helpers.TestEnvironment
+	ctx     = ctrl.SetupSignalHandler()
+)
 
-var cfg *rest.Config
-var k8sClient client.Client
-var testEnv *envtest.Environment
-
-func TestAPIs(t *testing.T) {
-	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit-controller.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Controller Suite", []Reporter{junitReporter})
+func TestMain(m *testing.M) {
+	setup()
+	defer teardown()
+	m.Run()
 }
 
-var _ = BeforeSuite(func(done Done) {
-	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "config", "crd", "bases"),
-		},
-	}
-
+// Setting up the test environment.
+func setup() {
+	utilruntime.Must(infrav1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(capiv1beta1.AddToScheme(scheme.Scheme))
+	testEnvConfig := helpers.NewTestEnvironmentConfiguration([]string{
+		path.Join("config", "crd", "bases"),
+	},
+	).WithWebhookConfiguration("unmanaged", path.Join("config", "webhook", "manifests.yaml"))
 	var err error
-	cfg, err = testEnv.Start()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(cfg).ToNot(BeNil())
+	testEnv, err = testEnvConfig.Build()
+	if err != nil {
+		panic(err)
+	}
+	if err := (&infrav1beta1.IBMPowerVSCluster{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMPowerVSCluster webhook: %v", err))
+	}
+	if err := (&infrav1beta1.IBMPowerVSMachine{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMPowerVSMachine webhook: %v", err))
+	}
+	if err := (&infrav1beta1.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMPowerVSMachineTemplate webhook: %v", err))
+	}
+	if err := (&infrav1beta1.IBMPowerVSImage{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMPowerVSImage webhook: %v", err))
+	}
+	if err := (&infrav1beta1.IBMVPCCluster{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMVPCCluster webhook: %v", err))
+	}
+	if err := (&infrav1beta1.IBMVPCMachine{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMVPCMachine webhook: %v", err))
+	}
+	if err := (&infrav1beta1.IBMVPCMachineTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMVPCMachineTemplate webhook: %v", err))
+	}
+	go func() {
+		fmt.Println("Starting the manager")
+		if err := testEnv.StartManager(ctx); err != nil {
+			panic(fmt.Sprintf("Failed to start the envtest manager: %v", err))
+		}
+	}()
+	testEnv.WaitForWebhooks()
+}
 
-	Expect(capiv1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
-	Expect(infrav1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
-
-	// +kubebuilder:scaffold:scheme
-
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).ToNot(HaveOccurred())
-	Expect(k8sClient).ToNot(BeNil())
-
-	close(done)
-}, 60)
-
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	err := testEnv.Stop()
-	Expect(err).ToNot(HaveOccurred())
-})
+func teardown() {
+	if err := testEnv.Stop(); err != nil {
+		panic(fmt.Sprintf("Failed to stop envtest: %v", err))
+	}
+}
