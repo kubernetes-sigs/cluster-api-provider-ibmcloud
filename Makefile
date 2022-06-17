@@ -215,6 +215,11 @@ test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image ## Run e2e tes
 test-sanity: ## Run sanity tests
 	GINKGO_FOCUS="Run Sanity tests" $(MAKE) test-e2e
 
+.PHONY: test-cover
+test-cover: test ## Run tests with code coverage and code generate reports
+	go tool cover -func=cover.out -o cover.txt
+	go tool cover -html=cover.out -o cover.html
+
 ## --------------------------------------
 ## Release
 ## --------------------------------------
