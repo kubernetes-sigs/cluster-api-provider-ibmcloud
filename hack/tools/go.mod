@@ -10,7 +10,7 @@ require (
 	github.com/joelanford/go-apidiff v0.4.0
 	github.com/onsi/ginkgo v1.16.5
 	gotest.tools/gotestsum v1.8.1
-	k8s.io/code-generator v0.23.5
+	k8s.io/code-generator v0.24.2
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220603170822-1c3a1526f101
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.8.0
@@ -227,8 +227,8 @@ require (
 	k8s.io/api v0.23.5 // indirect
 	k8s.io/apiextensions-apiserver v0.23.5 // indirect
 	k8s.io/apimachinery v0.23.5 // indirect
-	k8s.io/gengo v0.0.0-20210813121822-485abfe95c7c // indirect
-	k8s.io/klog/v2 v2.30.0 // indirect
+	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
+	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220401212409-b28bf2818661 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
 	mvdan.cc/gofumpt v0.3.1 // indirect
