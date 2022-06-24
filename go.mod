@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20220607051746-a593c549605b
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.7.5
 	golang.org/x/text v0.3.7
 	k8s.io/api v0.23.5
 	k8s.io/apiextensions-apiserver v0.23.5
