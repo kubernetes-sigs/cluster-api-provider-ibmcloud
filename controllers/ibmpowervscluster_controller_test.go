@@ -29,11 +29,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 )
 
-func TestIBMPowerVSClusterReconciler(t *testing.T) {
+func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 	testCases := []struct {
 		name           string
 		powervsCluster *infrav1beta1.IBMPowerVSCluster
@@ -42,20 +43,27 @@ func TestIBMPowerVSClusterReconciler(t *testing.T) {
 	}{
 		{
 			name: "Should fail Reconcile if owner cluster not found",
-			powervsCluster: &infrav1beta1.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{GenerateName: "powervs-test-", OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: capiv1beta1.GroupVersion.String(),
-					Kind:       "Cluster",
-					Name:       "capi-test",
-					UID:        "1",
-				}}},
+			powervsCluster: &infrav1beta1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "powervs-test-",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: capiv1beta1.GroupVersion.String(),
+							Kind:       "Cluster",
+							Name:       "capi-test",
+							UID:        "1",
+						}}},
 				Spec: infrav1beta1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"}},
 			expectError: true,
 		},
 		{
-			name:           "Should not reconcile if owner reference is not set",
-			powervsCluster: &infrav1beta1.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{GenerateName: "powervs-test-"}, Spec: infrav1beta1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"}},
-			expectError:    false,
+			name: "Should not reconcile if owner reference is not set",
+			powervsCluster: &infrav1beta1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "powervs-test-"},
+				Spec: infrav1beta1.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "foo"}},
+			expectError: false,
 		},
 		{
 			name:        "Should Reconcile successfully if no IBMPowerVSCluster found",
@@ -113,6 +121,45 @@ func TestIBMPowerVSClusterReconciler(t *testing.T) {
 				})
 				g.Expect(err).To(BeNil())
 			}
+		})
+	}
+}
+
+func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
+	testCases := []struct {
+		name                string
+		powervsClusterScope *scope.PowerVSClusterScope
+		clusterStatus       bool
+	}{
+		{
+			name: "Should add finalizer and reconcile IBMPowerVSCluster",
+			powervsClusterScope: &scope.PowerVSClusterScope{
+				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{},
+			},
+			clusterStatus: false,
+		},
+		{
+			name: "Should reconcile IBMPowerVSCluster status as Ready",
+			powervsClusterScope: &scope.PowerVSClusterScope{
+				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{infrav1beta1.IBMPowerVSClusterFinalizer},
+					},
+				},
+			},
+			clusterStatus: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			reconciler := &IBMPowerVSClusterReconciler{
+				Client: testEnv.Client,
+				Log:    klogr.New(),
+			}
+			_ = reconciler.reconcile(tc.powervsClusterScope)
+			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
+			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta1.IBMPowerVSClusterFinalizer))
 		})
 	}
 }
