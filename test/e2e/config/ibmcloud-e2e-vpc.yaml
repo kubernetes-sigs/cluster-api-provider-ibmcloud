@@ -9,24 +9,24 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v1.1.4
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/core-components.yaml
+    - name: v1.2.0-beta.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.2.0-beta.0/core-components.yaml
       type: url
       files:
       - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v1.1.4
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/bootstrap-components.yaml
+    - name: v1.2.0-beta.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.2.0-beta.0/bootstrap-components.yaml
       type: url
       files:
       - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v1.1.4
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.1.4/control-plane-components.yaml
+    - name: v1.2.0-beta.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.2.0-beta.0/control-plane-components.yaml
       type: url
       files:
       - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
@@ -42,7 +42,7 @@ providers:
         targetName: "cluster-template-vpc.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.22.4}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.23.5}"
   # Below variable should be set based on the targeted environment
   SERVICE_ENDPOINT: "${SERVICE_ENDPOINT:-}"
   # Cluster Addons
