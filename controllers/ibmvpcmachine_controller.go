@@ -165,7 +165,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		machineScope.IBMVPCMachine.Status.Addresses = []corev1.NodeAddress{
 			{
 				Type:    corev1.NodeInternalIP,
-				Address: *instance.PrimaryNetworkInterface.PrimaryIpv4Address,
+				Address: *instance.PrimaryNetworkInterface.PrimaryIP.Address,
 			},
 		}
 		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneLabelName]
