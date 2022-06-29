@@ -18,7 +18,9 @@ package scope
 
 import (
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
@@ -27,7 +29,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2/klogr"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -88,6 +93,42 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 		Machine:           machine,
 		IBMPowerVSCluster: powervsCluster,
 		IBMPowerVSMachine: powervsMachine,
+		DHCPIPCacheStore:  cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL),
+	}
+}
+
+func newPowerVSInstance(name, networkID, mac string) *models.PVMInstance {
+	return &models.PVMInstance{
+		ServerName: pointer.StringPtr(name),
+		Networks: []*models.PVMInstanceNetwork{
+			{
+				NetworkID:  networkID,
+				MacAddress: mac,
+			},
+		},
+	}
+}
+
+func newDHCPServer(serverID, networkID string) models.DHCPServers {
+	return models.DHCPServers{
+		&models.DHCPServer{
+			ID: pointer.StringPtr(serverID),
+			Network: &models.DHCPServerNetwork{
+				ID: pointer.StringPtr(networkID),
+			},
+		},
+	}
+}
+
+func newDHCPServerDetails(serverID, leaseIP, instanceMac string) *models.DHCPServerDetail {
+	return &models.DHCPServerDetail{
+		ID: pointer.StringPtr(serverID),
+		Leases: []*models.DHCPServerLeases{
+			{
+				InstanceIP:         pointer.StringPtr(leaseIP),
+				InstanceMacAddress: pointer.StringPtr(instanceMac),
+			},
+		},
 	}
 }
 
@@ -347,4 +388,271 @@ func TestDeleteMachinePVS(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})
+}
+
+func TestSetAddresses(t *testing.T) {
+	instanceName := "test_vm"
+	networkID := "test-net-ID"
+	leaseIP := "192.168.0.10"
+	instanceMac := "ff:11:33:dd:00:22"
+	dhcpServerID := "test-server-id"
+	defaultExpectedMachineAddress := []corev1.NodeAddress{
+		{
+			Type:    corev1.NodeInternalDNS,
+			Address: instanceName,
+		},
+		{
+			Type:    corev1.NodeHostName,
+			Address: instanceName,
+		},
+	}
+
+	defaultDhcpCacheStoreFunc := func() cache.Store {
+		return cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
+	}
+
+	testCases := []struct {
+		testcase            string
+		powerVSClientFunc   func(*gomock.Controller) *mock.MockPowerVS
+		pvmInstance         *models.PVMInstance
+		expectedNodeAddress []corev1.NodeAddress
+		expectedError       error
+		dhcpCacheStoreFunc  func() cache.Store
+		setNetworkID        bool
+	}{
+		{
+			testcase: "should set external IP address from instance network",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				return mockPowerVSClient
+			},
+			pvmInstance: &models.PVMInstance{
+				Networks: []*models.PVMInstanceNetwork{
+					{
+						ExternalIP: "10.11.2.3",
+					},
+				},
+				ServerName: pointer.StringPtr(instanceName),
+			},
+			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
+				Type:    corev1.NodeExternalIP,
+				Address: "10.11.2.3",
+			}),
+			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
+		},
+		{
+			testcase: "should set internal IP address from instance network",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				return mockPowerVSClient
+			},
+			pvmInstance: &models.PVMInstance{
+				Networks: []*models.PVMInstanceNetwork{
+					{
+						IPAddress: "192.168.10.3",
+					},
+				},
+				ServerName: pointer.StringPtr(instanceName),
+			},
+			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
+				Type:    corev1.NodeInternalIP,
+				Address: "192.168.10.3",
+			}),
+			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
+		},
+		{
+			testcase: "should set both internal and external IP address from instance network",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				return mockPowerVSClient
+			},
+			pvmInstance: &models.PVMInstance{
+				Networks: []*models.PVMInstanceNetwork{
+					{
+						IPAddress:  "192.168.10.3",
+						ExternalIP: "10.11.2.3",
+					},
+				},
+				ServerName: pointer.StringPtr(instanceName),
+			},
+			expectedNodeAddress: append(defaultExpectedMachineAddress, []corev1.NodeAddress{
+				{
+					Type:    corev1.NodeInternalIP,
+					Address: "192.168.10.3",
+				},
+				{
+					Type:    corev1.NodeExternalIP,
+					Address: "10.11.2.3",
+				},
+			}...),
+			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
+		},
+		{
+			testcase: "error while getting network id",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetAllNetwork().Return(nil, fmt.Errorf("intentional error"))
+				return mockPowerVSClient
+			},
+			pvmInstance: &models.PVMInstance{
+				ServerName: pointer.StringPtr(instanceName),
+			},
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+		},
+		{
+			testcase: "no network id associated with network name",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				networks := &models.Networks{
+					Networks: []*models.NetworkReference{
+						{
+							NetworkID: pointer.StringPtr("test-ID"),
+							Name:      pointer.StringPtr("test-name"),
+						},
+					},
+				}
+				mockPowerVSClient.EXPECT().GetAllNetwork().Return(networks, nil)
+				return mockPowerVSClient
+			},
+			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+		},
+		{
+			testcase: "provided network id not attached to vm",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				return mockPowerVSClient
+			},
+			pvmInstance:         newPowerVSInstance(instanceName, "test-net", instanceMac),
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+			setNetworkID:        true,
+		},
+		{
+			testcase: "error while getting DHCP servers",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetDHCPServers().Return(nil, fmt.Errorf("intentional error"))
+				return mockPowerVSClient
+			},
+			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+			setNetworkID:        true,
+		},
+		{
+			testcase: "dhcp server details not found associated to network id",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, "test-network"), nil)
+				return mockPowerVSClient
+			},
+			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+			setNetworkID:        true,
+		},
+		{
+			testcase: "error on getting DHCP server details",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(nil, fmt.Errorf("intentnional error"))
+				return mockPowerVSClient
+			},
+			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+			setNetworkID:        true,
+		},
+		{
+			testcase: "dhcp server lease does not have lease for instance",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, "ff:11:33:dd:00:33"), nil)
+				return mockPowerVSClient
+			},
+			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: defaultExpectedMachineAddress,
+			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
+			setNetworkID:        true,
+		},
+		{
+			testcase: "success in getting ip address from dhcp server",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
+				return mockPowerVSClient
+			},
+			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
+				Type:    corev1.NodeInternalIP,
+				Address: leaseIP,
+			}),
+			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
+			setNetworkID:       true,
+		},
+		{
+			testcase: "ip stored in cache expired, fetch from dhcp server",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
+				return mockPowerVSClient
+			},
+			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
+				Type:    corev1.NodeInternalIP,
+				Address: leaseIP,
+			}),
+			dhcpCacheStoreFunc: func() cache.Store {
+				cacheStore := cache.NewTTLStore(options.CacheKeyFunc, time.Millisecond)
+				_ = cacheStore.Add(options.VMip{
+					Name: instanceName,
+					IP:   "192.168.99.98",
+				})
+				time.Sleep(time.Millisecond)
+				return cacheStore
+			},
+			setNetworkID: true,
+		},
+		{
+			testcase: "success in fetching DHCP IP from cache",
+			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
+				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+				return mockPowerVSClient
+			},
+			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
+			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
+				Type:    corev1.NodeInternalIP,
+				Address: leaseIP,
+			}),
+			dhcpCacheStoreFunc: func() cache.Store {
+				cacheStore := cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
+				_ = cacheStore.Add(options.VMip{
+					Name: instanceName,
+					IP:   leaseIP,
+				})
+				return cacheStore
+			},
+			setNetworkID: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.testcase, func(t *testing.T) {
+			g := NewWithT(t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockPowerVSClient := tc.powerVSClientFunc(ctrl)
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pointer.StringPtr("test-image-ID"), &networkID, tc.setNetworkID, mockPowerVSClient)
+			scope.DHCPIPCacheStore = tc.dhcpCacheStoreFunc()
+			scope.SetAddresses(tc.pvmInstance)
+			g.Expect(scope.IBMPowerVSMachine.Status.Addresses).To(Equal(tc.expectedNodeAddress))
+		})
+	}
 }

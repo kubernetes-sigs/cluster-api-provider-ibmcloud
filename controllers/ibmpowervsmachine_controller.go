@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capierrors "sigs.k8s.io/cluster-api/errors"
@@ -37,6 +38,7 @@ import (
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
@@ -47,6 +49,7 @@ type IBMPowerVSMachineReconciler struct {
 	Recorder        record.EventRecorder
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Scheme          *runtime.Scheme
+	CacheStore      cache.Store
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachines,verbs=get;list;watch;create;update;patch;delete
@@ -117,6 +120,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		IBMPowerVSMachine: ibmPowerVSMachine,
 		IBMPowerVSImage:   ibmPowerVSImage,
 		ServiceEndpoint:   r.ServiceEndpoint,
+		DHCPIPCacheStore:  r.CacheStore,
 	})
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
@@ -163,7 +167,11 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachin
 		scope.Info("error deleting IBMPowerVSMachine")
 		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSMachine %s/%s", scope.IBMPowerVSMachine.Namespace, scope.IBMPowerVSMachine.Name)
 	}
-
+	// Remove the cached VM IP
+	err := scope.DHCPIPCacheStore.Delete(options.VMip{Name: scope.IBMPowerVSMachine.Name})
+	if err != nil {
+		scope.Error(err, "failed to delete the VM entry from DHCP cache store", "VM", scope.IBMPowerVSMachine.Name)
+	}
 	return ctrl.Result{}, nil
 }
 

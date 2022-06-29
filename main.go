@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/tools/cache"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
@@ -83,6 +84,9 @@ func main() {
 		setupLog.Error(err, "Flag validation failure")
 		os.Exit(1)
 	}
+
+	// Create the cache store to hold the DHCP IP
+	dhcpIPCacheStore := cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
 
 	if watchNamespace != "" {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
@@ -149,6 +153,7 @@ func main() {
 		Recorder:        mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
+		CacheStore:      dhcpIPCacheStore,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)

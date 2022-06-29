@@ -36,6 +36,7 @@ type Service struct {
 	networkClient  *instance.IBMPINetworkClient
 	imageClient    *instance.IBMPIImageClient
 	jobClient      *instance.IBMPIJobClient
+	dhcpClient     *instance.IBMPIDhcpClient
 }
 
 // ServiceOptions holds the PowerVS Service Options specific information.
@@ -110,6 +111,16 @@ func (s *Service) GetAllNetwork() (*models.Networks, error) {
 	return s.networkClient.GetAll()
 }
 
+// GetDHCPServers returns all the DHCP servers in the Power VS service instance.
+func (s *Service) GetDHCPServers() (models.DHCPServers, error) {
+	return s.dhcpClient.GetAll()
+}
+
+// GetDHCPServerByID returns the details for DHCP server associated with id.
+func (s *Service) GetDHCPServerByID(id string) (*models.DHCPServerDetail, error) {
+	return s.dhcpClient.Get(id)
+}
+
 // NewService returns a new service for the Power VS api client.
 func NewService(options ServiceOptions) (PowerVS, error) {
 	auth, err := authenticator.GetAuthenticator()
@@ -130,5 +141,6 @@ func NewService(options ServiceOptions) (PowerVS, error) {
 		networkClient:  instance.NewIBMPINetworkClient(ctx, session, options.CloudInstanceID),
 		imageClient:    instance.NewIBMPIImageClient(ctx, session, options.CloudInstanceID),
 		jobClient:      instance.NewIBMPIJobClient(ctx, session, options.CloudInstanceID),
+		dhcpClient:     instance.NewIBMPIDhcpClient(ctx, session, options.CloudInstanceID),
 	}, nil
 }

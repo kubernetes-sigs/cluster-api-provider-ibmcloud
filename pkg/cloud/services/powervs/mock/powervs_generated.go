@@ -181,6 +181,36 @@ func (mr *MockPowerVSMockRecorder) GetCosImages(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCosImages", reflect.TypeOf((*MockPowerVS)(nil).GetCosImages), id)
 }
 
+// GetDHCPServerByID mocks base method.
+func (m *MockPowerVS) GetDHCPServerByID(id string) (*models.DHCPServerDetail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDHCPServerByID", id)
+	ret0, _ := ret[0].(*models.DHCPServerDetail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDHCPServerByID indicates an expected call of GetDHCPServerByID.
+func (mr *MockPowerVSMockRecorder) GetDHCPServerByID(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDHCPServerByID", reflect.TypeOf((*MockPowerVS)(nil).GetDHCPServerByID), id)
+}
+
+// GetDHCPServers mocks base method.
+func (m *MockPowerVS) GetDHCPServers() (models.DHCPServers, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDHCPServers")
+	ret0, _ := ret[0].(models.DHCPServers)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDHCPServers indicates an expected call of GetDHCPServers.
+func (mr *MockPowerVSMockRecorder) GetDHCPServers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDHCPServers", reflect.TypeOf((*MockPowerVS)(nil).GetDHCPServers))
+}
+
 // GetImage mocks base method.
 func (m *MockPowerVS) GetImage(id string) (*models.Image, error) {
 	m.ctrl.T.Helper()

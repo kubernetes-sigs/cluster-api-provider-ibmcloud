@@ -37,4 +37,6 @@ type PowerVS interface {
 	GetCosImages(id string) (*models.Job, error)
 	GetJob(id string) (*models.Job, error)
 	DeleteJob(id string) error
+	GetDHCPServers() (models.DHCPServers, error)
+	GetDHCPServerByID(id string) (*models.DHCPServerDetail, error)
 }
