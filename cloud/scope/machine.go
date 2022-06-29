@@ -52,7 +52,7 @@ type MachineScopeParams struct {
 // MachineScope defines a scope defined around a machine and its cluster.
 type MachineScope struct {
 	logr.Logger
-	client      client.Client
+	Client      client.Client
 	patchHelper *patch.Helper
 
 	IBMVPCClient    vpc.Vpc
@@ -64,12 +64,12 @@ type MachineScope struct {
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
-func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator) (*MachineScope, error) {
+func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	if params.Machine == nil {
 		return nil, errors.New("failed to generate new scope from nil Machine")
 	}
 	if params.IBMVPCMachine == nil {
-		return nil, errors.New("failed to generate new scope from nil IBMVPCCluster")
+		return nil, errors.New("failed to generate new scope from nil IBMVPCMachine")
 	}
 
 	if params.Logger == (logr.Logger{}) {
@@ -95,7 +95,7 @@ func NewMachineScope(params MachineScopeParams, authenticator core.Authenticator
 
 	return &MachineScope{
 		Logger:        params.Logger,
-		client:        params.Client,
+		Client:        params.Client,
 		IBMVPCClient:  vpcClient,
 		Cluster:       params.Cluster,
 		IBMVPCCluster: params.IBMVPCCluster,
@@ -192,15 +192,6 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 	return nil, nil
 }
 
-// GetMachine returns a machine associated with a machine instanceID.
-func (m *MachineScope) GetMachine(instanceID string) (*vpcv1.Instance, error) {
-	options := &vpcv1.GetInstanceOptions{}
-	options.SetID(instanceID)
-
-	instance, _, err := m.IBMVPCClient.GetInstance(options)
-	return instance, err
-}
-
 // PatchObject persists the cluster configuration and status.
 func (m *MachineScope) PatchObject() error {
 	return m.patchHelper.Patch(context.TODO(), m.IBMVPCMachine)
@@ -219,7 +210,7 @@ func (m *MachineScope) GetBootstrapData() (string, error) {
 
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: m.Machine.Namespace, Name: *m.Machine.Spec.Bootstrap.DataSecretName}
-	if err := m.client.Get(context.TODO(), key, secret); err != nil {
+	if err := m.Client.Get(context.TODO(), key, secret); err != nil {
 		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for IBMVPCMachine %s/%s", m.Machine.Namespace, m.Machine.Name)
 	}
 

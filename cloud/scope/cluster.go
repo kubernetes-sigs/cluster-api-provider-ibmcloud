@@ -48,7 +48,7 @@ type ClusterScopeParams struct {
 // ClusterScope defines a scope defined around a cluster.
 type ClusterScope struct {
 	logr.Logger
-	client      client.Client
+	Client      client.Client
 	patchHelper *patch.Helper
 
 	IBMVPCClient    vpc.Vpc
@@ -58,7 +58,7 @@ type ClusterScope struct {
 }
 
 // NewClusterScope creates a new ClusterScope from the supplied parameters.
-func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator) (*ClusterScope, error) {
+func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	if params.Cluster == nil {
 		return nil, errors.New("failed to generate new scope from nil Cluster")
 	}
@@ -89,7 +89,7 @@ func NewClusterScope(params ClusterScopeParams, authenticator core.Authenticator
 
 	return &ClusterScope{
 		Logger:        params.Logger,
-		client:        params.Client,
+		Client:        params.Client,
 		IBMVPCClient:  vpcClient,
 		Cluster:       params.Cluster,
 		IBMVPCCluster: params.IBMVPCCluster,
