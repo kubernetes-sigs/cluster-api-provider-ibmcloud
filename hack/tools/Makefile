@@ -56,6 +56,10 @@ GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
 $(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lint.
 	go build -tags=tools -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
+GOTESTSUM := $(BIN_DIR)/gotestsum
+$(GOTESTSUM): $(BIN_DIR) go.mod go.sum
+	go build -tags=tools -o $@ gotest.tools/gotestsum
+
 KUSTOMIZE := $(BIN_DIR)/kustomize
 $(KUSTOMIZE): $(BIN_DIR) go.mod go.sum ## Build a local copy of kustomize.
 	CGO_ENABLED=0 go build -tags=tools -o $@ sigs.k8s.io/kustomize/kustomize/v4

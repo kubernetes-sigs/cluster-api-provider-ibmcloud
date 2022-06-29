@@ -36,6 +36,7 @@ KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 GOJQ := $(TOOLS_BIN_DIR)/gojq
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
 GINKGO := $(TOOLS_BIN_DIR)/ginkgo
+GOTESTSUM := $(TOOLS_BIN_DIR)/gotestsum
 ENVSUBST := $(TOOLS_BIN_DIR)/envsubst
 MOCKGEN := $(TOOLS_BIN_DIR)/mockgen
 CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
@@ -186,8 +187,8 @@ setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder
 	fi
 
 # Run unit tests
-test: generate fmt vet manifests setup-envtest ## Run tests
-	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... -coverprofile cover.out
+test: generate fmt vet manifests setup-envtest $(GOTESTSUM) ## Run tests
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit.xml
 
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
@@ -216,7 +217,8 @@ test-sanity: ## Run sanity tests
 	GINKGO_FOCUS="Run Sanity tests" $(MAKE) test-e2e
 
 .PHONY: test-cover
-test-cover: test ## Run tests with code coverage and code generate reports
+test-cover: setup-envtest## Run tests with code coverage and code generate reports
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" go test ./... -coverprofile cover.out
 	go tool cover -func=cover.out -o cover.txt
 	go tool cover -html=cover.out -o cover.html
 
