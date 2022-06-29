@@ -58,7 +58,7 @@ ARCH ?= amd64
 ALL_ARCH ?= amd64 ppc64le
 PULL_POLICY ?= Always
 
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.23.3
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.24.1
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
