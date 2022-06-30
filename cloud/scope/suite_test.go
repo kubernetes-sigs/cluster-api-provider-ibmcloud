@@ -20,22 +20,18 @@ import (
 	"path"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
 )
 
 var (
-	testEnv  *helpers.TestEnvironment
-	ctx      = ctrl.SetupSignalHandler()
-	mockvpc  *mock.MockVpc
-	mockctrl *gomock.Controller
+	testEnv *helpers.TestEnvironment
+	ctx     = ctrl.SetupSignalHandler()
 )
 
 func TestMain(m *testing.M) {
