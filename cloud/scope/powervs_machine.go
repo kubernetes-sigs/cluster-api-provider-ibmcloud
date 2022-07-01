@@ -65,7 +65,7 @@ type PowerVSMachineScopeParams struct {
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
 type PowerVSMachineScope struct {
 	logr.Logger
-	client      client.Client
+	Client      client.Client
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient  powervs.PowerVS
@@ -85,7 +85,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		err = errors.New("client is required when creating a MachineScope")
 		return
 	}
-	scope.client = params.Client
+	scope.Client = params.Client
 
 	if params.Machine == nil {
 		err = errors.New("machine is required when creating a MachineScope")
@@ -299,8 +299,8 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: m.Machine.Namespace, Name: *m.Machine.Spec.Bootstrap.DataSecretName}
-	if err := m.client.Get(context.TODO(), key, secret); err != nil {
-		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for IBMVPCMachine %s/%s", m.Machine.Namespace, m.Machine.Name)
+	if err := m.Client.Get(context.TODO(), key, secret); err != nil {
+		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for IBMPowerVSMachine %s/%s", m.Machine.Namespace, m.Machine.Name)
 	}
 
 	value, ok := secret.Data["value"]

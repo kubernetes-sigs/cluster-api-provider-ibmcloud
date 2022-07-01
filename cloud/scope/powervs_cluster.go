@@ -56,7 +56,7 @@ type PowerVSClusterScopeParams struct {
 // PowerVSClusterScope defines a scope defined around a Power VS Cluster.
 type PowerVSClusterScope struct {
 	logr.Logger
-	client      client.Client
+	Client      client.Client
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient  powervs.PowerVS
@@ -73,7 +73,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 		err = errors.New("failed to generate new scope from nil Client")
 		return
 	}
-	scope.client = params.Client
+	scope.Client = params.Client
 
 	if params.Cluster == nil {
 		err = errors.New("failed to generate new scope from nil Cluster")

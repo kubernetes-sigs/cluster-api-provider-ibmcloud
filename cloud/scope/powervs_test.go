@@ -165,7 +165,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 
 	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &PowerVSMachineScope{
-		client:            client,
+		Client:            client,
 		Logger:            klogr.New(),
 		IBMPowerVSClient:  mockpowervs,
 		Cluster:           cluster,
