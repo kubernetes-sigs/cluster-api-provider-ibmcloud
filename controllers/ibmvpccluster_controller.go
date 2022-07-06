@@ -35,7 +35,6 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
@@ -76,18 +75,13 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	authenticator, err := authenticator.GetAuthenticator()
-	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to get authenticator")
-	}
-
 	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
 		Client:          r.Client,
 		Logger:          log,
 		Cluster:         cluster,
 		IBMVPCCluster:   ibmCluster,
 		ServiceEndpoint: r.ServiceEndpoint,
-	}, authenticator)
+	})
 
 	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
 	defer func() {
