@@ -13,7 +13,7 @@ require (
 	k8s.io/code-generator v0.24.2
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220704133525-3997fb085b08
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
-	sigs.k8s.io/controller-tools v0.9.1
+	sigs.k8s.io/controller-tools v0.9.2
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.5
 )
 
