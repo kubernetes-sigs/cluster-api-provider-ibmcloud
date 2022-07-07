@@ -405,7 +405,7 @@ lint: $(GOLANGCI_LINT) ## Lint codebase
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
 
-ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen conversions #tiltfile
+ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen manifests conversions #tiltfile
 
 .PHONY: verify
 verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
@@ -442,6 +442,13 @@ verify-gen: generate ## Verfiy go generated files are up to date
 	@if !(git diff --quiet HEAD); then \
 		git diff; \
 		echo "generated files are out of date, run make generate"; exit 1; \
+	fi
+
+.PHONY: verify-manifests
+verify-manifests: manifests ## Verfiy go generated manifests files are up to date
+	@if !(git diff --quiet HEAD); then \
+		git diff; \
+		echo "generated manifests files are out of date, run make manifests"; exit 1; \
 	fi
 
 .PHONY: verify-conversions
