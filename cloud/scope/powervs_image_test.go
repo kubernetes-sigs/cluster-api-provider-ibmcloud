@@ -60,7 +60,7 @@ func setupPowerVSImageScope(imageName string, mockpowervs *mock.MockPowerVS) *Po
 
 	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &PowerVSImageScope{
-		client:           client,
+		Client:           client,
 		Logger:           klogr.New(),
 		IBMPowerVSClient: mockpowervs,
 		IBMPowerVSImage:  powervsImage,
