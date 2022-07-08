@@ -79,8 +79,8 @@ github.com/IBM/go-sdk-core/v5 v5.10.1 h1:IEpjDJyB7okrC6bJ7fPZqBiOv+16VichT6kZXAz
 github.com/IBM/go-sdk-core/v5 v5.10.1/go.mod h1:u/33BzPy8sthgEhSeBnf6/kPCqwvC9VKw5byfqQfbe0=
 github.com/IBM/platform-services-go-sdk v0.26.1 h1:8maFrdgp8su5H99v5/fith9ft+nE1V7RRpcM3jBUKYs=
 github.com/IBM/platform-services-go-sdk v0.26.1/go.mod h1:ZFuISyKu+qekMfvFebzqJ8AIpNlRqI7a6WuieGfjGuA=
-github.com/IBM/vpc-go-sdk v0.21.0 h1:yBvhY0GM6Vpud7JpM1gqry6+4exbd4tfE0xIF8rTwaU=
-github.com/IBM/vpc-go-sdk v0.21.0/go.mod h1:YPyIfI+/qhPqlYp+I7dyx2U1GLcXgp/jzVvsZfUH4y8=
+github.com/IBM/vpc-go-sdk v0.22.0 h1:jo2WMfiFXhAyJkdJeCVHwvT6kgTg2tg8sDeP9zrMFVg=
+github.com/IBM/vpc-go-sdk v0.22.0/go.mod h1:YPyIfI+/qhPqlYp+I7dyx2U1GLcXgp/jzVvsZfUH4y8=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
