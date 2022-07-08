@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
@@ -51,6 +52,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
+// used to initialise the dhcpCacheStore.
+var dhcpIPCacheOnce sync.Once
+
 // PowerVSMachineScopeParams defines the input parameters used to create a new PowerVSMachineScope.
 type PowerVSMachineScopeParams struct {
 	Logger            logr.Logger
@@ -61,7 +65,6 @@ type PowerVSMachineScopeParams struct {
 	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
-	DHCPIPCacheStore  cache.Store
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -166,7 +169,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	scope.SetRegion(region)
 	scope.SetZone(*res.RegionID)
 
-	options := powervs.ServiceOptions{
+	serviceOptions := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
@@ -178,18 +181,20 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 
 	// Fetch the service endpoint.
 	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
-		options.IBMPIOptions.URL = svcEndpoint
+		serviceOptions.IBMPIOptions.URL = svcEndpoint
 		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
 	}
 
-	c, err := powervs.NewService(options)
+	c, err := powervs.NewService(serviceOptions)
 	if err != nil {
 		err = fmt.Errorf("failed to create PowerVS service")
 		return
 	}
 	scope.IBMPowerVSClient = c
-	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
 
+	dhcpIPCacheOnce.Do(func() {
+		scope.DHCPIPCacheStore = cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
+	})
 	return scope, nil
 }
 
