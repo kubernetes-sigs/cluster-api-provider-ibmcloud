@@ -186,7 +186,7 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 
 	imageReply, err := i.ensureImageUnique(m.Name)
 	if err != nil {
-		record.Warnf(i.IBMPowerVSImage, "FailedRetriveImage", "Failed to retrieve image %q", *imageReply.Name)
+		record.Warnf(i.IBMPowerVSImage, "FailedRetriveImage", "Failed to retrieve image %q", m.Name)
 		return nil, nil, err
 	} else if imageReply != nil {
 		i.Info("Image already exists")

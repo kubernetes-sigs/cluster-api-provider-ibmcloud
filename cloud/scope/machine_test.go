@@ -51,7 +51,7 @@ func newVPCMachine(clusterName, machineName string) *infrav1beta1.IBMVPCMachine 
 	}
 }
 
-func setupMachineScope(clusterName string, machineName string) *MachineScope {
+func setupMachineScope(clusterName string, machineName string, mockvpc *mock.MockVpc) *MachineScope {
 	cluster := newCluster(clusterName)
 	machine := newMachine(machineName)
 	secret := newBootstrapSecret(clusterName, machineName)
@@ -74,39 +74,26 @@ func setupMachineScope(clusterName string, machineName string) *MachineScope {
 	}
 }
 
-func createObject(g *WithT, obj client.Object, namespace string) {
-	if obj.DeepCopyObject() != nil {
-		obj.SetNamespace(namespace)
-		g.Expect(testEnv.Create(ctx, obj)).To(Succeed())
-	}
-}
-
-func cleanupObject(g *WithT, obj client.Object) {
-	if obj.DeepCopyObject() != nil {
-		g.Expect(testEnv.Cleanup(ctx, obj)).To(Succeed())
-	}
-}
-
 func TestNewMachineScope(t *testing.T) {
 	testCases := []struct {
 		name   string
 		params MachineScopeParams
 	}{
 		{
-			name: "Machine in nil",
+			name: "Error when Machine in nil",
 			params: MachineScopeParams{
 				Machine: nil,
 			},
 		},
 		{
-			name: "IBMVPCMachine in nil",
+			name: "Error when IBMVPCMachine in nil",
 			params: MachineScopeParams{
 				Machine:       newMachine(machineName),
 				IBMVPCMachine: nil,
 			},
 		},
 		{
-			name: "failed to create IBM VPC session",
+			name: "Failed to create IBM VPC session",
 			params: MachineScopeParams{
 				Machine:       newMachine(machineName),
 				IBMVPCMachine: newVPCMachine(clusterName, machineName),
@@ -119,14 +106,16 @@ func TestNewMachineScope(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(t *testing.T) {
 			_, err := NewMachineScope(tc.params)
+			// Note: only error/failure cases covered
+			// TO-DO: cover success cases
 			g.Expect(err).To(Not(BeNil()))
 		})
 	}
 }
 
 func TestCreateMachine(t *testing.T) {
-	mockctrl = gomock.NewController(GinkgoT())
-	mockvpc = mock.NewMockVpc(mockctrl)
+	mockctrl := gomock.NewController(GinkgoT())
+	mockvpc := mock.NewMockVpc(mockctrl)
 	g := NewWithT(t)
 
 	vpcMachine := infrav1beta1.IBMVPCMachine{
@@ -154,7 +143,7 @@ func TestCreateMachine(t *testing.T) {
 		createInstanceOptions := &vpcv1.CreateInstanceOptions{}
 
 		t.Run("Should create Machine", func(t *testing.T) {
-			scope := setupMachineScope(clusterName, machineName)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -184,7 +173,7 @@ func TestCreateMachine(t *testing.T) {
 			expectedOutput = &vpcv1.Instance{
 				Name: core.StringPtr("foo-machine-1"),
 			}
-			scope := setupMachineScope(clusterName, "foo-machine-1")
+			scope := setupMachineScope(clusterName, "foo-machine-1", mockvpc)
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(listInstancesOptions)).Return(instanceCollection, detailedResponse, nil)
 			out, err := scope.CreateMachine()
 			g.Expect(err).To(BeNil())
@@ -192,14 +181,14 @@ func TestCreateMachine(t *testing.T) {
 		})
 
 		t.Run("Error when listing Instances", func(t *testing.T) {
-			scope := setupMachineScope(clusterName, machineName)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(listInstancesOptions)).Return(instanceCollection, detailedResponse, errors.New("Error when listing instances"))
 			_, err := scope.CreateMachine()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when DataSecretName is nil", func(t *testing.T) {
-			scope := setupMachineScope(clusterName, machineName)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			scope.Machine.Spec.Bootstrap.DataSecretName = nil
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(listInstancesOptions)).Return(instanceCollection, detailedResponse, nil)
 			_, err := scope.CreateMachine()
@@ -207,7 +196,7 @@ func TestCreateMachine(t *testing.T) {
 		})
 
 		t.Run("failed to retrieve bootstrap data secret for IBMVPCMachine", func(t *testing.T) {
-			scope := setupMachineScope(clusterName, machineName)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			scope.Machine.Spec.Bootstrap.DataSecretName = core.StringPtr("foo-secret-temp")
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(listInstancesOptions)).Return(instanceCollection, detailedResponse, nil)
 			_, err := scope.CreateMachine()
@@ -215,7 +204,7 @@ func TestCreateMachine(t *testing.T) {
 		})
 
 		t.Run("Failed to create instance", func(t *testing.T) {
-			scope := setupMachineScope(clusterName, machineName)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(listInstancesOptions)).Return(instanceCollection, detailedResponse, nil)
 			mockvpc.EXPECT().CreateInstance(gomock.AssignableToTypeOf(createInstanceOptions)).Return(nil, detailedResponse, errors.New("Failed when creating instance"))
 			_, err := scope.CreateMachine()
@@ -225,12 +214,12 @@ func TestCreateMachine(t *testing.T) {
 }
 
 func TestDeleteMachine(t *testing.T) {
-	mockctrl = gomock.NewController(GinkgoT())
-	mockvpc = mock.NewMockVpc(mockctrl)
+	mockctrl := gomock.NewController(GinkgoT())
+	mockvpc := mock.NewMockVpc(mockctrl)
 	g := NewWithT(t)
 
 	t.Run("Delete Machine", func(t *testing.T) {
-		scope := setupMachineScope(clusterName, machineName)
+		scope := setupMachineScope(clusterName, machineName, mockvpc)
 		deleteInstanceOptions := &vpcv1.DeleteInstanceOptions{}
 		detailedResponse := &core.DetailedResponse{}
 

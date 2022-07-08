@@ -202,7 +202,7 @@ func (m *PowerVSMachineScope) ensureInstanceUnique(instanceName string) (*models
 	return nil, nil
 }
 
-// CreateMachine creates a power vs machine.
+// CreateMachine creates a powervs machine.
 func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, error) {
 	s := m.IBMPowerVSMachine.Spec
 
