@@ -26,18 +26,19 @@ import (
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 
 	. "github.com/onsi/ginkgo"
@@ -93,7 +94,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 		Machine:           machine,
 		IBMPowerVSCluster: powervsCluster,
 		IBMPowerVSMachine: powervsMachine,
-		DHCPIPCacheStore:  cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL),
+		DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 	}
 }
 
@@ -408,7 +409,7 @@ func TestSetAddresses(t *testing.T) {
 	}
 
 	defaultDhcpCacheStoreFunc := func() cache.Store {
-		return cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
+		return cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL)
 	}
 
 	testCases := []struct {
@@ -534,7 +535,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "error while getting DHCP servers",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetDHCPServers().Return(nil, fmt.Errorf("intentional error"))
+				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(nil, fmt.Errorf("intentional error"))
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -546,7 +547,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "dhcp server details not found associated to network id",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, "test-network"), nil)
+				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, "test-network"), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -558,8 +559,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "error on getting DHCP server details",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(nil, fmt.Errorf("intentnional error"))
+				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(nil, fmt.Errorf("intentnional error"))
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -571,8 +572,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "dhcp server lease does not have lease for instance",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, "ff:11:33:dd:00:33"), nil)
+				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, "ff:11:33:dd:00:33"), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -584,8 +585,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "success in getting ip address from dhcp server",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
+				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -600,8 +601,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "ip stored in cache expired, fetch from dhcp server",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServerByID(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
+				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -610,8 +611,8 @@ func TestSetAddresses(t *testing.T) {
 				Address: leaseIP,
 			}),
 			dhcpCacheStoreFunc: func() cache.Store {
-				cacheStore := cache.NewTTLStore(options.CacheKeyFunc, time.Millisecond)
-				_ = cacheStore.Add(options.VMip{
+				cacheStore := cache.NewTTLStore(powervs.CacheKeyFunc, time.Millisecond)
+				_ = cacheStore.Add(powervs.VMip{
 					Name: instanceName,
 					IP:   "192.168.99.98",
 				})
@@ -632,8 +633,8 @@ func TestSetAddresses(t *testing.T) {
 				Address: leaseIP,
 			}),
 			dhcpCacheStoreFunc: func() cache.Store {
-				cacheStore := cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
-				_ = cacheStore.Add(options.VMip{
+				cacheStore := cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL)
+				_ = cacheStore.Add(powervs.VMip{
 					Name: instanceName,
 					IP:   leaseIP,
 				})

@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
@@ -52,9 +51,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
-// used to initialise the dhcpCacheStore.
-var dhcpIPCacheOnce sync.Once
-
 // PowerVSMachineScopeParams defines the input parameters used to create a new PowerVSMachineScope.
 type PowerVSMachineScopeParams struct {
 	Logger            logr.Logger
@@ -65,6 +61,7 @@ type PowerVSMachineScopeParams struct {
 	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
+	DHCPIPCacheStore  cache.Store
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -191,10 +188,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		return
 	}
 	scope.IBMPowerVSClient = c
-
-	dhcpIPCacheOnce.Do(func() {
-		scope.DHCPIPCacheStore = cache.NewTTLStore(options.CacheKeyFunc, options.CacheTTL)
-	})
+	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
 	return scope, nil
 }
 
@@ -455,10 +449,10 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 		m.Error(err, "failed to fetch the DHCP IP address from cache store", "VM", *instance.ServerName)
 	}
 	if exists {
-		m.Info("found IP for VM from DHCP cache", "IP", obj.(options.VMip).IP, "VM", *instance.ServerName)
+		m.Info("found IP for VM from DHCP cache", "IP", obj.(powervs.VMip).IP, "VM", *instance.ServerName)
 		addresses = append(addresses, corev1.NodeAddress{
 			Type:    corev1.NodeInternalIP,
-			Address: obj.(options.VMip).IP,
+			Address: obj.(powervs.VMip).IP,
 		})
 		m.IBMPowerVSMachine.Status.Addresses = addresses
 		return
@@ -482,7 +476,7 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 		return
 	}
 	// Get all the DHCP servers
-	dhcpServer, err := m.IBMPowerVSClient.GetDHCPServers()
+	dhcpServer, err := m.IBMPowerVSClient.GetAllDHCPServers()
 	if err != nil {
 		m.Error(err, "failed to get DHCP server")
 		return
@@ -492,7 +486,7 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	for _, server := range dhcpServer {
 		if *server.Network.ID == *networkID {
 			m.Info("found DHCP server for network", "DHCP server ID", *server.ID, "network ID", *networkID)
-			dhcpServerDetails, err = m.IBMPowerVSClient.GetDHCPServerByID(*server.ID)
+			dhcpServerDetails, err = m.IBMPowerVSClient.GetDHCPServer(*server.ID)
 			if err != nil {
 				m.Error(err, "failed to get DHCP server details", "DHCP server ID", *server.ID)
 				return
@@ -527,7 +521,7 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 		Address: *internalIP,
 	})
 	// Update the cache with the ip and VM name
-	err = m.DHCPIPCacheStore.Add(options.VMip{
+	err = m.DHCPIPCacheStore.Add(powervs.VMip{
 		Name: *instance.ServerName,
 		IP:   *internalIP,
 	})

@@ -14,9 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package options
+package powervs
 
-import "time"
+import (
+	"time"
+
+	"k8s.io/client-go/tools/cache"
+)
 
 // CacheTTL is duration of time to store the vm ip in cache
 // Currently the default sync period is 10 minutes that means every 10 minutes
@@ -33,4 +37,9 @@ type VMip struct {
 // CacheKeyFunc defines the key function required in TTLStore.
 func CacheKeyFunc(obj interface{}) (string, error) {
 	return obj.(VMip).Name, nil
+}
+
+// InitialiseDHCPCacheStore returns a new cache store.
+func InitialiseDHCPCacheStore() cache.Store {
+	return cache.NewTTLStore(CacheKeyFunc, CacheTTL)
 }

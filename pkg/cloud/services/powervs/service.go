@@ -111,13 +111,13 @@ func (s *Service) GetAllNetwork() (*models.Networks, error) {
 	return s.networkClient.GetAll()
 }
 
-// GetDHCPServers returns all the DHCP servers in the Power VS service instance.
-func (s *Service) GetDHCPServers() (models.DHCPServers, error) {
+// GetAllDHCPServers returns all the DHCP servers in the Power VS service instance.
+func (s *Service) GetAllDHCPServers() (models.DHCPServers, error) {
 	return s.dhcpClient.GetAll()
 }
 
-// GetDHCPServerByID returns the details for DHCP server associated with id.
-func (s *Service) GetDHCPServerByID(id string) (*models.DHCPServerDetail, error) {
+// GetDHCPServer returns the details for DHCP server associated with id.
+func (s *Service) GetDHCPServer(id string) (*models.DHCPServerDetail, error) {
 	return s.dhcpClient.Get(id)
 }
 
