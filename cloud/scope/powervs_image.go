@@ -55,7 +55,7 @@ type PowerVSImageScopeParams struct {
 // PowerVSImageScope defines a scope defined around a Power VS Cluster.
 type PowerVSImageScope struct {
 	logr.Logger
-	client      client.Client
+	Client      client.Client
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient  powervs.PowerVS
@@ -72,7 +72,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 		err = errors.New("failed to generate new scope from nil Client")
 		return
 	}
-	scope.client = params.Client
+	scope.Client = params.Client
 
 	if params.IBMPowerVSImage == nil {
 		err = errors.New("failed to generate new scope from nil IBMPowerVSImage")
