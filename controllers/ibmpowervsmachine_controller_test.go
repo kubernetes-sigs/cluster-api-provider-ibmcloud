@@ -24,10 +24,11 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/gomega"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
@@ -40,7 +41,10 @@ import (
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
@@ -297,6 +301,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 						InstanceID: "powervs-instance-id",
 					},
 				},
+				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 			}
 			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(nil)
 			_, err := reconciler.reconcileDelete(machineScope)
@@ -475,6 +480,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 				IBMPowerVSClient: mockpowervs,
+				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 			}
 
 			instanceReferences := &models.PVMInstances{

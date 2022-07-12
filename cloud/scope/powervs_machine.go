@@ -33,6 +33,7 @@ import (
 	powerVSUtils "github.com/ppc64le-cloud/powervs-utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -60,6 +61,7 @@ type PowerVSMachineScopeParams struct {
 	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
+	DHCPIPCacheStore  cache.Store
 }
 
 // PowerVSMachineScope defines a scope defined around a Power VS Machine.
@@ -75,6 +77,7 @@ type PowerVSMachineScope struct {
 	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
+	DHCPIPCacheStore  cache.Store
 }
 
 // NewPowerVSMachineScope creates a new PowerVSMachineScope from the supplied parameters.
@@ -163,7 +166,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	scope.SetRegion(region)
 	scope.SetZone(*res.RegionID)
 
-	options := powervs.ServiceOptions{
+	serviceOptions := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
 			UserAccount: account,
@@ -175,17 +178,17 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 
 	// Fetch the service endpoint.
 	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
-		options.IBMPIOptions.URL = svcEndpoint
+		serviceOptions.IBMPIOptions.URL = svcEndpoint
 		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
 	}
 
-	c, err := powervs.NewService(options)
+	c, err := powervs.NewService(serviceOptions)
 	if err != nil {
 		err = fmt.Errorf("failed to create PowerVS service")
 		return
 	}
 	scope.IBMPowerVSClient = c
-
+	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
 	return scope, nil
 }
 
@@ -433,6 +436,97 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 				Address: strings.TrimSpace(network.ExternalIP),
 			})
 		}
+	}
+	m.IBMPowerVSMachine.Status.Addresses = addresses
+	if len(addresses) > 2 {
+		// If the address length is more than 2 means either NodeInternalIP or NodeExternalIP is updated so return
+		return
+	}
+	// In this case there is no IP found under instance.Networks, So try to fetch the IP from cache or DHCP server
+	// Look for DHCP IP from the cache
+	obj, exists, err := m.DHCPIPCacheStore.GetByKey(*instance.ServerName)
+	if err != nil {
+		m.Error(err, "failed to fetch the DHCP IP address from cache store", "VM", *instance.ServerName)
+	}
+	if exists {
+		m.Info("found IP for VM from DHCP cache", "IP", obj.(powervs.VMip).IP, "VM", *instance.ServerName)
+		addresses = append(addresses, corev1.NodeAddress{
+			Type:    corev1.NodeInternalIP,
+			Address: obj.(powervs.VMip).IP,
+		})
+		m.IBMPowerVSMachine.Status.Addresses = addresses
+		return
+	}
+	// Fetch the VM network ID
+	networkID, err := getNetworkID(m.IBMPowerVSMachine.Spec.Network, m)
+	if err != nil {
+		m.Error(err, "failed to fetch network id from network resource", "VM", *instance.ServerName)
+		return
+	}
+	// Fetch the details of the network attached to the VM
+	var pvmNetwork *models.PVMInstanceNetwork
+	for _, network := range instance.Networks {
+		if network.NetworkID == *networkID {
+			pvmNetwork = network
+			m.Info("found network attached to VM", "Network ID", network.NetworkID, "VM", *instance.ServerName)
+		}
+	}
+	if pvmNetwork == nil {
+		m.Info("failed to get network attached to VM", "VM", *instance.ServerName, "Network ID", *networkID)
+		return
+	}
+	// Get all the DHCP servers
+	dhcpServer, err := m.IBMPowerVSClient.GetAllDHCPServers()
+	if err != nil {
+		m.Error(err, "failed to get DHCP server")
+		return
+	}
+	// Get the Details of DHCP server associated with the network
+	var dhcpServerDetails *models.DHCPServerDetail
+	for _, server := range dhcpServer {
+		if *server.Network.ID == *networkID {
+			m.Info("found DHCP server for network", "DHCP server ID", *server.ID, "network ID", *networkID)
+			dhcpServerDetails, err = m.IBMPowerVSClient.GetDHCPServer(*server.ID)
+			if err != nil {
+				m.Error(err, "failed to get DHCP server details", "DHCP server ID", *server.ID)
+				return
+			}
+			break
+		}
+	}
+	if dhcpServerDetails == nil {
+		errStr := fmt.Errorf("DHCP server details is nil")
+		m.Error(errStr, "DHCP server associated with network is nil", "Network ID", *networkID)
+		return
+	}
+
+	// Fetch the VM IP using VM's mac from DHCP server lease
+	var internalIP *string
+	for _, lease := range dhcpServerDetails.Leases {
+		if *lease.InstanceMacAddress == pvmNetwork.MacAddress {
+			m.Info("found internal ip for VM from DHCP lease", "IP", *lease.InstanceIP, "VM", *instance.ServerName)
+			internalIP = lease.InstanceIP
+			break
+		}
+	}
+	if internalIP == nil {
+		errStr := fmt.Errorf("internal IP is nil")
+		m.Error(errStr, "failed to get internal IP, DHCP lease not found for VM with MAC in DHCP network", "VM", *instance.ServerName,
+			"MAC", pvmNetwork.MacAddress, "DHCP server ID", *dhcpServerDetails.ID)
+		return
+	}
+	m.Info("found internal IP for VM from DHCP lease", "IP", *internalIP, "VM", *instance.ServerName)
+	addresses = append(addresses, corev1.NodeAddress{
+		Type:    corev1.NodeInternalIP,
+		Address: *internalIP,
+	})
+	// Update the cache with the ip and VM name
+	err = m.DHCPIPCacheStore.Add(powervs.VMip{
+		Name: *instance.ServerName,
+		IP:   *internalIP,
+	})
+	if err != nil {
+		m.Error(err, "failed to update the DHCP cache store with the IP", "VM", *instance.ServerName, "IP", *internalIP)
 	}
 	m.IBMPowerVSMachine.Status.Addresses = addresses
 }
