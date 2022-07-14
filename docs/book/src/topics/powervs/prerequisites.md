@@ -55,6 +55,16 @@ A public network is required for your kubernetes cluster. Perform the following 
     DNS               8.8.8.8, 9.9.9.9
     ```
 
-## Build workload cluster image: 
+## Import the machine boot image: 
 
-1. ***TO-DO***
+```shell
+$ export IBMCLOUD_API_KEY=<API_KEY>
+$ pvsadm image import --instance-id <SERVICE_INSTANCE_ID> -b <BUCKETNAME> --object <OBJECT> --pvs-image-name <POWERVS_IMAGE_NAME> --bucket-region <REGION> --public-bucket
+```
+
+e.g:
+```shell
+$ pvsadm image import --instance-id 6d892c30-5387-4685-85d0-4999d9c22a8c -b power-oss-bucket --object capibm-powervs-centos-streams8-1-24-2.ova.gz --pvs-image-name capibm-powervs-centos-streams8-1-24-2 --bucket-region us-south --public-bucket
+```
+
+For more information about the images can be found at [machine-images](../../machine-images/powervs.md) section
