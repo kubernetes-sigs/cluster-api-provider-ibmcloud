@@ -21,11 +21,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-
-	. "github.com/onsi/gomega"
 )
 
 const (
@@ -89,18 +86,5 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 		Data: map[string][]byte{
 			"value": []byte("user data"),
 		},
-	}
-}
-
-func createObject(g *WithT, obj client.Object, namespace string) {
-	if obj.DeepCopyObject() != nil {
-		obj.SetNamespace(namespace)
-		g.Expect(testEnv.Create(ctx, obj)).To(Succeed())
-	}
-}
-
-func cleanupObject(g *WithT, obj client.Object) {
-	if obj.DeepCopyObject() != nil {
-		g.Expect(testEnv.Cleanup(ctx, obj)).To(Succeed())
 	}
 }

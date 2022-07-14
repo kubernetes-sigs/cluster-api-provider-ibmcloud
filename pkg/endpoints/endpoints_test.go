@@ -153,3 +153,105 @@ func TestParseFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestFetchVPCEndpoint(t *testing.T) {
+	testCases := []struct {
+		name            string
+		region          string
+		serviceEndpoint []ServiceEndpoint
+		expectedOutput  string
+	}{
+		{
+			name:            "Return constructed endpoint",
+			region:          "us-south",
+			serviceEndpoint: []ServiceEndpoint{},
+			expectedOutput:  "https://us-south.iaas.cloud.ibm.com/v1",
+		},
+		{
+			name:   "Return fetched endpoint",
+			region: "us-south",
+			serviceEndpoint: []ServiceEndpoint{
+				{
+					ID:     "vpc",
+					URL:    "https://vpchost:8080",
+					Region: "us-south",
+				},
+			},
+			expectedOutput: "https://vpchost:8080",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := FetchVPCEndpoint(tc.region, tc.serviceEndpoint)
+			require.Equal(t, tc.expectedOutput, out)
+		})
+	}
+}
+
+func TestFetchPVSEndpoint(t *testing.T) {
+	testCases := []struct {
+		name            string
+		region          string
+		serviceEndpoint []ServiceEndpoint
+		expectedOutput  string
+	}{
+		{
+			name:            "Return empty endpoint",
+			region:          "us-south",
+			serviceEndpoint: []ServiceEndpoint{},
+			expectedOutput:  "",
+		},
+		{
+			name:   "Return fetched endpoint",
+			region: "us-south",
+			serviceEndpoint: []ServiceEndpoint{
+				{
+					ID:     "powervs",
+					URL:    "https://powervshost:8080",
+					Region: "us-south",
+				},
+			},
+			expectedOutput: "https://powervshost:8080",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := FetchPVSEndpoint(tc.region, tc.serviceEndpoint)
+			require.Equal(t, tc.expectedOutput, out)
+		})
+	}
+}
+
+func TestFetchRCEndpoint(t *testing.T) {
+	testCases := []struct {
+		name            string
+		serviceEndpoint []ServiceEndpoint
+		expectedOutput  string
+	}{
+		{
+			name:            "Return empty endpoint",
+			serviceEndpoint: []ServiceEndpoint{},
+			expectedOutput:  "",
+		},
+		{
+			name: "Return fetched endpoint",
+			serviceEndpoint: []ServiceEndpoint{
+				{
+					ID:     "rc",
+					URL:    "https://rchost:8080",
+					Region: "us-south",
+				},
+			},
+			expectedOutput: "https://rchost:8080",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := FetchRCEndpoint(tc.serviceEndpoint)
+			require.Equal(t, tc.expectedOutput, out)
+		})
+	}
+}

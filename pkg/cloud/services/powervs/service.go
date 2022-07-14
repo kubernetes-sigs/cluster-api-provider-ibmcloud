@@ -25,6 +25,7 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 var _ PowerVS = &Service{}
@@ -128,6 +129,11 @@ func NewService(options ServiceOptions) (PowerVS, error) {
 		return nil, err
 	}
 	options.Authenticator = auth
+	account, err := utils.GetAccount(auth)
+	if err != nil {
+		return nil, err
+	}
+	options.IBMPIOptions.UserAccount = account
 	session, err := ibmpisession.NewIBMPISession(options.IBMPIOptions)
 	if err != nil {
 		return nil, err
