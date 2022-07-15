@@ -80,15 +80,7 @@ following the steps below.
     IBMPOWERVS_COMPUTE_PROCTYPE
     ```
 
-3. Deploy Container Network Interface (CNI)
-
-    Example: calico
-    ```console
-    kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
-    ```
-
-
-4. Check the state of the provisioned cluster and machine objects within the local management cluster
+3. Check the state of the provisioned cluster and machine objects within the local management cluster
 
     Clusters
     ```console
@@ -112,11 +104,18 @@ following the steps below.
     ibm-powervs-1-md-0-5444cfcbcd-7kr9x   ibmpowervs://ibm-powervs-1/ibm-powervs-1-md-0-k7blr            Running        v1.22.4
     ```
 
-5.  Check the state of the newly provisioned cluster within IBM Cloud
+4. Deploy Container Network Interface (CNI)
 
+    Example: calico
     ```console
     ~ clusterctl get kubeconfig ibm-powervs-1 > ~/.kube/ibm-powervs-1
     ~ export KUBECONFIG=~/.kube/ibm-powervs-1
+    ~ kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
+    ```
+
+5.  Check the state of the newly provisioned cluster within IBM Cloud
+
+    ```console
     ~ kubectl get nodes
     NAME                             STATUS   ROLES    AGE   VERSION
     ibm-powervs-1-control-plane-rg6xv    Ready    master   41h   v1.22.4
