@@ -34,15 +34,7 @@ following the steps below.
 
     Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 
-2. Deploy Container Network Interface (CNI)
-
-    Example: calico
-    ```console
-    kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
-    ```
-
-
-3. Check the state of the provisioned cluster and machine objects within the local management cluster
+2. Check the state of the provisioned cluster and machine objects within the local management cluster
 
     Clusters
     ```console
@@ -66,15 +58,21 @@ following the steps below.
     ibm-vpc-0-md-0-5444cfcbcd-7kr9x   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-k7blr            Running        v1.19.9
     ```
 
-4.  Check the state of the newly provisioned cluster within IBM Cloud
+3. Deploy Container Network Interface (CNI)
 
+    Example: calico
     ```console
     ~ clusterctl get kubeconfig ibm-vpc-0 > ~/.kube/ibm-vpc-0
     ~ export KUBECONFIG=~/.kube/ibm-vpc-0
+    ~ kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
+    ```
+
+4.  Check the state of the newly provisioned cluster within IBM Cloud
+
+    ```console
     ~ kubectl get nodes
     NAME                             STATUS   ROLES    AGE   VERSION
     ibm-vpc-0-control-plane-rg6xv    Ready    master   41h   v1.18.15
     ibm-vpc-0-md-0-4dc5c             Ready    <none>   41h   v1.18.15
     ibm-vpc-0-md-0-dbxb7             Ready    <none>   20h   v1.18.15
     ```
-
