@@ -42,10 +42,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
-	servicesutils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -124,18 +122,6 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 
 	m := params.IBMPowerVSMachine
 
-	auth, err := authenticator.GetAuthenticator()
-	if err != nil {
-		err = errors.Wrap(err, "failed to get authenticator")
-		return
-	}
-
-	account, err := servicesutils.GetAccount(auth)
-	if err != nil {
-		err = errors.Wrap(err, "failed to get account")
-		return
-	}
-
 	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
 		return
@@ -168,10 +154,9 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 
 	serviceOptions := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug:       params.Logger.V(DEBUGLEVEL).Enabled(),
-			UserAccount: account,
-			Region:      region,
-			Zone:        *res.RegionID,
+			Debug:  params.Logger.V(DEBUGLEVEL).Enabled(),
+			Region: region,
+			Zone:   *res.RegionID,
 		},
 		CloudInstanceID: m.Spec.ServiceInstanceID,
 	}

@@ -17,6 +17,7 @@ limitations under the License.
 package scope
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -223,21 +224,6 @@ func TestCreateMachinePVS(t *testing.T) {
 
 		t.Run("Should create Machine", func(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
-			secret := &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						capiv1beta1.ClusterLabelName: scope.Cluster.Name,
-					},
-					Name:      scope.Machine.Name,
-					Namespace: "default",
-				},
-				Data: map[string][]byte{
-					"value": []byte("user data"),
-				},
-			}
-			createObject(g, secret, "default")
-			defer cleanupObject(g, secret)
-
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
@@ -276,6 +262,25 @@ func TestCreateMachinePVS(t *testing.T) {
 		t.Run("failed to retrieve bootstrap data secret for IBMVPCMachine", func(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = core.StringPtr("foo-secret-temp")
+			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			_, err := scope.CreateMachine()
+			g.Expect(err).To(Not(BeNil()))
+		})
+
+		t.Run("Failed to retrieve bootstrap data, secret value key is missing", func(t *testing.T) {
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						capiv1beta1.ClusterLabelName: clusterName,
+					},
+					Name:      machineName,
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"val": []byte("user data"),
+				}}
+			g.Expect(scope.Client.Update(context.Background(), secret)).To(Succeed())
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			_, err := scope.CreateMachine()
 			g.Expect(err).To(Not(BeNil()))
