@@ -30,7 +30,6 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	powerVSUtils "github.com/ppc64le-cloud/powervs-utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -144,19 +143,14 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		return
 	}
 
-	region, err := powerVSUtils.GetRegion(*res.RegionID)
-	if err != nil {
-		err = errors.Wrap(err, "failed to get region")
-		return
-	}
+	region := endpoints.CostructRegionFromZone(*res.RegionID)
 	scope.SetRegion(region)
 	scope.SetZone(*res.RegionID)
 
 	serviceOptions := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug:  params.Logger.V(DEBUGLEVEL).Enabled(),
-			Region: region,
-			Zone:   *res.RegionID,
+			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
+			Zone:  *res.RegionID,
 		},
 		CloudInstanceID: m.Spec.ServiceInstanceID,
 	}

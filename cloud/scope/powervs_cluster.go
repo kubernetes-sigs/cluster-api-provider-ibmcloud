@@ -25,7 +25,6 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	utils "github.com/ppc64le-cloud/powervs-utils"
 	"k8s.io/klog/v2/klogr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
@@ -121,23 +120,16 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 		return
 	}
 
-	region, err := utils.GetRegion(*res.RegionID)
-	if err != nil {
-		err = errors.Wrap(err, "failed to get region")
-		return
-	}
-
 	options := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug:  params.Logger.V(DEBUGLEVEL).Enabled(),
-			Region: region,
-			Zone:   *res.RegionID,
+			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
+			Zone:  *res.RegionID,
 		},
 		CloudInstanceID: spec.ServiceInstanceID,
 	}
 
 	// Fetch the service endpoint.
-	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
+	if svcEndpoint := endpoints.FetchPVSEndpoint(endpoints.CostructRegionFromZone(*res.RegionID), params.ServiceEndpoint); svcEndpoint != "" {
 		options.IBMPIOptions.URL = svcEndpoint
 		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
 	}
