@@ -19,6 +19,7 @@ package endpoints
 import (
 	"errors"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -141,4 +142,19 @@ func FetchRCEndpoint(serviceEndpoint []ServiceEndpoint) string {
 		}
 	}
 	return ""
+}
+
+// CostructRegionFromZone Calculate region based on location/zone.
+func CostructRegionFromZone(zone string) string {
+	var regex string
+	if strings.Contains(zone, "-") {
+		// it's a region or AZ
+		regex = "-[0-9]+$"
+	} else {
+		// it's a datacenter
+		regex = "[0-9]+$"
+	}
+
+	reg, _ := regexp.Compile(regex)
+	return reg.ReplaceAllString(zone, "")
 }
