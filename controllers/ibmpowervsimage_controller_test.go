@@ -122,18 +122,32 @@ func TestIBMPowerVSImageReconciler_Reconcile(t *testing.T) {
 }
 
 func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	mockpowervs := mock.NewMockPowerVS(mockCtrl)
-	recorder := record.NewFakeRecorder(2)
-	reconciler := IBMPowerVSImageReconciler{
-		Client:   testEnv.Client,
-		Log:      klogr.New(),
-		Recorder: recorder,
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+		reconciler  IBMPowerVSImageReconciler
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+		recorder := record.NewFakeRecorder(2)
+		reconciler = IBMPowerVSImageReconciler{
+			Client:   testEnv.Client,
+			Log:      klogr.New(),
+			Recorder: recorder,
+		}
 	}
-	g := NewWithT(t)
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 
 	t.Run("Reconciling IBMPowerVSImage ", func(t *testing.T) {
 		t.Run("Should reconcile by setting the owner reference", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			powervsCluster := &infrav1beta1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-powervs-cluster"},
@@ -152,13 +166,13 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					},
 				},
 			}
-			createObject(g, imageScope.IBMPowerVSImage, "default")
-			defer cleanupObject(g, imageScope.IBMPowerVSImage)
-
 			_, err := reconciler.reconcile(powervsCluster, imageScope)
 			g.Expect(err).To(BeNil())
 		})
 		t.Run("Reconciling an image import job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			const jobID = "job-1"
 			powervsCluster := &infrav1beta1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -188,12 +202,8 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					Bucket:      pointer.String("capi-bucket"),
 				},
 			}
-			createObject(g, powervsImage, "default")
-			defer cleanupObject(g, powervsImage)
 
-			createObject(g, powervsCluster, "default")
-			defer cleanupObject(g, powervsCluster)
-			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{powervsCluster}...).Build()
+			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{powervsCluster, powervsImage}...).Build()
 			imageScope := &scope.PowerVSImageScope{
 				Logger:           klogr.New(),
 				Client:           mockclient,
@@ -311,29 +321,47 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 }
 
 func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	mockpowervs := mock.NewMockPowerVS(mockCtrl)
-	recorder := record.NewFakeRecorder(2)
-	reconciler := IBMPowerVSImageReconciler{
-		Client:   testEnv.Client,
-		Log:      klogr.New(),
-		Recorder: recorder,
-	}
-	g := NewWithT(t)
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+		reconciler  IBMPowerVSImageReconciler
+		imageScope  *scope.PowerVSImageScope
+	)
 
-	t.Run("Reconcile deleting IBMPowerVSImage ", func(t *testing.T) {
-		imageScope := &scope.PowerVSImageScope{
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+		recorder := record.NewFakeRecorder(2)
+		reconciler = IBMPowerVSImageReconciler{
+			Client:   testEnv.Client,
+			Log:      klogr.New(),
+			Recorder: recorder,
+		}
+		imageScope = &scope.PowerVSImageScope{
 			Logger:           klogr.New(),
 			IBMPowerVSImage:  &infrav1beta1.IBMPowerVSImage{},
 			IBMPowerVSClient: mockpowervs,
 		}
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Reconcile deleting IBMPowerVSImage ", func(t *testing.T) {
 		t.Run("Should not delete IBMPowerVSImage is neither job ID nor image ID are set", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			imageScope.IBMPowerVSImage.Finalizers = []string{infrav1beta1.IBMPowerVSImageFinalizer}
 			_, err := reconciler.reconcileDelete(imageScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(Not(ContainElement(infrav1beta1.IBMPowerVSImageFinalizer)))
 		})
 		t.Run("Should fail to delete the import image job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			imageScope.IBMPowerVSImage.Status.JobID = "job-1"
 			imageScope.IBMPowerVSImage.Finalizers = []string{infrav1beta1.IBMPowerVSImageFinalizer}
 			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf("job-1")).Return(errors.New("Failed to deleted the import job"))
@@ -342,6 +370,9 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 			g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta1.IBMPowerVSImageFinalizer))
 		})
 		t.Run("Should delete the import image job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			imageScope.IBMPowerVSImage.Status.JobID = "job-1"
 			imageScope.IBMPowerVSImage.Finalizers = []string{infrav1beta1.IBMPowerVSImageFinalizer}
 			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf("job-1")).Return(nil)
@@ -350,6 +381,9 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 			g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(Not(ContainElement(infrav1beta1.IBMPowerVSImageFinalizer)))
 		})
 		t.Run("Should fail to delete the image using ID when delete policy is not to retain it", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			imageScope.IBMPowerVSImage.Status.ImageID = "capi-image-id"
 			imageScope.IBMPowerVSImage.Finalizers = []string{infrav1beta1.IBMPowerVSImageFinalizer}
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf("capi-image-id")).Return(errors.New("Failed to delete the image"))
@@ -358,6 +392,9 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 			g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta1.IBMPowerVSImageFinalizer))
 		})
 		t.Run("Should not delete the image using ID when delete policy is to retain it", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			imageScope.IBMPowerVSImage.Status.ImageID = "capi-image-id"
 			imageScope.IBMPowerVSImage.Finalizers = []string{infrav1beta1.IBMPowerVSImageFinalizer}
 			imageScope.IBMPowerVSImage.Spec.DeletePolicy = "retain"

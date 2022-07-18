@@ -33,7 +33,6 @@ import (
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -105,9 +104,19 @@ func TestNewPowerVSImageScope(t *testing.T) {
 }
 
 func TestCreateImageCOSBucket(t *testing.T) {
-	mockctrl := gomock.NewController(GinkgoT())
-	mockpowervs := mock.NewMockPowerVS(mockctrl)
-	g := NewWithT(t)
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 
 	t.Run("Create Import Job", func(t *testing.T) {
 		images := &models.Images{
@@ -129,6 +138,9 @@ func TestCreateImageCOSBucket(t *testing.T) {
 		}
 
 		t.Run("Should create image import job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
@@ -139,6 +151,9 @@ func TestCreateImageCOSBucket(t *testing.T) {
 		})
 
 		t.Run("Return exsisting Image", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			imageReference := &models.ImageReference{
 				Name: core.StringPtr("foo-image-1"),
 			}
@@ -150,6 +165,9 @@ func TestCreateImageCOSBucket(t *testing.T) {
 		})
 
 		t.Run("Error while listing images", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			mockpowervs.EXPECT().GetAllImage().Return(images, errors.New("Failed to list images"))
 			_, _, err := scope.CreateImageCOSBucket()
@@ -157,6 +175,9 @@ func TestCreateImageCOSBucket(t *testing.T) {
 		})
 
 		t.Run("Previous import job in-progress", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			job := &models.Job{
 				Status: &models.Status{
 					State: core.StringPtr("in-progress"),
@@ -170,6 +191,9 @@ func TestCreateImageCOSBucket(t *testing.T) {
 		})
 
 		t.Run("Error while creating import job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
@@ -181,22 +205,39 @@ func TestCreateImageCOSBucket(t *testing.T) {
 }
 
 func TestDeleteImage(t *testing.T) {
-	mockctrl := gomock.NewController(GinkgoT())
-	mockpowervs := mock.NewMockPowerVS(mockctrl)
-	g := NewWithT(t)
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 
 	t.Run("Delete Image", func(t *testing.T) {
-		scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-		scope.IBMPowerVSImage.Status.ImageID = pvsImage + "-id"
 		var id string
-
 		t.Run("Should delete image", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
+			scope.IBMPowerVSImage.Status.ImageID = pvsImage + "-id"
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(nil)
 			err := scope.DeleteImage()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error while deleting image", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
+			scope.IBMPowerVSImage.Status.ImageID = pvsImage + "-id"
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image"))
 			err := scope.DeleteImage()
 			g.Expect(err).To(Not(BeNil()))
@@ -205,22 +246,39 @@ func TestDeleteImage(t *testing.T) {
 }
 
 func TestDeleteImportJob(t *testing.T) {
-	mockctrl := gomock.NewController(GinkgoT())
-	mockpowervs := mock.NewMockPowerVS(mockctrl)
-	g := NewWithT(t)
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 
 	t.Run("Delete Import Job", func(t *testing.T) {
-		scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-		scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
 		var id string
-
 		t.Run("Should delete image import job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
+			scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
 			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf(id)).Return(nil)
 			err := scope.DeleteImportJob()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error while deleting image import job", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
+			scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
 			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image import job"))
 			err := scope.DeleteImportJob()
 			g.Expect(err).To(Not(BeNil()))

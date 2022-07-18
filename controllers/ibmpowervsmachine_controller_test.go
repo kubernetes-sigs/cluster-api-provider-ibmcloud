@@ -247,16 +247,34 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 }
 
 func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	mockpowervs := mock.NewMockPowerVS(mockCtrl)
-	reconciler := IBMPowerVSMachineReconciler{
-		Client: testEnv.Client,
-		Log:    klogr.New(),
+	var (
+		mockpowervs  *mock.MockPowerVS
+		mockCtrl     *gomock.Controller
+		machineScope *scope.PowerVSMachineScope
+		reconciler   IBMPowerVSMachineReconciler
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+		recorder := record.NewFakeRecorder(2)
+		reconciler = IBMPowerVSMachineReconciler{
+			Client:   testEnv.Client,
+			Log:      klogr.New(),
+			Recorder: recorder,
+		}
 	}
-	g := NewWithT(t)
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
 	t.Run("Reconciling deleting IBMPowerVSMachine ", func(t *testing.T) {
 		t.Run("Should not delete IBMPowerVSMachine if instance ID not found", func(t *testing.T) {
-			machineScope := &scope.PowerVSMachineScope{
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope = &scope.PowerVSMachineScope{
 				Logger:           klogr.New(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta1.IBMPowerVSMachine{
@@ -270,7 +288,10 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			g.Expect(len(machineScope.IBMPowerVSMachine.Finalizers)).To(BeZero())
 		})
 		t.Run("Should fail to delete PowerVS instance", func(t *testing.T) {
-			machineScope := &scope.PowerVSMachineScope{
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope = &scope.PowerVSMachineScope{
 				Logger:           klogr.New(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta1.IBMPowerVSMachine{
@@ -289,7 +310,10 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta1.IBMPowerVSMachineFinalizer))
 		})
 		t.Run("Should successfully delete the PowerVS machine", func(t *testing.T) {
-			machineScope := &scope.PowerVSMachineScope{
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope = &scope.PowerVSMachineScope{
 				Logger:           klogr.New(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta1.IBMPowerVSMachine{
@@ -312,18 +336,33 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 }
 
 func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	mockpowervs := mock.NewMockPowerVS(mockCtrl)
-	recorder := record.NewFakeRecorder(2)
-	reconciler := IBMPowerVSMachineReconciler{
-		Client:   testEnv.Client,
-		Log:      klogr.New(),
-		Recorder: recorder,
+	var (
+		mockpowervs  *mock.MockPowerVS
+		mockCtrl     *gomock.Controller
+		machineScope *scope.PowerVSMachineScope
+		reconciler   IBMPowerVSMachineReconciler
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+		recorder := record.NewFakeRecorder(2)
+		reconciler = IBMPowerVSMachineReconciler{
+			Client:   testEnv.Client,
+			Log:      klogr.New(),
+			Recorder: recorder,
+		}
 	}
-	g := NewWithT(t)
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 	t.Run("Reconciling creating IBMPowerVSMachine ", func(t *testing.T) {
 		t.Run("Should requeue if Cluster infrastructure status is not ready", func(t *testing.T) {
-			machineScope := &scope.PowerVSMachineScope{
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope = &scope.PowerVSMachineScope{
 				Logger: klogr.New(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
@@ -338,7 +377,10 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta1.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta1.WaitingForClusterInfrastructureReason}})
 		})
 		t.Run("Should requeue if IBMPowerVSImage status is not ready", func(t *testing.T) {
-			machineScope := &scope.PowerVSMachineScope{
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope = &scope.PowerVSMachineScope{
 				Logger: klogr.New(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
@@ -358,7 +400,10 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta1.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta1.WaitingForIBMPowerVSImageReason}})
 		})
 		t.Run("Should requeue if boostrap data secret reference is not found", func(t *testing.T) {
-			machineScope := &scope.PowerVSMachineScope{
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope = &scope.PowerVSMachineScope{
 				Logger: klogr.New(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
@@ -379,9 +424,12 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta1.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta1.WaitingForBootstrapDataReason}})
 		})
 		t.Run("Should fail reconcile with create instance failure due to error in retrieving bootstrap data secret", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			var instances = &models.PVMInstances{}
 			mockclient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build()
-			machineScope := &scope.PowerVSMachineScope{
+			machineScope = &scope.PowerVSMachineScope{
 				Logger: klogr.New(),
 				Client: mockclient,
 				Cluster: &capiv1beta1.Cluster{
@@ -417,6 +465,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta1.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityError, infrav1beta1.InstanceProvisionFailedReason}})
 		})
 		t.Run("Should reconcile IBMPowerVSMachine instance creation in different states", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
@@ -429,8 +480,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					"value": []byte("user data"),
 				},
 			}
-			createObject(g, secret, "default")
-			defer cleanupObject(g, secret)
+
 			pvsmachine := &infrav1beta1.IBMPowerVSMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: *pointer.String("capi-test-machine"),
@@ -447,8 +497,6 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					ServiceInstanceID: *pointer.String("service-instance-1"),
 				},
 			}
-			createObject(g, pvsmachine, "default")
-			defer cleanupObject(g, pvsmachine)
 
 			machine := &capiv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
@@ -460,11 +508,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 			}
-			createObject(g, machine, "default")
-			defer cleanupObject(g, machine)
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
-			machineScope := &scope.PowerVSMachineScope{
+			machineScope = &scope.PowerVSMachineScope{
 				Logger: klogr.New(),
 				Client: mockclient,
 				Cluster: &capiv1beta1.Cluster{
