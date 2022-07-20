@@ -212,7 +212,7 @@ func (c clusterDescendants) filterOwnedDescendants(cluster *infrav1beta1.IBMPowe
 		obj := o.(client.Object)
 		acc, err := meta.Accessor(obj)
 		if err != nil {
-			return nil //nolint:nilerr // We don't want to exit the EachListItem loop, just continue
+			return nil // We don't want to exit the EachListItem loop, just continue
 		}
 
 		if util.IsOwnedByObject(acc, cluster) {
