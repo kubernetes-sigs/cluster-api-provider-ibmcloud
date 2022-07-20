@@ -42,7 +42,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -191,9 +190,19 @@ func TestNewPowerVSMachineScope(t *testing.T) {
 }
 
 func TestCreateMachinePVS(t *testing.T) {
-	mockctrl := gomock.NewController(GinkgoT())
-	mockpowervs := mock.NewMockPowerVS(mockctrl)
-	g := NewWithT(t)
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 
 	t.Run("Create Machine", func(t *testing.T) {
 		pvmInstances := &models.PVMInstances{
@@ -223,20 +232,23 @@ func TestCreateMachinePVS(t *testing.T) {
 		pvmInstanceCreate := &models.PVMInstanceCreate{}
 
 		t.Run("Should create Machine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
 			_, err := scope.CreateMachine()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Return exsisting Machine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			expectedOutput := models.PVMInstanceReference{
 				ServerName: core.StringPtr("foo-machine-1"),
 			}
-
 			scope := setupPowerVSMachineScope(clusterName, *core.StringPtr("foo-machine-1"), core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			out, err := scope.CreateMachine()
@@ -245,6 +257,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Eror while getting instances", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, errors.New("Error when getting list of instances"))
 			_, err := scope.CreateMachine()
@@ -252,6 +267,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Error when DataSecretName is nil", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = nil
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
@@ -260,6 +278,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("failed to retrieve bootstrap data secret for IBMVPCMachine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = core.StringPtr("foo-secret-temp")
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
@@ -268,6 +289,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Failed to retrieve bootstrap data, secret value key is missing", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -287,6 +311,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Invalid memory value", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Spec.Memory = "illegal"
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
@@ -295,6 +322,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Invalid core value", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Spec.Processors = "illegal"
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
@@ -303,6 +333,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("IBMPowerVSImage is not nil", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, nil, core.StringPtr(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSImage = &infrav1beta1.IBMPowerVSImage{
 				Status: infrav1beta1.IBMPowerVSImageStatus{
@@ -310,13 +343,15 @@ func TestCreateMachinePVS(t *testing.T) {
 				},
 			}
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
 			_, err := scope.CreateMachine()
 			g.Expect(err).To((BeNil()))
 		})
 
 		t.Run("Image and Network name is set", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), false, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
@@ -327,23 +362,29 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Error when both Image id and name are nil", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, nil, core.StringPtr(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			_, err := scope.CreateMachine()
 			g.Expect(err).To((Not(BeNil())))
 		})
 
 		t.Run("Error when both Network id and name are nil", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), nil, true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 			_, err := scope.CreateMachine()
 			g.Expect(err).To((Not(BeNil())))
 		})
 
 		t.Run("Error when Image id does not exsist", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage+"-temp"), core.StringPtr(pvsNetwork), false, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
@@ -352,6 +393,9 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Error when Network id does not exsist", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork+"-temp"), false, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
@@ -361,10 +405,11 @@ func TestCreateMachinePVS(t *testing.T) {
 		})
 
 		t.Run("Error while creating machine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, errors.New("Failed to create machine"))
 			_, err := scope.CreateMachine()
 			g.Expect(err).To((Not(BeNil())))
@@ -373,22 +418,39 @@ func TestCreateMachinePVS(t *testing.T) {
 }
 
 func TestDeleteMachinePVS(t *testing.T) {
-	mockctrl := gomock.NewController(GinkgoT())
-	mockpowervs := mock.NewMockPowerVS(mockctrl)
-	g := NewWithT(t)
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
 
 	t.Run("Delete Machine", func(t *testing.T) {
-		scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
-		scope.IBMPowerVSMachine.Status.InstanceID = machineName + "-id"
 		var id string
-
 		t.Run("Should delete Machine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			scope.IBMPowerVSMachine.Status.InstanceID = machineName + "-id"
 			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(id)).Return(nil)
 			err := scope.DeleteMachine()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error while deleting Machine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			scope.IBMPowerVSMachine.Status.InstanceID = machineName + "-id"
 			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete machine"))
 			err := scope.DeleteMachine()
 			g.Expect(err).To(Not(BeNil()))

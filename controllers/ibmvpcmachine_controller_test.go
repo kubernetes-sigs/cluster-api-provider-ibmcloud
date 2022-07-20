@@ -195,33 +195,49 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 }
 
 func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	mockvpc := mock.NewMockVpc(mockCtrl)
-	reconciler := IBMVPCMachineReconciler{
-		Client: testEnv.Client,
-		Log:    klogr.New(),
-	}
-	g := NewWithT(t)
-	machineScope := &scope.MachineScope{
-		Logger: klogr.New(),
-		IBMVPCMachine: &infrav1beta1.IBMVPCMachine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "capi-machine",
-				Labels: map[string]string{
-					capiv1beta1.MachineControlPlaneLabelName: "capi-control-plane-machine",
+	var (
+		mockvpc      *mock.MockVpc
+		mockCtrl     *gomock.Controller
+		machineScope *scope.MachineScope
+		reconciler   IBMVPCMachineReconciler
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockvpc = mock.NewMockVpc(mockCtrl)
+		reconciler = IBMVPCMachineReconciler{
+			Client: testEnv.Client,
+			Log:    klogr.New(),
+		}
+		machineScope = &scope.MachineScope{
+			Logger: klogr.New(),
+			IBMVPCMachine: &infrav1beta1.IBMVPCMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-machine",
+					Labels: map[string]string{
+						capiv1beta1.MachineControlPlaneLabelName: "capi-control-plane-machine",
+					},
 				},
 			},
-		},
-		Machine: &capiv1beta1.Machine{
-			Spec: capiv1beta1.MachineSpec{
-				ClusterName: "vpc-cluster",
+			Machine: &capiv1beta1.Machine{
+				Spec: capiv1beta1.MachineSpec{
+					ClusterName: "vpc-cluster",
+				},
 			},
-		},
-		IBMVPCCluster: &infrav1beta1.IBMVPCCluster{},
-		IBMVPCClient:  mockvpc,
+			IBMVPCCluster: &infrav1beta1.IBMVPCCluster{},
+			IBMVPCClient:  mockvpc,
+		}
 	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
 	t.Run("Reconcile creating IBMVPCMachine", func(t *testing.T) {
 		t.Run("Should fail to find bootstrap data secret reference", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			_, err := reconciler.reconcileNormal(machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
@@ -229,9 +245,12 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 		options := &vpcv1.ListInstancesOptions{}
 		response := &core.DetailedResponse{}
 		instancelist := &vpcv1.InstanceCollection{}
-		machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String(machineScope.IBMVPCMachine.Name)
-		machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
 		t.Run("Should fail reconcile IBMVPCMachine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String("capi-machine")
+			machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
 			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, errors.New("Failed to create or fetch instance"))
 			_, err := reconciler.reconcileNormal(machineScope)
 			g.Expect(err).To(Not(BeNil()))
@@ -250,8 +269,13 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			}}
 		fipoptions := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}
 		fip := &vpcv1.FloatingIP{}
-		machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID = pointer.String("capi-fip-id")
 		t.Run("Should fail to bind floating IP to control plane", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String("capi-machine")
+			machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
+			machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID = pointer.String("capi-fip-id")
 			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, nil)
 			mockvpc.EXPECT().AddInstanceNetworkInterfaceFloatingIP(gomock.AssignableToTypeOf(fipoptions)).Return(fip, response, errors.New("Failed to bind floating IP to control plane"))
 			_, err := reconciler.reconcileNormal(machineScope)
@@ -259,6 +283,12 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
 		})
 		t.Run("Should successfully reconcile IBMVPCMachine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String("capi-machine")
+			machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
+			machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID = pointer.String("capi-fip-id")
 			fip.Address = pointer.String("192.129.11.52")
 			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, nil)
 			mockvpc.EXPECT().AddInstanceNetworkInterfaceFloatingIP(gomock.AssignableToTypeOf(fipoptions)).Return(fip, response, nil)
@@ -270,35 +300,54 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 	})
 }
 func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	mockvpc := mock.NewMockVpc(mockCtrl)
-	reconciler := IBMVPCMachineReconciler{
-		Client: testEnv.Client,
-		Log:    klogr.New(),
-	}
-	g := NewWithT(t)
-	machineScope := &scope.MachineScope{
-		Logger: klogr.New(),
-		IBMVPCMachine: &infrav1beta1.IBMVPCMachine{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:       "capi-machine",
-				Finalizers: []string{infrav1beta1.MachineFinalizer},
+	var (
+		mockvpc      *mock.MockVpc
+		mockCtrl     *gomock.Controller
+		machineScope *scope.MachineScope
+		reconciler   IBMVPCMachineReconciler
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockvpc = mock.NewMockVpc(mockCtrl)
+		reconciler = IBMVPCMachineReconciler{
+			Client: testEnv.Client,
+			Log:    klogr.New(),
+		}
+		machineScope = &scope.MachineScope{
+			Logger: klogr.New(),
+			IBMVPCMachine: &infrav1beta1.IBMVPCMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "capi-machine",
+					Finalizers: []string{infrav1beta1.MachineFinalizer},
+				},
+				Status: infrav1beta1.IBMVPCMachineStatus{
+					InstanceID: "capi-machine-id",
+				},
 			},
-			Status: infrav1beta1.IBMVPCMachineStatus{
-				InstanceID: "capi-machine-id",
-			},
-		},
-		IBMVPCClient: mockvpc,
+			IBMVPCClient: mockvpc,
+		}
 	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
 	options := &vpcv1.DeleteInstanceOptions{ID: pointer.String("capi-instance-id")}
 	t.Run("Reconciling deleting IBMVPCMachine", func(t *testing.T) {
 		t.Run("Should fail to delete VPC machine", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(options)).Return(nil, errors.New("Failed to delete the VPC instance"))
 			_, err := reconciler.reconcileDelete(machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
 		})
 		t.Run("Should successfully delete VPC machine and remove the finalizer", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
 			response := &core.DetailedResponse{}
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(options)).Return(response, nil)
 			_, err := reconciler.reconcileDelete(machineScope)
