@@ -23,11 +23,14 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2/klogr"
+	"k8s.io/utils/pointer"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
@@ -163,6 +166,111 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta1.IBMPowerVSClusterFinalizer))
 		})
 	}
+}
+
+func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
+	var (
+		reconciler   IBMPowerVSClusterReconciler
+		clusterScope *scope.PowerVSClusterScope
+	)
+	reconciler = IBMPowerVSClusterReconciler{
+		Client: testEnv.Client,
+		Log:    klogr.New(),
+	}
+	t.Run("Reconciling delete IBMPowerVSCluster", func(t *testing.T) {
+		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {
+			g := NewWithT(t)
+			clusterScope = &scope.PowerVSClusterScope{
+				Logger: klogr.New(),
+				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "IBMPowerVSCluster",
+						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "capi-powervs-cluster",
+					},
+					Spec: infrav1beta1.IBMPowerVSClusterSpec{
+						ServiceInstanceID: "service-instance-1",
+					},
+				},
+				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
+			}
+			result, err := reconciler.reconcileDelete(ctx, clusterScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(result.RequeueAfter).To(BeZero())
+		})
+		t.Run("Should reconcile with requeue by deleting the cluster descendants", func(t *testing.T) {
+			g := NewWithT(t)
+			clusterScope = &scope.PowerVSClusterScope{
+				Logger: klogr.New(),
+				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "IBMPowerVSCluster",
+						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "capi-powervs-cluster",
+					},
+					Spec: infrav1beta1.IBMPowerVSClusterSpec{
+						ServiceInstanceID: "service-instance-1",
+					},
+				},
+				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
+			}
+			powervsImage1 := &infrav1beta1.IBMPowerVSImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-image",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: infrav1beta1.GroupVersion.String(),
+							Kind:       "IBMPowerVSCluster",
+							Name:       "capi-powervs-cluster",
+							UID:        "1",
+						},
+					},
+					Labels: map[string]string{capiv1beta1.ClusterLabelName: "capi-powervs-cluster"},
+				},
+				Spec: infrav1beta1.IBMPowerVSImageSpec{
+					ClusterName: "capi-powervs-cluster",
+					Object:      pointer.String("capi-image.ova.gz"),
+					Region:      pointer.String("us-south"),
+					Bucket:      pointer.String("capi-bucket"),
+				},
+			}
+			powervsImage2 := &infrav1beta1.IBMPowerVSImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-image2",
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: infrav1beta1.GroupVersion.String(),
+							Kind:       "IBMPowerVSCluster",
+							Name:       "capi-powervs-cluster",
+							UID:        "1",
+						},
+					},
+					Labels: map[string]string{capiv1beta1.ClusterLabelName: "capi-powervs-cluster"},
+				},
+				Spec: infrav1beta1.IBMPowerVSImageSpec{
+					ClusterName: "capi-powervs-cluster",
+					Object:      pointer.String("capi-image2.ova.gz"),
+					Region:      pointer.String("us-south"),
+					Bucket:      pointer.String("capi-bucket"),
+				},
+			}
+			createObject(g, powervsImage1, "default")
+			defer cleanupObject(g, powervsImage1)
+			createObject(g, powervsImage2, "default")
+			defer cleanupObject(g, powervsImage2)
+
+			result, err := reconciler.reconcileDelete(ctx, clusterScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(result.RequeueAfter).To(Not(BeZero()))
+			// Updating the object should fail as it doesn't exist
+			g.Expect(clusterScope.Client.Update(ctx, powervsImage1)).To(Not(Succeed()))
+			g.Expect(clusterScope.Client.Update(ctx, powervsImage2)).To(Not(Succeed()))
+		})
+	})
 }
 
 func createCluster(g *WithT, powervsCluster *infrav1beta1.IBMPowerVSCluster, namespace string) {
