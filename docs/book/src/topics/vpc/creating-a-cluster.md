@@ -32,7 +32,13 @@ following the steps below.
     kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-vpc-5-md-0 created
     ```
 
-    Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
+    **Note:** Refer below for more detailed information on VPC variables.
+    - [IBMVPC_REGION](/reference/regions-zones-mapping.html)
+    - [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
+    - [IBMVPC_RESOURCEGROUP](https://cloud.ibm.com/docs/account?topic=account-rgs&interface=ui)
+    - [IBMVPC_IMAGE_ID](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images)
+    - [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=ui)
+    - [IBMVPC_SSHKEY_ID](https://cloud.ibm.com/docs/vpc?topic=vpc-managing-ssh-keys&interface=ui)
 
 2. Check the state of the provisioned cluster and machine objects within the local management cluster
 
