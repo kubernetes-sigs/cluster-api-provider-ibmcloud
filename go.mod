@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/IBM-Cloud/power-go-client v1.1.11
 	github.com/IBM/go-sdk-core/v5 v5.10.2
-	github.com/IBM/platform-services-go-sdk v0.28.1
+	github.com/IBM/platform-services-go-sdk v0.28.2
 	github.com/IBM/vpc-go-sdk v0.22.0
 	github.com/go-logr/logr v1.2.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
