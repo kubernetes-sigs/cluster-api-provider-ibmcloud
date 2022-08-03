@@ -31,6 +31,7 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
 E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
 
+GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 GOJQ := $(TOOLS_BIN_DIR)/gojq
@@ -404,6 +405,20 @@ lint: $(GOLANGCI_LINT) ## Lint codebase
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
+
+APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
+
+.PHONY: apidiff
+apidiff: $(GO_APIDIFF) ## Check for API differences.
+	@if ($(call checkdiff) | grep "api/"); then \
+		$(GO_APIDIFF) $(APIDIFF_OLD_COMMIT) --print-compatible; \
+	else \
+		echo "No changes to 'api/'. Nothing to do."; \
+	fi
+
+define checkdiff
+	git --no-pager diff --name-only FETCH_HEAD
+endef
 
 ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen manifests conversions #tiltfile
 
