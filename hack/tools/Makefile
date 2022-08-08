@@ -52,6 +52,10 @@ help:  # Display this help
 
 ##@ hack/tools:
 
+GO_APIDIFF := $(BIN_DIR)/go-apidiff
+$(GO_APIDIFF): $(BIN_DIR) go.mod go.sum ## Build a local copy of go-apidiff.
+	go build -tags=tools -o $@ github.com/joelanford/go-apidiff
+
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
 $(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lint.
 	go build -tags=tools -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
