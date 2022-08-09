@@ -40,9 +40,11 @@ providers:
         targetName: "metadata.yaml"
       - sourcePath: "${PWD}/templates/cluster-template-powervs.yaml"
         targetName: "cluster-template-powervs.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/templates/cluster-template-md-remediation.yaml"
+        targetName: "cluster-template-md-remediation.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.23.5}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.24.2}"
   # Below variable should be set based on the targeted environment
   SERVICE_ENDPOINT: "${SERVICE_ENDPOINT:-}"
   # Cluster Addons
