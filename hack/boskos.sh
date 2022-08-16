@@ -42,7 +42,6 @@ checkout_account(){
         echo "export BOSKOS_RESOURCE_NAME=$(echo ${output} | jq -r '.name')"
         echo "export BOSKOS_RESOURCE_ID=$(echo ${output} | jq -r '.userdata["service-instance-id"]')"
         echo "export IBMCLOUD_API_KEY=$(echo ${output} | jq -r '.userdata["api-key"]')"
-        echo "export RESOURCE_GROUP=$(echo ${output} | jq -r '.userdata["resource-group"]')"
     else
         echo "Got invalid response- ${status_code}"
         exit 1

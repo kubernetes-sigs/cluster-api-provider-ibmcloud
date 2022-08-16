@@ -34,7 +34,7 @@ ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs/"
 
 ARCH=$(uname -m)
-PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.4-alpha.3"}
+PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.7"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 REGION=${REGION:-"us-south"}
 
@@ -58,7 +58,7 @@ create_powervs_network_instance(){
     curl -fsSL https://clis.cloud.ibm.com/install/linux | sh
 
     # Login to IBM Cloud using the API Key
-    ibmcloud login -a cloud.ibm.com -r ${REGION} -g ${RESOURCE_GROUP}
+    ibmcloud login -a cloud.ibm.com -r ${REGION}
 
     # Install power-iaas command-line plug-in and target the required service instance
     ibmcloud plugin install power-iaas
