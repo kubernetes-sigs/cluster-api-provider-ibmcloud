@@ -1585,8 +1585,8 @@ rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.30/go.mod h1:fEO7lRTdivWO2qYVCVG7dEADOMo/MLDCVr8So2g88Uw=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220718103515-aebeed871c78 h1:VpjNVurDGpv4CFWbdooKJ/t5JKKp1/wny5BZyEhGiUU=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220718103515-aebeed871c78/go.mod h1:hJoKANoP/VEDT64J+z5/jL5rsmgGzl7xLXhbsmX6v1Q=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220810171425-8b4214d72762 h1:rSxmrTaNKlTEB1zz63un5Hk3kFY4RdMew4jktRHkwuQ=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220810171425-8b4214d72762/go.mod h1:hJoKANoP/VEDT64J+z5/jL5rsmgGzl7xLXhbsmX6v1Q=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9 h1:ylYUI5uaq/guUFerFRVG81FHSA5/3+fERCE1RQbQUZ4=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9/go.mod h1:+sJcI1F0QI0Cv+8fp5rH5B2fK1LxzrAQqYnaPx9nY8I=
 sigs.k8s.io/controller-tools v0.9.2 h1:AkTE3QAdz9LS4iD3EJvHyYxBkg/g9fTbgiYsrcsFCcM=
