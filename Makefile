@@ -30,6 +30,7 @@ TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
 E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
+E2E_TEMPLATES := $(REPO_ROOT)/test/e2e/data/templates
 
 GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
@@ -156,6 +157,10 @@ generate-go-conversions-core: $(CONVERSION_GEN)
 		--output-file-base=zz_generated.conversion $(CONVERSION_GEN_OUTPUT_BASE) \
 		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
 
+.PHONY: generate-e2e-templates
+generate-e2e-templates: $(KUSTOMIZE)
+	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-md-remediation.yaml
+
 .PHONY: modules
 modules: ## Runs go mod to ensure modules are up to date
 	go mod tidy
@@ -203,7 +208,7 @@ SKIP_CREATE_MGMT_CLUSTER ?= false
 
 # Run the end-to-end tests
 .PHONY: test-e2e
-test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image ## Run e2e tests
+test-e2e: $(GINKGO) $(KUSTOMIZE) $(ENVSUBST) set-flavor e2e-image generate-e2e-templates ## Run e2e tests
 	$(ENVSUBST) < $(E2E_CONF_FILE) > $(E2E_CONF_FILE_ENVSUBST) 
 	$(GINKGO) $(GINKGO_ARGS) ./test/e2e -- \
 		-e2e.artifacts-folder="$(ARTIFACTS)" \
