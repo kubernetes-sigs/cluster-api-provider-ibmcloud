@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// main is the main package for the Cluster API IBMCLOUD Provider.
 package main
 
 import (
