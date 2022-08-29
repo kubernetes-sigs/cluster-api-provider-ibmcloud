@@ -93,7 +93,7 @@ func (s *Service) ListSubnets(options *vpcv1.ListSubnetsOptions) (*vpcv1.SubnetC
 	return s.vpcService.ListSubnets(options)
 }
 
-// GetSubnetPublicGateway returns a public gateway attched to the subnet.
+// GetSubnetPublicGateway returns a public gateway attached to the subnet.
 func (s *Service) GetSubnetPublicGateway(options *vpcv1.GetSubnetPublicGatewayOptions) (*vpcv1.PublicGateway, *core.DetailedResponse, error) {
 	return s.vpcService.GetSubnetPublicGateway(options)
 }
@@ -131,6 +131,41 @@ func (s *Service) CreateSecurityGroupRule(options *vpcv1.CreateSecurityGroupRule
 // AddInstanceNetworkInterfaceFloatingIP associates a floating IP with a network interface.
 func (s *Service) AddInstanceNetworkInterfaceFloatingIP(options *vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions) (*vpcv1.FloatingIP, *core.DetailedResponse, error) {
 	return s.vpcService.AddInstanceNetworkInterfaceFloatingIP(options)
+}
+
+// CreateLoadBalancer creates a new load balancer.
+func (s *Service) CreateLoadBalancer(options *vpcv1.CreateLoadBalancerOptions) (*vpcv1.LoadBalancer, *core.DetailedResponse, error) {
+	return s.vpcService.CreateLoadBalancer(options)
+}
+
+// DeleteLoadBalancer deletes a load balancer.
+func (s *Service) DeleteLoadBalancer(options *vpcv1.DeleteLoadBalancerOptions) (*core.DetailedResponse, error) {
+	return s.vpcService.DeleteLoadBalancer(options)
+}
+
+// ListLoadBalancers returns list of load balancers in a region.
+func (s *Service) ListLoadBalancers(options *vpcv1.ListLoadBalancersOptions) (*vpcv1.LoadBalancerCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListLoadBalancers(options)
+}
+
+// GetLoadBalancer returns a load balancer.
+func (s *Service) GetLoadBalancer(options *vpcv1.GetLoadBalancerOptions) (*vpcv1.LoadBalancer, *core.DetailedResponse, error) {
+	return s.vpcService.GetLoadBalancer(options)
+}
+
+// CreateLoadBalancerPoolMember creates a new member and adds the member to the pool.
+func (s *Service) CreateLoadBalancerPoolMember(options *vpcv1.CreateLoadBalancerPoolMemberOptions) (*vpcv1.LoadBalancerPoolMember, *core.DetailedResponse, error) {
+	return s.vpcService.CreateLoadBalancerPoolMember(options)
+}
+
+// DeleteLoadBalancerPoolMember deletes a member from the load balancer pool.
+func (s *Service) DeleteLoadBalancerPoolMember(options *vpcv1.DeleteLoadBalancerPoolMemberOptions) (*core.DetailedResponse, error) {
+	return s.vpcService.DeleteLoadBalancerPoolMember(options)
+}
+
+// ListLoadBalancerPoolMembers returns members of a load balancer pool.
+func (s *Service) ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoolMembersOptions) (*vpcv1.LoadBalancerPoolMemberCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListLoadBalancerPoolMembers(options)
 }
 
 // NewService returns a new VPC Service.

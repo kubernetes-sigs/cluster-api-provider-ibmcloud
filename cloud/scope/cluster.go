@@ -383,6 +383,138 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	return err
 }
 
+// CreateLoadBalancer creates a new IBM VPC load balancer in specified resource group.
+func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
+	loadBalancerReply, err := s.ensureLoadBalancerUnique(s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Name)
+	if err != nil {
+		return nil, err
+	} else if loadBalancerReply != nil {
+		// TODO need a reasonable wrapped error
+		return loadBalancerReply, nil
+	}
+
+	options := &vpcv1.CreateLoadBalancerOptions{}
+	options.SetName(s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Name)
+	options.SetIsPublic(true)
+	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
+		ID: &s.IBMVPCCluster.Spec.ResourceGroup,
+	})
+
+	if s.IBMVPCCluster.Status.Subnet.ID != nil {
+		subnet := &vpcv1.SubnetIdentity{
+			ID: s.IBMVPCCluster.Status.Subnet.ID,
+		}
+		options.Subnets = append(options.Subnets, subnet)
+	} else {
+		return nil, errors.Wrap(err, "Error subnet required for load balancer creation")
+	}
+
+	options.SetPools([]vpcv1.LoadBalancerPoolPrototype{
+		{
+			Algorithm:     core.StringPtr("round_robin"),
+			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
+			Name:          core.StringPtr(s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Name + "-pool"),
+			Protocol:      core.StringPtr("tcp"),
+		},
+	})
+
+	options.SetListeners([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
+		{
+			Protocol: core.StringPtr("tcp"),
+			Port:     core.Int64Ptr(6443),
+			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
+				Name: core.StringPtr(s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Name + "-pool"),
+			},
+		},
+	})
+
+	loadBalancer, _, err := s.IBMVPCClient.CreateLoadBalancer(options)
+	if err != nil {
+		record.Warnf(s.IBMVPCCluster, "FailedCreateLoadBalancer", "Failed loadBalancer creation - %v", err)
+		return nil, err
+	}
+
+	record.Eventf(s.IBMVPCCluster, "SuccessfulCreateLoadBalancer", "Created loadBalancer %q", *loadBalancer.Name)
+	return loadBalancer, nil
+}
+
+func (s *ClusterScope) ensureLoadBalancerUnique(loadBalancerName string) (*vpcv1.LoadBalancer, error) {
+	listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
+	loadBalancers, _, err := s.IBMVPCClient.ListLoadBalancers(listLoadBalancersOptions)
+	if err != nil {
+		return nil, err
+	}
+	for _, loadBalancer := range loadBalancers.LoadBalancers {
+		if (*loadBalancer.Name) == loadBalancerName {
+			return &loadBalancer, nil
+		}
+	}
+	return nil, nil
+}
+
+// DeleteLoadBalancer deletes IBM VPC load balancer associated with a VPC id.
+func (s *ClusterScope) DeleteLoadBalancer() (bool, error) {
+	deleted := false
+	if lbipID := s.GetLoadBalancerID(); lbipID != "" {
+		listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
+		loadBalancers, _, err := s.IBMVPCClient.ListLoadBalancers(listLoadBalancersOptions)
+		if err != nil {
+			return deleted, err
+		}
+
+		for _, loadBalancer := range loadBalancers.LoadBalancers {
+			if (*loadBalancer.ID) == lbipID {
+				deleted = true
+				if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateDeletePending) {
+					deleteLoadBalancerOption := &vpcv1.DeleteLoadBalancerOptions{}
+					deleteLoadBalancerOption.SetID(lbipID)
+					_, err := s.IBMVPCClient.DeleteLoadBalancer(deleteLoadBalancerOption)
+					if err != nil {
+						record.Warnf(s.IBMVPCCluster, "FailedDeleteLoadBalancer", "Failed loadBalancer deletion - %v", err)
+						return deleted, err
+					}
+				}
+			}
+		}
+	}
+	return deleted, nil
+}
+
+// SetReady will set the status as ready for the cluster.
+func (s *ClusterScope) SetReady() {
+	s.IBMVPCCluster.Status.Ready = true
+}
+
+// SetNotReady will set the status as not ready for the cluster.
+func (s *ClusterScope) SetNotReady() {
+	s.IBMVPCCluster.Status.Ready = false
+}
+
+// IsReady will return the status for the cluster.
+func (s *ClusterScope) IsReady() bool {
+	return s.IBMVPCCluster.Status.Ready
+}
+
+// SetLoadBalancerState will set the state for the load balancer.
+func (s *ClusterScope) SetLoadBalancerState(status string) {
+	s.IBMVPCCluster.Status.ControlPlaneLoadBalancerState = infrav1beta1.VPCLoadBalancerState(status)
+}
+
+// GetLoadBalancerState will get the state for the load balancer.
+func (s *ClusterScope) GetLoadBalancerState() infrav1beta1.VPCLoadBalancerState {
+	return s.IBMVPCCluster.Status.ControlPlaneLoadBalancerState
+}
+
+// SetLoadBalancerID will set the id for the load balancer.
+func (s *ClusterScope) SetLoadBalancerID(id *string) {
+	s.IBMVPCCluster.Status.VPCEndpoint.LBID = id
+}
+
+// GetLoadBalancerID will get the id for the load balancer.
+func (s *ClusterScope) GetLoadBalancerID() string {
+	return *s.IBMVPCCluster.Status.VPCEndpoint.LBID
+}
+
 // PatchObject persists the cluster configuration and status.
 func (s *ClusterScope) PatchObject() error {
 	return s.patchHelper.Patch(context.TODO(), s.IBMVPCCluster)
