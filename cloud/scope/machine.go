@@ -192,6 +192,107 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 	return nil, nil
 }
 
+// CreateVPCLoadBalancerPoolMember creates a new pool member and adds it to the load balancer pool.
+func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targetPort int64) (*vpcv1.LoadBalancerPoolMember, error) {
+	loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+		ID: m.IBMVPCCluster.Status.VPCEndpoint.LBID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateActive) {
+		return nil, errors.Wrap(err, "load balancer is not in active state")
+	}
+
+	if len(loadBalancer.Pools) == 0 {
+		return nil, errors.Wrap(err, "no pools exist for the load balancer")
+	}
+
+	options := &vpcv1.CreateLoadBalancerPoolMemberOptions{}
+	options.SetLoadBalancerID(*loadBalancer.ID)
+	options.SetPoolID(*loadBalancer.Pools[0].ID)
+	options.SetTarget(&vpcv1.LoadBalancerPoolMemberTargetPrototype{
+		Address: internalIP,
+	})
+	options.SetPort(targetPort)
+
+	listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
+	listOptions.SetLoadBalancerID(*loadBalancer.ID)
+	listOptions.SetPoolID(*loadBalancer.Pools[0].ID)
+	listLoadBalancerPoolMembers, _, err := m.IBMVPCClient.ListLoadBalancerPoolMembers(listOptions)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to bind ListLoadBalancerPoolMembers to control plane %s/%s", m.IBMVPCMachine.Namespace, m.IBMVPCMachine.Name)
+	}
+
+	for _, member := range listLoadBalancerPoolMembers.Members {
+		if _, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
+			mtarget := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget)
+			if *mtarget.Address == *internalIP && *member.Port == targetPort {
+				m.Logger.V(3).Info("PoolMember already exist")
+				return nil, nil
+			}
+		}
+	}
+
+	loadBalancerPoolMember, _, err := m.IBMVPCClient.CreateLoadBalancerPoolMember(options)
+	if err != nil {
+		return nil, err
+	}
+	return loadBalancerPoolMember, nil
+}
+
+// DeleteVPCLoadBalancerPoolMember deletes a pool member from the load balancer pool.
+func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
+	loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+		ID: m.IBMVPCCluster.Status.VPCEndpoint.LBID,
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(loadBalancer.Pools) == 0 {
+		return nil
+	}
+
+	instance, _, err := m.IBMVPCClient.GetInstance(&vpcv1.GetInstanceOptions{
+		ID: core.StringPtr(m.IBMVPCMachine.Status.InstanceID),
+	})
+	if err != nil {
+		return err
+	}
+
+	listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
+	listOptions.SetLoadBalancerID(*loadBalancer.ID)
+	listOptions.SetPoolID(*loadBalancer.Pools[0].ID)
+	listLoadBalancerPoolMembers, _, err := m.IBMVPCClient.ListLoadBalancerPoolMembers(listOptions)
+	if err != nil {
+		return err
+	}
+
+	for _, member := range listLoadBalancerPoolMembers.Members {
+		if _, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
+			mtarget := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget)
+			if *mtarget.Address == *instance.PrimaryNetworkInterface.PrimaryIP.Address {
+				if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateActive) {
+					return errors.Wrap(err, "load balancer is not in active state")
+				}
+
+				deleteOptions := &vpcv1.DeleteLoadBalancerPoolMemberOptions{}
+				deleteOptions.SetLoadBalancerID(*loadBalancer.ID)
+				deleteOptions.SetPoolID(*loadBalancer.Pools[0].ID)
+				deleteOptions.SetID(*member.ID)
+
+				if _, err := m.IBMVPCClient.DeleteLoadBalancerPoolMember(deleteOptions); err != nil {
+					return err
+				}
+				return nil
+			}
+		}
+	}
+	return nil
+}
+
 // PatchObject persists the cluster configuration and status.
 func (m *MachineScope) PatchObject() error {
 	return m.patchHelper.Patch(context.TODO(), m.IBMVPCMachine)
