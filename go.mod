@@ -2,6 +2,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.18
 
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.1
+
 require (
 	github.com/IBM-Cloud/power-go-client v1.1.12
 	github.com/IBM/go-sdk-core/v5 v5.10.2
@@ -145,5 +147,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.0
