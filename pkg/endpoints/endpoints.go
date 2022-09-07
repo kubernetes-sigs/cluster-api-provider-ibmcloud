@@ -57,7 +57,7 @@ var (
 // ParseServiceEndpointFlag parses the command line flag of service endpoint in the format ${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2...}
 // returning a list of ServiceEndpoint.
 func ParseServiceEndpointFlag(serviceEndpoints string) ([]ServiceEndpoint, error) {
-	if serviceEndpoints == "" {
+	if serviceEndpoints == "" || serviceEndpoints == "none" {
 		return nil, nil
 	}
 

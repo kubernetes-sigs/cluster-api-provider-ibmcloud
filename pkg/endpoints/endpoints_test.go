@@ -36,6 +36,12 @@ func TestParseFlags(t *testing.T) {
 			expectedError:  nil,
 		},
 		{
+			name:           "none configuration",
+			flagToParse:    "none",
+			expectedOutput: nil,
+			expectedError:  nil,
+		},
+		{
 			name:        "single region, single vpc service",
 			flagToParse: "eu-gb:vpc=https://vpchost:8080",
 			expectedOutput: []ServiceEndpoint{
