@@ -10,6 +10,7 @@
     - [Prerequisites](./topics/vpc/prerequisites.md)
     - [Uploading an image](topics/vpc/uploading-an-image.md)
     - [Creating a cluster](./topics/vpc/creating-a-cluster.md)
+    - [Creating a cluster with Load Balancer](./topics/vpc/load-balancer.md)
   - [Power VS Cluster](./topics/powervs/index.md)
     - [Prerequisites](./topics/powervs/prerequisites.md)
     - [Creating a cluster](./topics/powervs/creating-a-cluster.md)
