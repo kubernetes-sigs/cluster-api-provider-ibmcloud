@@ -18,7 +18,6 @@ package scope
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
@@ -154,13 +153,12 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	}
 
 	options.SetInstancePrototype(instancePrototype)
-	instance, response, err := m.IBMVPCClient.CreateInstance(options)
+	instance, _, err := m.IBMVPCClient.CreateInstance(options)
 	if err != nil {
 		record.Warnf(m.IBMVPCMachine, "FailedCreateInstance", "Failed instance creation - %v", err)
 	} else {
 		record.Eventf(m.IBMVPCMachine, "SuccessfulCreateInstance", "Created Instance %q", *instance.Name)
 	}
-	fmt.Printf("%v\n", response)
 	return instance, err
 }
 
