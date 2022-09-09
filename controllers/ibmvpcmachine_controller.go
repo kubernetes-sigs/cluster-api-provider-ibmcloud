@@ -196,7 +196,6 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			}
 		}
 		machineScope.IBMVPCMachine.Status.Ready = true
-		machineScope.Info(*instance.ID)
 	}
 
 	return ctrl.Result{}, nil

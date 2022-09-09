@@ -256,7 +256,6 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 			machineScope.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
 			conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, "", "")
 		}
-		machineScope.Info(*ins.PvmInstanceID)
 	}
 
 	// Requeue after 2 minute if machine is not ready to update status of the machine properly.
