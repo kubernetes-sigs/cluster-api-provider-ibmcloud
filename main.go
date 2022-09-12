@@ -25,14 +25,16 @@ import (
 
 	// +kubebuilder:scaffold:imports
 	"github.com/spf13/pflag"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
 	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
@@ -41,6 +43,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var (

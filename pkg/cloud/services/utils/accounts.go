@@ -21,8 +21,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/golang-jwt/jwt"
+
+	"github.com/IBM/go-sdk-core/v5/core"
 )
 
 // GetAccount is function parses the account number from the token and returns it.

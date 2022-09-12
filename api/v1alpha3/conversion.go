@@ -18,9 +18,11 @@ package v1alpha3
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
+
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 )
