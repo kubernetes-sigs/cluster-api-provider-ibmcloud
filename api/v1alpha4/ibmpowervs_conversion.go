@@ -18,8 +18,10 @@ package v1alpha4
 
 import (
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
-	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
+
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 )
