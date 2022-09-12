@@ -421,7 +421,7 @@ func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
 	options.SetListeners([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
 		{
 			Protocol: core.StringPtr("tcp"),
-			Port:     core.Int64Ptr(6443),
+			Port:     core.Int64Ptr(int64(s.APIServerPort())),
 			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
 				Name: core.StringPtr(s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Name + "-pool"),
 			},
@@ -523,4 +523,12 @@ func (s *ClusterScope) PatchObject() error {
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *ClusterScope) Close() error {
 	return s.PatchObject()
+}
+
+// APIServerPort returns the APIServerPort to use when creating the ControlPlaneEndpoint.
+func (s *ClusterScope) APIServerPort() int32 {
+	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
+		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
+	}
+	return 6443
 }

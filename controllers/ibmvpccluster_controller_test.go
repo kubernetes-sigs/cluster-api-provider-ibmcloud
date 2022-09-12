@@ -150,6 +150,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 		}
 		clusterScope = &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
+			Cluster:      &capiv1beta1.Cluster{},
 			Logger:       klogr.New(),
 			IBMVPCCluster: &infrav1beta1.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -249,6 +250,36 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta1.ClusterFinalizer))
 			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
+		})
+		t.Run("Should use the user supplied port for the apiserver", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta1.ClusterFinalizer}
+			port := int32(412)
+			clusterScope.Cluster.Spec.ClusterNetwork = &capiv1beta1.ClusterNetwork{APIServerPort: &port}
+			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
+			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, nil)
+			mockvpc.EXPECT().ListSubnets(options).Return(subnets, response, nil)
+			_, err := reconciler.reconcile(clusterScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta1.ClusterFinalizer))
+			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
+			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(port))
+		})
+		t.Run("Should use the default port for the apiserver if not specified", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta1.ClusterFinalizer}
+			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
+			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, nil)
+			mockvpc.EXPECT().ListSubnets(options).Return(subnets, response, nil)
+			_, err := reconciler.reconcile(clusterScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta1.ClusterFinalizer))
+			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
+			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(int32(6443)))
 		})
 	})
 }

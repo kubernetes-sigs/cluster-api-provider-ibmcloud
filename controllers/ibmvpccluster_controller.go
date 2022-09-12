@@ -129,7 +129,7 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 		if fip != nil {
 			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
 				Host: *fip.Address,
-				Port: 6443,
+				Port: clusterScope.APIServerPort(),
 			}
 
 			clusterScope.IBMVPCCluster.Status.VPCEndpoint = infrav1beta1.VPCEndpoint{
@@ -169,8 +169,7 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 
 			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
 				Host: *loadBalancer.Hostname,
-				// TODO: Support usage of user supplied port.
-				Port: 6443,
+				Port: clusterScope.APIServerPort(),
 			}
 
 			clusterScope.IBMVPCCluster.Status.VPCEndpoint = infrav1beta1.VPCEndpoint{
