@@ -29,7 +29,7 @@ import (
 func GetAccount(auth core.Authenticator) (string, error) {
 	// fake request to get a barer token from the request header
 	ctx := context.TODO()
-	req, err := http.NewRequestWithContext(ctx, "GET", "http://example.com", http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		return "", err
 	}
