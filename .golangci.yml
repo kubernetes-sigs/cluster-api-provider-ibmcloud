@@ -56,7 +56,16 @@ linters-settings:
     - '^ \+.*'
     - '^ ANCHOR.*'
   gci:
-    local-prefixes: "sigs.k8s.io/cluster-api-provider-ibmcloud"
+    sections:
+      - standard
+      - default
+      - prefix(github.com/IBM)
+      - prefix(k8s.io)
+      - prefix(sigs.k8s.io)
+      - prefix(sigs.k8s.io/cluster-api)
+      - prefix(sigs.k8s.io/cluster-api-provider-ibmcloud)
+      - blank
+      - dot
   importas:
     no-unaliased: true
     alias:
