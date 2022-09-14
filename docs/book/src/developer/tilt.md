@@ -27,64 +27,65 @@ kind create cluster
 
 This local cluster will be running all the cluster api controllers and become the management cluster which then can be used to spin up workload clusters on IBM Cloud.
 
-## Create a tilt-settings.json file
+## Create a tilt-settings.yaml file
 
-Next, create a `tilt-settings.json` file and place it in your local copy of `cluster-api`. Here is an example:
+Next, create a `tilt-settings.yaml` file and place it in your local copy of `cluster-api`. Here is an example:
 
-**Example `tilt-settings.json` for CAPI-IBM clusters:**
+**Example `tilt-settings.yaml` for CAPI-IBM clusters:**
 
 Make sure to replace the parameter `IBMCLOUD_API_KEY` with a valid API key.
 
-```json
-{
-    "default_registry": "gcr.io/you-project-name-here",
-    "provider_repos": ["../cluster-api-provider-ibmcloud"],
-    "enable_providers": ["ibmcloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
-    "kustomize_substitutions": {
-      "IBMCLOUD_API_KEY": "XXXXXXXXXXXXXXXXXX"
-    }
-}
+```yaml
+default_registry: "gcr.io/you-project-name-here"
+provider_repos:
+- ../cluster-api-provider-ibmcloud
+enable_providers:
+- ibmcloud
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
 ```
 
 Add following extra_args to log Power VS REST API Requests/Responses
 
-```json
-{
-   "extra_args": {
-      "ibmcloud": ["-v=5"]
-   }
-}
+```yaml
+extra_args:
+  ibmcloud:
+    - '-v=5'
 ```
 
 To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage, Set `POWERVS_PROVIDER_ID_FORMAT` to `v2` under kustomize_substitutions.
 
-```json
-{
-   "default_registry": "gcr.io/you-project-name-here",
-   "provider_repos": ["../cluster-api-provider-ibmcloud"],
-   "enable_providers": ["ibmcloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
-   "kustomize_substitutions": {
-      "IBMCLOUD_API_KEY": "XXXXXXXXXXXXXXXXXX",
-      "POWERVS_PROVIDER_ID_FORMAT": "v2"
-   }
-}
+```yaml
+default_registry: "gcr.io/you-project-name-here"
+provider_repos:
+- ../cluster-api-provider-ibmcloud
+enable_providers:
+- ibmcloud
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
+  POWERVS_PROVIDER_ID_FORMAT: "v2"
 ```
 
 To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format: `${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2...}`
-```json
-{
-   "default_registry": "gcr.io/you-project-name-here",
-   "provider_repos": ["../cluster-api-provider-ibmcloud"],
-   "enable_providers": ["ibmcloud", "kubeadm-bootstrap", "kubeadm-control-plane"],
-   "kustomize_substitutions": {
-      "IBMCLOUD_API_KEY": "XXXXXXXXXXXXXXXXXX",
-      "SERVICE_ENDPOINT":"us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com",
-      "IBMCLOUD_AUTH_URL":"https://iam.test.cloud.ibm.com"
-   }
-}
+```yaml
+default_registry: "gcr.io/you-project-name-here"
+provider_repos:
+- ../cluster-api-provider-ibmcloud
+enable_providers:
+- ibmcloud
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
+  SERVICE_ENDPOINT: "us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com"
+  IBMCLOUD_AUTH_URL: "https://iam.test.cloud.ibm.com"
 ```
 
-**NOTE**: For information about all the fields that can be used in the `tilt-settings.json` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settingsjson-fields).
+**NOTE**: For information about all the fields that can be used in the `tilt-settings.yaml` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settings-fields).
 
 ## Run Tilt
 
