@@ -168,6 +168,9 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 
 // DeleteMachine deletes the vpc machine associated with machine instance id.
 func (m *MachineScope) DeleteMachine() error {
+	if m.IBMVPCMachine.Status.InstanceID == "" {
+		return nil
+	}
 	options := &vpcv1.DeleteInstanceOptions{}
 	options.SetID(m.IBMVPCMachine.Status.InstanceID)
 	_, err := m.IBMVPCClient.DeleteInstance(options)

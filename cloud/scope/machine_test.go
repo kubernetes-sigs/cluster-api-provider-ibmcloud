@@ -273,6 +273,7 @@ func TestDeleteMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			scope.IBMVPCMachine.Status.InstanceID = "foo-instance-id"
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(deleteInstanceOptions)).Return(detailedResponse, nil)
 			err := scope.DeleteMachine()
 			g.Expect(err).To(BeNil())
@@ -283,9 +284,19 @@ func TestDeleteMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			scope.IBMVPCMachine.Status.InstanceID = "foo-instance-id"
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(deleteInstanceOptions)).Return(detailedResponse, errors.New("Failed instance deletion"))
 			err := scope.DeleteMachine()
 			g.Expect(err).To(Not(BeNil()))
+		})
+
+		t.Run("Empty InstanceID", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			err := scope.DeleteMachine()
+			g.Expect(err).To(BeNil())
 		})
 	})
 }
