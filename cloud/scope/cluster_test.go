@@ -92,18 +92,9 @@ func TestNewClusterScope(t *testing.T) {
 }
 
 func TestCreateVPC(t *testing.T) {
-	var (
-		mockvpc  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
 	vpcCluster := infrav1beta1.IBMVPCCluster{
@@ -112,46 +103,32 @@ func TestCreateVPC(t *testing.T) {
 			ResourceGroup: "foo-resource-group",
 			VPC:           "foo-vpc",
 			Zone:          "foo-zone",
-		}}
-	expectedOutput := &vpcv1.VPC{
-		Name: core.StringPtr("foo-vpc"),
-		DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
-			ID: core.StringPtr("foo-security-group"),
-		}}
+		},
+	}
 
 	t.Run("Create VPC", func(t *testing.T) {
-		listVpcsOptions := &vpcv1.ListVpcsOptions{}
-		createVPCOptions := &vpcv1.CreateVPCOptions{}
-		vpcCollection := &vpcv1.VPCCollection{
-			Vpcs: []vpcv1.VPC{
-				{
-					Name: core.StringPtr("foo-vpc-1"),
-					ID:   core.StringPtr("foo-vpc-1-id"),
-					DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
-						ID: core.StringPtr("foo-security-group-1"),
-					},
-				},
-			},
-		}
 		vpc := &vpcv1.VPC{
 			DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
 				ID: core.StringPtr("foo-security-group"),
 			},
 			Name: core.StringPtr("foo-vpc"),
 		}
-		detailedResponse := &core.DetailedResponse{}
-		securityGroupRuleOptions := &vpcv1.CreateSecurityGroupRuleOptions{}
-		var securityGroupRuleIntf vpcv1.SecurityGroupRuleIntf
 
 		t.Run("Should create VPC", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			var securityGroupRuleIntf vpcv1.SecurityGroupRuleIntf
 			scope := setupClusterScope(clusterName, mockvpc)
+			expectedOutput := &vpcv1.VPC{
+				Name: core.StringPtr("foo-vpc"),
+				DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
+					ID: core.StringPtr("foo-security-group"),
+				}}
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(listVpcsOptions)).Return(vpcCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateVPC(gomock.AssignableToTypeOf(createVPCOptions)).Return(vpc, detailedResponse, nil)
-			mockvpc.EXPECT().CreateSecurityGroupRule(gomock.AssignableToTypeOf(securityGroupRuleOptions)).Return(securityGroupRuleIntf, detailedResponse, nil)
+			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(&vpcv1.ListVpcsOptions{})).Return(&vpcv1.VPCCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateVPC(gomock.AssignableToTypeOf(&vpcv1.CreateVPCOptions{})).Return(vpc, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateSecurityGroupRule(gomock.AssignableToTypeOf(&vpcv1.CreateSecurityGroupRuleOptions{})).Return(securityGroupRuleIntf, &core.DetailedResponse{}, nil)
 			out, err := scope.CreateVPC()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
@@ -159,8 +136,8 @@ func TestCreateVPC(t *testing.T) {
 
 		t.Run("Return exsisting VPC", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			vpcClusterCustom := infrav1beta1.IBMVPCCluster{
 				Spec: infrav1beta1.IBMVPCClusterSpec{
@@ -169,15 +146,25 @@ func TestCreateVPC(t *testing.T) {
 					VPC:           "foo-vpc-1",
 					Zone:          "foo-zone-1",
 				}}
-			expectedOutput = &vpcv1.VPC{
+			vpcCollection := &vpcv1.VPCCollection{
+				Vpcs: []vpcv1.VPC{
+					{
+						Name: core.StringPtr("foo-vpc-1"),
+						ID:   core.StringPtr("foo-vpc-1-id"),
+						DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
+							ID: core.StringPtr("foo-security-group-1"),
+						},
+					},
+				},
+			}
+			expectedOutput := &vpcv1.VPC{
 				Name: core.StringPtr("foo-vpc-1"),
 				ID:   core.StringPtr("foo-vpc-1-id"),
 				DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
 					ID: core.StringPtr("foo-security-group-1"),
 				}}
-
 			scope.IBMVPCCluster.Spec = vpcClusterCustom.Spec
-			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(listVpcsOptions)).Return(vpcCollection, detailedResponse, nil)
+			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(&vpcv1.ListVpcsOptions{})).Return(vpcCollection, &core.DetailedResponse{}, nil)
 			out, err := scope.CreateVPC()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
@@ -185,36 +172,37 @@ func TestCreateVPC(t *testing.T) {
 
 		t.Run("Error when listing VPC", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(listVpcsOptions)).Return(vpcCollection, detailedResponse, errors.New("Error when deleting subnet"))
+			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(&vpcv1.ListVpcsOptions{})).Return(&vpcv1.VPCCollection{}, &core.DetailedResponse{}, errors.New("Failed to list VPC"))
 			_, err := scope.CreateVPC()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when creating VPC", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(listVpcsOptions)).Return(vpcCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateVPC(gomock.AssignableToTypeOf(createVPCOptions)).Return(vpc, detailedResponse, errors.New("Error when deleting subnet"))
+			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(&vpcv1.ListVpcsOptions{})).Return(&vpcv1.VPCCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateVPC(gomock.AssignableToTypeOf(&vpcv1.CreateVPCOptions{})).Return(&vpcv1.VPC{}, &core.DetailedResponse{}, errors.New("Failed to create VPC"))
 			_, err := scope.CreateVPC()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when creating security group rule", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			var securityGroupRuleIntf vpcv1.SecurityGroupRuleIntf
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(listVpcsOptions)).Return(vpcCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateVPC(gomock.AssignableToTypeOf(createVPCOptions)).Return(vpc, detailedResponse, nil)
-			mockvpc.EXPECT().CreateSecurityGroupRule(gomock.AssignableToTypeOf(securityGroupRuleOptions)).Return(securityGroupRuleIntf, detailedResponse, errors.New("Failed security group rule creation"))
+			mockvpc.EXPECT().ListVpcs(gomock.AssignableToTypeOf(&vpcv1.ListVpcsOptions{})).Return(&vpcv1.VPCCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateVPC(gomock.AssignableToTypeOf(&vpcv1.CreateVPCOptions{})).Return(vpc, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateSecurityGroupRule(gomock.AssignableToTypeOf(&vpcv1.CreateSecurityGroupRuleOptions{})).Return(securityGroupRuleIntf, &core.DetailedResponse{}, errors.New("Failed security group rule creation"))
 			_, err := scope.CreateVPC()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -222,18 +210,9 @@ func TestCreateVPC(t *testing.T) {
 }
 
 func TestDeleteVPC(t *testing.T) {
-	var (
-		mockvpc  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
 	vpcCluster := infrav1beta1.IBMVPCCluster{
@@ -244,32 +223,30 @@ func TestDeleteVPC(t *testing.T) {
 			VPC: infrav1beta1.VPC{
 				ID: "foo-vpc",
 			},
-		}}
+		},
+	}
 
 	t.Run("Delete VPC", func(t *testing.T) {
-		deleteVpcOptions := &vpcv1.DeleteVPCOptions{}
-		detailedResponse := &core.DetailedResponse{}
-
 		t.Run("Should delete VPC", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().DeleteVPC(gomock.AssignableToTypeOf(deleteVpcOptions)).Return(detailedResponse, nil)
+			mockvpc.EXPECT().DeleteVPC(gomock.AssignableToTypeOf(&vpcv1.DeleteVPCOptions{})).Return(&core.DetailedResponse{}, nil)
 			err := scope.DeleteVPC()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error while deleting VPC", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().DeleteVPC(gomock.AssignableToTypeOf(deleteVpcOptions)).Return(detailedResponse, errors.New("Could not delete VPC"))
+			mockvpc.EXPECT().DeleteVPC(gomock.AssignableToTypeOf(&vpcv1.DeleteVPCOptions{})).Return(&core.DetailedResponse{}, errors.New("Could not delete VPC"))
 			err := scope.DeleteVPC()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -277,18 +254,9 @@ func TestDeleteVPC(t *testing.T) {
 }
 
 func TestReserveFIP(t *testing.T) {
-	var (
-		mockvpc  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
 	vpcCluster := infrav1beta1.IBMVPCCluster{
@@ -296,33 +264,22 @@ func TestReserveFIP(t *testing.T) {
 			ResourceGroup: "foo-resource-group",
 			VPC:           "foo-vpc",
 			Zone:          "foo-zone",
-		}}
+		},
+	}
 
 	t.Run("Reserve FloatingIP", func(t *testing.T) {
-		listFloatingIpsOptions := &vpcv1.ListFloatingIpsOptions{}
-		floatingIPCollection := &vpcv1.FloatingIPCollection{
-			FloatingIps: []vpcv1.FloatingIP{
-				{
-					Name: core.StringPtr("foo-cluster-1-control-plane"),
-				},
-			},
-		}
-		detailedResponse := &core.DetailedResponse{}
-		floatingIPOptions := &vpcv1.CreateFloatingIPOptions{}
-
 		t.Run("Should reserve FloatingIP", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			expectedOutput := &vpcv1.FloatingIP{
 				Name: core.StringPtr("foo-cluster-control-plane"),
 			}
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			floatingIP := &vpcv1.FloatingIP{Name: core.StringPtr("foo-cluster-control-plane")}
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(listFloatingIpsOptions)).Return(floatingIPCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateFloatingIP(gomock.AssignableToTypeOf(floatingIPOptions)).Return(floatingIP, detailedResponse, nil)
-
+			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(&vpcv1.FloatingIPCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateFloatingIP(gomock.AssignableToTypeOf(&vpcv1.CreateFloatingIPOptions{})).Return(floatingIP, &core.DetailedResponse{}, nil)
 			out, err := scope.ReserveFIP()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
@@ -330,14 +287,21 @@ func TestReserveFIP(t *testing.T) {
 
 		t.Run("Return exsisting FloatingIP", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope("foo-cluster-1", mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			floatingIPCollection := &vpcv1.FloatingIPCollection{
+				FloatingIps: []vpcv1.FloatingIP{
+					{
+						Name: core.StringPtr("foo-cluster-1-control-plane"),
+					},
+				},
+			}
 			expectedOutput := &vpcv1.FloatingIP{
 				Name: core.StringPtr("foo-cluster-1-control-plane"),
 			}
-
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(listFloatingIpsOptions)).Return(floatingIPCollection, detailedResponse, nil)
+			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(floatingIPCollection, &core.DetailedResponse{}, nil)
 			out, err := scope.ReserveFIP()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
@@ -345,22 +309,23 @@ func TestReserveFIP(t *testing.T) {
 
 		t.Run("Error when listing FloatingIPs", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(listFloatingIpsOptions)).Return(floatingIPCollection, detailedResponse, errors.New("Error when listing FloatingIPs"))
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(&vpcv1.FloatingIPCollection{}, &core.DetailedResponse{}, errors.New("Error when listing FloatingIPs"))
 			_, err := scope.ReserveFIP()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when creating FloatingIP", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(listFloatingIpsOptions)).Return(floatingIPCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateFloatingIP(gomock.AssignableToTypeOf(floatingIPOptions)).Return(nil, detailedResponse, errors.New("Error when creating FloatingIP"))
+			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(&vpcv1.FloatingIPCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateFloatingIP(gomock.AssignableToTypeOf(&vpcv1.CreateFloatingIPOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Error when creating FloatingIP"))
 			_, err := scope.ReserveFIP()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -368,18 +333,9 @@ func TestReserveFIP(t *testing.T) {
 }
 
 func TestDeleteFloatingIP(t *testing.T) {
-	var (
-		mockvpc  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
 	vpcCluster := infrav1beta1.IBMVPCCluster{
@@ -387,27 +343,25 @@ func TestDeleteFloatingIP(t *testing.T) {
 			VPCEndpoint: infrav1beta1.VPCEndpoint{
 				FIPID: core.StringPtr("foo-vpc"),
 			},
-		}}
+		},
+	}
 
 	t.Run("Delete FloatingIP", func(t *testing.T) {
-		deleteFIPOption := &vpcv1.DeleteFloatingIPOptions{}
-		detailedResponse := &core.DetailedResponse{}
-
 		t.Run("Should delete FloatingIP", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().DeleteFloatingIP(gomock.AssignableToTypeOf(deleteFIPOption)).Return(detailedResponse, nil)
+			mockvpc.EXPECT().DeleteFloatingIP(gomock.AssignableToTypeOf(&vpcv1.DeleteFloatingIPOptions{})).Return(&core.DetailedResponse{}, nil)
 			err := scope.DeleteFloatingIP()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Empty FloatingIP", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			vpcClusterCustom := infrav1beta1.IBMVPCCluster{
 				Status: infrav1beta1.IBMVPCClusterStatus{
@@ -422,11 +376,11 @@ func TestDeleteFloatingIP(t *testing.T) {
 
 		t.Run("Error while deleting FloatingIP", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().DeleteFloatingIP(gomock.AssignableToTypeOf(deleteFIPOption)).Return(detailedResponse, errors.New("Could not delete FloatingIP"))
+			mockvpc.EXPECT().DeleteFloatingIP(gomock.AssignableToTypeOf(&vpcv1.DeleteFloatingIPOptions{})).Return(&core.DetailedResponse{}, errors.New("Could not delete FloatingIP"))
 			err := scope.DeleteFloatingIP()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -434,18 +388,9 @@ func TestDeleteFloatingIP(t *testing.T) {
 }
 
 func TestCreateSubnet(t *testing.T) {
-	var (
-		mockvpc  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
 	vpcCluster := infrav1beta1.IBMVPCCluster{
@@ -459,20 +404,10 @@ func TestCreateSubnet(t *testing.T) {
 			VPC: infrav1beta1.VPC{
 				ID: *core.StringPtr("foo-vpc"),
 			},
-		}}
+		},
+	}
 
 	t.Run("Create Subnet", func(t *testing.T) {
-		listSubnetsOptions := &vpcv1.ListSubnetsOptions{}
-		subnetCollection := &vpcv1.SubnetCollection{
-			Subnets: []vpcv1.Subnet{
-				{
-					Name: core.StringPtr("foo-cluster-1-subnet"),
-					ID:   core.StringPtr("foo-cluster-1-subnet-id"),
-				},
-			},
-		}
-		detailedResponse := &core.DetailedResponse{}
-		listVPCAddressPrefixesOptions := &vpcv1.ListVPCAddressPrefixesOptions{}
 		addressPrefixCollection := &vpcv1.AddressPrefixCollection{
 			AddressPrefixes: []vpcv1.AddressPrefix{
 				{
@@ -483,16 +418,12 @@ func TestCreateSubnet(t *testing.T) {
 				},
 			},
 		}
-
-		subnetOptions := &vpcv1.CreateSubnetOptions{}
-		publicGatewayOptions := &vpcv1.CreatePublicGatewayOptions{}
 		publicGateway := &vpcv1.PublicGateway{Name: core.StringPtr("foo-public-gateway"), ID: core.StringPtr("foo-public-gateway-id")}
-		subnetPublicGatewayOptions := &vpcv1.SetSubnetPublicGatewayOptions{}
 
 		t.Run("Should create Subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			expectedOutput := &vpcv1.Subnet{
 				Name: core.StringPtr("foo-cluster-subnet"),
@@ -505,11 +436,11 @@ func TestCreateSubnet(t *testing.T) {
 				Name: core.StringPtr(scope.IBMVPCCluster.Name + "-subnet"),
 				ID:   core.StringPtr(scope.IBMVPCCluster.Name + "-subnet-id"),
 			}
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
-			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(listVPCAddressPrefixesOptions)).Return(addressPrefixCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(subnetOptions)).Return(subnet, detailedResponse, nil)
-			mockvpc.EXPECT().CreatePublicGateway(gomock.AssignableToTypeOf(publicGatewayOptions)).Return(publicGateway, detailedResponse, nil)
-			mockvpc.EXPECT().SetSubnetPublicGateway(gomock.AssignableToTypeOf(subnetPublicGatewayOptions)).Return(publicGateway, detailedResponse, nil)
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(&vpcv1.ListVPCAddressPrefixesOptions{})).Return(addressPrefixCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(&vpcv1.CreateSubnetOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreatePublicGateway(gomock.AssignableToTypeOf(&vpcv1.CreatePublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().SetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.SetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
 			out, err := scope.CreateSubnet()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
@@ -517,15 +448,24 @@ func TestCreateSubnet(t *testing.T) {
 
 		t.Run("Return exsisting Subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope("foo-cluster-1", mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			subnetCollection := &vpcv1.SubnetCollection{
+				Subnets: []vpcv1.Subnet{
+					{
+						Name: core.StringPtr("foo-cluster-1-subnet"),
+						ID:   core.StringPtr("foo-cluster-1-subnet-id"),
+					},
+				},
+			}
 			expectedOutput := &vpcv1.Subnet{
 				Name: core.StringPtr("foo-cluster-1-subnet"),
 				ID:   core.StringPtr("foo-cluster-1-subnet-id"),
 			}
-
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnetCollection, &core.DetailedResponse{}, nil)
 			out, err := scope.CreateSubnet()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
@@ -533,61 +473,63 @@ func TestCreateSubnet(t *testing.T) {
 
 		t.Run("Error when listing Subnets", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, errors.New("Error when listing subnets"))
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, errors.New("Error when listing subnets"))
 			_, err := scope.CreateSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when listing VPC AddressPerfixes", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
-			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(listVPCAddressPrefixesOptions)).Return(addressPrefixCollection, detailedResponse, errors.New("Error when listing VPC AddressPrefixes"))
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(&vpcv1.ListVPCAddressPrefixesOptions{})).Return(&vpcv1.AddressPrefixCollection{}, &core.DetailedResponse{}, errors.New("Error when listing VPC AddressPrefixes"))
 			_, err := scope.CreateSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error not found a valid CIDR for VPC in zone", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
 			scope.IBMVPCCluster.Spec.Zone = "foo-zone-temp"
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
-			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(listVPCAddressPrefixesOptions)).Return(addressPrefixCollection, detailedResponse, nil)
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(&vpcv1.ListVPCAddressPrefixesOptions{})).Return(&vpcv1.AddressPrefixCollection{}, &core.DetailedResponse{}, nil)
 			_, err := scope.CreateSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when creating PublicGateWay", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
 			subnet := &vpcv1.Subnet{}
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
-			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(listVPCAddressPrefixesOptions)).Return(addressPrefixCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(subnetOptions)).Return(subnet, detailedResponse, nil)
-			mockvpc.EXPECT().CreatePublicGateway(gomock.AssignableToTypeOf(publicGatewayOptions)).Return(publicGateway, detailedResponse, errors.New("Error when creating PublicGateWay"))
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(&vpcv1.ListVPCAddressPrefixesOptions{})).Return(addressPrefixCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(&vpcv1.CreateSubnetOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreatePublicGateway(gomock.AssignableToTypeOf(&vpcv1.CreatePublicGatewayOptions{})).Return(&vpcv1.PublicGateway{}, &core.DetailedResponse{}, errors.New("Error when creating PublicGateWay"))
 			_, err := scope.CreateSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when attaching PublicGateWay", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
@@ -595,25 +537,25 @@ func TestCreateSubnet(t *testing.T) {
 				Name: core.StringPtr(scope.IBMVPCCluster.Name + "-subnet"),
 				ID:   core.StringPtr(scope.IBMVPCCluster.Name + "-subnet-id"),
 			}
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
-			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(listVPCAddressPrefixesOptions)).Return(addressPrefixCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(subnetOptions)).Return(subnet, detailedResponse, nil)
-			mockvpc.EXPECT().CreatePublicGateway(gomock.AssignableToTypeOf(publicGatewayOptions)).Return(publicGateway, detailedResponse, nil)
-			mockvpc.EXPECT().SetSubnetPublicGateway(gomock.AssignableToTypeOf(subnetPublicGatewayOptions)).Return(publicGateway, detailedResponse, errors.New("Error when setting SubnetPublicGateWay"))
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(&vpcv1.ListVPCAddressPrefixesOptions{})).Return(addressPrefixCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(&vpcv1.CreateSubnetOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreatePublicGateway(gomock.AssignableToTypeOf(&vpcv1.CreatePublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().SetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.SetSubnetPublicGatewayOptions{})).Return(&vpcv1.PublicGateway{}, &core.DetailedResponse{}, errors.New("Error when setting SubnetPublicGateWay"))
 			_, err := scope.CreateSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when creating Subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(listSubnetsOptions)).Return(subnetCollection, detailedResponse, nil)
-			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(listVPCAddressPrefixesOptions)).Return(addressPrefixCollection, detailedResponse, nil)
-			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(subnetOptions)).Return(nil, detailedResponse, errors.New("Error when creating Subnet"))
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListVPCAddressPrefixes(gomock.AssignableToTypeOf(&vpcv1.ListVPCAddressPrefixesOptions{})).Return(addressPrefixCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateSubnet(gomock.AssignableToTypeOf(&vpcv1.CreateSubnetOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Error when creating Subnet"))
 			_, err := scope.CreateSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -621,95 +563,260 @@ func TestCreateSubnet(t *testing.T) {
 }
 
 func TestDeleteSubnet(t *testing.T) {
-	var (
-		mockvpc  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
-	vpcCluster := infrav1beta1.IBMVPCCluster{Spec: infrav1beta1.IBMVPCClusterSpec{
-		VPC: "foo-vpc",
-	}, Status: infrav1beta1.IBMVPCClusterStatus{
-		Subnet: infrav1beta1.Subnet{
-			ID: core.StringPtr("foo-vpc-subnet-id"),
+	vpcCluster := infrav1beta1.IBMVPCCluster{
+		Spec: infrav1beta1.IBMVPCClusterSpec{
+			VPC: "foo-vpc",
 		},
-	}}
+		Status: infrav1beta1.IBMVPCClusterStatus{
+			Subnet: infrav1beta1.Subnet{
+				ID: core.StringPtr("foo-vpc-subnet-id"),
+			},
+		},
+	}
 
 	t.Run("Delete Subnet", func(t *testing.T) {
-		getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{}
-		detailedResponse := &core.DetailedResponse{}
 		publicGateway := &vpcv1.PublicGateway{
 			ID: core.StringPtr("foo-public-gateway-id"),
 		}
-		unsetPGWOption := &vpcv1.UnsetSubnetPublicGatewayOptions{}
-		deletePGWOption := &vpcv1.DeletePublicGatewayOptions{
-			ID: publicGateway.ID,
-		}
-		deleteSubnetOption := &vpcv1.DeleteSubnetOptions{}
 
 		t.Run("Should delete subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(getPGWOptions)).Return(publicGateway, detailedResponse, nil)
-			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(unsetPGWOption)).Return(detailedResponse, nil)
-			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(deletePGWOption)).Return(detailedResponse, nil)
-			mockvpc.EXPECT().DeleteSubnet(gomock.AssignableToTypeOf(deleteSubnetOption)).Return(detailedResponse, nil)
+			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeleteSubnet(gomock.AssignableToTypeOf(&vpcv1.DeleteSubnetOptions{})).Return(&core.DetailedResponse{}, nil)
 			err := scope.DeleteSubnet()
 			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error when unsetting publicgateway for subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(getPGWOptions)).Return(publicGateway, detailedResponse, nil)
-			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(unsetPGWOption)).Return(detailedResponse, errors.New("Error when unsetting publicgateway for subnet"))
+			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, errors.New("Error when unsetting publicgateway for subnet"))
 			err := scope.DeleteSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when deleting publicgateway for subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(getPGWOptions)).Return(publicGateway, detailedResponse, nil)
-			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(unsetPGWOption)).Return(detailedResponse, nil)
-			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(deletePGWOption)).Return(detailedResponse, errors.New("Error when deleting publicgateway for subnet"))
+			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, errors.New("Error when deleting publicgateway for subnet"))
 			err := scope.DeleteSubnet()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when deleting subnet", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(getPGWOptions)).Return(publicGateway, detailedResponse, nil)
-			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(unsetPGWOption)).Return(detailedResponse, nil)
-			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(deletePGWOption)).Return(detailedResponse, nil)
-			mockvpc.EXPECT().DeleteSubnet(gomock.AssignableToTypeOf(deleteSubnetOption)).Return(detailedResponse, errors.New("Error when deleting subnet"))
+			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeleteSubnet(gomock.AssignableToTypeOf(&vpcv1.DeleteSubnetOptions{})).Return(&core.DetailedResponse{}, errors.New("Error when deleting subnet"))
 			err := scope.DeleteSubnet()
 			g.Expect(err).To(Not(BeNil()))
+		})
+	})
+}
+
+func TestCreateLoadBalancer(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
+		t.Helper()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
+	}
+
+	vpcCluster := infrav1beta1.IBMVPCCluster{
+		Spec: infrav1beta1.IBMVPCClusterSpec{
+			ControlPlaneLoadBalancer: &infrav1beta1.VPCLoadBalancerSpec{
+				Name: "foo-load-balancer",
+			},
+		},
+		Status: infrav1beta1.IBMVPCClusterStatus{
+			Subnet: infrav1beta1.Subnet{
+				ID: core.StringPtr("foo-subnet-id"),
+			},
+		},
+	}
+
+	t.Run("Create LoadBalancer", func(t *testing.T) {
+		t.Run("Error when listing LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, errors.New("Failed to list LoadBalancer"))
+			_, err := scope.CreateLoadBalancer()
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Return exsisting LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			vpcClusterCustom := infrav1beta1.IBMVPCCluster{
+				Spec: infrav1beta1.IBMVPCClusterSpec{
+					ControlPlaneLoadBalancer: &infrav1beta1.VPCLoadBalancerSpec{
+						Name: "foo-load-balancer-1",
+					},
+				},
+				Status: infrav1beta1.IBMVPCClusterStatus{
+					Subnet: infrav1beta1.Subnet{
+						ID: core.StringPtr("foo-subnet-id"),
+					},
+				},
+			}
+			loadBalancerCollection := &vpcv1.LoadBalancerCollection{
+				LoadBalancers: []vpcv1.LoadBalancer{
+					{
+						Name: core.StringPtr("foo-load-balancer-1"),
+					},
+				},
+			}
+			expectedOutput := &vpcv1.LoadBalancer{
+				Name: core.StringPtr("foo-load-balancer-1"),
+			}
+			scope.IBMVPCCluster.Spec = vpcClusterCustom.Spec
+			scope.IBMVPCCluster.Status = vpcClusterCustom.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
+			out, err := scope.CreateLoadBalancer()
+			g.Expect(err).To(BeNil())
+			require.Equal(t, expectedOutput, out)
+		})
+		t.Run("Error when subnet is nil", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			scope.IBMVPCCluster.Status.Subnet.ID = nil
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, nil)
+			_, err := scope.CreateLoadBalancer()
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Error when creating LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerOptions{})).Return(&vpcv1.LoadBalancer{}, &core.DetailedResponse{}, errors.New("Failed to create LoadBalancer"))
+			_, err := scope.CreateLoadBalancer()
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Should create LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			loadBalancer := &vpcv1.LoadBalancer{
+				Name: core.StringPtr("foo-load-balancer"),
+			}
+			expectedOutput := &vpcv1.LoadBalancer{
+				Name: core.StringPtr("foo-load-balancer"),
+			}
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			out, err := scope.CreateLoadBalancer()
+			g.Expect(err).To(BeNil())
+			require.Equal(t, expectedOutput, out)
+		})
+	})
+}
+
+func TestDeleteLoadBalancer(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
+		t.Helper()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
+	}
+
+	vpcCluster := infrav1beta1.IBMVPCCluster{
+		Spec: infrav1beta1.IBMVPCClusterSpec{
+			ControlPlaneLoadBalancer: &infrav1beta1.VPCLoadBalancerSpec{
+				Name: "foo-load-balancer",
+			},
+		},
+		Status: infrav1beta1.IBMVPCClusterStatus{
+			VPCEndpoint: infrav1beta1.VPCEndpoint{
+				LBID: core.StringPtr("foo-load-balancer-id"),
+			},
+		},
+	}
+
+	t.Run("Delete LoadBalancer", func(t *testing.T) {
+		loadBalancerCollection := &vpcv1.LoadBalancerCollection{
+			LoadBalancers: []vpcv1.LoadBalancer{
+				{
+					ID:                 core.StringPtr("foo-load-balancer-id"),
+					ProvisioningStatus: core.StringPtr("active"),
+				},
+			},
+		}
+
+		t.Run("Error when listing LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, errors.New("Failed to list LoadBalancer"))
+			_, err := scope.DeleteLoadBalancer()
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Error while deleting LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeleteLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.DeleteLoadBalancerOptions{})).Return(&core.DetailedResponse{}, errors.New("Could not delete LoadBalancer"))
+			_, err := scope.DeleteLoadBalancer()
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Should delete LoadBalancer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeleteLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.DeleteLoadBalancerOptions{})).Return(&core.DetailedResponse{}, nil)
+			_, err := scope.DeleteLoadBalancer()
+			g.Expect(err).To(BeNil())
 		})
 	})
 }
