@@ -15,6 +15,7 @@
     - [Prerequisites](./topics/powervs/prerequisites.md)
     - [Creating a cluster](./topics/powervs/creating-a-cluster.md)
     - [Creating a cluster with External Cloud Provider](./topics/powervs/external-cloud-provider.md)
+    - [Using autoscaler with scaling from 0 machine](./topics/powervs/autoscaler-scalling-from-0.md)
 - [Developer Guide](./developer/index.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)

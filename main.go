@@ -196,6 +196,16 @@ func main() {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
 		os.Exit(1)
 	}
+
+	if err = (&controllers.IBMPowerVSMachineTemplateReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("ibmpowervsmachinetemplate"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
