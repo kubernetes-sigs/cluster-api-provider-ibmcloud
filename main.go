@@ -118,106 +118,11 @@ func main() {
 	// Initialize event recorder.
 	record.InitFromRecorder(mgr.GetEventRecorderFor("ibmcloud-controller"))
 
-	if err = (&controllers.IBMVPCClusterReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
-		Recorder:        mgr.GetEventRecorderFor("ibmvpccluster-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCCluster")
-		os.Exit(1)
-	}
-	if err = (&controllers.IBMVPCMachineReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
-		Recorder:        mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
-		os.Exit(1)
-	}
-	if err = (&controllers.IBMPowerVSClusterReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
-		Recorder:        mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSCluster")
-		os.Exit(1)
-	}
-	if err = (&controllers.IBMPowerVSMachineReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
-		Recorder:        mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSCluster")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachine")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachineTemplate")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachine")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachineTemplate")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCCluster")
-		os.Exit(1)
-	}
-	if err = (&controllers.IBMPowerVSImageReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
-		Recorder:        mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSImage")
-		os.Exit(1)
-	}
-	if err = (&infrav1beta1.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.IBMPowerVSMachineTemplateReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ibmpowervsmachinetemplate"),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
-		os.Exit(1)
-	}
+	setupReconcilers(mgr, serviceEndpoint)
+	setupWebhooks(mgr)
+	setupChecks(mgr)
 
 	// +kubebuilder:scaffold:builder
-
-	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
-		setupLog.Error(err, "unable to create ready check")
-		os.Exit(1)
-	}
-
-	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
-		setupLog.Error(err, "unable to create health check")
-		os.Exit(1)
-	}
-
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -288,4 +193,112 @@ func validateFlags() error {
 		return errStr
 	}
 	return nil
+}
+
+func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpoint) {
+	if err := (&controllers.IBMVPCClusterReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
+		Recorder:        mgr.GetEventRecorderFor("ibmvpccluster-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCCluster")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.IBMVPCMachineReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
+		Recorder:        mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.IBMPowerVSClusterReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
+		Recorder:        mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSCluster")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.IBMPowerVSMachineReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
+		Recorder:        mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.IBMPowerVSImageReconciler{
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
+		Recorder:        mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSImage")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.IBMPowerVSMachineTemplateReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("ibmpowervsmachinetemplate"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
+		os.Exit(1)
+	}
+}
+
+func setupWebhooks(mgr ctrl.Manager) {
+	if err := (&infrav1beta1.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCCluster")
+		os.Exit(1)
+	}
+	if err := (&infrav1beta1.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachine")
+		os.Exit(1)
+	}
+	if err := (&infrav1beta1.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachineTemplate")
+		os.Exit(1)
+	}
+	if err := (&infrav1beta1.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSCluster")
+		os.Exit(1)
+	}
+	if err := (&infrav1beta1.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachine")
+		os.Exit(1)
+	}
+	if err := (&infrav1beta1.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachineTemplate")
+		os.Exit(1)
+	}
+	if err := (&infrav1beta1.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
+		os.Exit(1)
+	}
+}
+
+func setupChecks(mgr ctrl.Manager) {
+	if err := mgr.AddReadyzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+		setupLog.Error(err, "unable to create ready check")
+		os.Exit(1)
+	}
+	if err := mgr.AddHealthzCheck("webhook", mgr.GetWebhookServer().StartedChecker()); err != nil {
+		setupLog.Error(err, "unable to create health check")
+		os.Exit(1)
+	}
 }
