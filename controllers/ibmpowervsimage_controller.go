@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
@@ -30,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/v2"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,7 +49,6 @@ import (
 // IBMPowerVSImageReconciler reconciles a IBMPowerVSImage object.
 type IBMPowerVSImageReconciler struct {
 	client.Client
-	Log             logr.Logger
 	Recorder        record.EventRecorder
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Scheme          *runtime.Scheme
@@ -58,9 +57,9 @@ type IBMPowerVSImageReconciler struct {
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages/status,verbs=get;update;patch
 
-// Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMPowerVSImage.
+// Reconcile implements controller runtime Reconciler interface and handles reconciliation logic for IBMPowerVSImage.
 func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	log := r.Log.WithValues("ibmpowervsimage", req.NamespacedName)
+	log := ctrl.LoggerFrom(ctx)
 
 	ibmImage := &infrav1beta1.IBMPowerVSImage{}
 	err := r.Get(ctx, req.NamespacedName, ibmImage)
@@ -75,6 +74,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+	log = log.WithValues("cluster", cluster.Name)
 
 	// Create the scope.
 	imageScope, err := scope.NewPowerVSImageScope(scope.PowerVSImageScopeParams{
@@ -174,9 +174,9 @@ func reconcileImage(img *models.ImageReference, imageScope *scope.PowerVSImageSc
 		}
 
 		imageScope.SetImageID(image.ImageID)
-		imageScope.Info("ImageID - " + imageScope.GetImageID())
+		imageScope.Info("ImageID", imageScope.GetImageID())
 		imageScope.SetImageState(image.State)
-		imageScope.Info("ImageState - " + image.State)
+		imageScope.Info("ImageState", image.State)
 
 		switch imageScope.GetImageState() {
 		case infrav1beta1.PowerVSImageStateQue:
@@ -190,7 +190,7 @@ func reconcileImage(img *models.ImageReference, imageScope *scope.PowerVSImageSc
 			conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1beta1.ImageReadyCondition)
 		default:
 			imageScope.SetNotReady()
-			imageScope.Info("PowerVS image state is undefined", "state", &image.State, "image-id", imageScope.GetImageID())
+			imageScope.Info("PowerVS image state is undefined", "state", image.State, "image-id", imageScope.GetImageID())
 			conditions.MarkUnknown(imageScope.IBMPowerVSImage, infrav1beta1.ImageReadyCondition, "", "")
 		}
 	}
@@ -215,13 +215,13 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 	}()
 
 	if scope.GetImageID() == "" {
-		scope.Info("ImageID is not yet set, hence not invoking the powervs API to delete the image")
+		scope.Info("ImageID is not yet set, hence not invoking the PowerVS API to delete the image")
 		if scope.GetJobID() == "" {
-			scope.Info("JobID is not yet set, hence not invoking the powervs API to delete the image import job")
+			scope.Info("JobID is not yet set, hence not invoking the PowerVS API to delete the image import job")
 			return ctrl.Result{}, nil
 		}
 		if err := scope.DeleteImportJob(); err != nil {
-			scope.Info("error deleting IBMPowerVSImage Import Job")
+			scope.Error(err, "Error deleting IBMPowerVSImage Import Job")
 			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage Import Job")
 		}
 		return ctrl.Result{}, nil
@@ -229,8 +229,8 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 
 	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1beta1.DeletePolicyRetain) {
 		if err := scope.DeleteImage(); err != nil {
-			scope.Info("error deleting IBMPowerVSImage")
-			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage %s/%s", scope.IBMPowerVSImage.Namespace, scope.IBMPowerVSImage.Name)
+			scope.Error(err, "Error deleting IBMPowerVSImage")
+			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage %v", klog.KObj(scope.IBMPowerVSImage))
 		}
 	}
 	return ctrl.Result{}, nil

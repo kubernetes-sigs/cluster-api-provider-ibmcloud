@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -46,7 +45,6 @@ import (
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
 type IBMPowerVSClusterReconciler struct {
 	client.Client
-	Log             logr.Logger
 	Recorder        record.EventRecorder
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Scheme          *runtime.Scheme
@@ -57,7 +55,7 @@ type IBMPowerVSClusterReconciler struct {
 
 // Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMPowerVSCluster.
 func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	log := r.Log.WithValues("ibmpowervscluster", req.NamespacedName)
+	log := ctrl.LoggerFrom(ctx)
 
 	// Fetch the IBMPowerVSCluster instance.
 	ibmCluster := &infrav1beta1.IBMPowerVSCluster{}
@@ -78,6 +76,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		log.Info("Cluster Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
+	log = log.WithValues("cluster", cluster.Name)
 
 	// Create the scope.
 	clusterScope, err := scope.NewPowerVSClusterScope(scope.PowerVSClusterScopeParams{

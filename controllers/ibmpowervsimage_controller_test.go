@@ -77,7 +77,6 @@ func TestIBMPowerVSImageReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMPowerVSImageReconciler{
 				Client: testEnv.Client,
-				Log:    klogr.New(),
 			}
 
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
@@ -135,7 +134,6 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSImageReconciler{
 			Client:   testEnv.Client,
-			Log:      klogr.New(),
 			Recorder: recorder,
 		}
 	}
@@ -335,7 +333,6 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSImageReconciler{
 			Client:   testEnv.Client,
-			Log:      klogr.New(),
 			Recorder: recorder,
 		}
 		imageScope = &scope.PowerVSImageScope{

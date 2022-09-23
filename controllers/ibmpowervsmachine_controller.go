@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/klog/v2"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +68,7 @@ func init() {
 
 // Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMPowerVSMachine.
 func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
-	log := r.Log.WithValues("ibmpowervsmachine", req.NamespacedName)
+	log := ctrl.LoggerFrom(ctx)
 
 	ibmPowerVSMachine := &infrav1beta1.IBMPowerVSMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmPowerVSMachine)
@@ -87,6 +88,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		log.Info("Machine Controller has not yet set OwnerRef")
 		return ctrl.Result{}, nil
 	}
+	log = log.WithValues("ibmPowerVSMachine", machine.Name)
 
 	// Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, ibmPowerVSMachine.ObjectMeta)
@@ -115,7 +117,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 			Name:      ibmPowerVSMachine.Spec.ImageRef.Name,
 		}
 		if err := r.Client.Get(ctx, ibmPowerVSImageName, ibmPowerVSImage); err != nil {
-			log.Info("IBMPowerVSImage is not available yet")
+			log.Info("IBMPowerVSImage is not available yet", "IBMPowerVSImage", klog.KObj(ibmPowerVSImage))
 			return ctrl.Result{}, nil
 		}
 	}
@@ -133,7 +135,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		DHCPIPCacheStore:  dhcpCacheStore,
 	})
 	if err != nil {
-		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return ctrl.Result{}, errors.Errorf("failed to create scope: %v", err)
 	}
 	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
 
@@ -170,12 +172,12 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachin
 	}()
 
 	if scope.IBMPowerVSMachine.Status.InstanceID == "" {
-		scope.Info("InstanceID is not yet set, hence not invoking the powervs API to delete the instance")
+		scope.Info("InstanceID is not yet set, hence not invoking the PowerVS API to delete the instance")
 		return ctrl.Result{}, nil
 	}
 	if err := scope.DeleteMachine(); err != nil {
 		scope.Info("error deleting IBMPowerVSMachine")
-		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSMachine %s/%s", scope.IBMPowerVSMachine.Namespace, scope.IBMPowerVSMachine.Name)
+		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSMachine %v", klog.KObj(scope.IBMPowerVSMachine))
 	}
 	// Remove the cached VM IP
 	err := scope.DHCPIPCacheStore.Delete(powervs.VMip{Name: scope.IBMPowerVSMachine.Name})
@@ -218,7 +220,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 
 	ins, err := r.getOrCreate(machineScope)
 	if err != nil {
-		machineScope.Error(err, "unable to create instance")
+		machineScope.Error(err, "Unable to create instance")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceProvisionFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VSI for IBMPowerVSMachine %s/%s", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name)
 	}

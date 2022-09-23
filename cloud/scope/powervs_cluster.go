@@ -112,7 +112,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 		if err := rc.SetServiceURL(rcEndpoint); err != nil {
 			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
 		}
-		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
+		scope.Logger.V(3).Info("Overriding the default resource controller endpoint")
 	}
 
 	res, _, err := rc.GetResourceInstance(
@@ -135,7 +135,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 	// Fetch the service endpoint.
 	if svcEndpoint := endpoints.FetchPVSEndpoint(endpoints.CostructRegionFromZone(*res.RegionID), params.ServiceEndpoint); svcEndpoint != "" {
 		options.IBMPIOptions.URL = svcEndpoint
-		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
+		scope.Logger.V(3).Info("Overriding the default powervs service endpoint")
 	}
 
 	c, err := powervs.NewService(options)
