@@ -18,6 +18,7 @@ package scope
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -207,11 +208,11 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targe
 	}
 
 	if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateActive) {
-		return nil, errors.Wrap(err, "load balancer is not in active state")
+		return nil, fmt.Errorf("load balancer is not in active state")
 	}
 
 	if len(loadBalancer.Pools) == 0 {
-		return nil, errors.Wrap(err, "no pools exist for the load balancer")
+		return nil, fmt.Errorf("no pools exist for the load balancer")
 	}
 
 	options := &vpcv1.CreateLoadBalancerPoolMemberOptions{}
@@ -280,7 +281,7 @@ func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
 			mtarget := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget)
 			if *mtarget.Address == *instance.PrimaryNetworkInterface.PrimaryIP.Address {
 				if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateActive) {
-					return errors.Wrap(err, "load balancer is not in active state")
+					return fmt.Errorf("load balancer is not in active state")
 				}
 
 				deleteOptions := &vpcv1.DeleteLoadBalancerPoolMemberOptions{}

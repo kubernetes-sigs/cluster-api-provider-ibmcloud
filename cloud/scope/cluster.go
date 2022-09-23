@@ -410,7 +410,7 @@ func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
 		}
 		options.Subnets = append(options.Subnets, subnet)
 	} else {
-		return nil, errors.Wrap(err, "Error subnet required for load balancer creation")
+		return nil, fmt.Errorf("error subnet required for load balancer creation")
 	}
 
 	options.SetPools([]vpcv1.LoadBalancerPoolPrototype{

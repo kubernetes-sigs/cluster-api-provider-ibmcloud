@@ -186,7 +186,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 				})
 			} else {
 				if instance.PrimaryNetworkInterface.PrimaryIP.Address == nil || *instance.PrimaryNetworkInterface.PrimaryIP.Address == "0.0.0.0" {
-					return ctrl.Result{}, errors.Wrapf(err, "invalid primary ip address")
+					return ctrl.Result{}, fmt.Errorf("invalid primary ip address")
 				}
 				internalIP := instance.PrimaryNetworkInterface.PrimaryIP.Address
 				port := int64(6443)

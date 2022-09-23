@@ -299,6 +299,149 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 		})
 	})
 }
+
+func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
+		t.Helper()
+		mockvpc := mock.NewMockVpc(gomock.NewController(t))
+		reconciler := IBMVPCMachineReconciler{
+			Client: testEnv.Client,
+			Log:    klogr.New(),
+		}
+		machineScope := &scope.MachineScope{
+			Logger: klogr.New(),
+			IBMVPCMachine: &infrav1beta1.IBMVPCMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-machine",
+					Labels: map[string]string{
+						capiv1beta1.MachineControlPlaneLabelName: "capi-control-plane-machine",
+					},
+				},
+			},
+			Machine: &capiv1beta1.Machine{
+				Spec: capiv1beta1.MachineSpec{
+					ClusterName: "vpc-cluster",
+					Bootstrap: capiv1beta1.Bootstrap{
+						DataSecretName: pointer.String("capi-machine"),
+					},
+				},
+			},
+			IBMVPCCluster: &infrav1beta1.IBMVPCCluster{
+				Spec: infrav1beta1.IBMVPCClusterSpec{
+					ControlPlaneLoadBalancer: &infrav1beta1.VPCLoadBalancerSpec{
+						Name: "vpc-load-balancer",
+					},
+				},
+				Status: infrav1beta1.IBMVPCClusterStatus{
+					Subnet: infrav1beta1.Subnet{
+						ID: pointer.String("capi-subnet-id"),
+					},
+					VPCEndpoint: infrav1beta1.VPCEndpoint{
+						LBID: core.StringPtr("vpc-load-balancer-id"),
+					},
+				},
+			},
+			IBMVPCClient: mockvpc,
+		}
+		return gomock.NewController(t), mockvpc, machineScope, reconciler
+	}
+
+	t.Run("Reconcile creating IBMVPCMachine associated with LoadBalancer", func(t *testing.T) {
+		instancelist := &vpcv1.InstanceCollection{
+			Instances: []vpcv1.Instance{
+				{
+					Name: pointer.String("capi-machine"),
+					ID:   pointer.String("capi-machine-id"),
+					PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
+						PrimaryIP: &vpcv1.ReservedIPReference{
+							Address: pointer.String("192.129.11.50"),
+						},
+						ID: pointer.String("capi-net"),
+					},
+				},
+			},
+		}
+		loadBalancer := &vpcv1.LoadBalancer{
+			ID:                 core.StringPtr("vpc-load-balancer-id"),
+			ProvisioningStatus: core.StringPtr("active"),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{
+					ID: core.StringPtr("foo-pool-id"),
+				},
+			},
+		}
+
+		t.Run("Invalid primary ip address", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			customInstancelist := &vpcv1.InstanceCollection{
+				Instances: []vpcv1.Instance{
+					{
+						Name: pointer.String("capi-machine"),
+						ID:   pointer.String("capi-machine-id"),
+						PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
+							PrimaryIP: &vpcv1.ReservedIPReference{
+								Address: pointer.String("0.0.0.0"),
+							},
+							ID: pointer.String("capi-net"),
+						},
+					},
+				},
+			}
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
+			_, err := reconciler.reconcileNormal(machineScope)
+			g.Expect(err).To((Not(BeNil())))
+			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
+		})
+		t.Run("Should fail to bind loadBalancer IP to control plane", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("failed to list loadBalancerPoolMembers"))
+			_, err := reconciler.reconcileNormal(machineScope)
+			g.Expect(err).To(Not(BeNil()))
+			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
+		})
+		t.Run("Should successfully reconcile IBMVPCMachine and set machine status as NotReady when PoolMember is not in active state", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			customloadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
+				ID:                 core.StringPtr("foo-member-id"),
+				ProvisioningStatus: core.StringPtr("create_pending"),
+			}
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(customloadBalancerPoolMember, &core.DetailedResponse{}, nil)
+			_, err := reconciler.reconcileNormal(machineScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
+			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
+		})
+		t.Run("Should successfully reconcile IBMVPCMachine", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			loadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
+				ID:                 core.StringPtr("foo-member-id"),
+				ProvisioningStatus: core.StringPtr("active"),
+			}
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
+			_, err := reconciler.reconcileNormal(machineScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
+			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
+		})
+	})
+}
+
 func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 	var (
 		mockvpc      *mock.MockVpc
@@ -350,6 +493,82 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 			t.Cleanup(teardown)
 			response := &core.DetailedResponse{}
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(options)).Return(response, nil)
+			_, err := reconciler.reconcileDelete(machineScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(Not(ContainElement(infrav1beta1.MachineFinalizer)))
+		})
+	})
+}
+
+func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
+		t.Helper()
+		mockvpc := mock.NewMockVpc(gomock.NewController(t))
+		reconciler := IBMVPCMachineReconciler{
+			Client: testEnv.Client,
+			Log:    klogr.New(),
+		}
+		machineScope := &scope.MachineScope{
+			Logger: klogr.New(),
+			IBMVPCMachine: &infrav1beta1.IBMVPCMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "capi-machine",
+					Finalizers: []string{infrav1beta1.MachineFinalizer},
+					Labels: map[string]string{
+						capiv1beta1.MachineControlPlaneLabelName: "capi-control-plane-machine",
+					},
+				},
+				Status: infrav1beta1.IBMVPCMachineStatus{
+					InstanceID: "capi-machine-id",
+				},
+			},
+			IBMVPCClient: mockvpc,
+			IBMVPCCluster: &infrav1beta1.IBMVPCCluster{
+				Spec: infrav1beta1.IBMVPCClusterSpec{
+					ControlPlaneLoadBalancer: &infrav1beta1.VPCLoadBalancerSpec{
+						Name: "vpc-load-balancer",
+					},
+				},
+				Status: infrav1beta1.IBMVPCClusterStatus{
+					VPCEndpoint: infrav1beta1.VPCEndpoint{
+						LBID: core.StringPtr("vpc-load-balancer-id"),
+					},
+				},
+			},
+		}
+		return gomock.NewController(t), mockvpc, machineScope, reconciler
+	}
+
+	t.Run("Reconciling deleting IBMVPCMachine associated with LoadBalancer", func(t *testing.T) {
+		loadBalancer := &vpcv1.LoadBalancer{
+			ID:                 core.StringPtr("vpc-load-balancer-id"),
+			ProvisioningStatus: core.StringPtr("active"),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{
+					ID: core.StringPtr("foo-pool-id"),
+				},
+			},
+		}
+
+		t.Run("Should fail to delete VPC LoadBalancerPoolMember", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().GetInstance(gomock.AssignableToTypeOf(&vpcv1.GetInstanceOptions{})).Return(&vpcv1.Instance{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("failed to list LoadBalancerPoolMembers"))
+			_, err := reconciler.reconcileDelete(machineScope)
+			g.Expect(err).To((Not(BeNil())))
+			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta1.MachineFinalizer))
+		})
+		t.Run("Should successfully delete VPC machine and remove the finalizer", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().GetInstance(gomock.AssignableToTypeOf(&vpcv1.GetInstanceOptions{})).Return(&vpcv1.Instance{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(&vpcv1.DeleteInstanceOptions{})).Return(&core.DetailedResponse{}, nil)
 			_, err := reconciler.reconcileDelete(machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(Not(ContainElement(infrav1beta1.MachineFinalizer)))
