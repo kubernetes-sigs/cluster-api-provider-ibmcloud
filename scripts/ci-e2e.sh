@@ -18,6 +18,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+# With the recent ibmcloud have seen panic and need this environment set to avoid this panic, for more information
+# refer the Notes section in https://github.com/IBM-Cloud/ibm-cloud-cli-release/releases/tag/v2.11.0.
+export LANG=en_US.UTF-8
+
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
 GOPATH_BIN="$(go env GOPATH)/bin/"
