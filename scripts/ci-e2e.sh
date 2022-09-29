@@ -99,6 +99,19 @@ prerequisites_powervs(){
     export LOGLEVEL=5
 }
 
+prerequisites_vpc(){
+    # Assigning VPC variables
+    export IBMVPC_REGION=${REGION}
+    export IBMVPC_ZONE="${REGION}-1"
+    export IBMVPC_RESOURCEGROUP=${IBMVPC_RESOURCEGROUP:-"fa5405a58226402f9a5818cb9b8a5a8a"}
+    export IBMVPC_NAME="capi-vpc-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
+    export IBMVPC_IMAGE_ID=${IBMVPC_IMAGE_ID:-"r006-c6f5840c-fd6e-4b40-97ac-fbf13e1c09cd"}
+    export IBMVPC_PROFILE=${IBMVPC_PROFILE:-"bx2-4x16"}
+    export IBMVPC_SSHKEY_ID=${IBMVPC_SSHKEY_ID:-"r006-c2ae2255-9961-4654-80ea-ea9091c4decd"}
+    # Setting controller loglevel to allow debug logs from the VPC client
+    export LOGLEVEL=5
+}
+
 main(){
     # If BOSKOS_HOST is set then acquire an IBM Cloud resource from Boskos.
     if [ -n "${BOSKOS_HOST:-}" ]; then
@@ -132,8 +145,12 @@ main(){
         init_network_powervs
     fi
 
+    if [[ "${E2E_FLAVOR}" == "vpc" ]]; then
+        prerequisites_vpc
+    fi
+
     # Run the e2e tests
-    make test-e2e
+    make test-e2e E2E_FLAVOR=${E2E_FLAVOR}
     test_status="${?}"
     echo TESTSTATUS="${test_status}"
 
