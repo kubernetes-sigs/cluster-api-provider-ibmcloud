@@ -35,6 +35,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
 
@@ -135,7 +136,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		if err := rc.SetServiceURL(rcEndpoint); err != nil {
 			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
 		}
-		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
+		scope.Logger.V(3).Info("Overriding the default resource controller endpoint")
 	}
 
 	res, _, err := rc.GetResourceInstance(
@@ -162,7 +163,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	// Fetch the service endpoint.
 	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
 		serviceOptions.IBMPIOptions.URL = svcEndpoint
-		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
+		scope.Logger.V(3).Info("Overriding the default powervs service endpoint")
 	}
 
 	c, err := powervs.NewService(serviceOptions)
@@ -226,7 +227,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 
 	networkID, err := getNetworkID(s.Network, m)
 	if err != nil {
-		record.Warnf(m.IBMPowerVSMachine, "FailedRetriveNetwork", "Failed network retrival - %v", err)
+		record.Warnf(m.IBMPowerVSMachine, "FailedRetrieveNetwork", "Failed network retrieval - %v", err)
 		return nil, fmt.Errorf("error getting network ID: %v", err)
 	}
 
@@ -286,7 +287,7 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	secret := &corev1.Secret{}
 	key := types.NamespacedName{Namespace: m.Machine.Namespace, Name: *m.Machine.Spec.Bootstrap.DataSecretName}
 	if err := m.Client.Get(context.TODO(), key, secret); err != nil {
-		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for IBMPowerVSMachine %s/%s", m.Machine.Namespace, m.Machine.Name)
+		return "", errors.Wrapf(err, "failed to retrieve bootstrap data secret for IBMPowerVSMachine %v", klog.KObj(m.Machine))
 	}
 
 	value, ok := secret.Data["value"]
@@ -303,12 +304,12 @@ func getImageID(image *infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMachi
 	} else if image.Name != nil {
 		images, err := m.GetImages()
 		if err != nil {
-			m.Logger.Error(err, "failed to get images")
+			m.Logger.Error(err, "Failed to get images")
 			return nil, err
 		}
 		for _, img := range images.Images {
 			if *image.Name == *img.Name {
-				m.Logger.Info("image found with ID", "Image", *image.Name, "ID", *img.ImageID)
+				m.Logger.Info("Image found with ID", "Image", *image.Name, "ID", *img.ImageID)
 				return img.ImageID, nil
 			}
 		}
@@ -329,12 +330,12 @@ func getNetworkID(network infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMa
 	} else if network.Name != nil {
 		networks, err := m.GetNetworks()
 		if err != nil {
-			m.Logger.Error(err, "failed to get networks")
+			m.Logger.Error(err, "Failed to get networks")
 			return nil, err
 		}
 		for _, nw := range networks.Networks {
 			if *network.Name == *nw.Name {
-				m.Logger.Info("network found with ID", "Network", *network.Name, "ID", *nw.NetworkID)
+				m.Logger.Info("Network found with ID", "Network", *network.Name, "ID", *nw.NetworkID)
 				return nw.NetworkID, nil
 			}
 		}
@@ -429,10 +430,10 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	// Look for DHCP IP from the cache
 	obj, exists, err := m.DHCPIPCacheStore.GetByKey(*instance.ServerName)
 	if err != nil {
-		m.Error(err, "failed to fetch the DHCP IP address from cache store", "VM", *instance.ServerName)
+		m.Error(err, "Failed to fetch the DHCP IP address from cache store", "VM", *instance.ServerName)
 	}
 	if exists {
-		m.Info("found IP for VM from DHCP cache", "IP", obj.(powervs.VMip).IP, "VM", *instance.ServerName)
+		m.Info("Found IP for VM from DHCP cache", "IP", obj.(powervs.VMip).IP, "VM", *instance.ServerName)
 		addresses = append(addresses, corev1.NodeAddress{
 			Type:    corev1.NodeInternalIP,
 			Address: obj.(powervs.VMip).IP,
@@ -443,7 +444,7 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	// Fetch the VM network ID
 	networkID, err := getNetworkID(m.IBMPowerVSMachine.Spec.Network, m)
 	if err != nil {
-		m.Error(err, "failed to fetch network id from network resource", "VM", *instance.ServerName)
+		m.Error(err, "Failed to fetch network id from network resource", "VM", *instance.ServerName)
 		return
 	}
 	// Fetch the details of the network attached to the VM
@@ -451,17 +452,17 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	for _, network := range instance.Networks {
 		if network.NetworkID == *networkID {
 			pvmNetwork = network
-			m.Info("found network attached to VM", "Network ID", network.NetworkID, "VM", *instance.ServerName)
+			m.Info("Found network attached to VM", "Network ID", network.NetworkID, "VM", *instance.ServerName)
 		}
 	}
 	if pvmNetwork == nil {
-		m.Info("failed to get network attached to VM", "VM", *instance.ServerName, "Network ID", *networkID)
+		m.Info("Failed to get network attached to VM", "VM", *instance.ServerName, "Network ID", *networkID)
 		return
 	}
 	// Get all the DHCP servers
 	dhcpServer, err := m.IBMPowerVSClient.GetAllDHCPServers()
 	if err != nil {
-		m.Error(err, "failed to get DHCP server")
+		m.Error(err, "Failed to get DHCP server")
 		return
 	}
 	// Get the Details of DHCP server associated with the network
@@ -471,7 +472,7 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 			m.Info("found DHCP server for network", "DHCP server ID", *server.ID, "network ID", *networkID)
 			dhcpServerDetails, err = m.IBMPowerVSClient.GetDHCPServer(*server.ID)
 			if err != nil {
-				m.Error(err, "failed to get DHCP server details", "DHCP server ID", *server.ID)
+				m.Error(err, "Failed to get DHCP server details", "DHCP server ID", *server.ID)
 				return
 			}
 			break
@@ -487,14 +488,14 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 	var internalIP *string
 	for _, lease := range dhcpServerDetails.Leases {
 		if *lease.InstanceMacAddress == pvmNetwork.MacAddress {
-			m.Info("found internal ip for VM from DHCP lease", "IP", *lease.InstanceIP, "VM", *instance.ServerName)
+			m.Info("Found internal ip for VM from DHCP lease", "IP", *lease.InstanceIP, "VM", *instance.ServerName)
 			internalIP = lease.InstanceIP
 			break
 		}
 	}
 	if internalIP == nil {
 		errStr := fmt.Errorf("internal IP is nil")
-		m.Error(errStr, "failed to get internal IP, DHCP lease not found for VM with MAC in DHCP network", "VM", *instance.ServerName,
+		m.Error(errStr, "Failed to get internal IP, DHCP lease not found for VM with MAC in DHCP network", "VM", *instance.ServerName,
 			"MAC", pvmNetwork.MacAddress, "DHCP server ID", *dhcpServerDetails.ID)
 		return
 	}
@@ -509,7 +510,7 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 		IP:   *internalIP,
 	})
 	if err != nil {
-		m.Error(err, "failed to update the DHCP cache store with the IP", "VM", *instance.ServerName, "IP", *internalIP)
+		m.Error(err, "Failed to update the DHCP cache store with the IP", "VM", *instance.ServerName, "IP", *internalIP)
 	}
 	m.IBMPowerVSMachine.Status.Addresses = addresses
 }

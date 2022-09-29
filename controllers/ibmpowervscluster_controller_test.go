@@ -80,7 +80,6 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMPowerVSClusterReconciler{
 				Client: testEnv.Client,
-				Log:    klogr.New(),
 			}
 
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
@@ -159,7 +158,6 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMPowerVSClusterReconciler{
 				Client: testEnv.Client,
-				Log:    klogr.New(),
 			}
 			_ = reconciler.reconcile(tc.powervsClusterScope)
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
@@ -175,7 +173,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	)
 	reconciler = IBMPowerVSClusterReconciler{
 		Client: testEnv.Client,
-		Log:    klogr.New(),
 	}
 	t.Run("Reconciling delete IBMPowerVSCluster", func(t *testing.T) {
 		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {

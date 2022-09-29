@@ -167,7 +167,7 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 
 	imageReply, err := i.ensureImageUnique(m.Name)
 	if err != nil {
-		record.Warnf(i.IBMPowerVSImage, "FailedRetriveImage", "Failed to retrieve image %q", m.Name)
+		record.Warnf(i.IBMPowerVSImage, "FailedRetrieveImage", "Failed to retrieve image %q", m.Name)
 		return nil, nil, err
 	} else if imageReply != nil {
 		i.Info("Image already exists")
@@ -176,7 +176,7 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 
 	if lastJob, _ := i.GetImportJob(); lastJob != nil {
 		if *lastJob.Status.State != "completed" && *lastJob.Status.State != "failed" {
-			i.Info("Previous import job not yet fininshed - " + *lastJob.Status.State)
+			i.Info("Previous import job not yet finished", "state", *lastJob.Status.State)
 			return nil, nil, nil
 		}
 	}
@@ -229,10 +229,10 @@ func (i *PowerVSImageScope) GetImportJob() (*models.Job, error) {
 // DeleteImportJob will delete the image import job.
 func (i *PowerVSImageScope) DeleteImportJob() error {
 	if err := i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID); err != nil {
-		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImoprtJob", "Failed image import job deletion - %v", err)
+		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImportJob", "Failed image import job deletion - %v", err)
 		return err
 	}
-	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImageImoprtJob", "Deleted image import job %q", i.IBMPowerVSImage.Status.JobID)
+	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImageImportJob", "Deleted image import job %q", i.IBMPowerVSImage.Status.JobID)
 	return nil
 }
 

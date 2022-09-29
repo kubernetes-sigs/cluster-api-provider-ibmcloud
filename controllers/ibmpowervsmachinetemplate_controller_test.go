@@ -25,7 +25,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2/klogr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -71,7 +70,6 @@ func TestIBMPowerVSMachineTemplateReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMPowerVSMachineTemplateReconciler{
 				Client: testEnv.Client,
-				Log:    klogr.New(),
 			}
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 			g.Expect(err).To(BeNil())

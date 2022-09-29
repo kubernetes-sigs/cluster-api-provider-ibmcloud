@@ -23,8 +23,6 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/go-logr/logr"
-
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -44,7 +42,6 @@ const defaultSMT = 8
 // IBMPowerVSMachineTemplateReconciler reconciles a IBMPowerVSMachineTemplate object.
 type IBMPowerVSMachineTemplateReconciler struct {
 	client.Client
-	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
@@ -58,11 +55,12 @@ func (r *IBMPowerVSMachineTemplateReconciler) SetupWithManager(mgr ctrl.Manager)
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachinetemplates/status,verbs=get;update;patch
 
 func (r *IBMPowerVSMachineTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("ibmpowervsmachinetemplate", req.NamespacedName)
+	log := ctrl.LoggerFrom(ctx)
+	log.Info("Reconciling IBMPowerVSMachineTemplate")
 
 	var machineTemplate infrav1beta1.IBMPowerVSMachineTemplate
 	if err := r.Get(ctx, req.NamespacedName, &machineTemplate); err != nil {
-		logger.Error(err, "unable to fetch ibmpowervsmachinetemplate")
+		log.Error(err, "Unable to fetch ibmpowervsmachinetemplate")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -73,20 +71,20 @@ func (r *IBMPowerVSMachineTemplateReconciler) Reconcile(ctx context.Context, req
 
 	capacity, err := getIBMPowerVSMachineCapacity(machineTemplate)
 	if err != nil {
-		logger.Error(err, "failed to get capacity from the ibmpowervsmachine template")
+		log.Error(err, "Failed to get capacity from the ibmpowervsmachine template")
 		return ctrl.Result{}, fmt.Errorf("failed to get capcity for machine template: %w", err)
 	}
-	logger.V(3).Info("calculated capacity for machine template", "capacity", capacity)
+	log.V(3).Info("Calculated capacity for machine template", "capacity", capacity)
 	if !reflect.DeepEqual(machineTemplate.Status.Capacity, capacity) {
 		machineTemplate.Status.Capacity = capacity
 		if err := helper.Patch(ctx, &machineTemplate); err != nil {
 			if !apierrors.IsNotFound(err) {
-				logger.Error(err, "failed to patch machineTemplate")
+				log.Error(err, "Failed to patch machineTemplate")
 				return ctrl.Result{}, err
 			}
 		}
 	}
-	logger.V(3).Info("machine template status", "status", machineTemplate.Status.Capacity)
+	log.V(3).Info("Machine template status", "status", machineTemplate.Status.Capacity)
 	return ctrl.Result{}, nil
 }
 

@@ -220,7 +220,6 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 
 	if err := (&controllers.IBMPowerVSClusterReconciler{
 		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSCluster"),
 		Recorder:        mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
@@ -231,7 +230,6 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 
 	if err := (&controllers.IBMPowerVSMachineReconciler{
 		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSMachine"),
 		Recorder:        mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
@@ -242,7 +240,6 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 
 	if err := (&controllers.IBMPowerVSImageReconciler{
 		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMPowerVSImage"),
 		Recorder:        mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
@@ -253,7 +250,6 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 
 	if err := (&controllers.IBMPowerVSMachineTemplateReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("ibmpowervsmachinetemplate"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
