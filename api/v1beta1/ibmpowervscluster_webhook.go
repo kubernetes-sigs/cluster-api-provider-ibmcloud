@@ -83,7 +83,7 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSCluster() error {
 }
 
 func (r *IBMPowerVSCluster) validateIBMPowerVSClusterNetwork() *field.Error {
-	if res, err := validateIBMPowerVSResourceReference(r.Spec.Network, "Network"); !res {
+	if res, err := validateIBMPowerVSNetworkReference(r.Spec.Network); !res {
 		return err
 	}
 	return nil

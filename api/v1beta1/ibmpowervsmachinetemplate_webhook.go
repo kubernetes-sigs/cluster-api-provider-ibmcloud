@@ -112,7 +112,7 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateProcType() 
 }
 
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateNetwork() *field.Error {
-	if res, err := validateIBMPowerVSResourceReference(r.Spec.Template.Spec.Network, "Network"); !res {
+	if res, err := validateIBMPowerVSNetworkReference(r.Spec.Template.Spec.Network); !res {
 		return err
 	}
 	return nil

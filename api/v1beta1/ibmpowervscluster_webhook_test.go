@@ -54,6 +54,20 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Should error if all Network ID, name and regex are set",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						ID:    pointer.String("capi-net-id"),
+						Name:  pointer.String("capi-net"),
+						RegEx: pointer.String("^capi$"),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -114,6 +128,48 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 					Network: IBMPowerVSResourceReference{
 						ID:   pointer.String("capi-net-id"),
 						Name: pointer.String("capi-net-name"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should allow if Network ID is set",
+			oldPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: pointer.String("^capi-net-id$"),
+					},
+				},
+			},
+			newPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: pointer.String("^capi-net-id$"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should error if all Network ID, name and regex are set",
+			oldPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						ID: pointer.String("capi-net-id"),
+					},
+				},
+			},
+			newPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						ID:    pointer.String("capi-net-id"),
+						Name:  pointer.String("capi-net-name"),
+						RegEx: pointer.String("^capi-net-id$"),
 					},
 				},
 			},

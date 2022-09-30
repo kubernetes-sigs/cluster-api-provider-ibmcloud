@@ -218,6 +218,12 @@ spec:
                     description: Name of resource
                     minLength: 1
                     type: string
+                  regex:
+                    description: Regular expression to match resource, In case of
+                      multiple resources matches the provided regular expression the
+                      first matched resource will be selected
+                    minLength: 1
+                    type: string
                 type: object
               imageRef:
                 description: ImageRef is an optional reference to a provider-specific
@@ -243,6 +249,12 @@ spec:
                     type: string
                   name:
                     description: Name of resource
+                    minLength: 1
+                    type: string
+                  regex:
+                    description: Regular expression to match resource, In case of
+                      multiple resources matches the provided regular expression the
+                      first matched resource will be selected
                     minLength: 1
                     type: string
                 type: object

@@ -91,6 +91,12 @@ type IBMPowerVSResourceReference struct {
 	// +kubebuilder:validation:MinLength=1
 	// +optional
 	Name *string `json:"name,omitempty"`
+
+	// Regular expression to match resource,
+	// In case of multiple resources matches the provided regular expression the first matched resource will be selected
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	RegEx *string `json:"regex,omitempty"`
 }
 
 // IBMPowerVSMachineStatus defines the observed state of IBMPowerVSMachine.
