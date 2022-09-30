@@ -159,7 +159,9 @@ generate-go-conversions-core: $(CONVERSION_GEN)
 
 .PHONY: generate-e2e-templates
 generate-e2e-templates: $(KUSTOMIZE)
+ifneq ($(E2E_FLAVOR), vpc)
 	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-md-remediation.yaml
+endif
 
 .PHONY: modules
 modules: ## Runs go mod to ensure modules are up to date
