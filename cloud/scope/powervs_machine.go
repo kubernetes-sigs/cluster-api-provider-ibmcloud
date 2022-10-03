@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -339,11 +340,29 @@ func getNetworkID(network infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMa
 				return nw.NetworkID, nil
 			}
 		}
+		return nil, fmt.Errorf("failed to find a network ID with name %s", *network.Name)
+	} else if network.RegEx != nil {
+		networks, err := m.GetNetworks()
+		if err != nil {
+			m.Logger.Error(err, "Failed to get networks")
+			return nil, err
+		}
+		re, err := regexp.Compile(*network.RegEx)
+		if err != nil {
+			m.Logger.Error(err, "Failed to compile regular expression", "regex", *network.RegEx)
+			return nil, err
+		}
+		// In case of multiple network names matches the provided regular expression the first matched network will be selected.
+		for _, nw := range networks.Networks {
+			if match := re.Match([]byte(*nw.Name)); match {
+				m.Logger.Info("Network found with ID", "Network", *nw.Name, "ID", *nw.NetworkID)
+				return nw.NetworkID, nil
+			}
+		}
+		return nil, fmt.Errorf("failed to find a network ID with RegEx %s", *network.RegEx)
 	} else {
-		return nil, fmt.Errorf("both ID and Name can't be nil")
+		return nil, fmt.Errorf("ID, Name and RegEx can't be nil")
 	}
-
-	return nil, fmt.Errorf("failed to find a network ID")
 }
 
 // GetNetworks will get list of networks for the powervs service instance.
