@@ -19,6 +19,24 @@ IMG=powervs-cloud-controller-manager
 POWERVS_CLOUD_CONTROLLER_COMMIT?=07d19bf
 TAG?=$(POWERVS_CLOUD_CONTROLLER_COMMIT)
 
+build-image-linux-amd64: init-buildx
+	{                                                                   \
+        set -e ;                                                            \
+        docker buildx build \
+                --build-arg TARGETPLATFORM=linux/amd64 --build-arg ARCH=amd64 \
+                --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
+                -t $(REGISTRY)/$(IMG):$(TAG)_linux_amd64 . --target centos-base; \
+        }
+
+build-image-linux-ppc64le: init-buildx
+	{                                                                    \
+        set -e ;                                                             \
+        docker buildx build \
+                --build-arg TARGETPLATFORM=linux/ppc64le --build-arg ARCH=ppc64le\
+                --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
+                -t $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le . --target centos-base; \
+        }
+
 build-image-and-push-linux-amd64: init-buildx
 	{                                                                   \
 	set -e ;                                                            \
