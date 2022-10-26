@@ -47,6 +47,8 @@ linters:
   - whitespace
 
 linters-settings:
+  gocyclo:
+    min-complexity: 20
   godot:
     #   declarations - for top level declaration comments (default);
     #   toplevel     - for top level comments;
