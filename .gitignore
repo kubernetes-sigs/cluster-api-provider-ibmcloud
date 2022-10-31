@@ -6,6 +6,7 @@ bin/
 cmd/clusterctl/clusterctl
 cmd/manager/manager
 pvsadm
+IBM_Cloud_CLI*
 
 # command generated files
 kubeconfig
