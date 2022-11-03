@@ -34,7 +34,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1util "sigs.k8s.io/cluster-api/util"
@@ -70,22 +69,17 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	cluster, err := util.GetClusterByName(ctx, r.Client, ibmImage.Namespace, ibmImage.Spec.ClusterName)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	log = log.WithValues("cluster", cluster.Name)
-
 	// Create the scope.
 	imageScope, err := scope.NewPowerVSImageScope(scope.PowerVSImageScopeParams{
-		Client:            r.Client,
-		Logger:            log,
-		IBMPowerVSImage:   ibmImage,
-		IBMPowerVSCluster: cluster,
-		ServiceEndpoint:   r.ServiceEndpoint,
+		Client:          r.Client,
+		Logger:          log,
+		IBMPowerVSImage: ibmImage,
+		ServiceEndpoint: r.ServiceEndpoint,
 	})
-
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
+	if err != nil {
+		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
+	}
+	// Always close the scope when exiting this function so we can persist any IBM PowerVS Image changes.
 	defer func() {
 		if err := imageScope.Close(); err != nil && reterr == nil {
 			reterr = err
@@ -97,8 +91,9 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.reconcileDelete(imageScope)
 	}
 
+	cluster, err := util.GetClusterByName(ctx, r.Client, ibmImage.Namespace, ibmImage.Spec.ClusterName)
 	if err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return ctrl.Result{}, err
 	}
 	return r.reconcile(cluster, imageScope)
 }
