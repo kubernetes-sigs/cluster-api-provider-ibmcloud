@@ -59,7 +59,7 @@ install_pvsadm(){
 
 install_ibmcloud_cli(){
     if [ ${OS} == "Linux" ]; then
-        platform="linux-${ARCH}"
+        platform="linux_${ARCH}"
     elif [ ${OS} == "Darwin" ]; then
         platform="macos"
     fi
