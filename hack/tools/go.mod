@@ -11,7 +11,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	gotest.tools/gotestsum v1.8.2
 	k8s.io/code-generator v0.24.4
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20220912130527-3c462340b297
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221107193018-cd87c3d90245
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.9.2
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.7
@@ -214,7 +214,7 @@ require (
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220613132600-b0d781184e0d // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
+	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
