@@ -58,7 +58,28 @@ type IBMVPCMachineSpec struct {
 	PrimaryNetworkInterface NetworkInterface `json:"primaryNetworkInterface,omitempty"`
 
 	// SSHKeys is the SSH pub keys that will be used to access VM.
+	// Deprecated: Use SSHKeysRef instead
+	// +optional
 	SSHKeys []*string `json:"sshKeys,omitempty"`
+
+	// SSHKeysRef is the SSH pub keys that will be used to access VM.
+	// +optional
+	SSHKeysRef []*IBMVPCResourceReference `json:"sshKeysRef,omitempty"`
+}
+
+// IBMVPCResourceReference is a reference to a specific VPC resource by ID or Name
+// Only one of ID or Name may be specified. Specifying more than one will result in
+// a validation error.
+type IBMVPCResourceReference struct {
+	// ID of resource
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// Name of resource
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
 }
 
 // IBMVPCMachineStatus defines the observed state of IBMVPCMachine.

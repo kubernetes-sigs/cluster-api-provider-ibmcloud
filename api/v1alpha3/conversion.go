@@ -23,6 +23,7 @@ import (
 
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 )
@@ -62,13 +63,41 @@ func (dst *IBMVPCClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 func (src *IBMVPCMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.IBMVPCMachine)
 
-	return Convert_v1alpha3_IBMVPCMachine_To_v1beta1_IBMVPCMachine(src, dst, nil)
+	if err := Convert_v1alpha3_IBMVPCMachine_To_v1beta1_IBMVPCMachine(src, dst, nil); err != nil {
+		return err
+	}
+
+	for _, sshKey := range src.Spec.SSHKeys {
+		dst.Spec.SSHKeysRef = append(dst.Spec.SSHKeysRef, &infrav1beta1.IBMVPCResourceReference{
+			ID: sshKey,
+		})
+	}
+
+	return nil
 }
 
 func (dst *IBMVPCMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.IBMVPCMachine)
 
-	return Convert_v1beta1_IBMVPCMachine_To_v1alpha3_IBMVPCMachine(src, dst, nil)
+	if err := Convert_v1beta1_IBMVPCMachine_To_v1alpha3_IBMVPCMachine(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Preserve Hub data on down-conversion except for metadata
+	if err := utilconversion.MarshalData(src, dst); err != nil {
+		return err
+	}
+
+	if src.Spec.SSHKeysRef != nil {
+		for _, sshKey := range src.Spec.SSHKeysRef {
+			if sshKey.ID != nil {
+				// Only source keys with ID will be converted
+				dst.Spec.SSHKeys = append(dst.Spec.SSHKeys, sshKey.ID)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (src *IBMVPCMachineList) ConvertTo(dstRaw conversion.Hub) error {
@@ -86,13 +115,41 @@ func (dst *IBMVPCMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 func (src *IBMVPCMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1beta1.IBMVPCMachineTemplate)
 
-	return Convert_v1alpha3_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(src, dst, nil)
+	if err := Convert_v1alpha3_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(src, dst, nil); err != nil {
+		return err
+	}
+
+	for _, sshKey := range src.Spec.Template.Spec.SSHKeys {
+		dst.Spec.Template.Spec.SSHKeysRef = append(dst.Spec.Template.Spec.SSHKeysRef, &infrav1beta1.IBMVPCResourceReference{
+			ID: sshKey,
+		})
+	}
+
+	return nil
 }
 
 func (dst *IBMVPCMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta1.IBMVPCMachineTemplate)
 
-	return Convert_v1beta1_IBMVPCMachineTemplate_To_v1alpha3_IBMVPCMachineTemplate(src, dst, nil)
+	if err := Convert_v1beta1_IBMVPCMachineTemplate_To_v1alpha3_IBMVPCMachineTemplate(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Preserve Hub data on down-conversion except for metadata
+	if err := utilconversion.MarshalData(src, dst); err != nil {
+		return err
+	}
+
+	if src.Spec.Template.Spec.SSHKeysRef != nil {
+		for _, sshKey := range src.Spec.Template.Spec.SSHKeysRef {
+			if sshKey.ID != nil {
+				// Only source keys with ID will be converted
+				dst.Spec.Template.Spec.SSHKeys = append(dst.Spec.Template.Spec.SSHKeys, sshKey.ID)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (src *IBMVPCMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error {
@@ -123,4 +180,12 @@ func Convert_v1beta1_IBMVPCClusterStatus_To_v1alpha3_IBMVPCClusterStatus(in *inf
 // Requires manual conversion as LBID does not exist in v1alpha4 version of VPCEndpoint.
 func Convert_v1beta1_VPCEndpoint_To_v1alpha3_VPCEndpoint(in *infrav1beta1.VPCEndpoint, out *VPCEndpoint, s apiconversion.Scope) error {
 	return autoConvert_v1beta1_VPCEndpoint_To_v1alpha3_VPCEndpoint(in, out, s)
+}
+
+func Convert_v1beta1_IBMVPCMachineSpec_To_v1alpha3_IBMVPCMachineSpec(in *infrav1beta1.IBMVPCMachineSpec, out *IBMVPCMachineSpec, s apiconversion.Scope) error {
+	return autoConvert_v1beta1_IBMVPCMachineSpec_To_v1alpha3_IBMVPCMachineSpec(in, out, s)
+}
+
+func Convert_v1alpha3_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *IBMVPCMachineSpec, out *infrav1beta1.IBMVPCMachineSpec, s apiconversion.Scope) error {
+	return autoConvert_v1alpha3_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in, out, s)
 }
