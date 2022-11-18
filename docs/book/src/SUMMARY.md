@@ -21,6 +21,7 @@
   - [Guide for API conversions](./developer/conversion.md)
   - [Release Process](./developer/release.md)
   - [How to build the machine boot images](./developer/build-images.md)
+  - [Modules and tools dependencies](./developer/dependencies.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
   - [Regions-Zones Mapping](./reference/regions-zones-mapping.md)
