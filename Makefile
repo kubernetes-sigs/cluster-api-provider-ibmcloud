@@ -203,7 +203,8 @@ GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
 E2E_FLAVOR ?= powervs
-GINKGO_ARGS ?= -v -trace -progress -v -tags=e2e -focus=$(GINKGO_FOCUS) -nodes=$(GINKGO_NODES) --noColor=$(GINKGO_NOCOLOR)
+JUNIT_FILE ?= junit.e2e_suite.1.xml
+GINKGO_ARGS ?= -v --trace --tags=e2e --focus=$(GINKGO_FOCUS) --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="$(JUNIT_FILE)"
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false

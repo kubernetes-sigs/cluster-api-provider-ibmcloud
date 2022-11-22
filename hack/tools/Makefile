@@ -100,7 +100,7 @@ $(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of conversion-
 
 GINKGO := $(BIN_DIR)/ginkgo
 $(GINKGO): $(BIN_DIR) go.mod go.sum ## Build a local copy of ginkgo.
-	go build -tags=tools -o $@ github.com/onsi/ginkgo/ginkgo
+	go build -tags=tools -o $@ github.com/onsi/ginkgo/v2/ginkgo
 
 ENVSUBST := $(BIN_DIR)/envsubst
 $(ENVSUBST): $(BIN_DIR) go.mod go.sum ## Build a local copy of envsubst.
