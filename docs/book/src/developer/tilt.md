@@ -55,7 +55,10 @@ extra_args:
     - '-v=5'
 ```
 
-To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage, Set `POWERVS_PROVIDER_ID_FORMAT` to `v2` under kustomize_substitutions.
+### 1.  Configuration to deploy workload cluster with external cloud controller manager
+
+To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage, Set `POWERVS_PROVIDER_ID_FORMAT` to `v2` and enable cluster resourceset feature gateunder kustomize_substitutions.
+Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` variable under kustomize_substitutions.
 
 ```yaml
 default_registry: "gcr.io/you-project-name-here"
@@ -68,7 +71,30 @@ enable_providers:
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
   POWERVS_PROVIDER_ID_FORMAT: "v2"
+  EXP_CLUSTER_RESOURCE_SET: "true"
 ```
+
+### 2.  Configuration to deploy workload cluster from ClusterClass template
+
+To deploy workload cluster with [clusterclass-template](/topics/powervs/clusterclass-cluster.html) under kustomize_substitutions set `POWERVS_PROVIDER_ID_FORMAT` to `v2`.
+Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` variable under kustomize_substitutions.
+
+```yaml
+default_registry: "gcr.io/you-project-name-here"
+provider_repos:
+- ../cluster-api-provider-ibmcloud
+enable_providers:
+- ibmcloud
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
+  POWERVS_PROVIDER_ID_FORMAT: "v2"
+  EXP_CLUSTER_RESOURCE_SET: "true"
+  CLUSTER_TOPOLOGY: "true"
+```
+
+### 3.  Configuration to deploy workload cluster with Custom Service Endpoint
 
 To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format: `${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2...}`
 ```yaml
