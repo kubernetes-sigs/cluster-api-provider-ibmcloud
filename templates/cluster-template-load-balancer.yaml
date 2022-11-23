@@ -87,11 +87,12 @@ metadata:
 spec:
   template:
     spec:
-      image: "${IBMVPC_IMAGE_ID}"
+      imageRef:
+        name: "${IBMVPC_IMAGE_NAME}"
       zone: "${IBMVPC_ZONE}"
       profile: "${IBMVPC_PROFILE}"
-      sshKeys:
-      - "${IBMVPC_SSHKEY_ID}"
+      sshKeysRef:
+      - name: "${IBMVPC_SSHKEY_NAME}"
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -123,11 +124,12 @@ metadata:
 spec:
   template:
     spec:
-      image: "${IBMVPC_IMAGE_ID}"
+      imageRef:
+        name: "${IBMVPC_IMAGE_NAME}"
       zone: "${IBMVPC_ZONE}"
       profile: "${IBMVPC_PROFILE}"
-      sshKeys:
-      - "${IBMVPC_SSHKEY_ID}"
+      sshKeysRef:
+      - name: "${IBMVPC_SSHKEY_NAME}"
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate

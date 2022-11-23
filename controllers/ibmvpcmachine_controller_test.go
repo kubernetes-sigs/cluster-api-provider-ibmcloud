@@ -59,7 +59,11 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 			name: "Should Reconcile if Owner Reference is not set",
 			vpcMachine: &infrav1beta1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "vpc-test-1"},
+					Name: "vpc-test-1",
+				},
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{},
+				},
 			},
 			expectError: false,
 		},
@@ -77,6 +81,9 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 						},
 					},
 				},
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{},
+				},
 			},
 			expectError: true,
 		},
@@ -92,7 +99,11 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 							UID:        "1",
 						},
 					},
-				}},
+				},
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{},
+				},
+			},
 			ownerMachine: &capiv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-machine"}},
@@ -121,7 +132,11 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 							UID:        "1",
 						},
 					},
-				}},
+				},
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{},
+				},
+			},
 			ownerMachine: &capiv1beta1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-machine"}},

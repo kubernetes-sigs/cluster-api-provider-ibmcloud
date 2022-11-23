@@ -117,9 +117,9 @@ prerequisites_vpc(){
     export IBMVPC_ZONE="${REGION}-1"
     export IBMVPC_RESOURCEGROUP=${IBMVPC_RESOURCEGROUP:-"fa5405a58226402f9a5818cb9b8a5a8a"}
     export IBMVPC_NAME="capi-vpc-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
-    export IBMVPC_IMAGE_ID=${IBMVPC_IMAGE_ID:-"r006-c6f5840c-fd6e-4b40-97ac-fbf13e1c09cd"}
+    export IBMVPC_IMAGE_NAME=${IBMVPC_IMAGE_NAME:-"capibm-vpc-ubuntu-2004-kube-v1-25-2"}
     export IBMVPC_PROFILE=${IBMVPC_PROFILE:-"bx2-4x16"}
-    export IBMVPC_SSHKEY_ID=${IBMVPC_SSHKEY_ID:-"r006-c2ae2255-9961-4654-80ea-ea9091c4decd"}
+    export IBMVPC_SSHKEY_NAME=${IBMVPC_SSHKEY_NAME:-"vpccloud-bot-key"}
     # Setting controller loglevel to allow debug logs from the VPC client
     export LOGLEVEL=5
 }

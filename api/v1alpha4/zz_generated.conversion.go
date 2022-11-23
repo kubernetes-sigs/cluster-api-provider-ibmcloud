@@ -994,6 +994,7 @@ func autoConvert_v1alpha4_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *IBM
 func autoConvert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(in *v1beta1.IBMVPCMachineSpec, out *IBMVPCMachineSpec, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Image = in.Image
+	// WARNING: in.ImageRef requires manual conversion: does not exist in peer-type
 	out.Zone = in.Zone
 	out.Profile = in.Profile
 	out.ProviderID = (*string)(unsafe.Pointer(in.ProviderID))

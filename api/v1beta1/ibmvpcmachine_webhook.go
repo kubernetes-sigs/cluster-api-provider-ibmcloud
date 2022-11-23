@@ -17,7 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -51,17 +54,38 @@ var _ webhook.Validator = &IBMVPCMachine{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMVPCMachine) ValidateCreate() error {
 	ibmvpcmachinelog.Info("validate create", "name", r.Name)
-	return nil
+	return r.validateIBMVPCMachine()
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMVPCMachine) ValidateUpdate(old runtime.Object) error {
 	ibmvpcmachinelog.Info("validate update", "name", r.Name)
-	return nil
+	return r.validateIBMVPCMachine()
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMVPCMachine) ValidateDelete() error {
 	ibmvpcmachinelog.Info("validate delete", "name", r.Name)
+	return nil
+}
+
+func (r *IBMVPCMachine) validateIBMVPCMachine() error {
+	var allErrs field.ErrorList
+	if err := r.validateIBMVPCMachineImage(); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(
+		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMVPCMachine"},
+		r.Name, allErrs)
+}
+
+func (r *IBMVPCMachine) validateIBMVPCMachineImage() *field.Error {
+	if r.Spec.Image == "" && r.Spec.ImageRef == nil {
+		return field.Invalid(field.NewPath(""), "", "One of - Image or ImageRef must be specified")
+	}
 	return nil
 }

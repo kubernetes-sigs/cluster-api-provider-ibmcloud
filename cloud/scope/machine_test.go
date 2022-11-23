@@ -121,8 +121,13 @@ func TestCreateMachine(t *testing.T) {
 
 	vpcMachine := infrav1beta1.IBMVPCMachine{
 		Spec: infrav1beta1.IBMVPCMachineSpec{
-			SSHKeys: []*string{
-				core.StringPtr("foo-ssh-key"),
+			ImageRef: &infrav1beta1.IBMVPCResourceReference{
+				ID: core.StringPtr("foo-image-id"),
+			},
+			SSHKeysRef: []*infrav1beta1.IBMVPCResourceReference{
+				{
+					ID: core.StringPtr("foo-ssh-key-id"),
+				},
 			},
 		},
 	}
@@ -135,6 +140,16 @@ func TestCreateMachine(t *testing.T) {
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			expectedOutput := &vpcv1.Instance{
 				Name: core.StringPtr("foo-machine"),
+			}
+			vpcMachine := infrav1beta1.IBMVPCMachine{
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						ID: core.StringPtr("foo-image-id"),
+					},
+					SSHKeys: []*string{
+						core.StringPtr("foo-ssh-key"),
+					},
+				},
 			}
 			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			instance := &vpcv1.Instance{
@@ -189,7 +204,7 @@ func TestCreateMachine(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 		})
 
-		t.Run("failed to retrieve bootstrap data secret for IBMVPCMachine", func(t *testing.T) {
+		t.Run("Failed to retrieve bootstrap data secret for IBMVPCMachine", func(t *testing.T) {
 			g := NewWithT(t)
 			mockController, mockvpc := setup(t)
 			t.Cleanup(mockController.Finish)
@@ -227,19 +242,23 @@ func TestCreateMachine(t *testing.T) {
 			mockController, mockvpc := setup(t)
 			t.Cleanup(mockController.Finish)
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(&vpcv1.InstanceCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateInstance(gomock.AssignableToTypeOf(&vpcv1.CreateInstanceOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Failed when creating instance"))
 			_, err := scope.CreateMachine()
 			g.Expect(err).To(Not(BeNil()))
 		})
 
-		t.Run("Error when both ID and Name are nil", func(t *testing.T) {
+		t.Run("Error when both SSHKey ID and Name are nil", func(t *testing.T) {
 			g := NewWithT(t)
 			mockController, mockvpc := setup(t)
 			t.Cleanup(mockController.Finish)
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			vpcMachine := infrav1beta1.IBMVPCMachine{
 				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						ID: core.StringPtr("foo-image-id"),
+					},
 					SSHKeysRef: []*infrav1beta1.IBMVPCResourceReference{
 						{},
 					},
@@ -258,6 +277,9 @@ func TestCreateMachine(t *testing.T) {
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			vpcMachine := infrav1beta1.IBMVPCMachine{
 				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						ID: core.StringPtr("foo-image-id"),
+					},
 					SSHKeysRef: []*infrav1beta1.IBMVPCResourceReference{
 						{
 							Name: core.StringPtr("foo-ssh-key"),
@@ -267,7 +289,7 @@ func TestCreateMachine(t *testing.T) {
 			}
 			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(&vpcv1.InstanceCollection{}, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().ListKeys(gomock.AssignableToTypeOf(&vpcv1.ListKeysOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Failed when creating instance"))
+			mockvpc.EXPECT().ListKeys(gomock.AssignableToTypeOf(&vpcv1.ListKeysOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Failed when listing SSHKeys"))
 			_, err := scope.CreateMachine()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -287,6 +309,9 @@ func TestCreateMachine(t *testing.T) {
 			}
 			vpcMachine := infrav1beta1.IBMVPCMachine{
 				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						ID: core.StringPtr("foo-image-id"),
+					},
 					SSHKeysRef: []*infrav1beta1.IBMVPCResourceReference{
 						{
 							Name: core.StringPtr("foo-ssh-key"),
@@ -301,22 +326,13 @@ func TestCreateMachine(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 		})
 
-		t.Run("Should create Machine with SSHKeysRef (ID)", func(t *testing.T) {
+		t.Run("Should create Machine with SSHKeysRef and ImageRef (ID)", func(t *testing.T) {
 			g := NewWithT(t)
 			mockController, mockvpc := setup(t)
 			t.Cleanup(mockController.Finish)
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			expectedOutput := &vpcv1.Instance{
 				Name: core.StringPtr("foo-machine"),
-			}
-			vpcMachine := infrav1beta1.IBMVPCMachine{
-				Spec: infrav1beta1.IBMVPCMachineSpec{
-					SSHKeysRef: []*infrav1beta1.IBMVPCResourceReference{
-						{
-							ID: core.StringPtr("foo-ssh-key-id"),
-						},
-					},
-				},
 			}
 			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			instance := &vpcv1.Instance{
@@ -329,7 +345,7 @@ func TestCreateMachine(t *testing.T) {
 			require.Equal(t, expectedOutput, out)
 		})
 
-		t.Run("Should create Machine with SSHKeysRef (Name)", func(t *testing.T) {
+		t.Run("Should create Machine with SSHKeysRef and ImageRef (Name)", func(t *testing.T) {
 			g := NewWithT(t)
 			mockController, mockvpc := setup(t)
 			t.Cleanup(mockController.Finish)
@@ -345,12 +361,23 @@ func TestCreateMachine(t *testing.T) {
 					},
 				},
 			}
+			imageCollection := &vpcv1.ImageCollection{
+				Images: []vpcv1.Image{
+					{
+						Name: core.StringPtr("foo-image"),
+						ID:   core.StringPtr("foo-image-id"),
+					},
+				},
+			}
 			vpcMachine := infrav1beta1.IBMVPCMachine{
 				Spec: infrav1beta1.IBMVPCMachineSpec{
 					SSHKeysRef: []*infrav1beta1.IBMVPCResourceReference{
 						{
 							Name: core.StringPtr("foo-ssh-key"),
 						},
+					},
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						Name: core.StringPtr("foo-image"),
 					},
 				},
 			}
@@ -359,11 +386,74 @@ func TestCreateMachine(t *testing.T) {
 				Name: &scope.Machine.Name,
 			}
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(&vpcv1.InstanceCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListImages(gomock.AssignableToTypeOf(&vpcv1.ListImagesOptions{})).Return(imageCollection, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListKeys(gomock.AssignableToTypeOf(&vpcv1.ListKeysOptions{})).Return(keyCollection, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateInstance(gomock.AssignableToTypeOf(&vpcv1.CreateInstanceOptions{})).Return(instance, &core.DetailedResponse{}, nil)
 			out, err := scope.CreateMachine()
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
+		})
+
+		t.Run("Error when both Image ID and Name are nil", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			vpcMachine := infrav1beta1.IBMVPCMachine{
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{},
+				},
+			}
+			scope.IBMVPCMachine.Spec = vpcMachine.Spec
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(&vpcv1.InstanceCollection{}, &core.DetailedResponse{}, nil)
+			_, err := scope.CreateMachine()
+			g.Expect(err).To(Not(BeNil()))
+		})
+
+		t.Run("Error when listing Images", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			vpcMachine := infrav1beta1.IBMVPCMachine{
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						Name: core.StringPtr("foo-image"),
+					},
+				},
+			}
+			scope.IBMVPCMachine.Spec = vpcMachine.Spec
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(&vpcv1.InstanceCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListImages(gomock.AssignableToTypeOf(&vpcv1.ListImagesOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Failed when listing Images"))
+			_, err := scope.CreateMachine()
+			g.Expect(err).To(Not(BeNil()))
+		})
+
+		t.Run("Error when Image does not exist", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupMachineScope(clusterName, machineName, mockvpc)
+			imageCollection := &vpcv1.ImageCollection{
+				Images: []vpcv1.Image{
+					{
+						Name: core.StringPtr("foo-image-1"),
+						ID:   core.StringPtr("foo-image-id"),
+					},
+				},
+			}
+			vpcMachine := infrav1beta1.IBMVPCMachine{
+				Spec: infrav1beta1.IBMVPCMachineSpec{
+					ImageRef: &infrav1beta1.IBMVPCResourceReference{
+						Name: core.StringPtr("foo-image"),
+					},
+				},
+			}
+			scope.IBMVPCMachine.Spec = vpcMachine.Spec
+			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(&vpcv1.InstanceCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListImages(gomock.AssignableToTypeOf(&vpcv1.ListImagesOptions{})).Return(imageCollection, &core.DetailedResponse{}, nil)
+			_, err := scope.CreateMachine()
+			g.Expect(err).To(Not(BeNil()))
 		})
 	})
 }

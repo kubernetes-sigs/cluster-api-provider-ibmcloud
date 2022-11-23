@@ -363,6 +363,22 @@ func (mr *MockVpcMockRecorder) ListFloatingIps(options interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFloatingIps", reflect.TypeOf((*MockVpc)(nil).ListFloatingIps), options)
 }
 
+// ListImages mocks base method.
+func (m *MockVpc) ListImages(options *vpcv1.ListImagesOptions) (*vpcv1.ImageCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListImages", options)
+	ret0, _ := ret[0].(*vpcv1.ImageCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListImages indicates an expected call of ListImages.
+func (mr *MockVpcMockRecorder) ListImages(options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImages", reflect.TypeOf((*MockVpc)(nil).ListImages), options)
+}
+
 // ListInstances mocks base method.
 func (m *MockVpc) ListInstances(options *vpcv1.ListInstancesOptions) (*vpcv1.InstanceCollection, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()

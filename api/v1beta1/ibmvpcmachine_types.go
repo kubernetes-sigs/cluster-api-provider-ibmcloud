@@ -37,9 +37,14 @@ type IBMVPCMachineSpec struct {
 	Name string `json:"name,omitempty"`
 
 	// Image is the id of OS image which would be install on the instance.
+	// Deprecated: Use ImageRef instead.
+	// +optional
 	// Example: r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00
-	// TODO: allow user to specify a image name is much reasonable. Example: ibm-ubuntu-18-04-1-minimal-amd64-2
-	Image string `json:"image"`
+	Image string `json:"image,omitempty"`
+
+	// ImageRef is the OS image which would be install on the instance.
+	// +optional
+	ImageRef *IBMVPCResourceReference `json:"imageRef,omitempty"`
 
 	// Zone is the place where the instance should be created. Example: us-south-3
 	// TODO: Actually zone is transparent to user. The field user can access is location. Example: Dallas 2

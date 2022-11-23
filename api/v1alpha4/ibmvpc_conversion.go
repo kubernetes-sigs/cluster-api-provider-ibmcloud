@@ -63,6 +63,10 @@ func (src *IBMVPCMachine) ConvertTo(dstRaw conversion.Hub) error {
 		})
 	}
 
+	dst.Spec.ImageRef = &infrav1beta1.IBMVPCResourceReference{
+		ID: &src.Spec.Image,
+	}
+
 	return nil
 }
 
@@ -85,6 +89,11 @@ func (dst *IBMVPCMachine) ConvertFrom(srcRaw conversion.Hub) error {
 				dst.Spec.SSHKeys = append(dst.Spec.SSHKeys, sshKey.ID)
 			}
 		}
+	}
+
+	if src.Spec.ImageRef != nil && src.Spec.ImageRef.ID != nil {
+		// Only source image with ID will be converted
+		dst.Spec.Image = *src.Spec.ImageRef.ID
 	}
 
 	return nil
@@ -115,6 +124,10 @@ func (src *IBMVPCMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		})
 	}
 
+	dst.Spec.Template.Spec.ImageRef = &infrav1beta1.IBMVPCResourceReference{
+		ID: &src.Spec.Template.Spec.Image,
+	}
+
 	return nil
 }
 
@@ -137,6 +150,11 @@ func (dst *IBMVPCMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 				dst.Spec.Template.Spec.SSHKeys = append(dst.Spec.Template.Spec.SSHKeys, sshKey.ID)
 			}
 		}
+	}
+
+	if src.Spec.Template.Spec.ImageRef != nil && src.Spec.Template.Spec.ImageRef.ID != nil {
+		// Only source image with ID will be converted
+		dst.Spec.Template.Spec.Image = *src.Spec.Template.Spec.ImageRef.ID
 	}
 
 	return nil

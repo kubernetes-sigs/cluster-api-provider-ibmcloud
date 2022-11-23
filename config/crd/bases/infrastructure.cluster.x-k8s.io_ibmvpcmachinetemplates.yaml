@@ -210,10 +210,22 @@ spec:
                     properties:
                       image:
                         description: 'Image is the id of OS image which would be install
-                          on the instance. Example: r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00
-                          TODO: allow user to specify a image name is much reasonable.
-                          Example: ibm-ubuntu-18-04-1-minimal-amd64-2'
+                          on the instance. Deprecated: Use ImageRef instead. Example:
+                          r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00'
                         type: string
+                      imageRef:
+                        description: ImageRef is the OS image which would be install
+                          on the instance.
+                        properties:
+                          id:
+                            description: ID of resource
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name of resource
+                            minLength: 1
+                            type: string
+                        type: object
                       name:
                         description: Name of the instance.
                         type: string
@@ -266,7 +278,6 @@ spec:
                           Dallas 2'
                         type: string
                     required:
-                    - image
                     - zone
                     type: object
                 required:

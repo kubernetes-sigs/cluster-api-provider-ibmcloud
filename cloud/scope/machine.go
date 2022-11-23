@@ -124,11 +124,20 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 		return nil, err
 	}
 
+	imageID := &m.IBMVPCMachine.Spec.Image
+	if m.IBMVPCMachine.Spec.ImageRef != nil {
+		imageID, err = fetchImageID(m.IBMVPCMachine.Spec.ImageRef, m)
+		if err != nil {
+			record.Warnf(m.IBMVPCMachine, "FailedRetriveImage", "Failed image retrival - %v", err)
+			return nil, fmt.Errorf("error while fetching image ID: %v", err)
+		}
+	}
+
 	options := &vpcv1.CreateInstanceOptions{}
 	instancePrototype := &vpcv1.InstancePrototype{
 		Name: &m.IBMVPCMachine.Name,
 		Image: &vpcv1.ImageIdentity{
-			ID: &m.IBMVPCMachine.Spec.Image,
+			ID: imageID,
 		},
 		Profile: &vpcv1.InstanceProfileIdentity{
 			Name: &m.IBMVPCMachine.Spec.Profile,
@@ -369,4 +378,33 @@ func fetchKeyID(key *infrav1beta1.IBMVPCResourceReference, m *MachineScope) (*st
 	}
 
 	return nil, fmt.Errorf("sshkey does not exist - failed to find Key ID")
+}
+
+func fetchImageID(image *infrav1beta1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+	if image.ID != nil {
+		return image.ID, nil
+	}
+
+	if image.Name != nil {
+		images, _, err := m.IBMVPCClient.ListImages(&vpcv1.ListImagesOptions{
+			ResourceGroupID: &m.IBMVPCCluster.Spec.ResourceGroup,
+		})
+		if err != nil {
+			m.Logger.Error(err, "Failed to get images")
+			return nil, err
+		}
+
+		for _, img := range images.Images {
+			if *image.Name == *img.Name {
+				m.Logger.Info("Image found with ID", "Image", *image.Name, "ID", *img.ID)
+				return img.ID, nil
+			}
+		}
+	}
+
+	if image.ID == nil && image.Name == nil {
+		return nil, fmt.Errorf("both ID and Name can't be nil")
+	}
+
+	return nil, fmt.Errorf("failed to find an image ID")
 }
