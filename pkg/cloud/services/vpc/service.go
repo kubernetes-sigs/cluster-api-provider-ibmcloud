@@ -168,11 +168,6 @@ func (s *Service) ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoo
 	return s.vpcService.ListLoadBalancerPoolMembers(options)
 }
 
-// ListKeys returns list of keys in a region.
-func (s *Service) ListKeys(options *vpcv1.ListKeysOptions) (*vpcv1.KeyCollection, *core.DetailedResponse, error) {
-	return s.vpcService.ListKeys(options)
-}
-
 // NewService returns a new VPC Service.
 func NewService(svcEndpoint string) (Vpc, error) {
 	service := &Service{}

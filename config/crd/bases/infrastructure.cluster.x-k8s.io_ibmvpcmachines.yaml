@@ -269,28 +269,10 @@ spec:
                   cloud provider.
                 type: string
               sshKeys:
-                description: 'SSHKeys is the SSH pub keys that will be used to access
-                  VM. Deprecated: Use SSHKeysRef instead'
-                items:
-                  type: string
-                type: array
-              sshKeysRef:
-                description: SSHKeysRef is the SSH pub keys that will be used to access
+                description: SSHKeys is the SSH pub keys that will be used to access
                   VM.
                 items:
-                  description: IBMVPCResourceReference is a reference to a specific
-                    VPC resource by ID or Name Only one of ID or Name may be specified.
-                    Specifying more than one will result in a validation error.
-                  properties:
-                    id:
-                      description: ID of resource
-                      minLength: 1
-                      type: string
-                    name:
-                      description: Name of resource
-                      minLength: 1
-                      type: string
-                  type: object
+                  type: string
                 type: array
               zone:
                 description: 'Zone is the place where the instance should be created.

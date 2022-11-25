@@ -157,22 +157,6 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 		}
 	}
 
-	if m.IBMVPCMachine.Spec.SSHKeysRef != nil {
-		if instancePrototype.Keys == nil {
-			instancePrototype.Keys = []vpcv1.KeyIdentityIntf{}
-		}
-		for _, sshKey := range m.IBMVPCMachine.Spec.SSHKeysRef {
-			keyID, err := fetchKeyID(sshKey, m)
-			if err != nil {
-				return nil, fmt.Errorf("error while fetching SSHKey: %v error: %v", sshKey, err)
-			}
-			key := &vpcv1.KeyIdentity{
-				ID: keyID,
-			}
-			instancePrototype.Keys = append(instancePrototype.Keys, key)
-		}
-	}
-
 	options.SetInstancePrototype(instancePrototype)
 	instance, _, err := m.IBMVPCClient.CreateInstance(options)
 	if err != nil {
@@ -342,31 +326,4 @@ func (m *MachineScope) GetBootstrapData() (string, error) {
 		return "", errors.New("error retrieving bootstrap data: secret value key is missing")
 	}
 	return string(value), nil
-}
-
-func fetchKeyID(key *infrav1beta1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
-	if key.ID != nil {
-		return key.ID, nil
-	}
-
-	if key.Name != nil {
-		keys, _, err := m.IBMVPCClient.ListKeys(&vpcv1.ListKeysOptions{})
-		if err != nil {
-			m.Logger.Error(err, "Failed to get keys")
-			return nil, err
-		}
-
-		for _, k := range keys.Keys {
-			if *k.Name == *key.Name {
-				m.Logger.V(3).Info("Key found with ID", "Key", *k.Name, "ID", *k.ID)
-				return k.ID, nil
-			}
-		}
-	}
-
-	if key.ID == nil && key.Name == nil {
-		return nil, fmt.Errorf("both ID and Name can't be nil")
-	}
-
-	return nil, fmt.Errorf("sshkey does not exist - failed to find Key ID")
 }

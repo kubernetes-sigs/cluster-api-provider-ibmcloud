@@ -1001,7 +1001,6 @@ func autoConvert_v1beta1_IBMVPCMachineSpec_To_v1alpha4_IBMVPCMachineSpec(in *v1b
 		return err
 	}
 	out.SSHKeys = *(*[]*string)(unsafe.Pointer(&in.SSHKeys))
-	// WARNING: in.SSHKeysRef requires manual conversion: does not exist in peer-type
 	return nil
 }
 
