@@ -14,7 +14,7 @@ spec:
       cidrBlocks:
         - ${SERVICE_CIDR:="10.128.0.0/12"}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
     kind: IBMPowerVSCluster
     name: "${CLUSTER_NAME}"
   controlPlaneRef:
@@ -22,7 +22,7 @@ spec:
     kind: KubeadmControlPlane
     name: "${CLUSTER_NAME}-control-plane"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSCluster
 metadata:
   labels:
@@ -46,7 +46,7 @@ spec:
   machineTemplate:
     infrastructureRef:
       kind: IBMPowerVSMachineTemplate
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       name: "${CLUSTER_NAME}-control-plane"
   kubeadmConfigSpec:
     clusterConfiguration:
@@ -152,7 +152,7 @@ spec:
         owner: "root:root"
         permissions: "0744"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
@@ -190,10 +190,10 @@ spec:
           kind: KubeadmConfigTemplate
       infrastructureRef:
         name: "${CLUSTER_NAME}-md-0"
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: IBMPowerVSMachineTemplate
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: "${CLUSTER_NAME}-md-0"

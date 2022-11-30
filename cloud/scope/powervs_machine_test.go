@@ -38,16 +38,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 
 	. "github.com/onsi/gomega"
 )
 
-func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1beta1.IBMPowerVSMachine {
-	image := &infrav1beta1.IBMPowerVSResourceReference{}
-	network := infrav1beta1.IBMPowerVSResourceReference{}
+func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1beta2.IBMPowerVSMachine {
+	image := &infrav1beta2.IBMPowerVSResourceReference{}
+	network := infrav1beta2.IBMPowerVSResourceReference{}
 
 	if !isID {
 		image.Name = imageRef
@@ -57,7 +57,7 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 		network.ID = networkRef
 	}
 
-	return &infrav1beta1.IBMPowerVSMachine{
+	return &infrav1beta2.IBMPowerVSMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				capiv1beta1.ClusterLabelName: clusterName,
@@ -65,7 +65,7 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 			Name:      machineName,
 			Namespace: "default",
 		},
-		Spec: infrav1beta1.IBMPowerVSMachineSpec{
+		Spec: infrav1beta2.IBMPowerVSMachineSpec{
 			Memory:     "8",
 			Processors: "0.25",
 			Image:      image,
@@ -337,8 +337,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, nil, core.StringPtr(pvsNetwork), true, mockpowervs)
-			scope.IBMPowerVSImage = &infrav1beta1.IBMPowerVSImage{
-				Status: infrav1beta1.IBMPowerVSImageStatus{
+			scope.IBMPowerVSImage = &infrav1beta2.IBMPowerVSImage{
+				Status: infrav1beta2.IBMPowerVSImageStatus{
 					ImageID: "foo-image",
 				},
 			}

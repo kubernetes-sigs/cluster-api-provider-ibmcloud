@@ -34,7 +34,7 @@ import (
 
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -48,7 +48,7 @@ const BucketAccess = "public"
 type PowerVSImageScopeParams struct {
 	Client          client.Client
 	Logger          logr.Logger
-	IBMPowerVSImage *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSImage *infrav1beta2.IBMPowerVSImage
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
@@ -59,7 +59,7 @@ type PowerVSImageScope struct {
 	patchHelper *patch.Helper
 
 	IBMPowerVSClient powervs.PowerVS
-	IBMPowerVSImage  *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSImage  *infrav1beta2.IBMPowerVSImage
 	ServiceEndpoint  []endpoints.ServiceEndpoint
 }
 
@@ -257,11 +257,11 @@ func (i *PowerVSImageScope) GetImageID() string {
 
 // SetImageState will set the state for the image.
 func (i *PowerVSImageScope) SetImageState(status string) {
-	i.IBMPowerVSImage.Status.ImageState = infrav1beta1.PowerVSImageState(status)
+	i.IBMPowerVSImage.Status.ImageState = infrav1beta2.PowerVSImageState(status)
 }
 
 // GetImageState will get the state for the image.
-func (i *PowerVSImageScope) GetImageState() infrav1beta1.PowerVSImageState {
+func (i *PowerVSImageScope) GetImageState() infrav1beta2.PowerVSImageState {
 	return i.IBMPowerVSImage.Status.ImageState
 }
 

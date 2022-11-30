@@ -33,14 +33,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
 )
 
-func newVPCMachine(clusterName, machineName string) *infrav1beta1.IBMVPCMachine {
-	return &infrav1beta1.IBMVPCMachine{
+func newVPCMachine(clusterName, machineName string) *infrav1beta2.IBMVPCMachine {
+	return &infrav1beta2.IBMVPCMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				capiv1beta1.ClusterLabelName: clusterName,
@@ -119,8 +119,8 @@ func TestCreateMachine(t *testing.T) {
 		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
-	vpcMachine := infrav1beta1.IBMVPCMachine{
-		Spec: infrav1beta1.IBMVPCMachineSpec{
+	vpcMachine := infrav1beta2.IBMVPCMachine{
+		Spec: infrav1beta2.IBMVPCMachineSpec{
 			SSHKeys: []*string{
 				core.StringPtr("foo-ssh-key"),
 			},
@@ -241,11 +241,11 @@ func TestDeleteMachine(t *testing.T) {
 		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
-	vpcMachine := infrav1beta1.IBMVPCMachine{
-		Spec: infrav1beta1.IBMVPCMachineSpec{
+	vpcMachine := infrav1beta2.IBMVPCMachine{
+		Spec: infrav1beta2.IBMVPCMachineSpec{
 			Name: "foo-machine",
 		},
-		Status: infrav1beta1.IBMVPCMachineStatus{
+		Status: infrav1beta2.IBMVPCMachineStatus{
 			InstanceID: "foo-instance-id",
 		},
 	}
@@ -293,11 +293,11 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
-	vpcMachine := infrav1beta1.IBMVPCMachine{
-		Spec: infrav1beta1.IBMVPCMachineSpec{
+	vpcMachine := infrav1beta2.IBMVPCMachine{
+		Spec: infrav1beta2.IBMVPCMachineSpec{
 			Name: "foo-machine",
 		},
-		Status: infrav1beta1.IBMVPCMachineStatus{
+		Status: infrav1beta2.IBMVPCMachineStatus{
 			Addresses: []corev1.NodeAddress{
 				{
 					Type:    corev1.NodeInternalIP,
@@ -438,11 +438,11 @@ func TestDeleteVPCLoadBalancerPoolMember(t *testing.T) {
 		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
-	vpcMachine := infrav1beta1.IBMVPCMachine{
-		Spec: infrav1beta1.IBMVPCMachineSpec{
+	vpcMachine := infrav1beta2.IBMVPCMachine{
+		Spec: infrav1beta2.IBMVPCMachineSpec{
 			Name: "foo-machine",
 		},
-		Status: infrav1beta1.IBMVPCMachineStatus{
+		Status: infrav1beta2.IBMVPCMachineStatus{
 			InstanceID: "foo-instance-id",
 			Addresses: []corev1.NodeAddress{
 				{

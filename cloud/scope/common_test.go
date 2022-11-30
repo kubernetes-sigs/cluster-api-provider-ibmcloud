@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 const (
@@ -42,8 +42,8 @@ func newCluster(name string) *capiv1beta1.Cluster {
 	}
 }
 
-func newVPCCluster(name string) *infrav1beta1.IBMVPCCluster {
-	return &infrav1beta1.IBMVPCCluster{
+func newVPCCluster(name string) *infrav1beta2.IBMVPCCluster {
+	return &infrav1beta2.IBMVPCCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
@@ -51,8 +51,8 @@ func newVPCCluster(name string) *infrav1beta1.IBMVPCCluster {
 	}
 }
 
-func newPowerVSCluster(name string) *infrav1beta1.IBMPowerVSCluster {
-	return &infrav1beta1.IBMPowerVSCluster{
+func newPowerVSCluster(name string) *infrav1beta2.IBMPowerVSCluster {
+	return &infrav1beta2.IBMPowerVSCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",

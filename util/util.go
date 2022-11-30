@@ -23,12 +23,12 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 // GetClusterByName finds and return a Cluster object using the specified params.
-func GetClusterByName(ctx context.Context, c client.Client, namespace, name string) (*infrav1beta1.IBMPowerVSCluster, error) {
-	cluster := &infrav1beta1.IBMPowerVSCluster{}
+func GetClusterByName(ctx context.Context, c client.Client, namespace, name string) (*infrav1beta2.IBMPowerVSCluster, error) {
+	cluster := &infrav1beta2.IBMPowerVSCluster{}
 	key := client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,

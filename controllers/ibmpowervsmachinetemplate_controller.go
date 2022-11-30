@@ -33,7 +33,7 @@ import (
 
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 // defaultSMT is the default value of simultaneous multithreading.
@@ -47,7 +47,7 @@ type IBMPowerVSMachineTemplateReconciler struct {
 
 func (r *IBMPowerVSMachineTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1beta1.IBMPowerVSMachineTemplate{}).
+		For(&infrav1beta2.IBMPowerVSMachineTemplate{}).
 		Complete(r)
 }
 
@@ -58,7 +58,7 @@ func (r *IBMPowerVSMachineTemplateReconciler) Reconcile(ctx context.Context, req
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Reconciling IBMPowerVSMachineTemplate")
 
-	var machineTemplate infrav1beta1.IBMPowerVSMachineTemplate
+	var machineTemplate infrav1beta2.IBMPowerVSMachineTemplate
 	if err := r.Get(ctx, req.NamespacedName, &machineTemplate); err != nil {
 		log.Error(err, "Unable to fetch ibmpowervsmachinetemplate")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -88,7 +88,7 @@ func (r *IBMPowerVSMachineTemplateReconciler) Reconcile(ctx context.Context, req
 	return ctrl.Result{}, nil
 }
 
-func getIBMPowerVSMachineCapacity(machineTemplate infrav1beta1.IBMPowerVSMachineTemplate) (corev1.ResourceList, error) {
+func getIBMPowerVSMachineCapacity(machineTemplate infrav1beta2.IBMPowerVSMachineTemplate) (corev1.ResourceList, error) {
 	capacity := make(corev1.ResourceList)
 	capacity[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%sG", machineTemplate.Spec.Template.Spec.Memory))
 	// There is a core-to-lCPU ratio of 1:1 for Dedicated processors. For shared processors, fractional cores round up to the nearest whole number. For example, 1.25 cores equals 2 lCPUs.

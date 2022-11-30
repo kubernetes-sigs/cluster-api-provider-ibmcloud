@@ -35,7 +35,7 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -48,8 +48,8 @@ type MachineScopeParams struct {
 	Logger          logr.Logger
 	Cluster         *capiv1beta1.Cluster
 	Machine         *capiv1beta1.Machine
-	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
-	IBMVPCMachine   *infrav1beta1.IBMVPCMachine
+	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
+	IBMVPCMachine   *infrav1beta2.IBMVPCMachine
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
@@ -62,8 +62,8 @@ type MachineScope struct {
 	IBMVPCClient    vpc.Vpc
 	Cluster         *capiv1beta1.Cluster
 	Machine         *capiv1beta1.Machine
-	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
-	IBMVPCMachine   *infrav1beta1.IBMVPCMachine
+	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
+	IBMVPCMachine   *infrav1beta2.IBMVPCMachine
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
@@ -207,7 +207,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targe
 		return nil, err
 	}
 
-	if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateActive) {
+	if *loadBalancer.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
 		return nil, fmt.Errorf("load balancer is not in active state")
 	}
 
@@ -280,7 +280,7 @@ func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
 		if _, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
 			mtarget := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget)
 			if *mtarget.Address == *instance.PrimaryNetworkInterface.PrimaryIP.Address {
-				if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateActive) {
+				if *loadBalancer.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
 					return fmt.Errorf("load balancer is not in active state")
 				}
 

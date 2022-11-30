@@ -33,7 +33,7 @@ spec:
   controlPlane:
     machineInfrastructure:
       ref:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: IBMPowerVSMachineTemplate
         name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate"
     ref:
@@ -42,7 +42,7 @@ spec:
       name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane"
   infrastructure:
     ref:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: IBMPowerVSClusterTemplate
       name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template"
   workers:
@@ -56,11 +56,11 @@ spec:
               name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
           infrastructure:
             ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: IBMPowerVSMachineTemplate
               name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSClusterTemplate
 metadata:
   name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template"
@@ -216,7 +216,7 @@ spec:
         - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
         - echo "{{ v1.local_hostname }}" >/etc/hostname
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate"
@@ -234,7 +234,7 @@ spec:
       sysType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
       procType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="shared"}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"

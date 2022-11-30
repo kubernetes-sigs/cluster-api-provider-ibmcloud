@@ -32,7 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 
 	. "github.com/onsi/gomega"
@@ -41,13 +41,13 @@ import (
 func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 	testCases := []struct {
 		name           string
-		powervsCluster *infrav1beta1.IBMPowerVSCluster
+		powervsCluster *infrav1beta2.IBMPowerVSCluster
 		ownerCluster   *capiv1beta1.Cluster
 		expectError    bool
 	}{
 		{
 			name: "Should fail Reconcile if owner cluster not found",
-			powervsCluster: &infrav1beta1.IBMPowerVSCluster{
+			powervsCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "powervs-test-",
 					OwnerReferences: []metav1.OwnerReference{
@@ -57,15 +57,15 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 							Name:       "capi-test",
 							UID:        "1",
 						}}},
-				Spec: infrav1beta1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"}},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"}},
 			expectError: true,
 		},
 		{
 			name: "Should not reconcile if owner reference is not set",
-			powervsCluster: &infrav1beta1.IBMPowerVSCluster{
+			powervsCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "powervs-test-"},
-				Spec: infrav1beta1.IBMPowerVSClusterSpec{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ServiceInstanceID: "foo"}},
 			expectError: false,
 		},
@@ -137,16 +137,16 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		{
 			name: "Should add finalizer and reconcile IBMPowerVSCluster",
 			powervsClusterScope: &scope.PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{},
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			},
 			clusterStatus: false,
 		},
 		{
 			name: "Should reconcile IBMPowerVSCluster status as Ready",
 			powervsClusterScope: &scope.PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					ObjectMeta: metav1.ObjectMeta{
-						Finalizers: []string{infrav1beta1.IBMPowerVSClusterFinalizer},
+						Finalizers: []string{infrav1beta2.IBMPowerVSClusterFinalizer},
 					},
 				},
 			},
@@ -161,7 +161,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			}
 			_ = reconciler.reconcile(tc.powervsClusterScope)
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
-			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta1.IBMPowerVSClusterFinalizer))
+			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSClusterFinalizer))
 		})
 	}
 }
@@ -179,7 +179,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
 				Logger: klogr.New(),
-				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
 						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -187,7 +187,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-powervs-cluster",
 					},
-					Spec: infrav1beta1.IBMPowerVSClusterSpec{
+					Spec: infrav1beta2.IBMPowerVSClusterSpec{
 						ServiceInstanceID: "service-instance-1",
 					},
 				},
@@ -201,7 +201,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
 				Logger: klogr.New(),
-				IBMPowerVSCluster: &infrav1beta1.IBMPowerVSCluster{
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
 						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -209,18 +209,18 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-powervs-cluster",
 					},
-					Spec: infrav1beta1.IBMPowerVSClusterSpec{
+					Spec: infrav1beta2.IBMPowerVSClusterSpec{
 						ServiceInstanceID: "service-instance-1",
 					},
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
 			}
-			powervsImage1 := &infrav1beta1.IBMPowerVSImage{
+			powervsImage1 := &infrav1beta2.IBMPowerVSImage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-image",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: infrav1beta1.GroupVersion.String(),
+							APIVersion: infrav1beta2.GroupVersion.String(),
 							Kind:       "IBMPowerVSCluster",
 							Name:       "capi-powervs-cluster",
 							UID:        "1",
@@ -228,19 +228,19 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					},
 					Labels: map[string]string{capiv1beta1.ClusterLabelName: "capi-powervs-cluster"},
 				},
-				Spec: infrav1beta1.IBMPowerVSImageSpec{
+				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
 					Object:      pointer.String("capi-image.ova.gz"),
 					Region:      pointer.String("us-south"),
 					Bucket:      pointer.String("capi-bucket"),
 				},
 			}
-			powervsImage2 := &infrav1beta1.IBMPowerVSImage{
+			powervsImage2 := &infrav1beta2.IBMPowerVSImage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-image2",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: infrav1beta1.GroupVersion.String(),
+							APIVersion: infrav1beta2.GroupVersion.String(),
 							Kind:       "IBMPowerVSCluster",
 							Name:       "capi-powervs-cluster",
 							UID:        "1",
@@ -248,7 +248,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					},
 					Labels: map[string]string{capiv1beta1.ClusterLabelName: "capi-powervs-cluster"},
 				},
-				Spec: infrav1beta1.IBMPowerVSImageSpec{
+				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
 					Object:      pointer.String("capi-image2.ova.gz"),
 					Region:      pointer.String("us-south"),
@@ -270,12 +270,12 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	})
 }
 
-func createCluster(g *WithT, powervsCluster *infrav1beta1.IBMPowerVSCluster, namespace string) {
+func createCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, namespace string) {
 	if powervsCluster != nil {
 		powervsCluster.Namespace = namespace
 		g.Expect(testEnv.Create(ctx, powervsCluster)).To(Succeed())
 		g.Eventually(func() bool {
-			cluster := &infrav1beta1.IBMPowerVSCluster{}
+			cluster := &infrav1beta2.IBMPowerVSCluster{}
 			key := client.ObjectKey{
 				Name:      powervsCluster.Name,
 				Namespace: namespace,
@@ -286,7 +286,7 @@ func createCluster(g *WithT, powervsCluster *infrav1beta1.IBMPowerVSCluster, nam
 	}
 }
 
-func cleanupCluster(g *WithT, powervsCluster *infrav1beta1.IBMPowerVSCluster, namespace *corev1.Namespace) {
+func cleanupCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, namespace *corev1.Namespace) {
 	if powervsCluster != nil {
 		func(do ...client.Object) {
 			g.Expect(testEnv.Cleanup(ctx, do...)).To(Succeed())
