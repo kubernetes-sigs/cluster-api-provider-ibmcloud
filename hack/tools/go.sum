@@ -1205,8 +1205,8 @@ mvdan.cc/unparam v0.0.0-20220706161116-678bad134442/go.mod h1:F/Cxw/6mVrNKqrR2Yj
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221115124042-5ff76fb05fc7 h1:+V40a3q13iBS0DzF6reb+e0rxe/uVOA5K8U/62cHCOI=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221115124042-5ff76fb05fc7/go.mod h1:7luenhlsUTb9obnAferuDFEvhtITw7JjHpXkiDmCmKY=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221130113655-72aa9d1e6897 h1:oqKqvAfbm+OiV37qBUnuvbeRLrCj6sKpnd012DKZP8g=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221130113655-72aa9d1e6897/go.mod h1:7luenhlsUTb9obnAferuDFEvhtITw7JjHpXkiDmCmKY=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9 h1:ylYUI5uaq/guUFerFRVG81FHSA5/3+fERCE1RQbQUZ4=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9/go.mod h1:+sJcI1F0QI0Cv+8fp5rH5B2fK1LxzrAQqYnaPx9nY8I=
 sigs.k8s.io/controller-tools v0.10.0 h1:0L5DTDTFB67jm9DkfrONgTGmfc/zYow0ZaHyppizU2U=

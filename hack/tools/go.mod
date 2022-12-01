@@ -11,7 +11,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.5.0
 	gotest.tools/gotestsum v1.8.2
 	k8s.io/code-generator v0.25.0
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221115124042-5ff76fb05fc7
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221130113655-72aa9d1e6897
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.10.0
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.7
