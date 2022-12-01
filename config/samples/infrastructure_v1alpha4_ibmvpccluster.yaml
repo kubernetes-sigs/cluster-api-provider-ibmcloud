@@ -1,9 +1,0 @@
-apiVersion: infrastructure.cluster.x-k8s.io/v1alpha4
-kind: IBMVPCCluster
-metadata:
-  name: ibmvpccluster-sample
-spec:
-  region: us-south-1
-  resourceGroup: 4f15679623607b855b1a27a67f20e1c7
-  vpc: ibm-vpc-1
-  zone: us-south-1

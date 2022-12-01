@@ -5,7 +5,7 @@ metadata:
   name: ibmvpcmachine-editor-role
 rules:
 - apiGroups:
-  - infrastructure.cluster.x-k8s.io 
+  - infrastructure.cluster.x-k8s.io
   resources:
   - ibmvpcmachines
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - infrastructure.cluster.x-k8s.io 
+  - infrastructure.cluster.x-k8s.io
   resources:
   - ibmvpcmachines/status
   verbs:

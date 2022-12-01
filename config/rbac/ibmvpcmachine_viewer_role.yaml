@@ -5,7 +5,7 @@ metadata:
   name: ibmvpcmachine-viewer-role
 rules:
 - apiGroups:
-  - infrastructure.cluster.x-k8s.io 
+  - infrastructure.cluster.x-k8s.io
   resources:
   - ibmvpcmachines
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - infrastructure.cluster.x-k8s.io 
+  - infrastructure.cluster.x-k8s.io
   resources:
   - ibmvpcmachines/status
   verbs:

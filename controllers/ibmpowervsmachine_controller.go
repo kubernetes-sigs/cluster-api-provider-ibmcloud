@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -70,7 +70,7 @@ func init() {
 func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	ibmPowerVSMachine := &infrav1beta1.IBMPowerVSMachine{}
+	ibmPowerVSMachine := &infrav1beta2.IBMPowerVSMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmPowerVSMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -99,7 +99,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	ibmCluster := &infrav1beta1.IBMPowerVSCluster{}
+	ibmCluster := &infrav1beta2.IBMPowerVSCluster{}
 	ibmPowerVSClusterName := client.ObjectKey{
 		Namespace: ibmPowerVSMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
@@ -109,9 +109,9 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
-	var ibmPowerVSImage *infrav1beta1.IBMPowerVSImage
+	var ibmPowerVSImage *infrav1beta2.IBMPowerVSImage
 	if ibmPowerVSMachine.Spec.ImageRef != nil {
-		ibmPowerVSImage = &infrav1beta1.IBMPowerVSImage{}
+		ibmPowerVSImage = &infrav1beta2.IBMPowerVSImage{}
 		ibmPowerVSImageName := client.ObjectKey{
 			Namespace: ibmPowerVSMachine.Namespace,
 			Name:      ibmPowerVSMachine.Spec.ImageRef.Name,
@@ -157,7 +157,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 // SetupWithManager creates a new IBMPowerVSMachine controller for a manager.
 func (r *IBMPowerVSMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1beta1.IBMPowerVSMachine{}).
+		For(&infrav1beta2.IBMPowerVSMachine{}).
 		Complete(r)
 }
 
@@ -167,7 +167,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachin
 	defer func() {
 		if reterr == nil {
 			// VSI is deleted so remove the finalizer.
-			controllerutil.RemoveFinalizer(scope.IBMPowerVSMachine, infrav1beta1.IBMPowerVSMachineFinalizer)
+			controllerutil.RemoveFinalizer(scope.IBMPowerVSMachine, infrav1beta2.IBMPowerVSMachineFinalizer)
 		}
 	}()
 
@@ -197,14 +197,14 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 
 	if !machineScope.Cluster.Status.InfrastructureReady {
 		machineScope.Info("Cluster infrastructure is not ready yet")
-		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.WaitingForClusterInfrastructureReason, capiv1beta1.ConditionSeverityInfo, "")
+		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.WaitingForClusterInfrastructureReason, capiv1beta1.ConditionSeverityInfo, "")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
 	if machineScope.IBMPowerVSImage != nil {
 		if !machineScope.IBMPowerVSImage.Status.Ready {
 			machineScope.Info("IBMPowerVSImage is not ready yet")
-			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.WaitingForIBMPowerVSImageReason, capiv1beta1.ConditionSeverityInfo, "")
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.WaitingForIBMPowerVSImageReason, capiv1beta1.ConditionSeverityInfo, "")
 			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 		}
 	}
@@ -212,16 +212,16 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
 		machineScope.Info("Bootstrap data secret reference is not yet available")
-		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.WaitingForBootstrapDataReason, capiv1beta1.ConditionSeverityInfo, "")
+		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.WaitingForBootstrapDataReason, capiv1beta1.ConditionSeverityInfo, "")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
-	controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, infrav1beta1.IBMPowerVSMachineFinalizer)
+	controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, infrav1beta2.IBMPowerVSMachineFinalizer)
 
 	ins, err := r.getOrCreate(machineScope)
 	if err != nil {
 		machineScope.Error(err, "Unable to create instance")
-		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceProvisionFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceProvisionFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VSI for IBMPowerVSMachine %s/%s", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name)
 	}
 
@@ -236,17 +236,17 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		machineScope.SetHealth(instance.Health)
 		machineScope.SetInstanceState(instance.Status)
 		switch machineScope.GetInstanceState() {
-		case infrav1beta1.PowerVSInstanceStateBUILD:
+		case infrav1beta2.PowerVSInstanceStateBUILD:
 			machineScope.SetNotReady()
-			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceNotReadyReason, capiv1beta1.ConditionSeverityWarning, "")
-		case infrav1beta1.PowerVSInstanceStateSHUTOFF:
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceNotReadyReason, capiv1beta1.ConditionSeverityWarning, "")
+		case infrav1beta2.PowerVSInstanceStateSHUTOFF:
 			machineScope.SetNotReady()
-			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceStoppedReason, capiv1beta1.ConditionSeverityError, "")
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStoppedReason, capiv1beta1.ConditionSeverityError, "")
 			return ctrl.Result{}, nil
-		case infrav1beta1.PowerVSInstanceStateACTIVE:
+		case infrav1beta2.PowerVSInstanceStateACTIVE:
 			machineScope.SetReady()
-			conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition)
-		case infrav1beta1.PowerVSInstanceStateERROR:
+			conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition)
+		case infrav1beta2.PowerVSInstanceStateERROR:
 			msg := ""
 			if instance.Fault != nil {
 				msg = instance.Fault.Details
@@ -254,13 +254,13 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 			machineScope.SetNotReady()
 			machineScope.SetFailureReason(capierrors.UpdateMachineError)
 			machineScope.SetFailureMessage(msg)
-			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, infrav1beta1.InstanceErroredReason, capiv1beta1.ConditionSeverityError, msg)
+			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceErroredReason, capiv1beta1.ConditionSeverityError, msg)
 			capibmrecord.Warnf(machineScope.IBMPowerVSMachine, "FailedBuildInstance", "Failed to build the instance - %s", msg)
 			return ctrl.Result{}, nil
 		default:
 			machineScope.SetNotReady()
 			machineScope.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
-			conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1beta1.InstanceReadyCondition, "", "")
+			conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, "", "")
 		}
 	}
 

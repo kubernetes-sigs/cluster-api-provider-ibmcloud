@@ -46,7 +46,7 @@ import (
 	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -60,9 +60,9 @@ type PowerVSMachineScopeParams struct {
 	Client            client.Client
 	Cluster           *capiv1beta1.Cluster
 	Machine           *capiv1beta1.Machine
-	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
-	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
-	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
+	IBMPowerVSMachine *infrav1beta2.IBMPowerVSMachine
+	IBMPowerVSImage   *infrav1beta2.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 	DHCPIPCacheStore  cache.Store
 }
@@ -76,9 +76,9 @@ type PowerVSMachineScope struct {
 	IBMPowerVSClient  powervs.PowerVS
 	Cluster           *capiv1beta1.Cluster
 	Machine           *capiv1beta1.Machine
-	IBMPowerVSCluster *infrav1beta1.IBMPowerVSCluster
-	IBMPowerVSMachine *infrav1beta1.IBMPowerVSMachine
-	IBMPowerVSImage   *infrav1beta1.IBMPowerVSImage
+	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
+	IBMPowerVSMachine *infrav1beta2.IBMPowerVSMachine
+	IBMPowerVSImage   *infrav1beta2.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 	DHCPIPCacheStore  cache.Store
 }
@@ -299,7 +299,7 @@ func (m *PowerVSMachineScope) GetBootstrapData() (string, error) {
 	return base64.StdEncoding.EncodeToString(value), nil
 }
 
-func getImageID(image *infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getImageID(image *infrav1beta2.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if image.ID != nil {
 		return image.ID, nil
 	} else if image.Name != nil {
@@ -325,7 +325,7 @@ func (m *PowerVSMachineScope) GetImages() (*models.Images, error) {
 	return m.IBMPowerVSClient.GetAllImage()
 }
 
-func getNetworkID(network infrav1beta1.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
+func getNetworkID(network infrav1beta2.IBMPowerVSResourceReference, m *PowerVSMachineScope) (*string, error) {
 	if network.ID != nil {
 		return network.ID, nil
 	} else if network.Name != nil {
@@ -536,11 +536,11 @@ func (m *PowerVSMachineScope) SetAddresses(instance *models.PVMInstance) {
 
 // SetInstanceState will set the state for the machine.
 func (m *PowerVSMachineScope) SetInstanceState(status *string) {
-	m.IBMPowerVSMachine.Status.InstanceState = infrav1beta1.PowerVSInstanceState(*status)
+	m.IBMPowerVSMachine.Status.InstanceState = infrav1beta2.PowerVSInstanceState(*status)
 }
 
 // GetInstanceState will get the state for the machine.
-func (m *PowerVSMachineScope) GetInstanceState() infrav1beta1.PowerVSInstanceState {
+func (m *PowerVSMachineScope) GetInstanceState() infrav1beta2.PowerVSInstanceState {
 	return m.IBMPowerVSMachine.Status.InstanceState
 }
 

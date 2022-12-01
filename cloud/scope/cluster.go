@@ -33,7 +33,7 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -45,7 +45,7 @@ type ClusterScopeParams struct {
 	Client          client.Client
 	Logger          logr.Logger
 	Cluster         *capiv1beta1.Cluster
-	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
+	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
@@ -57,7 +57,7 @@ type ClusterScope struct {
 
 	IBMVPCClient    vpc.Vpc
 	Cluster         *capiv1beta1.Cluster
-	IBMVPCCluster   *infrav1beta1.IBMVPCCluster
+	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
@@ -469,7 +469,7 @@ func (s *ClusterScope) DeleteLoadBalancer() (bool, error) {
 		for _, loadBalancer := range loadBalancers.LoadBalancers {
 			if (*loadBalancer.ID) == lbipID {
 				deleted = true
-				if *loadBalancer.ProvisioningStatus != string(infrav1beta1.VPCLoadBalancerStateDeletePending) {
+				if *loadBalancer.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateDeletePending) {
 					deleteLoadBalancerOption := &vpcv1.DeleteLoadBalancerOptions{}
 					deleteLoadBalancerOption.SetID(lbipID)
 					_, err := s.IBMVPCClient.DeleteLoadBalancer(deleteLoadBalancerOption)
@@ -501,11 +501,11 @@ func (s *ClusterScope) IsReady() bool {
 
 // SetLoadBalancerState will set the state for the load balancer.
 func (s *ClusterScope) SetLoadBalancerState(status string) {
-	s.IBMVPCCluster.Status.ControlPlaneLoadBalancerState = infrav1beta1.VPCLoadBalancerState(status)
+	s.IBMVPCCluster.Status.ControlPlaneLoadBalancerState = infrav1beta2.VPCLoadBalancerState(status)
 }
 
 // GetLoadBalancerState will get the state for the load balancer.
-func (s *ClusterScope) GetLoadBalancerState() infrav1beta1.VPCLoadBalancerState {
+func (s *ClusterScope) GetLoadBalancerState() infrav1beta2.VPCLoadBalancerState {
 	return s.IBMVPCCluster.Status.ControlPlaneLoadBalancerState
 }
 

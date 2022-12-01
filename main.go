@@ -36,9 +36,8 @@ import (
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
-	infrav1alpha3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha3"
-	infrav1alpha4 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1alpha4"
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
@@ -61,9 +60,8 @@ var (
 func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
-	_ = infrav1alpha3.AddToScheme(scheme)
-	_ = infrav1alpha4.AddToScheme(scheme)
 	_ = infrav1beta1.AddToScheme(scheme)
+	_ = infrav1beta2.AddToScheme(scheme)
 	_ = capiv1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -258,31 +256,31 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 }
 
 func setupWebhooks(mgr ctrl.Manager) {
-	if err := (&infrav1beta1.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCCluster")
 		os.Exit(1)
 	}
-	if err := (&infrav1beta1.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachine")
 		os.Exit(1)
 	}
-	if err := (&infrav1beta1.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachineTemplate")
 		os.Exit(1)
 	}
-	if err := (&infrav1beta1.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSCluster")
 		os.Exit(1)
 	}
-	if err := (&infrav1beta1.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachine")
 		os.Exit(1)
 	}
-	if err := (&infrav1beta1.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachineTemplate")
 		os.Exit(1)
 	}
-	if err := (&infrav1beta1.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&infrav1beta2.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
 		os.Exit(1)
 	}

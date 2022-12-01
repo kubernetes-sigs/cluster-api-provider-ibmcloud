@@ -15,7 +15,7 @@ spec:
     singular: ibmpowervsmachinetemplate
   scope: Namespaced
   versions:
-  - name: v1alpha4
+  - name: v1beta1
     schema:
       openAPIV3Schema:
         description: IBMPowerVSMachineTemplate is the Schema for the ibmpowervsmachinetemplates
@@ -51,11 +51,30 @@ spec:
                         properties:
                           id:
                             description: ID of resource
+                            minLength: 1
                             type: string
                           name:
                             description: Name of resource
+                            minLength: 1
+                            type: string
+                          regex:
+                            description: Regular expression to match resource, In
+                              case of multiple resources matches the provided regular
+                              expression the first matched resource will be selected
+                            minLength: 1
                             type: string
                         type: object
+                      imageRef:
+                        description: ImageRef is an optional reference to a provider-specific
+                          resource that holds the details for provisioning the Image
+                          for a Cluster.
+                        properties:
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                        type: object
+                        x-kubernetes-map-type: atomic
                       memory:
                         description: Memory is Amount of memory allocated (in GB)
                         type: string
@@ -65,9 +84,17 @@ spec:
                         properties:
                           id:
                             description: ID of resource
+                            minLength: 1
                             type: string
                           name:
                             description: Name of resource
+                            minLength: 1
+                            type: string
+                          regex:
+                            description: Regular expression to match resource, In
+                              case of multiple resources matches the provided regular
+                              expression the first matched resource will be selected
+                            minLength: 1
                             type: string
                         type: object
                       procType:
@@ -76,6 +103,7 @@ spec:
                         type: string
                       processors:
                         description: Processors is Number of processors allocated.
+                        pattern: ^\d+(\.)?(\d)?(\d)?$
                         type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified
@@ -84,6 +112,7 @@ spec:
                       serviceInstanceID:
                         description: ServiceInstanceID is the id of the power cloud
                           instance where the vsi instance will get deployed.
+                        minLength: 1
                         type: string
                       sshKey:
                         description: SSHKey is the name of the SSH key pair provided
@@ -93,13 +122,8 @@ spec:
                         description: SysType is the System type used to host the vsi.
                         type: string
                     required:
-                    - image
-                    - memory
                     - network
-                    - procType
-                    - processors
                     - serviceInstanceID
-                    - sysType
                     type: object
                 required:
                 - spec
@@ -110,11 +134,25 @@ spec:
           status:
             description: IBMPowerVSMachineTemplateStatus defines the observed state
               of IBMPowerVSMachineTemplate.
+            properties:
+              capacity:
+                additionalProperties:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                description: 'Capacity defines the resource capacity for this machine.
+                  This value is used for autoscaling from zero operations as defined
+                  in: https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md'
+                type: object
             type: object
         type: object
     served: true
     storage: false
-  - name: v1beta1
+    subresources:
+      status: {}
+  - name: v1beta2
     schema:
       openAPIV3Schema:
         description: IBMPowerVSMachineTemplate is the Schema for the ibmpowervsmachinetemplates

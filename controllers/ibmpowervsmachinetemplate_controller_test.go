@@ -30,7 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 
 	. "github.com/onsi/gomega"
 )
@@ -39,7 +39,7 @@ func TestIBMPowerVSMachineTemplateReconciler_Reconcile(t *testing.T) {
 	testCases := []struct {
 		name                   string
 		expectError            bool
-		powerVSMachineTemplate *infrav1beta1.IBMPowerVSMachineTemplate
+		powerVSMachineTemplate *infrav1beta2.IBMPowerVSMachineTemplate
 		expectedCapacity       corev1.ResourceList
 	}{
 		{
@@ -82,7 +82,7 @@ func TestIBMPowerVSMachineTemplateReconciler_Reconcile(t *testing.T) {
 
 			if tc.powerVSMachineTemplate != nil {
 				g.Eventually(func() bool {
-					machineTemplate := &infrav1beta1.IBMPowerVSMachineTemplate{}
+					machineTemplate := &infrav1beta2.IBMPowerVSMachineTemplate{}
 					key := client.ObjectKey{
 						Name:      tc.powerVSMachineTemplate.Name,
 						Namespace: ns.Name,
@@ -102,7 +102,7 @@ func TestIBMPowerVSMachineTemplateReconciler_Reconcile(t *testing.T) {
 				} else {
 					g.Expect(err).To(BeNil())
 					g.Eventually(func() bool {
-						machineTemplate := &infrav1beta1.IBMPowerVSMachineTemplate{}
+						machineTemplate := &infrav1beta2.IBMPowerVSMachineTemplate{}
 						key := client.ObjectKey{
 							Name:      tc.powerVSMachineTemplate.Name,
 							Namespace: ns.Name,
@@ -128,7 +128,7 @@ func TestIBMPowerVSMachineTemplateReconciler_Reconcile(t *testing.T) {
 func TestGetIBMPowerVSMachineCapacity(t *testing.T) {
 	testCases := []struct {
 		name                   string
-		powerVSMachineTemplate infrav1beta1.IBMPowerVSMachineTemplate
+		powerVSMachineTemplate infrav1beta2.IBMPowerVSMachineTemplate
 		expectedCapacity       corev1.ResourceList
 		expectErr              bool
 	}{
@@ -181,16 +181,16 @@ func TestGetIBMPowerVSMachineCapacity(t *testing.T) {
 	}
 }
 
-func stubPowerVSMachineTemplate(processor, memory string) *infrav1beta1.IBMPowerVSMachineTemplate {
-	return &infrav1beta1.IBMPowerVSMachineTemplate{
+func stubPowerVSMachineTemplate(processor, memory string) *infrav1beta2.IBMPowerVSMachineTemplate {
+	return &infrav1beta2.IBMPowerVSMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "powervs-test-1",
 		},
-		Spec: infrav1beta1.IBMPowerVSMachineTemplateSpec{
-			Template: infrav1beta1.IBMPowerVSMachineTemplateResource{
-				Spec: infrav1beta1.IBMPowerVSMachineSpec{
+		Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+			Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+				Spec: infrav1beta2.IBMPowerVSMachineSpec{
 					ServiceInstanceID: "test_service_instance_id_27",
-					Image: &infrav1beta1.IBMPowerVSResourceReference{
+					Image: &infrav1beta2.IBMPowerVSResourceReference{
 						ID: pointer.String("capi-image"),
 					},
 					Processors: processor,
