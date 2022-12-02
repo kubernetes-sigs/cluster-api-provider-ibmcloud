@@ -25,4 +25,5 @@
   - [Modules and tools dependencies](./developer/dependencies.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
+  - [API References](./reference/api-references.md)
   - [Regions-Zones Mapping](./reference/regions-zones-mapping.md)
