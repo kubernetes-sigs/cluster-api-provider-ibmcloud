@@ -99,19 +99,19 @@ manager: generate fmt vet ## Build the manager binary into the ./bin folder
 	go build -o bin/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
-run: generate fmt vet manifests
+run: generate fmt vet
 	go run ./main.go
 
 # Install CRDs into a cluster
-install: manifests $(KUSTOMIZE)
+install: generate-manifests $(KUSTOMIZE)
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 # Uninstall CRDs from a cluster
-uninstall: manifests $(KUSTOMIZE)
+uninstall: generate-manifests $(KUSTOMIZE)
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: manifests $(KUSTOMIZE)
+deploy: generate-manifests $(KUSTOMIZE)
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
@@ -133,21 +133,24 @@ help:  # Display this help
 ##@ generate:
 
 # Generate code
-generate: $(CONTROLLER_GEN)
-	$(MAKE) generate-go
+.PHONY: generate
+generate: ## Run all generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions
+	$(MAKE) generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions
+
+generate-go-deepcopy: $(CONTROLLER_GEN) ## Generate deepcopy go code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: generate-go
-generate-go: $(MOCKGEN)
+generate-go: $(MOCKGEN) ## Generate the Go mock code
 	go generate ./...
 
-# Generate manifests e.g. CRD, RBAC etc.
-manifests: $(CONTROLLER_GEN)
+.PHONY: generate-manifests
+generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role paths="./..." output:crd:artifacts:config=config/crd/bases
 
-.PHONY: generate-go-conversions-core
-generate-go-conversions-core: $(CONVERSION_GEN)
+.PHONY: generate-go-conversions
+generate-go-conversions: $(CONVERSION_GEN) ## Generate conversions go code
 	$(MAKE) clean-generated-conversions SRC_DIRS="./api/v1beta1"
 	$(CONVERSION_GEN) \
 		--input-dirs=./api/v1beta1 \
@@ -161,8 +164,8 @@ ifneq ($(E2E_FLAVOR), vpc)
 	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-md-remediation.yaml
 endif
 
-.PHONY: modules
-modules: ## Runs go mod to ensure modules are up to date
+.PHONY: generate-modules
+generate-modules: ## Runs go mod to ensure modules are up to date
 	go mod tidy
 	cd $(TOOLS_DIR); go mod tidy
 
@@ -193,7 +196,7 @@ setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder
 	fi
 
 # Run unit tests
-test: generate fmt vet manifests setup-envtest $(GOTESTSUM) ## Run tests
+test: generate fmt vet setup-envtest $(GOTESTSUM) ## Run tests
 	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" $(GOTESTSUM) --junitfile $(ARTIFACTS)/junit.xml
 
 # Allow overriding the e2e configurations
@@ -426,7 +429,7 @@ define checkdiff
 	git --no-pager diff --name-only FETCH_HEAD
 endef
 
-ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen manifests conversions #tiltfile
+ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen conversions
 
 .PHONY: verify
 verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
@@ -443,12 +446,8 @@ verify-boilerplate: ## Verify boilerplate text exists in each file
 verify-shellcheck: ## Verify shell files
 	./hack/verify-shellcheck.sh
 
-.PHONY: verify-tiltfile
-verify-tiltfile: ## Verify Tiltfile format
-	./hack/verify-starlark.sh
-
 .PHONY: verify-modules
-verify-modules: modules ## Verify go modules are up to date
+verify-modules: generate-modules ## Verify go modules are up to date
 	@if !(git diff --quiet HEAD -- go.sum go.mod $(TOOLS_DIR)/go.mod $(TOOLS_DIR)/go.sum); then \
 		git diff; \
 		echo "go module files are out of date"; exit 1; \
@@ -463,13 +462,6 @@ verify-gen: generate ## Verfiy go generated files are up to date
 	@if !(git diff --quiet HEAD); then \
 		git diff; \
 		echo "generated files are out of date, run make generate"; exit 1; \
-	fi
-
-.PHONY: verify-manifests
-verify-manifests: manifests ## Verfiy go generated manifests files are up to date
-	@if !(git diff --quiet HEAD); then \
-		git diff; \
-		echo "generated manifests files are out of date, run make manifests"; exit 1; \
 	fi
 
 .PHONY: verify-conversions
