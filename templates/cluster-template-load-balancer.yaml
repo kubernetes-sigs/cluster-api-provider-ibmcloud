@@ -92,6 +92,8 @@ spec:
       profile: "${IBMVPC_PROFILE}"
       sshKeys:
       - "${IBMVPC_SSHKEY_ID}"
+      bootVolume:
+        sizeGiB: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_SIZEGIB:=20}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -128,6 +130,8 @@ spec:
       profile: "${IBMVPC_PROFILE}"
       sshKeys:
       - "${IBMVPC_SSHKEY_ID}"
+      bootVolume:
+        sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
