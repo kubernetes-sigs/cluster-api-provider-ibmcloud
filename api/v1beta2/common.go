@@ -90,3 +90,23 @@ func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {
 		spec.Profile = "bx2-2x8"
 	}
 }
+
+func validateBootVolume(spec IBMVPCMachineSpec) field.ErrorList {
+	var allErrs field.ErrorList
+
+	if spec.BootVolume == nil {
+		return allErrs
+	}
+
+	if spec.BootVolume.SizeGiB < 10 || spec.BootVolume.SizeGiB > 250 {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.bootVolume.sizeGiB"), spec, "valid Boot VPCVolume size is 10 - 250 GB"))
+	}
+
+	if spec.BootVolume.Iops != 0 && spec.BootVolume.Profile != "custom" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.bootVolume.iops"), spec, "iops applicable only to volumes using a profile of type `custom`"))
+	}
+
+	//TODO: Add validation for the spec.BootVolume.EncryptionKeyCRN to ensure its in proper IBM Cloud CRN format
+
+	return allErrs
+}

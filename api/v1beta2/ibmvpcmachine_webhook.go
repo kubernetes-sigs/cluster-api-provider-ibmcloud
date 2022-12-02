@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -51,7 +52,11 @@ var _ webhook.Validator = &IBMVPCMachine{}
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *IBMVPCMachine) ValidateCreate() error {
 	ibmvpcmachinelog.Info("validate create", "name", r.Name)
-	return nil
+
+	var allErrs field.ErrorList
+	allErrs = append(allErrs, r.validateIBMVPCMachineBootVolume()...)
+
+	return aggregateObjErrors(r.GroupVersionKind().GroupKind(), r.Name, allErrs)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -64,4 +69,8 @@ func (r *IBMVPCMachine) ValidateUpdate(old runtime.Object) error {
 func (r *IBMVPCMachine) ValidateDelete() error {
 	ibmvpcmachinelog.Info("validate delete", "name", r.Name)
 	return nil
+}
+
+func (r *IBMVPCMachine) validateIBMVPCMachineBootVolume() field.ErrorList {
+	return validateBootVolume(r.Spec)
 }

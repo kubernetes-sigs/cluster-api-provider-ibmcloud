@@ -112,3 +112,61 @@ func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
 		})
 	}
 }
+
+func Test_validateBootVolume(t *testing.T) {
+	tests := []struct {
+		name      string
+		spec      IBMVPCMachineSpec
+		wantError bool
+	}{
+		{
+			name: "Nil bootvolume",
+			spec: IBMVPCMachineSpec{
+				BootVolume: nil,
+			},
+			wantError: false,
+		},
+		{
+			name: "valid sizeGiB",
+			spec: IBMVPCMachineSpec{
+				BootVolume: &VPCVolume{SizeGiB: 20},
+			},
+			wantError: false,
+		},
+		{
+			name: "Invalid sizeGiB",
+			spec: IBMVPCMachineSpec{
+				BootVolume: &VPCVolume{SizeGiB: 1},
+			},
+			wantError: true,
+		},
+		{
+			name: "Valid Iops",
+			spec: IBMVPCMachineSpec{
+				BootVolume: &VPCVolume{Iops: 1000, Profile: "custom"},
+			},
+			wantError: true,
+		},
+		{
+			name: "Invalid Iops",
+			spec: IBMVPCMachineSpec{
+				BootVolume: &VPCVolume{Iops: 1234, Profile: "general-purpose"},
+			},
+			wantError: true,
+		},
+		{
+			name: "Missing Iops for custom profile",
+			spec: IBMVPCMachineSpec{
+				BootVolume: &VPCVolume{Profile: "general-purpose"},
+			},
+			wantError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateBootVolume(tt.spec); (err != nil) != tt.wantError {
+				t.Errorf("validateBootVolume() = %v, wantError %v", err, tt.wantError)
+			}
+		})
+	}
+}

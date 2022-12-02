@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -30,4 +31,48 @@ func TestVPCMachine_default(t *testing.T) {
 	t.Run("Defaults for IBMVPCMachine", defaulting.DefaultValidateTest(vpcMachine))
 	vpcMachine.Default()
 	g.Expect(vpcMachine.Spec.Profile).To(BeEquivalentTo("bx2-2x8"))
+}
+
+func TestIBMVPCMachine_Create(t *testing.T) {
+	tests := []struct {
+		name    string
+		machine *IBMVPCMachine
+		wantErr bool
+	}{
+		{
+			name: "Create a IBMVPCMachine with valid SizeGiB BootVolume",
+			machine: &IBMVPCMachine{
+				Spec: IBMVPCMachineSpec{
+					BootVolume: &VPCVolume{
+						SizeGiB: 10,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Create a IBMVPCMachine with invalid SizeGiB BootVolume",
+			machine: &IBMVPCMachine{
+				Spec: IBMVPCMachineSpec{
+					BootVolume: &VPCVolume{
+						SizeGiB: 1,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			machine := tt.machine.DeepCopy()
+			machine.ObjectMeta = metav1.ObjectMeta{
+				GenerateName: "machine-",
+				Namespace:    "default",
+			}
+			ctx := context.TODO()
+			if err := testEnv.Create(ctx, machine); (err != nil) != tt.wantErr {
+				t.Errorf("ValidateCreate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

@@ -157,6 +157,10 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 		}
 	}
 
+	if m.IBMVPCMachine.Spec.BootVolume != nil {
+		instancePrototype.BootVolumeAttachment = volumeToVPCVolumeAttachment(m.IBMVPCMachine.Spec.BootVolume)
+	}
+
 	options.SetInstancePrototype(instancePrototype)
 	instance, _, err := m.IBMVPCClient.CreateInstance(options)
 	if err != nil {
@@ -165,6 +169,39 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 		record.Eventf(m.IBMVPCMachine, "SuccessfulCreateInstance", "Created Instance %q", *instance.Name)
 	}
 	return instance, err
+}
+
+func volumeToVPCVolumeAttachment(volume *infrav1beta2.VPCVolume) *vpcv1.VolumeAttachmentPrototypeInstanceByImageContext {
+	bootVolume := &vpcv1.VolumeAttachmentPrototypeInstanceByImageContext{
+		DeleteVolumeOnInstanceDelete: core.BoolPtr(volume.DeleteVolumeOnInstanceDelete),
+		Volume:                       &vpcv1.VolumePrototypeInstanceByImageContext{},
+	}
+
+	if volume.Name != "" {
+		bootVolume.Volume.Name = core.StringPtr(volume.Name)
+	}
+
+	if volume.Profile != "" {
+		bootVolume.Volume.Profile = &vpcv1.VolumeProfileIdentity{
+			Name: core.StringPtr(volume.Profile),
+		}
+	}
+
+	if volume.SizeGiB != 0 {
+		bootVolume.Volume.Capacity = core.Int64Ptr(volume.SizeGiB)
+	}
+
+	if volume.Iops != 0 {
+		bootVolume.Volume.Iops = core.Int64Ptr(volume.Iops)
+	}
+
+	if volume.EncryptionKeyCRN != "" {
+		bootVolume.Volume.EncryptionKey = &vpcv1.EncryptionKeyIdentity{
+			CRN: core.StringPtr(volume.EncryptionKeyCRN),
+		}
+	}
+
+	return bootVolume
 }
 
 // DeleteMachine deletes the vpc machine associated with machine instance id.
