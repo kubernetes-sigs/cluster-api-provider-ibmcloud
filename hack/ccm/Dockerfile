@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GOLANG_IMAGE=golang:1.19.2
+ARG GOLANG_IMAGE=golang:1.19.4
 ARG TARGETPLATFORM=linux/amd64
 ARG ARCH=amd64
 
