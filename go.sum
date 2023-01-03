@@ -68,8 +68,8 @@ github.com/IBM-Cloud/power-go-client v1.2.2 h1:VNlzizoG2x06c3nL1ZBILF701QcvXcu6n
 github.com/IBM-Cloud/power-go-client v1.2.2/go.mod h1:Qfx0fNi+9hms+xu9Z6Euhu9088ByW6C/TCMLECTRWNE=
 github.com/IBM/go-sdk-core/v5 v5.10.2 h1:bfqhYNwwpJ3zJQSYpF3umhmRIKaa762itvJkTAWCCLU=
 github.com/IBM/go-sdk-core/v5 v5.10.2/go.mod h1:WZPFasUzsKab/2mzt29xPcfruSk5js2ywAPwW4VJjdI=
-github.com/IBM/platform-services-go-sdk v0.31.1 h1:pvoL/oaSD0C/YuC+BzjqbN/9sgINFs7piEzVxhobdo8=
-github.com/IBM/platform-services-go-sdk v0.31.1/go.mod h1:jy0Ahvj5Gkkua3Gd7t22bo0GfmHRQaPZcaqwfVgEY7k=
+github.com/IBM/platform-services-go-sdk v0.31.2 h1:h4f19gZpx1sCZtShLvxss9Wvorti0qK8dCNe9w5aJ9A=
+github.com/IBM/platform-services-go-sdk v0.31.2/go.mod h1:jy0Ahvj5Gkkua3Gd7t22bo0GfmHRQaPZcaqwfVgEY7k=
 github.com/IBM/vpc-go-sdk v0.29.0 h1:62S41gpqETkrSWKIbjOlxuY4FQGqQTlxkM1TidOrE1M=
 github.com/IBM/vpc-go-sdk v0.29.0/go.mod h1:jYjS3EySPkC7DuOg33gMHtm8DcIf75Tc+Gxo3zmMBTQ=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
