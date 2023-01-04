@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2/klogr"
+	"k8s.io/utils/pointer"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -36,8 +37,10 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
@@ -425,4 +428,20 @@ func fetchImageID(image *infrav1beta2.IBMVPCResourceReference, m *MachineScope) 
 	}
 
 	return nil, fmt.Errorf("image does not exist - failed to find an image ID")
+}
+
+// SetProviderID will set the provider id for the machine.
+func (m *MachineScope) SetProviderID(id *string) error {
+	// Based on the ProviderIDFormat version the providerID format will be decided.
+	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
+		accountID, err := utils.GetAccountID()
+		if err != nil {
+			m.Logger.Error(err, "failed to get cloud account id", err.Error())
+			return err
+		}
+		m.IBMVPCMachine.Spec.ProviderID = pointer.String(fmt.Sprintf("ibm://%s///%s/%s", accountID, m.Machine.Spec.ClusterName, *id))
+	} else {
+		m.IBMVPCMachine.Spec.ProviderID = pointer.String(fmt.Sprintf("ibmvpc://%s/%s", m.Machine.Spec.ClusterName, m.IBMVPCMachine.Name))
+	}
+	return nil
 }

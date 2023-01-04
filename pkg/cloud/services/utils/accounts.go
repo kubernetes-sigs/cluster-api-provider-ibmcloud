@@ -24,6 +24,8 @@ import (
 	"github.com/golang-jwt/jwt"
 
 	"github.com/IBM/go-sdk-core/v5/core"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 )
 
 // GetAccount is function parses the account number from the token and returns it.
@@ -50,4 +52,13 @@ func GetAccount(auth core.Authenticator) (string, error) {
 	}
 
 	return token.Claims.(jwt.MapClaims)["account"].(map[string]interface{})["bss"].(string), nil
+}
+
+// GetAccountID will parse and returns user cloud account ID.
+func GetAccountID() (string, error) {
+	auth, err := authenticator.GetAuthenticator()
+	if err != nil {
+		return "", err
+	}
+	return GetAccount(auth)
 }

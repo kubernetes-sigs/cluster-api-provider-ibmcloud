@@ -29,6 +29,7 @@ spec:
         - "--leader-elect"
         - "--metrics-bind-addr=127.0.0.1:8080"
         - "--powervs-provider-id-fmt=${POWERVS_PROVIDER_ID_FORMAT:=v1}"
+        - "--provider-id-fmt=${PROVIDER_ID_FORMAT:=v1}"
         - "--service-endpoint=${SERVICE_ENDPOINT:=none}"
         - "--v=${LOGLEVEL:=0}"
         image: controller:latest

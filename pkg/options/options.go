@@ -16,16 +16,28 @@ limitations under the License.
 
 package options
 
-// PowerVSProviderIDFormatType enum attribute to identify Power VS ProviderID format.
-type PowerVSProviderIDFormatType string
+// ProviderIDFormatType enum attribute to identify Power VS or VPC ProviderID format.
+type ProviderIDFormatType string
 
 const (
 	// PowerVSProviderIDFormatV1 will set provider id to machine as ibmpowervs://<cluster_name>/<vm_hostname>
-	PowerVSProviderIDFormatV1 PowerVSProviderIDFormatType = "v1"
+	PowerVSProviderIDFormatV1 ProviderIDFormatType = "v1"
 
 	// PowerVSProviderIDFormatV2 will set provider id to machine as ibmpowervs://<region>/<zone>/<service_instance_id>/<powervs_machine_id>
-	PowerVSProviderIDFormatV2 PowerVSProviderIDFormatType = "v2"
+	PowerVSProviderIDFormatV2 ProviderIDFormatType = "v2"
+
+	// ProviderIDFormatV1 will set provider id to machine as follows
+	// For VPC machines: ibmvpc://<cluster_name>/<vm_hostname>
+	ProviderIDFormatV1 ProviderIDFormatType = "v1"
+
+	// ProviderIDFormatV2 will set provider id to machine as follows
+	// For VPC machines: ibm://<account_id>///<cluster_id>/<vpc_machine_id>
+	ProviderIDFormatV2 ProviderIDFormatType = "v2"
 )
 
-// PowerVSProviderIDFormat is used to identify the Provider ID format for Machine.
-var PowerVSProviderIDFormat string
+var (
+	// PowerVSProviderIDFormat is used to identify the Provider ID format for Power VS Machine.
+	PowerVSProviderIDFormat string
+	// ProviderIDFormat is used to identify the Provider ID format for Machine.
+	ProviderIDFormat string
+)
