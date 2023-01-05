@@ -87,11 +87,12 @@ metadata:
 spec:
   template:
     spec:
-      image: "${IBMVPC_IMAGE_ID}"
+      image:
+        name: "${IBMVPC_IMAGE_NAME}"
       zone: "${IBMVPC_ZONE}"
       profile: "${IBMVPC_PROFILE}"
       sshKeys:
-      - "${IBMVPC_SSHKEY_ID}"
+      - name: "${IBMVPC_SSHKEY_NAME}"
       bootVolume:
         sizeGiB: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_SIZEGIB:=20}
 ---
@@ -125,11 +126,12 @@ metadata:
 spec:
   template:
     spec:
-      image: "${IBMVPC_IMAGE_ID}"
+      image:
+        name: "${IBMVPC_IMAGE_NAME}"
       zone: "${IBMVPC_ZONE}"
       profile: "${IBMVPC_PROFILE}"
       sshKeys:
-      - "${IBMVPC_SSHKEY_ID}"
+      - name: "${IBMVPC_SSHKEY_NAME}"
       bootVolume:
         sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
 ---

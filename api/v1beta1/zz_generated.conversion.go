@@ -319,16 +319,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineSpec)(nil), (*v1beta2.IBMVPCMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec(a.(*IBMVPCMachineSpec), b.(*v1beta2.IBMVPCMachineSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta2.IBMVPCMachineSpec)(nil), (*IBMVPCMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(a.(*v1beta2.IBMVPCMachineSpec), b.(*IBMVPCMachineSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*IBMVPCMachineStatus)(nil), (*v1beta2.IBMVPCMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_IBMVPCMachineStatus_To_v1beta2_IBMVPCMachineStatus(a.(*IBMVPCMachineStatus), b.(*v1beta2.IBMVPCMachineStatus), scope)
 	}); err != nil {
@@ -436,6 +426,26 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1beta2.VPCVolume)(nil), (*VPCVolume)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_VPCVolume_To_v1beta1_VPCVolume(a.(*v1beta2.VPCVolume), b.(*VPCVolume), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*[]*string)(nil), (*[]*v1beta2.IBMVPCResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_Slice_Pointer_string_To_Slice_Pointer_v1beta2_IBMVPCResourceReference(a.(*[]*string), b.(*[]*v1beta2.IBMVPCResourceReference), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*[]*v1beta2.IBMVPCResourceReference)(nil), (*[]*string)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_Slice_Pointer_v1beta2_IBMVPCResourceReference_To_Slice_Pointer_string(a.(*[]*v1beta2.IBMVPCResourceReference), b.(*[]*string), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*IBMVPCMachineSpec)(nil), (*v1beta2.IBMVPCMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec(a.(*IBMVPCMachineSpec), b.(*v1beta2.IBMVPCMachineSpec), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta2.IBMVPCMachineSpec)(nil), (*IBMVPCMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(a.(*v1beta2.IBMVPCMachineSpec), b.(*IBMVPCMachineSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -1198,7 +1208,17 @@ func Convert_v1beta2_IBMVPCMachine_To_v1beta1_IBMVPCMachine(in *v1beta2.IBMVPCMa
 
 func autoConvert_v1beta1_IBMVPCMachineList_To_v1beta2_IBMVPCMachineList(in *IBMVPCMachineList, out *v1beta2.IBMVPCMachineList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta2.IBMVPCMachine)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta2.IBMVPCMachine, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_IBMVPCMachine_To_v1beta2_IBMVPCMachine(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1209,7 +1229,17 @@ func Convert_v1beta1_IBMVPCMachineList_To_v1beta2_IBMVPCMachineList(in *IBMVPCMa
 
 func autoConvert_v1beta2_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList(in *v1beta2.IBMVPCMachineList, out *IBMVPCMachineList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]IBMVPCMachine)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IBMVPCMachine, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta2_IBMVPCMachine_To_v1beta1_IBMVPCMachine(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1220,7 +1250,8 @@ func Convert_v1beta2_IBMVPCMachineList_To_v1beta1_IBMVPCMachineList(in *v1beta2.
 
 func autoConvert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec(in *IBMVPCMachineSpec, out *v1beta2.IBMVPCMachineSpec, s conversion.Scope) error {
 	out.Name = in.Name
-	out.Image = in.Image
+	// WARNING: in.Image requires manual conversion: inconvertible types (string vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2.IBMVPCResourceReference)
+	// WARNING: in.ImageName requires manual conversion: does not exist in peer-type
 	out.Zone = in.Zone
 	out.Profile = in.Profile
 	out.BootVolume = (*v1beta2.VPCVolume)(unsafe.Pointer(in.BootVolume))
@@ -1228,18 +1259,16 @@ func autoConvert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec(in *IBMV
 	if err := Convert_v1beta1_NetworkInterface_To_v1beta2_NetworkInterface(&in.PrimaryNetworkInterface, &out.PrimaryNetworkInterface, s); err != nil {
 		return err
 	}
-	out.SSHKeys = *(*[]*string)(unsafe.Pointer(&in.SSHKeys))
+	if err := Convert_Slice_Pointer_string_To_Slice_Pointer_v1beta2_IBMVPCResourceReference(&in.SSHKeys, &out.SSHKeys, s); err != nil {
+		return err
+	}
+	// WARNING: in.SSHKeyNames requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec is an autogenerated conversion function.
-func Convert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec(in *IBMVPCMachineSpec, out *v1beta2.IBMVPCMachineSpec, s conversion.Scope) error {
-	return autoConvert_v1beta1_IBMVPCMachineSpec_To_v1beta2_IBMVPCMachineSpec(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *v1beta2.IBMVPCMachineSpec, out *IBMVPCMachineSpec, s conversion.Scope) error {
 	out.Name = in.Name
-	out.Image = in.Image
+	// WARNING: in.Image requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2.IBMVPCResourceReference vs string)
 	out.Zone = in.Zone
 	out.Profile = in.Profile
 	out.BootVolume = (*VPCVolume)(unsafe.Pointer(in.BootVolume))
@@ -1247,13 +1276,10 @@ func autoConvert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *v1be
 	if err := Convert_v1beta2_NetworkInterface_To_v1beta1_NetworkInterface(&in.PrimaryNetworkInterface, &out.PrimaryNetworkInterface, s); err != nil {
 		return err
 	}
-	out.SSHKeys = *(*[]*string)(unsafe.Pointer(&in.SSHKeys))
+	if err := Convert_Slice_Pointer_v1beta2_IBMVPCResourceReference_To_Slice_Pointer_string(&in.SSHKeys, &out.SSHKeys, s); err != nil {
+		return err
+	}
 	return nil
-}
-
-// Convert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec is an autogenerated conversion function.
-func Convert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in *v1beta2.IBMVPCMachineSpec, out *IBMVPCMachineSpec, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMVPCMachineSpec_To_v1beta1_IBMVPCMachineSpec(in, out, s)
 }
 
 func autoConvert_v1beta1_IBMVPCMachineStatus_To_v1beta2_IBMVPCMachineStatus(in *IBMVPCMachineStatus, out *v1beta2.IBMVPCMachineStatus, s conversion.Scope) error {
@@ -1310,7 +1336,17 @@ func Convert_v1beta2_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(in *
 
 func autoConvert_v1beta1_IBMVPCMachineTemplateList_To_v1beta2_IBMVPCMachineTemplateList(in *IBMVPCMachineTemplateList, out *v1beta2.IBMVPCMachineTemplateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta2.IBMVPCMachineTemplate)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta2.IBMVPCMachineTemplate, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_IBMVPCMachineTemplate_To_v1beta2_IBMVPCMachineTemplate(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1321,7 +1357,17 @@ func Convert_v1beta1_IBMVPCMachineTemplateList_To_v1beta2_IBMVPCMachineTemplateL
 
 func autoConvert_v1beta2_IBMVPCMachineTemplateList_To_v1beta1_IBMVPCMachineTemplateList(in *v1beta2.IBMVPCMachineTemplateList, out *IBMVPCMachineTemplateList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]IBMVPCMachineTemplate)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IBMVPCMachineTemplate, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta2_IBMVPCMachineTemplate_To_v1beta1_IBMVPCMachineTemplate(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 

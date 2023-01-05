@@ -124,11 +124,17 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 		return nil, err
 	}
 
+	imageID, err := fetchImageID(m.IBMVPCMachine.Spec.Image, m)
+	if err != nil {
+		record.Warnf(m.IBMVPCMachine, "FailedRetriveImage", "Failed image retrival - %v", err)
+		return nil, fmt.Errorf("error while fetching image ID: %v", err)
+	}
+
 	options := &vpcv1.CreateInstanceOptions{}
 	instancePrototype := &vpcv1.InstancePrototype{
 		Name: &m.IBMVPCMachine.Name,
 		Image: &vpcv1.ImageIdentity{
-			ID: &m.IBMVPCMachine.Spec.Image,
+			ID: imageID,
 		},
 		Profile: &vpcv1.InstanceProfileIdentity{
 			Name: &m.IBMVPCMachine.Spec.Profile,
@@ -150,8 +156,12 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) {
 	if m.IBMVPCMachine.Spec.SSHKeys != nil {
 		instancePrototype.Keys = []vpcv1.KeyIdentityIntf{}
 		for _, sshKey := range m.IBMVPCMachine.Spec.SSHKeys {
+			keyID, err := fetchKeyID(sshKey, m)
+			if err != nil {
+				return nil, fmt.Errorf("error while fetching SSHKey: %v error: %v", sshKey, err)
+			}
 			key := &vpcv1.KeyIdentity{
-				ID: sshKey,
+				ID: keyID,
 			}
 			instancePrototype.Keys = append(instancePrototype.Keys, key)
 		}
@@ -363,4 +373,56 @@ func (m *MachineScope) GetBootstrapData() (string, error) {
 		return "", errors.New("error retrieving bootstrap data: secret value key is missing")
 	}
 	return string(value), nil
+}
+
+func fetchKeyID(key *infrav1beta2.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+	if key.ID == nil && key.Name == nil {
+		return nil, fmt.Errorf("both ID and Name can't be nil")
+	}
+
+	if key.ID != nil {
+		return key.ID, nil
+	}
+
+	keys, _, err := m.IBMVPCClient.ListKeys(&vpcv1.ListKeysOptions{})
+	if err != nil {
+		m.Logger.Error(err, "Failed to get keys")
+		return nil, err
+	}
+
+	for _, k := range keys.Keys {
+		if *k.Name == *key.Name {
+			m.Logger.V(3).Info("Key found with ID", "Key", *k.Name, "ID", *k.ID)
+			return k.ID, nil
+		}
+	}
+
+	return nil, fmt.Errorf("sshkey does not exist - failed to find Key ID")
+}
+
+func fetchImageID(image *infrav1beta2.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+	if image.ID == nil && image.Name == nil {
+		return nil, fmt.Errorf("both ID and Name can't be nil")
+	}
+
+	if image.ID != nil {
+		return image.ID, nil
+	}
+
+	images, _, err := m.IBMVPCClient.ListImages(&vpcv1.ListImagesOptions{
+		ResourceGroupID: &m.IBMVPCCluster.Spec.ResourceGroup,
+	})
+	if err != nil {
+		m.Logger.Error(err, "Failed to get images")
+		return nil, err
+	}
+
+	for _, img := range images.Images {
+		if *image.Name == *img.Name {
+			m.Logger.Info("Image found with ID", "Image", *image.Name, "ID", *img.ID)
+			return img.ID, nil
+		}
+	}
+
+	return nil, fmt.Errorf("image does not exist - failed to find an image ID")
 }

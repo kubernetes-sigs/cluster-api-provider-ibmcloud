@@ -37,9 +37,13 @@ type IBMVPCMachineSpec struct {
 	Name string `json:"name,omitempty"`
 
 	// Image is the id of OS image which would be install on the instance.
+	// +optional
 	// Example: r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00
-	// TODO: allow user to specify a image name is much reasonable. Example: ibm-ubuntu-18-04-1-minimal-amd64-2
-	Image string `json:"image"`
+	Image string `json:"image,omitempty"`
+
+	// ImageName is the name of OS image which would be install on the instance.
+	// +optional
+	ImageName string `json:"imageName,omitempty"`
 
 	// Zone is the place where the instance should be created. Example: us-south-3
 	// TODO: Actually zone is transparent to user. The field user can access is location. Example: Dallas 2
@@ -62,7 +66,12 @@ type IBMVPCMachineSpec struct {
 	PrimaryNetworkInterface NetworkInterface `json:"primaryNetworkInterface,omitempty"`
 
 	// SSHKeys is the SSH pub keys that will be used to access VM.
+	// +optional
 	SSHKeys []*string `json:"sshKeys,omitempty"`
+
+	// SSHKeysNames is the SSH pub key names that will be used to access VM.
+	// +optional
+	SSHKeyNames []*string `json:"sshKeyNames,omitempty"`
 }
 
 // VPCVolume defines the volume information for the instance.

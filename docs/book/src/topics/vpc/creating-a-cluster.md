@@ -5,16 +5,16 @@ following the steps below.
 
 1. Using clusterctl, render the yaml through templates and deploy the cluster
 
-    **Note:** the `IBMVPC_IMAGE_ID` value below should reflect the ID of the custom qcow2 image
+    **Note:** the `IBMVPC_IMAGE_NAME` value below should reflect the Name of the custom qcow2 image
 
     ```console
     IBMVPC_REGION=us-south \
     IBMVPC_ZONE=us-south-1 \
     IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
     IBMVPC_NAME=ibm-vpc-0 \
-    IBMVPC_IMAGE_ID=r134-ea84bbec-7986-4ff5-8489-d9ec34611dd4 \
+    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2004-kube-v1-25-2 \
     IBMVPC_PROFILE=bx2-4x16 \
-    IBMVPC_SSHKEY_ID=r134-2a82b725-e570-43d3-8b23-9539e8641944 \
+    IBMVPC_SSHKEY_NAME=capi-vpc-key \
     clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.19.9 \
     --target-namespace default \
     --control-plane-machine-count=1 \
@@ -36,9 +36,9 @@ following the steps below.
     - [IBMVPC_REGION](/reference/regions-zones-mapping.html)
     - [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
     - [IBMVPC_RESOURCEGROUP](https://cloud.ibm.com/docs/account?topic=account-rgs&interface=ui)
-    - [IBMVPC_IMAGE_ID](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images)
+    - [IBMVPC_IMAGE_NAME](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images)
     - [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=ui)
-    - [IBMVPC_SSHKEY_ID](https://cloud.ibm.com/docs/vpc?topic=vpc-managing-ssh-keys&interface=ui)
+    - [IBMVPC_SSHKEY_NAME](https://cloud.ibm.com/docs/vpc?topic=vpc-managing-ssh-keys&interface=ui)
 
 2. Check the state of the provisioned cluster and machine objects within the local management cluster
 

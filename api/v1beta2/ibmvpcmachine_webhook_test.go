@@ -46,6 +46,7 @@ func TestIBMVPCMachine_Create(t *testing.T) {
 					BootVolume: &VPCVolume{
 						SizeGiB: 10,
 					},
+					Image: &IBMVPCResourceReference{},
 				},
 			},
 			wantErr: false,
