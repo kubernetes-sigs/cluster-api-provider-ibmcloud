@@ -95,9 +95,11 @@ spec:
                         type: object
                       image:
                         description: 'Image is the id of OS image which would be install
-                          on the instance. Example: r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00
-                          TODO: allow user to specify a image name is much reasonable.
-                          Example: ibm-ubuntu-18-04-1-minimal-amd64-2'
+                          on the instance. Example: r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00'
+                        type: string
+                      imageName:
+                        description: ImageName is the name of OS image which would
+                          be install on the instance.
                         type: string
                       name:
                         description: Name of the instance.
@@ -119,6 +121,12 @@ spec:
                         description: ProviderID is the unique identifier as specified
                           by the cloud provider.
                         type: string
+                      sshKeyNames:
+                        description: SSHKeysNames is the SSH pub key names that will
+                          be used to access VM.
+                        items:
+                          type: string
+                        type: array
                       sshKeys:
                         description: SSHKeys is the SSH pub keys that will be used
                           to access VM.
@@ -132,7 +140,6 @@ spec:
                           Dallas 2'
                         type: string
                     required:
-                    - image
                     - zone
                     type: object
                 required:
@@ -221,11 +228,19 @@ spec:
                             type: integer
                         type: object
                       image:
-                        description: 'Image is the id of OS image which would be install
-                          on the instance. Example: r134-ed3f775f-ad7e-4e37-ae62-7199b4988b00
-                          TODO: allow user to specify a image name is much reasonable.
-                          Example: ibm-ubuntu-18-04-1-minimal-amd64-2'
-                        type: string
+                        description: Image is the OS image which would be install
+                          on the instance. ID will take higher precedence over Name
+                          if both specified.
+                        properties:
+                          id:
+                            description: ID of resource
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name of resource
+                            minLength: 1
+                            type: string
+                        type: object
                       name:
                         description: Name of the instance.
                         type: string
@@ -248,9 +263,23 @@ spec:
                         type: string
                       sshKeys:
                         description: SSHKeys is the SSH pub keys that will be used
-                          to access VM.
+                          to access VM. ID will take higher precedence over Name if
+                          both specified.
                         items:
-                          type: string
+                          description: IBMVPCResourceReference is a reference to a
+                            specific VPC resource by ID or Name Only one of ID or
+                            Name may be specified. Specifying more than one will result
+                            in a validation error.
+                          properties:
+                            id:
+                              description: ID of resource
+                              minLength: 1
+                              type: string
+                            name:
+                              description: Name of resource
+                              minLength: 1
+                              type: string
+                          type: object
                         type: array
                       zone:
                         description: 'Zone is the place where the instance should

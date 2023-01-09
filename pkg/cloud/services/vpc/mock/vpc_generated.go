@@ -363,6 +363,22 @@ func (mr *MockVpcMockRecorder) ListFloatingIps(options interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFloatingIps", reflect.TypeOf((*MockVpc)(nil).ListFloatingIps), options)
 }
 
+// ListImages mocks base method.
+func (m *MockVpc) ListImages(options *vpcv1.ListImagesOptions) (*vpcv1.ImageCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListImages", options)
+	ret0, _ := ret[0].(*vpcv1.ImageCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListImages indicates an expected call of ListImages.
+func (mr *MockVpcMockRecorder) ListImages(options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImages", reflect.TypeOf((*MockVpc)(nil).ListImages), options)
+}
+
 // ListInstances mocks base method.
 func (m *MockVpc) ListInstances(options *vpcv1.ListInstancesOptions) (*vpcv1.InstanceCollection, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -377,6 +393,22 @@ func (m *MockVpc) ListInstances(options *vpcv1.ListInstancesOptions) (*vpcv1.Ins
 func (mr *MockVpcMockRecorder) ListInstances(options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstances", reflect.TypeOf((*MockVpc)(nil).ListInstances), options)
+}
+
+// ListKeys mocks base method.
+func (m *MockVpc) ListKeys(options *vpcv1.ListKeysOptions) (*vpcv1.KeyCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListKeys", options)
+	ret0, _ := ret[0].(*vpcv1.KeyCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListKeys indicates an expected call of ListKeys.
+func (mr *MockVpcMockRecorder) ListKeys(options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKeys", reflect.TypeOf((*MockVpc)(nil).ListKeys), options)
 }
 
 // ListLoadBalancerPoolMembers mocks base method.
