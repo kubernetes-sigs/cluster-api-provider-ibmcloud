@@ -22,6 +22,7 @@ REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 cd "${REPO_ROOT}" || exit 1
 GOPATH_BIN="$(go env GOPATH)/bin/"
 export PATH="${GOPATH_BIN}:${PATH}"
+RESOURCE_TYPE="${RESOURCE_TYPE:-"powervs-service"}"
 
 # shellcheck source=../hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
@@ -35,8 +36,8 @@ mkdir -p "${ARTIFACTS}/logs/"
 
 ARCH=$(uname -m)
 OS=$(uname -s)
-IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.12.0"}
-PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.7"}
+IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.13.0"}
+PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.9"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 REGION=${REGION:-"us-south"}
 
@@ -113,10 +114,10 @@ prerequisites_powervs(){
 
 prerequisites_vpc(){
     # Assigning VPC variables
-    export IBMVPC_REGION=${REGION}
-    export IBMVPC_ZONE="${REGION}-1"
-    export IBMVPC_RESOURCEGROUP=${IBMVPC_RESOURCEGROUP:-"fa5405a58226402f9a5818cb9b8a5a8a"}
-    export IBMVPC_NAME="capi-vpc-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
+    export IBMVPC_REGION=${BOSKOS_REGION:-"jp-tok"}
+    export IBMVPC_ZONE="${BOSKOS_REGION:-}-1"
+    export IBMVPC_RESOURCEGROUP=${BOSKOS_RESOURCE_GROUP:-"fa5405a58226402f9a5818cb9b8a5a8a"}
+    export IBMVPC_NAME=${BOSKOS_RESOURCE_NAME:-"capi-vpc-e2e"}
     export IBMVPC_IMAGE_NAME=${IBMVPC_IMAGE_NAME:-"capibm-vpc-ubuntu-2004-kube-v1-25-2"}
     export IBMVPC_PROFILE=${IBMVPC_PROFILE:-"bx2-4x16"}
     export IBMVPC_SSHKEY_NAME=${IBMVPC_SSHKEY_NAME:-"vpc-cloud-bot-key"}
@@ -125,12 +126,15 @@ prerequisites_vpc(){
 }
 
 main(){
+
+    [ "${E2E_FLAVOR}" = "vpc" ] && RESOURCE_TYPE="vpc-service"
+
     # If BOSKOS_HOST is set then acquire an IBM Cloud resource from Boskos.
     if [ -n "${BOSKOS_HOST:-}" ]; then
         # Check out the resource from Boskos and store the produced environment
         # variables in a temporary file.
          account_env_var_file="$(mktemp)"
-         checkout_account 1> "${account_env_var_file}"
+         checkout_account ${RESOURCE_TYPE} 1> "${account_env_var_file}"
          checkout_account_status="${?}"
 
         # If the checkout process was a success then load the
