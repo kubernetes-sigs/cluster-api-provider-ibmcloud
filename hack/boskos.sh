@@ -21,7 +21,6 @@ set -o pipefail
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
 USER="cluster-api-provider-ibmcloud"
-RESOURCE_TYPE="${RESOURCE_TYPE:-"powervs-service"}"
 
 release_account(){
     url="http://${BOSKOS_HOST}/release?name=${BOSKOS_RESOURCE_NAME}&dest=dirty&owner=${USER}"
@@ -34,14 +33,19 @@ release_account(){
 }
 
 checkout_account(){
-    url="http://${BOSKOS_HOST}/acquire?type=${RESOURCE_TYPE}&state=free&dest=busy&owner=${USER}"
+    resource_type=$1
+    url="http://${BOSKOS_HOST}/acquire?type=${resource_type}&state=free&dest=busy&owner=${USER}"
     output=$(curl -X POST ${url})
     [ $? = 0 ] && status_code=200
 
     if [[ ${status_code} == 200 ]]; then
         echo "export BOSKOS_RESOURCE_NAME=$(echo ${output} | jq -r '.name')"
-        echo "export BOSKOS_RESOURCE_ID=$(echo ${output} | jq -r '.userdata["service-instance-id"]')"
         echo "export IBMCLOUD_API_KEY=$(echo ${output} | jq -r '.userdata["api-key"]')"
+        echo "export BOSKOS_RESOURCE_GROUP=$(echo ${output} | jq -r '.userdata["resource-group"]')"
+        echo "export BOSKOS_REGION=$(echo ${output} | jq -r '.userdata["region"]')"
+        if [[ ${resource_type} == "powervs-service" ]]; then
+            echo "export BOSKOS_RESOURCE_ID=$(echo ${output} | jq -r '.userdata["service-instance-id"]')"
+        fi
     else
         echo "Got invalid response- ${status_code}"
         exit 1
