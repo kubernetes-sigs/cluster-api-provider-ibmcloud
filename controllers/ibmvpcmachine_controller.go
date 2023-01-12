@@ -30,7 +30,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/utils/pointer"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -168,7 +167,9 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			},
 		}
 		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneLabelName]
-		machineScope.IBMVPCMachine.Spec.ProviderID = pointer.StringPtr(fmt.Sprintf("ibmvpc://%s/%s", machineScope.Machine.Spec.ClusterName, machineScope.IBMVPCMachine.Name))
+		if err = machineScope.SetProviderID(instance.ID); err != nil {
+			return ctrl.Result{}, errors.Wrapf(err, "failed to set provider id IBMVPCMachine %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
+		}
 		if ok {
 			if machineScope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer == nil {
 				options := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}

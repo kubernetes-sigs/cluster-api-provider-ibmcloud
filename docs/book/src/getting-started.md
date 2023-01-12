@@ -48,28 +48,35 @@ it into a management cluster using `clusterctl`.
 
     > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 
-   > Note: To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage. Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
-   Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` environmental variables.
-   ```console
-      export POWERVS_PROVIDER_ID_FORMAT=v2
-      export EXP_CLUSTER_RESOURCE_SET=true
-    ```
-   > Note: To deploy workload cluster with [Power VS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
-     Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
+    > Note: To deploy VPC workload cluster with [IBM cloud controller manager](/topics/vpc/load-balancer.html) which is currently in experimental stage. Set the `PROVIDER_ID_FORMAT` environmental variable.
+    Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature, so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` environmental variables.
     ```console
-      export POWERVS_PROVIDER_ID_FORMAT=v2
-      export EXP_CLUSTER_RESOURCE_SET=true
-      export CLUSTER_TOPOLOGY=true
-    ```
+       export PROVIDER_ID_FORMAT=v2
+       export EXP_CLUSTER_RESOURCE_SET=true
+     ```
 
-   > Note: To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format:
+    > Note: To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage. Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
+    Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` environmental variables.
     ```console
-   `${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1...}`.
-    ```
-   Supported ServiceIDs include - `vpc, powervs, rc`
-    ```console
-      export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
-    ```
+       export POWERVS_PROVIDER_ID_FORMAT=v2
+       export EXP_CLUSTER_RESOURCE_SET=true
+     ```
+    > Note: To deploy workload cluster with [Power VS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
+      Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
+     ```console
+        export POWERVS_PROVIDER_ID_FORMAT=v2
+        export EXP_CLUSTER_RESOURCE_SET=true
+        export CLUSTER_TOPOLOGY=true
+     ```
+
+    > Note: To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format:
+     ```console
+        `${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1...}`.
+     ```
+    Supported ServiceIDs include - `vpc, powervs, rc`
+     ```console
+        export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
+     ```
 
 2. Initialize local bootstrap cluster as a management cluster
     

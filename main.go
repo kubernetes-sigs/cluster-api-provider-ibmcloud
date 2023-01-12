@@ -165,11 +165,19 @@ func initFlags(fs *pflag.FlagSet) {
 		"The minimum interval at which watched resources are reconciled.",
 	)
 
+	// TODO: Deprecate it to use provider-id-fmt for both vpc and power vs
 	fs.StringVar(
 		&options.PowerVSProviderIDFormat,
 		"powervs-provider-id-fmt",
 		string(options.PowerVSProviderIDFormatV1),
 		"ProviderID format is used set the Provider ID format for Machine",
+	)
+
+	fs.StringVar(
+		&options.ProviderIDFormat,
+		"provider-id-fmt",
+		string(options.ProviderIDFormatV1),
+		"ProviderID format is used set the Provider ID format for Machine (Currently for VPC machines only)",
 	)
 
 	fs.StringVar(
@@ -181,14 +189,21 @@ func initFlags(fs *pflag.FlagSet) {
 }
 
 func validateFlags() error {
-	switch options.PowerVSProviderIDFormatType(options.PowerVSProviderIDFormat) {
+	switch options.ProviderIDFormatType(options.PowerVSProviderIDFormat) {
 	case options.PowerVSProviderIDFormatV1:
-		setupLog.Info("Using v1 version of ProviderID format")
+		setupLog.Info("Using v1 version of Power VS ProviderID format")
 	case options.PowerVSProviderIDFormatV2:
-		setupLog.Info("Using v2 version of ProviderID format")
+		setupLog.Info("Using v2 version of Power VS ProviderID format")
 	default:
-		errStr := fmt.Errorf("invalid value for flag powervs-provider-id-fmt: %s, Supported values: v1, v2 ", options.PowerVSProviderIDFormat)
-		return errStr
+		return fmt.Errorf("invalid value for flag powervs-provider-id-fmt: %s, Supported values: v1, v2 ", options.PowerVSProviderIDFormat)
+	}
+	switch options.ProviderIDFormatType(options.ProviderIDFormat) {
+	case options.ProviderIDFormatV1:
+		setupLog.Info("Using v1 version of VPC ProviderID format")
+	case options.ProviderIDFormatV2:
+		setupLog.Info("Using v2 version of VPC ProviderID format")
+	default:
+		return fmt.Errorf("invalid value for flag provider-id-fmt: %s, Supported values: %s, %s ", options.ProviderIDFormat, options.ProviderIDFormatV1, options.ProviderIDFormatV2)
 	}
 	return nil
 }

@@ -479,16 +479,14 @@ data:
           serviceAccountName: cloud-controller-manager
           containers:
             - name: ibmpowervs-cloud-controller-manager
-              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:9b99b4e_a6bfa07
+              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:07d19bf
               args:
                 - --v=2
                 - --cloud-provider=ibm
                 - --cloud-config=/etc/cloud/ibmpowervs.conf
                 - --use-service-account-credentials=true
               env:
-                - name: VPCCTL_CLOUD_CONFIG
-                  value: /etc/cloud/ibmpowervs.conf
-                - name: VPCCTL_PUBLIC_ENDPOINT
+                - name: ENABLE_VPC_PUBLIC_ENDPOINT
                   value: "true"
               volumeMounts:
                 - mountPath: /etc/cloud
