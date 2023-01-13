@@ -53,9 +53,16 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	ImageRef *corev1.LocalObjectReference `json:"imageRef,omitempty"`
 
-	// SysType is the System type used to host the vsi.
+	// systemType is the System type used to host the instance.
+	// systemType determines the number of cores and memory that is available.
+	// Few of the supported SystemTypes are s922,e880,e980.
+	// e880 systemType available only in Dallas Datacenters.
+	// e980 systemType available in Datacenters except Dallas and Washington.
+	// When omitted, this means that the user has no opinion and the platform is left to choose a
+	// reasonable default, which is subject to change over time. The current default is s922 which is generally available.
+	// + This is not an enum because we expect other values to be added later which should be supported implicitly.
 	// +optional
-	SysType string `json:"sysType,omitempty"`
+	SystemType string `json:"systemType,omitempty"`
 
 	// ProcType is the processor type, e.g: dedicated, shared, capped
 	// +optional

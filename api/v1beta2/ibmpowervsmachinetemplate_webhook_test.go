@@ -47,7 +47,7 @@ func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
 	}
 	t.Run("Defaults for IBMPowerVSMachineTemplate", defaulting.DefaultValidateTest(powervsMachineTemplate))
 	powervsMachineTemplate.Default()
-	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SysType).To(BeEquivalentTo("s922"))
+	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo("s922"))
 	g.Expect(powervsMachineTemplate.Spec.Template.Spec.ProcType).To(BeEquivalentTo("shared"))
 }
 
@@ -64,7 +64,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "a890",
+							SystemType:        "a890",
 							ProcType:          "unknown",
 							Network: IBMPowerVSResourceReference{
 								ID:   pointer.String("capi-net-id"),
@@ -83,7 +83,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
@@ -101,7 +101,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
@@ -121,7 +121,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
@@ -143,7 +143,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
@@ -166,7 +166,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
@@ -213,7 +213,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -232,7 +232,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "w112",
+							SystemType:        "w112",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -255,7 +255,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -274,7 +274,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "e980",
+							SystemType:        "e980",
 							ProcType:          "invalid",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -297,7 +297,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -316,7 +316,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -340,7 +340,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -359,7 +359,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -383,7 +383,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -402,7 +402,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "eight",
 							Processors:        "0.25",
@@ -425,7 +425,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -444,7 +444,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "two",
@@ -467,7 +467,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "4",
 							Processors:        "0.25",
@@ -486,7 +486,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: IBMPowerVSMachineTemplateResource{
 						Spec: IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
-							SysType:           "s922",
+							SystemType:        "s922",
 							ProcType:          "shared",
 							Memory:            "8",
 							Processors:        "2",

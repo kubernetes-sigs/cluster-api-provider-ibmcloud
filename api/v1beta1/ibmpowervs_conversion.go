@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	apiconversion "k8s.io/apimachinery/pkg/conversion"
+
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -140,4 +142,18 @@ func (dst *IBMPowerVSImageList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta2.IBMPowerVSImageList)
 
 	return Convert_v1beta2_IBMPowerVSImageList_To_v1beta1_IBMPowerVSImageList(src, dst, nil)
+}
+
+func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1beta2.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
+	if in.SysType != "" {
+		out.SystemType = in.SysType
+	}
+	return autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in, out, s)
+}
+
+func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1beta2.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
+	if in.SystemType != "" {
+		out.SysType = in.SystemType
+	}
+	return autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in, out, s)
 }

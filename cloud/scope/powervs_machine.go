@@ -246,7 +246,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 			Memory:     &memory,
 			Processors: &cores,
 			ProcType:   &s.ProcType,
-			SysType:    s.SysType,
+			SysType:    s.SystemType,
 			UserData:   cloudInitData,
 		},
 	}

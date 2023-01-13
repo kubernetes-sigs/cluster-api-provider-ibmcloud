@@ -99,7 +99,7 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachine() error {
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineSysType() *field.Error {
 	if res, spec := validateIBMPowerVSSysType(r.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "sysType"), spec.SysType, "Invalid System Type")
+		return field.Invalid(field.NewPath("spec", "systemType"), spec.SystemType, "Invalid System Type")
 	}
 	return nil
 }

@@ -99,7 +99,7 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() error {
 
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateSysType() *field.Error {
 	if res, spec := validateIBMPowerVSSysType(r.Spec.Template.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "sysType"), spec.SysType, "Invalid System Type")
+		return field.Invalid(field.NewPath("spec", "template", "spec", "systemType"), spec.SystemType, "Invalid System Type")
 	}
 	return nil
 }

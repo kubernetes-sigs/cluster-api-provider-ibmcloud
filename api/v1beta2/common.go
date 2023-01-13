@@ -29,8 +29,8 @@ func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 	if spec.Processors == "" {
 		spec.Processors = "0.25"
 	}
-	if spec.SysType == "" {
-		spec.SysType = "s922"
+	if spec.SystemType == "" {
+		spec.SystemType = "s922"
 	}
 	if spec.ProcType == "" {
 		spec.ProcType = "shared"
@@ -40,7 +40,7 @@ func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 func validateIBMPowerVSSysType(spec IBMPowerVSMachineSpec) (bool, IBMPowerVSMachineSpec) {
 	sysTypes := [...]string{"s922", "e980"}
 	for _, st := range sysTypes {
-		if spec.SysType == st {
+		if spec.SystemType == st {
 			return true, IBMPowerVSMachineSpec{}
 		}
 	}
