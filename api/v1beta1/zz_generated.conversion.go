@@ -846,7 +846,7 @@ func autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(
 	out.Image = (*v1beta2.IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
 	out.ImageRef = (*v1.LocalObjectReference)(unsafe.Pointer(in.ImageRef))
 	// WARNING: in.SysType requires manual conversion: does not exist in peer-type
-	out.ProcType = in.ProcType
+	// WARNING: in.ProcType requires manual conversion: does not exist in peer-type
 	out.Processors = in.Processors
 	out.Memory = in.Memory
 	if err := Convert_v1beta1_IBMPowerVSResourceReference_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
@@ -862,7 +862,7 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(
 	out.Image = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
 	out.ImageRef = (*v1.LocalObjectReference)(unsafe.Pointer(in.ImageRef))
 	// WARNING: in.SystemType requires manual conversion: does not exist in peer-type
-	out.ProcType = in.ProcType
+	// WARNING: in.ProcessorType requires manual conversion: does not exist in peer-type
 	out.Processors = in.Processors
 	out.Memory = in.Memory
 	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta1_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {

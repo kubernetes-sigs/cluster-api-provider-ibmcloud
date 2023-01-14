@@ -380,9 +380,24 @@ spec:
                     minLength: 1
                     type: string
                 type: object
-              procType:
-                description: 'ProcType is the processor type, e.g: dedicated, shared,
-                  capped'
+              processorType:
+                description: 'processorType is the VM instance processor type. It
+                  must be set to one of the following values: Dedicated, Capped or
+                  Shared. Dedicated: resources are allocated for a specific client,
+                  The hypervisor makes a 1:1 binding of a partition’s processor to
+                  a physical processor core. Shared: Shared among other clients. Capped:
+                  Shared, but resources do not expand beyond those that are requested,
+                  the amount of CPU time is Capped to the value specified for the
+                  entitlement. if the processorType is selected as Dedicated, then
+                  processors value cannot be fractional. When omitted, this means
+                  that the user has no opinion and the platform is left to choose
+                  a reasonable default, which is subject to change over time. The
+                  current default is Shared.'
+                enum:
+                - Dedicated
+                - Shared
+                - Capped
+                - ""
                 type: string
               processors:
                 description: Processors is Number of processors allocated.

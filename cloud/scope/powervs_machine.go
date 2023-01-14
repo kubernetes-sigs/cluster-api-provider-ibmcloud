@@ -232,6 +232,8 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		return nil, fmt.Errorf("error getting network ID: %v", err)
 	}
 
+	procType := strings.ToLower(string(s.ProcessorType))
+
 	params := &p_cloud_p_vm_instances.PcloudPvminstancesPostParams{
 		Body: &models.PVMInstanceCreate{
 			ImageID:     imageID,
@@ -245,7 +247,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 			ServerName: &m.IBMPowerVSMachine.Name,
 			Memory:     &memory,
 			Processors: &cores,
-			ProcType:   &s.ProcType,
+			ProcType:   &procType,
 			SysType:    s.SystemType,
 			UserData:   cloudInitData,
 		},

@@ -26,10 +26,19 @@ import (
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// PowerVSProcessorType enum attribute to identify the PowerVS instance processor type.
+type PowerVSProcessorType string
+
 const (
 	// IBMPowerVSMachineFinalizer allows IBMPowerVSMachineReconciler to clean up resources associated with IBMPowerVSMachine before
 	// removing it from the apiserver.
 	IBMPowerVSMachineFinalizer = "ibmpowervsmachine.infrastructure.cluster.x-k8s.io"
+	// PowerVSProcessorTypeDedicated enum property to identify a Dedicated Power VS processor type.
+	PowerVSProcessorTypeDedicated PowerVSProcessorType = "Dedicated"
+	// PowerVSProcessorTypeShared enum property to identify a Shared Power VS processor type.
+	PowerVSProcessorTypeShared PowerVSProcessorType = "Shared"
+	// PowerVSProcessorTypeCapped enum property to identify a Capped Power VS processor type.
+	PowerVSProcessorTypeCapped PowerVSProcessorType = "Capped"
 )
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
@@ -64,9 +73,17 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	SystemType string `json:"systemType,omitempty"`
 
-	// ProcType is the processor type, e.g: dedicated, shared, capped
+	// processorType is the VM instance processor type.
+	// It must be set to one of the following values: Dedicated, Capped or Shared.
+	// Dedicated: resources are allocated for a specific client, The hypervisor makes a 1:1 binding of a partition’s processor to a physical processor core.
+	// Shared: Shared among other clients.
+	// Capped: Shared, but resources do not expand beyond those that are requested, the amount of CPU time is Capped to the value specified for the entitlement.
+	// if the processorType is selected as Dedicated, then processors value cannot be fractional.
+	// When omitted, this means that the user has no opinion and the platform is left to choose a
+	// reasonable default, which is subject to change over time. The current default is Shared.
+	// +kubebuilder:validation:Enum:="Dedicated";"Shared";"Capped";""
 	// +optional
-	ProcType string `json:"procType,omitempty"`
+	ProcessorType PowerVSProcessorType `json:"processorType,omitempty"`
 
 	// Processors is Number of processors allocated.
 	// +optional

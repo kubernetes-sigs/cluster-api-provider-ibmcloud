@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"strings"
+
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
 
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -145,15 +147,31 @@ func (dst *IBMPowerVSImageList) ConvertFrom(srcRaw conversion.Hub) error {
 }
 
 func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1beta2.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
-	if in.SysType != "" {
-		out.SystemType = in.SysType
+	out.SystemType = in.SysType
+
+	switch in.ProcType {
+	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeDedicated)):
+		out.ProcessorType = infrav1beta2.PowerVSProcessorTypeDedicated
+	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeShared)):
+		out.ProcessorType = infrav1beta2.PowerVSProcessorTypeShared
+	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeCapped)):
+		out.ProcessorType = infrav1beta2.PowerVSProcessorTypeCapped
 	}
+
 	return autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in, out, s)
 }
 
 func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1beta2.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
-	if in.SystemType != "" {
-		out.SysType = in.SystemType
+	out.SysType = in.SystemType
+
+	switch in.ProcessorType {
+	case infrav1beta2.PowerVSProcessorTypeDedicated:
+		out.ProcType = strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeDedicated))
+	case infrav1beta2.PowerVSProcessorTypeShared:
+		out.ProcType = strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeShared))
+	case infrav1beta2.PowerVSProcessorTypeCapped:
+		out.ProcType = strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeCapped))
 	}
+
 	return autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in, out, s)
 }

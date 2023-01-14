@@ -44,7 +44,7 @@ func TestIBMPowerVSMachine_default(t *testing.T) {
 	t.Run("Defaults for IBMPowerVSMachine", defaulting.DefaultValidateTest(powervsMachine))
 	powervsMachine.Default()
 	g.Expect(powervsMachine.Spec.SystemType).To(BeEquivalentTo("s922"))
-	g.Expect(powervsMachine.Spec.ProcType).To(BeEquivalentTo("shared"))
+	g.Expect(powervsMachine.Spec.ProcessorType).To(BeEquivalentTo(PowerVSProcessorTypeShared))
 }
 
 func TestIBMPowerVSMachine_create(t *testing.T) {
@@ -59,7 +59,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "a890",
-					ProcType:          "unknown",
+					ProcessorType:     "unknown",
 					Network: IBMPowerVSResourceReference{
 						ID:   pointer.String("capi-net-id"),
 						Name: pointer.String("capi-net"),
@@ -74,7 +74,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
 						Name: pointer.String("capi-net"),
 					},
@@ -88,7 +88,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
 						Name: pointer.String("capi-net"),
 					},
@@ -104,7 +104,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
 						Name: pointer.String("capi-net"),
 					},
@@ -122,7 +122,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
 						Name: pointer.String("capi-net"),
 					},
@@ -141,7 +141,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
 						Name: pointer.String("capi-net"),
 					},
@@ -183,7 +183,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -198,7 +198,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "w112",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -212,12 +212,12 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should fail to update IBMPowerVSMachine with invalid ProcType",
+			name: "Should fail to update IBMPowerVSMachine with invalid ProcessorType",
 			oldPowervsMachine: &IBMPowerVSMachine{
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -232,7 +232,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "e980",
-					ProcType:          "invalid",
+					ProcessorType:     "invalid",
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -251,7 +251,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -266,7 +266,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -286,7 +286,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -301,7 +301,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -321,7 +321,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -336,7 +336,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "eight",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -355,7 +355,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -370,7 +370,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "two",
 					Network: IBMPowerVSResourceReference{
@@ -389,7 +389,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "4",
 					Processors:        "0.25",
 					Network: IBMPowerVSResourceReference{
@@ -404,7 +404,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 				Spec: IBMPowerVSMachineSpec{
 					ServiceInstanceID: "capi-si-id",
 					SystemType:        "s922",
-					ProcType:          "shared",
+					ProcessorType:     PowerVSProcessorTypeShared,
 					Memory:            "8",
 					Processors:        "2",
 					Network: IBMPowerVSResourceReference{

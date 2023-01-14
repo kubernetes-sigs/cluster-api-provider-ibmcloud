@@ -73,9 +73,6 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() error {
 	if err := r.validateIBMPowerVSMachineTemplateSysType(); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	if err := r.validateIBMPowerVSMachineTemplateProcType(); err != nil {
-		allErrs = append(allErrs, err)
-	}
 	if err := r.validateIBMPowerVSMachineTemplateNetwork(); err != nil {
 		allErrs = append(allErrs, err)
 	}
@@ -100,13 +97,6 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() error {
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateSysType() *field.Error {
 	if res, spec := validateIBMPowerVSSysType(r.Spec.Template.Spec); !res {
 		return field.Invalid(field.NewPath("spec", "template", "spec", "systemType"), spec.SystemType, "Invalid System Type")
-	}
-	return nil
-}
-
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateProcType() *field.Error {
-	if res, spec := validateIBMPowerVSProcType(r.Spec.Template.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "procType"), spec.ProcType, "Invalid Processor Type")
 	}
 	return nil
 }
