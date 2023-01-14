@@ -847,7 +847,7 @@ func autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(
 	out.ImageRef = (*v1.LocalObjectReference)(unsafe.Pointer(in.ImageRef))
 	// WARNING: in.SysType requires manual conversion: does not exist in peer-type
 	// WARNING: in.ProcType requires manual conversion: does not exist in peer-type
-	out.Processors = in.Processors
+	// WARNING: in.Processors requires manual conversion: inconvertible types (string vs k8s.io/apimachinery/pkg/util/intstr.IntOrString)
 	out.Memory = in.Memory
 	if err := Convert_v1beta1_IBMPowerVSResourceReference_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
@@ -863,7 +863,7 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(
 	out.ImageRef = (*v1.LocalObjectReference)(unsafe.Pointer(in.ImageRef))
 	// WARNING: in.SystemType requires manual conversion: does not exist in peer-type
 	// WARNING: in.ProcessorType requires manual conversion: does not exist in peer-type
-	out.Processors = in.Processors
+	// WARNING: in.Processors requires manual conversion: inconvertible types (k8s.io/apimachinery/pkg/util/intstr.IntOrString vs string)
 	out.Memory = in.Memory
 	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta1_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err

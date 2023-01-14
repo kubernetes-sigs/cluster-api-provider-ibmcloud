@@ -30,6 +30,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2/klogr"
@@ -67,7 +68,7 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 		},
 		Spec: infrav1beta2.IBMPowerVSMachineSpec{
 			Memory:     "8",
-			Processors: "0.25",
+			Processors: intstr.FromString("0.5"),
 			Image:      image,
 			Network:    network,
 		},
@@ -326,7 +327,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
-			scope.IBMPowerVSMachine.Spec.Processors = "illegal"
+			scope.IBMPowerVSMachine.Spec.Processors = intstr.FromString("invalid")
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			_, err := scope.CreateMachine()
 			g.Expect(err).To(Not(BeNil()))

@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"strconv"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
@@ -26,8 +27,8 @@ func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 	if spec.Memory == "" {
 		spec.Memory = "4"
 	}
-	if spec.Processors == "" {
-		spec.Processors = "0.25"
+	if spec.Processors.StrVal == "" && spec.Processors.IntVal == 0 {
+		spec.Processors = intstr.FromString("0.5")
 	}
 	if spec.SystemType == "" {
 		spec.SystemType = "s922"
@@ -68,10 +69,18 @@ func validateIBMPowerVSMemoryValues(resValue string) bool {
 	return true
 }
 
-func validateIBMPowerVSProcessorValues(resValue string) bool {
-	if val, err := strconv.ParseFloat(resValue, 64); err != nil || val < 0.25 {
-		return false
+func validateIBMPowerVSProcessorValues(resValue intstr.IntOrString) bool {
+	switch resValue.Type {
+	case intstr.Int:
+		if val := float64(resValue.IntVal); val < 0.5 {
+			return false
+		}
+	case intstr.String:
+		if val, err := strconv.ParseFloat(resValue.StrVal, 64); err != nil || val < 0.5 {
+			return false
+		}
 	}
+
 	return true
 }
 

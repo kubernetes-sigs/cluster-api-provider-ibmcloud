@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
@@ -148,6 +149,7 @@ func (dst *IBMPowerVSImageList) ConvertFrom(srcRaw conversion.Hub) error {
 
 func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1beta2.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
 	out.SystemType = in.SysType
+	out.Processors.StrVal = in.Processors
 
 	switch in.ProcType {
 	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeDedicated)):
@@ -163,6 +165,13 @@ func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 
 func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1beta2.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
 	out.SysType = in.SystemType
+
+	switch in.Processors.Type {
+	case intstr.Int:
+		out.Processors = string(in.Processors.IntVal)
+	case intstr.String:
+		out.Processors = in.Processors.StrVal
+	}
 
 	switch in.ProcessorType {
 	case infrav1beta2.PowerVSProcessorTypeDedicated:

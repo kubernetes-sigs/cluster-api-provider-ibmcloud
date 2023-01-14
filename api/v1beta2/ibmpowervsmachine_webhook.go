@@ -134,7 +134,7 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachineMemory() *field.Error {
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineProcessors() *field.Error {
 	if res := validateIBMPowerVSProcessorValues(r.Spec.Processors); !res {
-		return field.Invalid(field.NewPath("spec", "processors"), r.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
+		return field.Invalid(field.NewPath("spec", "processors"), r.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.5")
 	}
 	return nil
 }

@@ -19,6 +19,7 @@ package v1beta2
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/errors"
@@ -85,10 +86,20 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	ProcessorType PowerVSProcessorType `json:"processorType,omitempty"`
 
-	// Processors is Number of processors allocated.
+	// processors is the number of virtual processors in a virtual machine.
+	// when the processorType is selected as Dedicated the processors value cannot be fractional.
+	// maximum value for the Processors depends on the selected SystemType.
+	// when SystemType is set to e880 or e980 maximum Processors value is 143.
+	// when SystemType is set to s922 maximum Processors value is 15.
+	// minimum value for Processors depends on the selected ProcessorType.
+	// when ProcessorType is set as Shared or Capped, The minimum processors is 0.5.
+	// when ProcessorType is set as Dedicated, The minimum processors is 1.
+	// When omitted, this means that the user has no opinion and the platform is left to choose a
+	// reasonable default, which is subject to change over time. The default is set based on the selected ProcessorType.
+	// when ProcessorType selected as Dedicated, the default is set to 1.
+	// when ProcessorType selected as Shared or Capped, the default is set to 0.5.
 	// +optional
-	// +kubebuilder:validation:Pattern=^\d+(\.)?(\d)?(\d)?$
-	Processors string `json:"processors,omitempty"`
+	Processors intstr.IntOrString `json:"processors,omitempty"`
 
 	// Memory is Amount of memory allocated (in GB)
 	// +optional

@@ -27,6 +27,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,10 +101,18 @@ func getIBMPowerVSMachineCapacity(machineTemplate infrav1beta2.IBMPowerVSMachine
 	// $ lparstat
 	//	  System Configuration
 	//	  type=Shared mode=Uncapped smt=8 lcpu=1 mem=33413760 kB cpus=20 ent=0.50
-	cores, err := strconv.ParseFloat(machineTemplate.Spec.Template.Spec.Processors, 64)
-	if err != nil {
-		return nil, err
+	var cores float64
+	var err error
+	switch machineTemplate.Spec.Template.Spec.Processors.Type {
+	case intstr.Int:
+		cores = float64(machineTemplate.Spec.Template.Spec.Processors.IntVal)
+	case intstr.String:
+		cores, err = strconv.ParseFloat(machineTemplate.Spec.Template.Spec.Processors.StrVal, 64)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	virtualProcessors := fmt.Sprintf("%v", math.Ceil(cores)*defaultSMT)
 	capacity[corev1.ResourceCPU] = resource.MustParse(virtualProcessors)
 	return capacity, nil

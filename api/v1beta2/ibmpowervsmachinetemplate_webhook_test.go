@@ -22,6 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/cluster-api/util/defaulting"
 )
@@ -37,7 +38,7 @@ func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
 			Template: IBMPowerVSMachineTemplateResource{
 				Spec: IBMPowerVSMachineSpec{
 					Memory:     "4",
-					Processors: "0.5",
+					Processors: intstr.FromString("0.5"),
 					Image: &IBMPowerVSResourceReference{
 						ID: pointer.String("capi-image"),
 					},
@@ -151,7 +152,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 							Image: &IBMPowerVSResourceReference{
 								Name: pointer.String("capi-image"),
 							},
-							Processors: "two",
+							Processors: intstr.FromString("two"),
 							Memory:     "four",
 						},
 					},
@@ -174,7 +175,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 							Image: &IBMPowerVSResourceReference{
 								ID: pointer.String("capi-image-id"),
 							},
-							Processors: "0.25",
+							Processors: intstr.FromString("0.5"),
 							Memory:     "4",
 						},
 					},
@@ -216,7 +217,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -235,7 +236,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "w112",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -258,7 +259,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -277,7 +278,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "e980",
 							ProcessorType:     "invalid",
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -300,7 +301,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -319,7 +320,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 								ID:   pointer.String("capi-net-ID"),
@@ -343,7 +344,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -362,7 +363,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -386,7 +387,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -405,7 +406,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "eight",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -428,7 +429,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -447,7 +448,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "two",
+							Processors:        intstr.FromString("two"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -470,7 +471,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "4",
-							Processors:        "0.25",
+							Processors:        intstr.FromString("0.5"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
@@ -489,7 +490,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 							SystemType:        "s922",
 							ProcessorType:     PowerVSProcessorTypeShared,
 							Memory:            "8",
-							Processors:        "2",
+							Processors:        intstr.FromString("2"),
 							Network: IBMPowerVSResourceReference{
 								Name: pointer.String("capi-net"),
 							},
