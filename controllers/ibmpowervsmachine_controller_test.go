@@ -487,7 +487,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					Name: *pointer.String("capi-test-machine"),
 				},
 				Spec: infrav1beta2.IBMPowerVSMachineSpec{
-					Memory:     "8",
+					MemoryGiB:  8,
 					Processors: intstr.FromString("0.5"),
 					Image: &infrav1beta2.IBMPowerVSResourceReference{
 						ID: pointer.String("capi-image-id"),

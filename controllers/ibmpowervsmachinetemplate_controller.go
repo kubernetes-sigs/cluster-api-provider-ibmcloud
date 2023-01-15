@@ -91,7 +91,8 @@ func (r *IBMPowerVSMachineTemplateReconciler) Reconcile(ctx context.Context, req
 
 func getIBMPowerVSMachineCapacity(machineTemplate infrav1beta2.IBMPowerVSMachineTemplate) (corev1.ResourceList, error) {
 	capacity := make(corev1.ResourceList)
-	capacity[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%sG", machineTemplate.Spec.Template.Spec.Memory))
+	memory := strconv.FormatInt(int64(machineTemplate.Spec.Template.Spec.MemoryGiB), 10)
+	capacity[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%sG", memory))
 	// There is a core-to-lCPU ratio of 1:1 for Dedicated processors. For shared processors, fractional cores round up to the nearest whole number. For example, 1.25 cores equals 2 lCPUs.
 	// VM with 1 dedicated processor will see = 1 * SMT = 1 * 8 = 8 cpus in OS
 	// VM with 1.5 shared processor will see = 2 * SMT = 2 * 8 = 16 cpus in OS

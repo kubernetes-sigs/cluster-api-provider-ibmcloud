@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 
 	apiconversion "k8s.io/apimachinery/pkg/conversion"
@@ -149,7 +151,13 @@ func (dst *IBMPowerVSImageList) ConvertFrom(srcRaw conversion.Hub) error {
 
 func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1beta2.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
 	out.SystemType = in.SysType
-	out.Processors.StrVal = in.Processors
+	out.Processors = intstr.FromString(in.Processors)
+
+	memory, err := strconv.ParseFloat(in.Memory, 64)
+	if err != nil {
+		return fmt.Errorf("failed to convert memory(%s) to float64", in.Memory)
+	}
+	out.MemoryGiB = int32(memory)
 
 	switch in.ProcType {
 	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeDedicated)):
@@ -165,10 +173,11 @@ func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 
 func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1beta2.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
 	out.SysType = in.SystemType
+	out.Memory = strconv.FormatInt(int64(in.MemoryGiB), 10)
 
 	switch in.Processors.Type {
 	case intstr.Int:
-		out.Processors = string(in.Processors.IntVal)
+		out.Processors = strconv.FormatInt(int64(in.Processors.IntVal), 10)
 	case intstr.String:
 		out.Processors = in.Processors.StrVal
 	}

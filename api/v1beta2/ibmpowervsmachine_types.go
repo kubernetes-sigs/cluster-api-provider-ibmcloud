@@ -71,6 +71,7 @@ type IBMPowerVSMachineSpec struct {
 	// When omitted, this means that the user has no opinion and the platform is left to choose a
 	// reasonable default, which is subject to change over time. The current default is s922 which is generally available.
 	// + This is not an enum because we expect other values to be added later which should be supported implicitly.
+	// +kubebuilder:validation:Enum:="s922";"e880";"e980";""
 	// +optional
 	SystemType string `json:"systemType,omitempty"`
 
@@ -92,18 +93,25 @@ type IBMPowerVSMachineSpec struct {
 	// when SystemType is set to e880 or e980 maximum Processors value is 143.
 	// when SystemType is set to s922 maximum Processors value is 15.
 	// minimum value for Processors depends on the selected ProcessorType.
-	// when ProcessorType is set as Shared or Capped, The minimum processors is 0.5.
+	// when ProcessorType is set as Shared or Capped, The minimum processors is 0.25.
 	// when ProcessorType is set as Dedicated, The minimum processors is 1.
 	// When omitted, this means that the user has no opinion and the platform is left to choose a
 	// reasonable default, which is subject to change over time. The default is set based on the selected ProcessorType.
 	// when ProcessorType selected as Dedicated, the default is set to 1.
-	// when ProcessorType selected as Shared or Capped, the default is set to 0.5.
+	// when ProcessorType selected as Shared or Capped, the default is set to 0.25.
 	// +optional
 	Processors intstr.IntOrString `json:"processors,omitempty"`
 
-	// Memory is Amount of memory allocated (in GB)
+	// memoryGiB is the size of a virtual machine's memory, in GiB.
+	// maximum value for the MemoryGiB depends on the selected SystemType.
+	// when SystemType is set to e880 maximum MemoryGiB value is 7463 GiB.
+	// when SystemType is set to e980 maximum MemoryGiB value is 15307 GiB.
+	// when SystemType is set to s922 maximum MemoryGiB value is 942 GiB.
+	// The minimum memory is 2 GiB.
+	// When omitted, this means the user has no opinion and the platform is left to choose a reasonable
+	// default, which is subject to change over time. The current default is 2.
 	// +optional
-	Memory string `json:"memory,omitempty"`
+	MemoryGiB int32 `json:"memoryGiB,omitempty"`
 
 	// Network is the reference to the Network to use for this instance.
 	Network IBMPowerVSResourceReference `json:"network"`

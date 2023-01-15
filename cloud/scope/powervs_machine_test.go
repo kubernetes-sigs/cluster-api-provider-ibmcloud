@@ -67,8 +67,8 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 			Namespace: "default",
 		},
 		Spec: infrav1beta2.IBMPowerVSMachineSpec{
-			Memory:     "8",
-			Processors: intstr.FromString("0.5"),
+			MemoryGiB:  8,
+			Processors: intstr.FromInt(1),
 			Image:      image,
 			Network:    network,
 		},
@@ -311,18 +311,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 		})
 
-		t.Run("Invalid memory value", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
-			scope.IBMPowerVSMachine.Spec.Memory = "illegal"
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To(Not(BeNil()))
-		})
-
-		t.Run("Invalid core value", func(t *testing.T) {
+		t.Run("Invalid processors value", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)

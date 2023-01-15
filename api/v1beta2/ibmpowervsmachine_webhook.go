@@ -70,9 +70,6 @@ func (r *IBMPowerVSMachine) ValidateDelete() error {
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachine() error {
 	var allErrs field.ErrorList
-	if err := r.validateIBMPowerVSMachineSysType(); err != nil {
-		allErrs = append(allErrs, err)
-	}
 	if err := r.validateIBMPowerVSMachineNetwork(); err != nil {
 		allErrs = append(allErrs, err)
 	}
@@ -92,13 +89,6 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachine() error {
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSMachine"},
 		r.Name, allErrs)
-}
-
-func (r *IBMPowerVSMachine) validateIBMPowerVSMachineSysType() *field.Error {
-	if res, spec := validateIBMPowerVSSysType(r.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "systemType"), spec.SystemType, "Invalid System Type")
-	}
-	return nil
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineNetwork() *field.Error {
@@ -126,15 +116,15 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachineImage() *field.Error {
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineMemory() *field.Error {
-	if res := validateIBMPowerVSMemoryValues(r.Spec.Memory); !res {
-		return field.Invalid(field.NewPath("spec", "memory"), r.Spec.Memory, "Invalid Memory value - must be non-empty and a positive integer no lesser than 2")
+	if res := validateIBMPowerVSMemoryValues(r.Spec.MemoryGiB); !res {
+		return field.Invalid(field.NewPath("spec", "memoryGiB"), r.Spec.MemoryGiB, "Invalid Memory value - must a positive integer no lesser than 2")
 	}
 	return nil
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineProcessors() *field.Error {
 	if res := validateIBMPowerVSProcessorValues(r.Spec.Processors); !res {
-		return field.Invalid(field.NewPath("spec", "processors"), r.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.5")
+		return field.Invalid(field.NewPath("spec", "processors"), r.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
 	}
 	return nil
 }

@@ -207,10 +207,7 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		return nil, err
 	}
 
-	memory, err := strconv.ParseFloat(s.Memory, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert memory(%s) to float64", s.Memory)
-	}
+	memory := float64(s.MemoryGiB)
 
 	var processors float64
 	switch s.Processors.Type {
