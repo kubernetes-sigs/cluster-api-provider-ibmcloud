@@ -483,6 +483,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 		})
 		getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{ID: pointer.String("capi-subnet-id")}
+		subnet := &vpcv1.SubnetCollection{Subnets: []vpcv1.Subnet{{ID: core.StringPtr("capi-subnet-id")}}}
 		pgw := &vpcv1.PublicGateway{ID: pointer.String("capi-pgw-id")}
 		unsetPGWOptions := &vpcv1.UnsetSubnetPublicGatewayOptions{ID: pointer.String("capi-subnet-id")}
 		deleteSubnetOptions := &vpcv1.DeleteSubnetOptions{ID: pointer.String("capi-subnet-id")}
@@ -493,6 +494,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			mockvpc.EXPECT().ListInstances(listVSIOpts).Return(instancelist, response, nil)
+			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnet, response, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(getPGWOptions).Return(pgw, response, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
@@ -507,6 +509,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			mockvpc.EXPECT().ListInstances(listVSIOpts).Return(instancelist, response, nil)
+			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnet, response, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(getPGWOptions).Return(pgw, response, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
@@ -522,6 +525,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			mockvpc.EXPECT().ListInstances(listVSIOpts).Return(instancelist, response, nil)
+			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnet, response, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(getPGWOptions).Return(pgw, response, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
@@ -537,6 +541,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			mockvpc.EXPECT().ListInstances(listVSIOpts).Return(instancelist, response, nil)
+			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnet, response, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(getPGWOptions).Return(pgw, response, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
@@ -620,12 +625,14 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 		})
 		t.Run("Should successfully delete IBMVPCCluster and remove the finalizer", func(t *testing.T) {
+			subnet := &vpcv1.SubnetCollection{Subnets: []vpcv1.Subnet{{ID: core.StringPtr("capi-subnet-id")}}}
 			g := NewWithT(t)
 			mockController, mockvpc, clusterScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
 			pgw := &vpcv1.PublicGateway{ID: pointer.String("capi-pgw-id")}
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(pgw, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
