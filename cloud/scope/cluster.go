@@ -312,11 +312,35 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 func (s *ClusterScope) DeleteSubnet() error {
 	subnetID := *s.IBMVPCCluster.Status.Subnet.ID
 
+	// Lists the subnet available and compare before deleting to avoid any failure(404) later
+	if found, err := func() (bool, error) {
+		//TODO: Add paging mechanism and use that function everywhere
+		subnets, _, err := s.IBMVPCClient.ListSubnets(&vpcv1.ListSubnetsOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		for _, subnet := range subnets.Subnets {
+			if *subnet.ID == subnetID {
+				return true, nil
+			}
+		}
+		return false, nil
+	}(); err != nil {
+		return err
+	} else if !found {
+		s.Logger.V(3).Info("No subnets found with ID", "Subnet ID", subnetID)
+		return nil
+	}
+
 	// get the pgw id for given subnet, so we can delete it later
 	getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{}
 	getPGWOptions.SetID(subnetID)
 	pgw, _, err := s.IBMVPCClient.GetSubnetPublicGateway(getPGWOptions)
-	if pgw != nil && err == nil { // public gateway found
+	if err != nil {
+		return err
+	}
+	if pgw != nil { // public gateway found
 		// Unset the public gateway for subnet first
 		err = s.detachPublicGateway(subnetID, *pgw.ID)
 		if err != nil {

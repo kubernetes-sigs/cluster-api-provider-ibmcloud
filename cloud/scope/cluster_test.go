@@ -583,6 +583,11 @@ func TestDeleteSubnet(t *testing.T) {
 		publicGateway := &vpcv1.PublicGateway{
 			ID: core.StringPtr("foo-public-gateway-id"),
 		}
+		subnet := &vpcv1.SubnetCollection{
+			Subnets: []vpcv1.Subnet{
+				{ID: core.StringPtr("foo-vpc-subnet-id")},
+			},
+		}
 
 		t.Run("Should delete subnet", func(t *testing.T) {
 			g := NewWithT(t)
@@ -591,6 +596,7 @@ func TestDeleteSubnet(t *testing.T) {
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
@@ -606,6 +612,7 @@ func TestDeleteSubnet(t *testing.T) {
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, errors.New("Error when unsetting publicgateway for subnet"))
 			err := scope.DeleteSubnet()
@@ -619,6 +626,7 @@ func TestDeleteSubnet(t *testing.T) {
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, errors.New("Error when deleting publicgateway for subnet"))
@@ -633,12 +641,36 @@ func TestDeleteSubnet(t *testing.T) {
 			scope := setupClusterScope(clusterName, mockvpc)
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(publicGateway, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().DeleteSubnet(gomock.AssignableToTypeOf(&vpcv1.DeleteSubnetOptions{})).Return(&core.DetailedResponse{}, errors.New("Error when deleting subnet"))
 			err := scope.DeleteSubnet()
 			g.Expect(err).To(Not(BeNil()))
+		})
+
+		t.Run("Error listing subnets", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Error listing subnets"))
+			err := scope.DeleteSubnet()
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Subnet doesn't exist", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{Subnets: []vpcv1.Subnet{}}, &core.DetailedResponse{}, nil)
+			err := scope.DeleteSubnet()
+			g.Expect(err).To(BeNil())
 		})
 	})
 }
