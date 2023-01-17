@@ -27,6 +27,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -486,8 +487,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					Name: *pointer.String("capi-test-machine"),
 				},
 				Spec: infrav1beta2.IBMPowerVSMachineSpec{
-					Memory:     "8",
-					Processors: "0.25",
+					MemoryGiB:  8,
+					Processors: intstr.FromString("0.5"),
 					Image: &infrav1beta2.IBMPowerVSResourceReference{
 						ID: pointer.String("capi-image-id"),
 					},

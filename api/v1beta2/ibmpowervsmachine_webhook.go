@@ -70,12 +70,6 @@ func (r *IBMPowerVSMachine) ValidateDelete() error {
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachine() error {
 	var allErrs field.ErrorList
-	if err := r.validateIBMPowerVSMachineSysType(); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if err := r.validateIBMPowerVSMachineProcType(); err != nil {
-		allErrs = append(allErrs, err)
-	}
 	if err := r.validateIBMPowerVSMachineNetwork(); err != nil {
 		allErrs = append(allErrs, err)
 	}
@@ -95,20 +89,6 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachine() error {
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSMachine"},
 		r.Name, allErrs)
-}
-
-func (r *IBMPowerVSMachine) validateIBMPowerVSMachineSysType() *field.Error {
-	if res, spec := validateIBMPowerVSSysType(r.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "sysType"), spec.SysType, "Invalid System Type")
-	}
-	return nil
-}
-
-func (r *IBMPowerVSMachine) validateIBMPowerVSMachineProcType() *field.Error {
-	if res, spec := validateIBMPowerVSProcType(r.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "procType"), spec.ProcType, "Invalid Processor Type")
-	}
-	return nil
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineNetwork() *field.Error {
@@ -136,8 +116,8 @@ func (r *IBMPowerVSMachine) validateIBMPowerVSMachineImage() *field.Error {
 }
 
 func (r *IBMPowerVSMachine) validateIBMPowerVSMachineMemory() *field.Error {
-	if res := validateIBMPowerVSMemoryValues(r.Spec.Memory); !res {
-		return field.Invalid(field.NewPath("spec", "memory"), r.Spec.Memory, "Invalid Memory value - must be non-empty and a positive integer no lesser than 2")
+	if res := validateIBMPowerVSMemoryValues(r.Spec.MemoryGiB); !res {
+		return field.Invalid(field.NewPath("spec", "memoryGiB"), r.Spec.MemoryGiB, "Invalid Memory value - must a positive integer no lesser than 2")
 	}
 	return nil
 }

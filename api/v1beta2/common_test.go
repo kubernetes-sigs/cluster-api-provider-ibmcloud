@@ -18,11 +18,13 @@ package v1beta2
 
 import (
 	"testing"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func TestValidateIBMPowerVSMemoryValues(t *testing.T) {
 	type args struct {
-		n string
+		n int32
 	}
 	tests := []struct {
 		name string
@@ -31,27 +33,22 @@ func TestValidateIBMPowerVSMemoryValues(t *testing.T) {
 	}{
 		{
 			name: "N is 4",
-			args: args{n: "4"},
+			args: args{n: 4},
 			want: true,
 		},
 		{
 			name: "N is 10",
-			args: args{n: "10"},
+			args: args{n: 10},
 			want: true,
 		},
 		{
 			name: "N is 1",
-			args: args{n: "1"},
+			args: args{n: 1},
 			want: false,
 		},
 		{
-			name: "N is 1.25",
-			args: args{n: "1.25"},
-			want: false,
-		},
-		{
-			name: "N is abc",
-			args: args{n: "abc"},
+			name: "N is -2",
+			args: args{n: -2},
 			want: false,
 		},
 	}
@@ -66,7 +63,7 @@ func TestValidateIBMPowerVSMemoryValues(t *testing.T) {
 
 func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
 	type args struct {
-		n string
+		n intstr.IntOrString
 	}
 	tests := []struct {
 		name string
@@ -75,32 +72,32 @@ func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
 	}{
 		{
 			name: "N is 0.25",
-			args: args{n: "0.25"},
+			args: args{n: intstr.FromString("0.25")},
 			want: true,
 		},
 		{
 			name: "N is 0.5",
-			args: args{n: "0.5"},
+			args: args{n: intstr.FromString("0.5")},
 			want: true,
 		},
 		{
 			name: "N is 1",
-			args: args{n: "1"},
+			args: args{n: intstr.FromInt(1)},
 			want: true,
 		},
 		{
 			name: "N is 10",
-			args: args{n: "10"},
+			args: args{n: intstr.FromInt(10)},
 			want: true,
 		},
 		{
 			name: "N is 0.2",
-			args: args{n: "0.2"},
+			args: args{n: intstr.FromString("0.2")},
 			want: false,
 		},
 		{
 			name: "N is abc",
-			args: args{n: "abc"},
+			args: args{n: intstr.FromString("abc")},
 			want: false,
 		},
 	}

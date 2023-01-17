@@ -70,12 +70,6 @@ func (r *IBMPowerVSMachineTemplate) ValidateDelete() error {
 
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() error {
 	var allErrs field.ErrorList
-	if err := r.validateIBMPowerVSMachineTemplateSysType(); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if err := r.validateIBMPowerVSMachineTemplateProcType(); err != nil {
-		allErrs = append(allErrs, err)
-	}
 	if err := r.validateIBMPowerVSMachineTemplateNetwork(); err != nil {
 		allErrs = append(allErrs, err)
 	}
@@ -95,20 +89,6 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() error {
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSMachineTemplate"},
 		r.Name, allErrs)
-}
-
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateSysType() *field.Error {
-	if res, spec := validateIBMPowerVSSysType(r.Spec.Template.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "sysType"), spec.SysType, "Invalid System Type")
-	}
-	return nil
-}
-
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateProcType() *field.Error {
-	if res, spec := validateIBMPowerVSProcType(r.Spec.Template.Spec); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "procType"), spec.ProcType, "Invalid Processor Type")
-	}
-	return nil
 }
 
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateNetwork() *field.Error {
@@ -139,15 +119,15 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateImage() *fi
 }
 
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateMemory() *field.Error {
-	if res := validateIBMPowerVSMemoryValues(r.Spec.Template.Spec.Memory); !res {
-		return field.Invalid(field.NewPath("spec", "memory"), r.Spec.Template.Spec.Memory, "Invalid Memory value - must be non-empty and a positive integer no lesser than 2")
+	if res := validateIBMPowerVSMemoryValues(r.Spec.Template.Spec.MemoryGiB); !res {
+		return field.Invalid(field.NewPath("spec", "template", "spec", "memoryGiB"), r.Spec.Template.Spec.MemoryGiB, "Invalid Memory value - must be a positive integer no lesser than 2")
 	}
 	return nil
 }
 
 func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateProcessors() *field.Error {
 	if res := validateIBMPowerVSProcessorValues(r.Spec.Template.Spec.Processors); !res {
-		return field.Invalid(field.NewPath("spec", "processors"), r.Spec.Template.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
+		return field.Invalid(field.NewPath("spec", "template", "spec", "processors"), r.Spec.Template.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
 	}
 	return nil
 }

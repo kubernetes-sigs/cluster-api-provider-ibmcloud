@@ -229,10 +229,10 @@ spec:
         name: "${IBMPOWERVS_IMAGE_NAME}"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
-      memory: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:="4"}
+      memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      sysType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
-      procType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="shared"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
@@ -247,10 +247,10 @@ spec:
         name: "${IBMPOWERVS_IMAGE_NAME}"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
-      memory: ${IBMPOWERVS_COMPUTE_MEMORY:="4"}
-      processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
-      sysType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
-      procType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="shared"}
+      memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet

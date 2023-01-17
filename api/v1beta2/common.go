@@ -19,42 +19,23 @@ package v1beta2
 import (
 	"strconv"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
 func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
-	if spec.Memory == "" {
-		spec.Memory = "4"
+	if spec.MemoryGiB == 0 {
+		spec.MemoryGiB = 2
 	}
-	if spec.Processors == "" {
-		spec.Processors = "0.25"
+	if spec.Processors.StrVal == "" && spec.Processors.IntVal == 0 {
+		spec.Processors = intstr.FromString("0.25")
 	}
-	if spec.SysType == "" {
-		spec.SysType = "s922"
+	if spec.SystemType == "" {
+		spec.SystemType = "s922"
 	}
-	if spec.ProcType == "" {
-		spec.ProcType = "shared"
+	if spec.ProcessorType == "" {
+		spec.ProcessorType = PowerVSProcessorTypeShared
 	}
-}
-
-func validateIBMPowerVSSysType(spec IBMPowerVSMachineSpec) (bool, IBMPowerVSMachineSpec) {
-	sysTypes := [...]string{"s922", "e980"}
-	for _, st := range sysTypes {
-		if spec.SysType == st {
-			return true, IBMPowerVSMachineSpec{}
-		}
-	}
-	return false, spec
-}
-
-func validateIBMPowerVSProcType(spec IBMPowerVSMachineSpec) (bool, IBMPowerVSMachineSpec) {
-	procTypes := [...]string{"shared", "dedicated", "capped"}
-	for _, pt := range procTypes {
-		if spec.ProcType == pt {
-			return true, IBMPowerVSMachineSpec{}
-		}
-	}
-	return false, spec
 }
 
 func validateIBMPowerVSResourceReference(res IBMPowerVSResourceReference, resType string) (bool, *field.Error) {
@@ -71,17 +52,25 @@ func validateIBMPowerVSNetworkReference(res IBMPowerVSResourceReference) (bool, 
 	return true, nil
 }
 
-func validateIBMPowerVSMemoryValues(resValue string) bool {
-	if val, err := strconv.ParseUint(resValue, 10, 64); err != nil || val < 2 {
+func validateIBMPowerVSMemoryValues(resValue int32) bool {
+	if val := float64(resValue); val < 2 {
 		return false
 	}
 	return true
 }
 
-func validateIBMPowerVSProcessorValues(resValue string) bool {
-	if val, err := strconv.ParseFloat(resValue, 64); err != nil || val < 0.25 {
-		return false
+func validateIBMPowerVSProcessorValues(resValue intstr.IntOrString) bool {
+	switch resValue.Type {
+	case intstr.Int:
+		if val := float64(resValue.IntVal); val < 0.25 {
+			return false
+		}
+	case intstr.String:
+		if val, err := strconv.ParseFloat(resValue.StrVal, 64); err != nil || val < 0.25 {
+			return false
+		}
 	}
+
 	return true
 }
 

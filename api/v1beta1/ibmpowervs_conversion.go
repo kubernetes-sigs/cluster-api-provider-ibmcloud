@@ -17,6 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	apiconversion "k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -140,4 +147,49 @@ func (dst *IBMPowerVSImageList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1beta2.IBMPowerVSImageList)
 
 	return Convert_v1beta2_IBMPowerVSImageList_To_v1beta1_IBMPowerVSImageList(src, dst, nil)
+}
+
+func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1beta2.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
+	out.SystemType = in.SysType
+	out.Processors = intstr.FromString(in.Processors)
+
+	memory, err := strconv.ParseFloat(in.Memory, 64)
+	if err != nil {
+		return fmt.Errorf("failed to convert memory(%s) to float64", in.Memory)
+	}
+	out.MemoryGiB = int32(memory)
+
+	switch in.ProcType {
+	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeDedicated)):
+		out.ProcessorType = infrav1beta2.PowerVSProcessorTypeDedicated
+	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeShared)):
+		out.ProcessorType = infrav1beta2.PowerVSProcessorTypeShared
+	case strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeCapped)):
+		out.ProcessorType = infrav1beta2.PowerVSProcessorTypeCapped
+	}
+
+	return autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in, out, s)
+}
+
+func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1beta2.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
+	out.SysType = in.SystemType
+	out.Memory = strconv.FormatInt(int64(in.MemoryGiB), 10)
+
+	switch in.Processors.Type {
+	case intstr.Int:
+		out.Processors = strconv.FormatInt(int64(in.Processors.IntVal), 10)
+	case intstr.String:
+		out.Processors = in.Processors.StrVal
+	}
+
+	switch in.ProcessorType {
+	case infrav1beta2.PowerVSProcessorTypeDedicated:
+		out.ProcType = strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeDedicated))
+	case infrav1beta2.PowerVSProcessorTypeShared:
+		out.ProcType = strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeShared))
+	case infrav1beta2.PowerVSProcessorTypeCapped:
+		out.ProcType = strings.ToLower(string(infrav1beta2.PowerVSProcessorTypeCapped))
+	}
+
+	return autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in, out, s)
 }

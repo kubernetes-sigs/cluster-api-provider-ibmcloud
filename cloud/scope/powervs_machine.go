@@ -35,6 +35,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
@@ -206,13 +207,17 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		return nil, err
 	}
 
-	memory, err := strconv.ParseFloat(s.Memory, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert memory(%s) to float64", s.Memory)
-	}
-	cores, err := strconv.ParseFloat(s.Processors, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert Processors(%s) to float64", s.Processors)
+	memory := float64(s.MemoryGiB)
+
+	var processors float64
+	switch s.Processors.Type {
+	case intstr.Int:
+		processors = float64(s.Processors.IntVal)
+	case intstr.String:
+		processors, err = strconv.ParseFloat(s.Processors.StrVal, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert Processors(%s) to float64", s.Processors.StrVal)
+		}
 	}
 
 	var imageID *string
@@ -232,6 +237,8 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		return nil, fmt.Errorf("error getting network ID: %v", err)
 	}
 
+	procType := strings.ToLower(string(s.ProcessorType))
+
 	params := &p_cloud_p_vm_instances.PcloudPvminstancesPostParams{
 		Body: &models.PVMInstanceCreate{
 			ImageID:     imageID,
@@ -244,9 +251,9 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 			},
 			ServerName: &m.IBMPowerVSMachine.Name,
 			Memory:     &memory,
-			Processors: &cores,
-			ProcType:   &s.ProcType,
-			SysType:    s.SysType,
+			Processors: &processors,
+			ProcType:   &procType,
+			SysType:    s.SystemType,
 			UserData:   cloudInitData,
 		},
 	}

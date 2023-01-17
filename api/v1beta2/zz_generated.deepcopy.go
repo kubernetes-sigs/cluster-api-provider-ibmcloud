@@ -393,6 +393,7 @@ func (in *IBMPowerVSMachineSpec) DeepCopyInto(out *IBMPowerVSMachineSpec) {
 		*out = new(v1.LocalObjectReference)
 		**out = **in
 	}
+	out.Processors = in.Processors
 	in.Network.DeepCopyInto(&out.Network)
 	if in.ProviderID != nil {
 		in, out := &in.ProviderID, &out.ProviderID
