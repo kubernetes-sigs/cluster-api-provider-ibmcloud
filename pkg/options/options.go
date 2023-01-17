@@ -21,22 +21,27 @@ type ProviderIDFormatType string
 
 const (
 	// PowerVSProviderIDFormatV1 will set provider id to machine as ibmpowervs://<cluster_name>/<vm_hostname>
+	// Deprecated: Use ProviderIDFormatV1.
 	PowerVSProviderIDFormatV1 ProviderIDFormatType = "v1"
 
 	// PowerVSProviderIDFormatV2 will set provider id to machine as ibmpowervs://<region>/<zone>/<service_instance_id>/<powervs_machine_id>
+	// Deprecated: Use ProviderIDFormatV2.
 	PowerVSProviderIDFormatV2 ProviderIDFormatType = "v2"
 
 	// ProviderIDFormatV1 will set provider id to machine as follows
 	// For VPC machines: ibmvpc://<cluster_name>/<vm_hostname>
+	// For Power VS machines: ibmpowervs://<cluster_name>/<vm_hostname>
 	ProviderIDFormatV1 ProviderIDFormatType = "v1"
 
 	// ProviderIDFormatV2 will set provider id to machine as follows
 	// For VPC machines: ibm://<account_id>///<cluster_id>/<vpc_machine_id>
+	// For Power VS machines: ibmpowervs://<region>/<zone>/<service_instance_id>/<powervs_machine_id>
 	ProviderIDFormatV2 ProviderIDFormatType = "v2"
 )
 
 var (
 	// PowerVSProviderIDFormat is used to identify the Provider ID format for Power VS Machine.
+	// Deprecated: Instead use ProviderIDFormat.
 	PowerVSProviderIDFormat string
 	// ProviderIDFormat is used to identify the Provider ID format for Machine.
 	ProviderIDFormat string
