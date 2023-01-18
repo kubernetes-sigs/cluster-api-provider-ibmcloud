@@ -54,7 +54,8 @@ type IBMPowerVSMachineSpec struct {
 	// SSHKey is the name of the SSH key pair provided to the vsi for authenticating users.
 	SSHKey string `json:"sshKey,omitempty"`
 
-	// Image is the reference to the Image from which to create the machine instance.
+	// Image the reference to the image which is used to create the instance.
+	// supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
 	// +optional
 	Image *IBMPowerVSResourceReference `json:"image,omitempty"`
 
@@ -114,6 +115,7 @@ type IBMPowerVSMachineSpec struct {
 	MemoryGiB int32 `json:"memoryGiB,omitempty"`
 
 	// Network is the reference to the Network to use for this instance.
+	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
 	Network IBMPowerVSResourceReference `json:"network"`
 
 	// ProviderID is the unique identifier as specified by the cloud provider.
@@ -121,8 +123,8 @@ type IBMPowerVSMachineSpec struct {
 	ProviderID *string `json:"providerID,omitempty"`
 }
 
-// IBMPowerVSResourceReference is a reference to a specific PowerVS resource by ID or Name
-// Only one of ID or Name may be specified. Specifying more than one will result in
+// IBMPowerVSResourceReference is a reference to a specific PowerVS resource by ID, Name or RegEx
+// Only one of ID, Name or RegEx may be specified. Specifying more than one will result in
 // a validation error.
 type IBMPowerVSResourceReference struct {
 	// ID of resource
