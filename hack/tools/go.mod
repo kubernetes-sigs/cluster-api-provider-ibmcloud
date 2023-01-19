@@ -2,6 +2,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.18
 
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.9
+
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golang/mock v1.6.0
@@ -11,7 +13,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	gotest.tools/gotestsum v1.8.2
 	k8s.io/code-generator v0.24.4
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20221107193018-cd87c3d90245
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230110112924-3d2a0a423df5
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.9.2
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.7
@@ -210,15 +212,15 @@ require (
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220613132600-b0d781184e0d // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
-	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/term v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -239,6 +241,7 @@ require (
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
 	mvdan.cc/lint v0.0.0-20170908181259-adc824a0674b // indirect
 	mvdan.cc/unparam v0.0.0-20220706161116-678bad134442 // indirect
+	sigs.k8s.io/cluster-api v0.0.0-00010101000000-000000000000 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20211028165026-57688c578b5d // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect

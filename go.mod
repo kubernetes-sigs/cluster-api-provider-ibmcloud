@@ -2,13 +2,13 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.18
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.5
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.9
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.1.12
-	github.com/IBM/go-sdk-core/v5 v5.10.2
-	github.com/IBM/platform-services-go-sdk v0.28.2
-	github.com/IBM/vpc-go-sdk v0.23.0
+	github.com/IBM-Cloud/power-go-client v1.2.2
+	github.com/IBM/go-sdk-core/v5 v5.12.0
+	github.com/IBM/platform-services-go-sdk v0.31.3
+	github.com/IBM/vpc-go-sdk v0.30.0
 	github.com/go-logr/logr v1.2.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
@@ -17,15 +17,15 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.5.0
 	k8s.io/api v0.24.4
 	k8s.io/apiextensions-apiserver v0.24.4
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.24.4
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
-	sigs.k8s.io/cluster-api v1.2.5
-	sigs.k8s.io/cluster-api/test v1.2.5
+	sigs.k8s.io/cluster-api v1.2.9
+	sigs.k8s.io/cluster-api/test v1.2.9
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
@@ -34,8 +34,8 @@ require (
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/MakeNowJust/heredoc v1.0.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.1.1 // indirect
-	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
+	github.com/Masterminds/semver/v3 v3.2.0 // indirect
+	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.5.0 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
@@ -46,7 +46,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coredns/caddy v1.1.0 // indirect
-	github.com/coredns/corefile-migration v1.0.17 // indirect
+	github.com/coredns/corefile-migration v1.0.18 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -122,11 +122,11 @@ require (
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/valyala/fastjson v1.6.3 // indirect
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
-	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
+	golang.org/x/crypto v0.3.0 // indirect
+	golang.org/x/net v0.4.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb // indirect
-	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
