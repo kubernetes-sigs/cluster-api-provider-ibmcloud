@@ -160,8 +160,8 @@ generate-go-conversions: $(CONVERSION_GEN) ## Generate conversions go code
 
 .PHONY: generate-e2e-templates
 generate-e2e-templates: $(KUSTOMIZE)
-ifneq ($(E2E_FLAVOR), vpc)
-	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-md-remediation.yaml
+ifeq ($(E2E_FLAVOR), powervs-md-remediation)
+	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation.yaml
 endif
 
 .PHONY: generate-modules
@@ -172,7 +172,7 @@ generate-modules: ## Runs go mod to ensure modules are up to date
 images: docker-build
 
 set-flavor: 
-ifeq ($(E2E_FLAVOR), vpc)
+ifeq ($(findstring vpc,$(E2E_FLAVOR)),vpc)
 	 $(eval E2E_CONF_FILE=$(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-vpc.yaml)
 else
 	 $(eval E2E_CONF_FILE=$(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-powervs.yaml)
@@ -203,7 +203,7 @@ test: generate fmt vet setup-envtest $(GOTESTSUM) ## Run tests
 GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
-E2E_FLAVOR ?= powervs
+E2E_FLAVOR ?= powervs-md-remediation
 JUNIT_FILE ?= junit.e2e_suite.1.xml
 GINKGO_ARGS ?= -v --trace --tags=e2e --focus=$(GINKGO_FOCUS) --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="$(JUNIT_FILE)"
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts

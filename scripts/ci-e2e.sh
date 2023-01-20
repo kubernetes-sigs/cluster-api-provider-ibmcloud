@@ -125,9 +125,17 @@ prerequisites_vpc(){
     export LOGLEVEL=5
 }
 
+prerequisites_vpc_load_balancer(){
+    # Assigning VPC LoadBalancer variables
+    export PROVIDER_ID_FORMAT=v2
+    export EXP_CLUSTER_RESOURCE_SET=true
+    export IBMACCOUNT_ID=${IBMACCOUNT_ID:-"7cfbd5381a434af7a09289e795840d4e"}
+    export BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64)
+}
+
 main(){
 
-    [ "${E2E_FLAVOR}" = "vpc" ] && RESOURCE_TYPE="vpc-service"
+    [[ "${E2E_FLAVOR}" == "vpc"* ]] && RESOURCE_TYPE="vpc-service"
 
     # If BOSKOS_HOST is set then acquire an IBM Cloud resource from Boskos.
     if [ -n "${BOSKOS_HOST:-}" ]; then
@@ -156,13 +164,17 @@ main(){
         HEART_BEAT_PID=$(echo $!)
     fi
 
-    if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "md-remediation" ]]; then
+    if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "powervs-md-remediation" ]]; then
         prerequisites_powervs
         init_network_powervs
     fi
 
-    if [[ "${E2E_FLAVOR}" == "vpc" ]]; then
+    if [[ "${E2E_FLAVOR}" == "vpc"* ]]; then
         prerequisites_vpc
+    fi
+
+    if [[ "${E2E_FLAVOR}" == "vpc-load-balancer" ]]; then
+        prerequisites_vpc_load_balancer
     fi
 
     # Run the e2e tests

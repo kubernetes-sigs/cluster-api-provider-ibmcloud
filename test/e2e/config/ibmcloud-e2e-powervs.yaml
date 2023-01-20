@@ -38,8 +38,8 @@ providers:
       files:
       - sourcePath: "${PWD}/metadata.yaml"
         targetName: "metadata.yaml"
-      - sourcePath: "${PWD}/test/e2e/data/templates/cluster-template-md-remediation.yaml"
-        targetName: "cluster-template-md-remediation.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/templates/cluster-template-powervs-md-remediation.yaml"
+        targetName: "cluster-template-powervs-md-remediation.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.25.1}"

@@ -59,8 +59,8 @@ type IBMVPCClusterSpec struct {
 // VPCLoadBalancerSpec defines the desired state of an VPC load balancer.
 type VPCLoadBalancerSpec struct {
 	// Name sets the name of the VPC load balancer.
-	// +kubebuilder:validation:MaxLength:=64
-	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9]([A-Za-z0-9]{0,31}|[-A-Za-z0-9]{0,30}[A-Za-z0-9])$`
+	// +kubebuilder:validation:MaxLength:=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
 	// +optional
 	Name string `json:"name,omitempty"`
 }

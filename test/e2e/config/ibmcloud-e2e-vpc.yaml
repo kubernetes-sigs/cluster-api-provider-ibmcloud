@@ -38,8 +38,8 @@ providers:
       files:
       - sourcePath: "${PWD}/metadata.yaml"
         targetName: "metadata.yaml"
-      - sourcePath: "${PWD}/templates/cluster-template.yaml"
-        targetName: "cluster-template-vpc.yaml"
+      - sourcePath: "${PWD}/templates/cluster-template-vpc-load-balancer.yaml"
+        targetName: "cluster-template-vpc-load-balancer.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.25.2}"
@@ -56,6 +56,7 @@ variables:
   IBMVPC_IMAGE_NAME: "${IBMVPC_IMAGE_NAME:-}"
   IBMVPC_PROFILE: "${IBMVPC_PROFILE:-}"
   IBMVPC_SSHKEY_NAME: "${IBMVPC_SSHKEY_NAME:-}"
+  IBMACCOUNT_ID: "${IBMACCOUNT_ID:-}"
   
 intervals:
   default/wait-controllers: ["3m", "10s"]
