@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -143,17 +144,41 @@ func (s *ClusterScope) DeleteVPC() error {
 }
 
 func (s *ClusterScope) ensureVPCUnique(vpcName string) (*vpcv1.VPC, error) {
-	listVpcsOptions := &vpcv1.ListVpcsOptions{}
-	vpcs, _, err := s.IBMVPCClient.ListVpcs(listVpcsOptions)
-	if err != nil {
+	var vpc *vpcv1.VPC
+	f := func(start string) (bool, string, error) {
+		// check for existing vpcs
+		listVpcsOptions := &vpcv1.ListVpcsOptions{}
+		if start != "" {
+			listVpcsOptions.Start = &start
+		}
+
+		vpcsList, _, err := s.IBMVPCClient.ListVpcs(listVpcsOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if vpcsList == nil {
+			return false, "", fmt.Errorf("vpc list returned is nil")
+		}
+
+		for i, v := range vpcsList.Vpcs {
+			if (*v.Name) == vpcName {
+				vpc = &vpcsList.Vpcs[i]
+				return true, "", nil
+			}
+		}
+
+		if vpcsList.Next != nil && *vpcsList.Next.Href != "" {
+			return false, *vpcsList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
-	for _, vpc := range vpcs.Vpcs {
-		if (*vpc.Name) == vpcName {
-			return &vpc, nil
-		}
-	}
-	return nil, nil
+
+	return vpc, nil
 }
 
 func (s *ClusterScope) updateDefaultSG(sgID string) error {
@@ -201,17 +226,41 @@ func (s *ClusterScope) ReserveFIP() (*vpcv1.FloatingIP, error) {
 }
 
 func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error) {
-	listFloatingIpsOptions := &vpcv1.ListFloatingIpsOptions{}
-	floatingIPs, _, err := s.IBMVPCClient.ListFloatingIps(listFloatingIpsOptions)
-	if err != nil {
+	var floatingIP *vpcv1.FloatingIP
+	f := func(start string) (bool, string, error) {
+		// check for existing floatingIPs
+		listFloatingIpsOptions := &vpcv1.ListFloatingIpsOptions{}
+		if start != "" {
+			listFloatingIpsOptions.Start = &start
+		}
+
+		floatingIPsList, _, err := s.IBMVPCClient.ListFloatingIps(listFloatingIpsOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if floatingIPsList == nil {
+			return false, "", fmt.Errorf("floatingIP list returned is nil")
+		}
+
+		for i, fp := range floatingIPsList.FloatingIps {
+			if (*fp.Name) == fipName {
+				floatingIP = &floatingIPsList.FloatingIps[i]
+				return true, "", nil
+			}
+		}
+
+		if floatingIPsList.Next != nil && *floatingIPsList.Next.Href != "" {
+			return false, *floatingIPsList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
-	for _, fip := range floatingIPs.FloatingIps {
-		if *fip.Name == fipName {
-			return &fip, nil
-		}
-	}
-	return nil, nil
+
+	return floatingIP, nil
 }
 
 // DeleteFloatingIP deletes a Floating IP associated with floating ip id.
@@ -277,35 +326,84 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 }
 
 func (s *ClusterScope) getSubnetAddrPrefix(vpcID, zone string) (string, error) {
-	options := &vpcv1.ListVPCAddressPrefixesOptions{
-		VPCID: &vpcID,
-	}
-	addrCollection, _, err := s.IBMVPCClient.ListVPCAddressPrefixes(options)
+	var addrPrefix *vpcv1.AddressPrefix
+	f := func(start string) (bool, string, error) {
+		// check for existing vpcAddressPrefixes
+		listVPCAddressPrefixesOptions := &vpcv1.ListVPCAddressPrefixesOptions{
+			VPCID: &vpcID,
+		}
+		if start != "" {
+			listVPCAddressPrefixesOptions.Start = &start
+		}
 
-	if err != nil {
+		vpcAddressPrefixesList, _, err := s.IBMVPCClient.ListVPCAddressPrefixes(listVPCAddressPrefixesOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if vpcAddressPrefixesList == nil {
+			return false, "", fmt.Errorf("vpcAddressPrefix list returned is nil")
+		}
+
+		for i, addressPrefix := range vpcAddressPrefixesList.AddressPrefixes {
+			if (*addressPrefix.Zone.Name) == zone {
+				addrPrefix = &vpcAddressPrefixesList.AddressPrefixes[i]
+				return true, "", nil
+			}
+		}
+
+		if vpcAddressPrefixesList.Next != nil && *vpcAddressPrefixesList.Next.Href != "" {
+			return false, *vpcAddressPrefixesList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return "", err
 	}
-	for _, addrPrefix := range addrCollection.AddressPrefixes {
-		if *addrPrefix.Zone.Name == zone {
-			return *addrPrefix.CIDR, nil
-		}
+
+	if addrPrefix != nil {
+		return *addrPrefix.CIDR, nil
 	}
 	return "", fmt.Errorf("not found a valid CIDR for VPC %s in zone %s", vpcID, zone)
 }
 
 func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, error) {
-	options := &vpcv1.ListSubnetsOptions{}
-	subnets, _, err := s.IBMVPCClient.ListSubnets(options)
+	var subnet *vpcv1.Subnet
+	f := func(start string) (bool, string, error) {
+		// check for existing subnets
+		listSubnetsOptions := &vpcv1.ListSubnetsOptions{}
+		if start != "" {
+			listSubnetsOptions.Start = &start
+		}
 
-	if err != nil {
+		subnetsList, _, err := s.IBMVPCClient.ListSubnets(listSubnetsOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if subnetsList == nil {
+			return false, "", fmt.Errorf("subnet list returned is nil")
+		}
+
+		for i, s := range subnetsList.Subnets {
+			if (*s.Name) == subnetName {
+				subnet = &subnetsList.Subnets[i]
+				return true, "", nil
+			}
+		}
+
+		if subnetsList.Next != nil && *subnetsList.Next.Href != "" {
+			return false, *subnetsList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
-	for _, subnet := range subnets.Subnets {
-		if *subnet.Name == subnetName {
-			return &subnet, nil
-		}
-	}
-	return nil, nil
+
+	return subnet, nil
 }
 
 // DeleteSubnet deletes a subnet associated with subnet id.
@@ -313,22 +411,41 @@ func (s *ClusterScope) DeleteSubnet() error {
 	subnetID := *s.IBMVPCCluster.Status.Subnet.ID
 
 	// Lists the subnet available and compare before deleting to avoid any failure(404) later
-	if found, err := func() (bool, error) {
-		//TODO: Add paging mechanism and use that function everywhere
-		subnets, _, err := s.IBMVPCClient.ListSubnets(&vpcv1.ListSubnetsOptions{})
-		if err != nil {
-			return false, err
+	found := false
+	f := func(start string) (bool, string, error) {
+		// check for existing subnets
+		listSubnetsOptions := &vpcv1.ListSubnetsOptions{}
+		if start != "" {
+			listSubnetsOptions.Start = &start
 		}
 
-		for _, subnet := range subnets.Subnets {
-			if *subnet.ID == subnetID {
-				return true, nil
+		subnetsList, _, err := s.IBMVPCClient.ListSubnets(listSubnetsOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if subnetsList == nil {
+			return false, "", fmt.Errorf("subnet list returned is nil")
+		}
+
+		for _, s := range subnetsList.Subnets {
+			if *s.ID == subnetID {
+				found = true
+				return true, "", nil
 			}
 		}
-		return false, nil
-	}(); err != nil {
+
+		if subnetsList.Next != nil && *subnetsList.Next.Href != "" {
+			return false, *subnetsList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return err
-	} else if !found {
+	}
+
+	if !found {
 		s.Logger.V(3).Info("No subnets found with ID", "Subnet ID", subnetID)
 		return nil
 	}
@@ -467,42 +584,86 @@ func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
 }
 
 func (s *ClusterScope) ensureLoadBalancerUnique(loadBalancerName string) (*vpcv1.LoadBalancer, error) {
-	listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
-	loadBalancers, _, err := s.IBMVPCClient.ListLoadBalancers(listLoadBalancersOptions)
-	if err != nil {
+	var loadBalancer *vpcv1.LoadBalancer
+	f := func(start string) (bool, string, error) {
+		// check for existing loadBalancers
+		listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
+		if start != "" {
+			listLoadBalancersOptions.Start = &start
+		}
+
+		loadBalancersList, _, err := s.IBMVPCClient.ListLoadBalancers(listLoadBalancersOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if loadBalancersList == nil {
+			return false, "", fmt.Errorf("loadBalancer list returned is nil")
+		}
+
+		for i, lb := range loadBalancersList.LoadBalancers {
+			if (*lb.Name) == loadBalancerName {
+				loadBalancer = &loadBalancersList.LoadBalancers[i]
+				return true, "", nil
+			}
+		}
+
+		if loadBalancersList.Next != nil && *loadBalancersList.Next.Href != "" {
+			return false, *loadBalancersList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
-	for _, loadBalancer := range loadBalancers.LoadBalancers {
-		if (*loadBalancer.Name) == loadBalancerName {
-			return &loadBalancer, nil
-		}
-	}
-	return nil, nil
+
+	return loadBalancer, nil
 }
 
 // DeleteLoadBalancer deletes IBM VPC load balancer associated with a VPC id.
 func (s *ClusterScope) DeleteLoadBalancer() (bool, error) {
 	deleted := false
 	if lbipID := s.GetLoadBalancerID(); lbipID != "" {
-		listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
-		loadBalancers, _, err := s.IBMVPCClient.ListLoadBalancers(listLoadBalancersOptions)
-		if err != nil {
-			return deleted, err
-		}
+		f := func(start string) (bool, string, error) {
+			// check for existing loadBalancers
+			listLoadBalancersOptions := &vpcv1.ListLoadBalancersOptions{}
+			if start != "" {
+				listLoadBalancersOptions.Start = &start
+			}
 
-		for _, loadBalancer := range loadBalancers.LoadBalancers {
-			if (*loadBalancer.ID) == lbipID {
-				deleted = true
-				if *loadBalancer.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateDeletePending) {
-					deleteLoadBalancerOption := &vpcv1.DeleteLoadBalancerOptions{}
-					deleteLoadBalancerOption.SetID(lbipID)
-					_, err := s.IBMVPCClient.DeleteLoadBalancer(deleteLoadBalancerOption)
-					if err != nil {
-						record.Warnf(s.IBMVPCCluster, "FailedDeleteLoadBalancer", "Failed loadBalancer deletion - %v", err)
-						return deleted, err
+			loadBalancersList, _, err := s.IBMVPCClient.ListLoadBalancers(listLoadBalancersOptions)
+			if err != nil {
+				return false, "", err
+			}
+
+			if loadBalancersList == nil {
+				return false, "", fmt.Errorf("loadBalancer list returned is nil")
+			}
+
+			for _, lb := range loadBalancersList.LoadBalancers {
+				if (*lb.ID) == lbipID {
+					deleted = true
+					if *lb.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateDeletePending) {
+						deleteLoadBalancerOption := &vpcv1.DeleteLoadBalancerOptions{}
+						deleteLoadBalancerOption.SetID(lbipID)
+						_, err := s.IBMVPCClient.DeleteLoadBalancer(deleteLoadBalancerOption)
+						if err != nil {
+							record.Warnf(s.IBMVPCCluster, "FailedDeleteLoadBalancer", "Failed loadBalancer deletion - %v", err)
+							return false, "", err
+						}
 					}
 				}
 			}
+
+			if loadBalancersList.Next != nil && *loadBalancersList.Next.Href != "" {
+				return false, *loadBalancersList.Next.Href, nil
+			}
+			return true, "", nil
+		}
+
+		if err := utils.PagingHelper(f); err != nil {
+			return false, err
 		}
 	}
 	return deleted, nil
