@@ -114,8 +114,8 @@ prerequisites_powervs(){
 
 prerequisites_vpc(){
     # Assigning VPC variables
-    export IBMVPC_REGION=${BOSKOS_REGION:-"jp-tok"}
-    export IBMVPC_ZONE="${BOSKOS_REGION:-}-1"
+    export IBMVPC_REGION=${BOSKOS_REGION:-"jp-osa"}
+    export IBMVPC_ZONE="${IBMVPC_REGION}-1"
     export IBMVPC_RESOURCEGROUP=${BOSKOS_RESOURCE_GROUP:-"fa5405a58226402f9a5818cb9b8a5a8a"}
     export IBMVPC_NAME=${BOSKOS_RESOURCE_NAME:-"capi-vpc-e2e"}
     export IBMVPC_IMAGE_NAME=${IBMVPC_IMAGE_NAME:-"capibm-vpc-ubuntu-2004-kube-v1-25-2"}
