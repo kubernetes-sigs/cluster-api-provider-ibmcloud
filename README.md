@@ -27,10 +27,11 @@ cluster on IBMCloud.
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                                        | v1alpha3 (v0.3) | v1alpha4 (v0.4) | v1beta1 (v1.x) |
-|----------------------------------------| --------------- | --------------- |----------------|
-| IBMCloud Provider v1alpha4 (v0.1)      | ✓               | ✓               |                |
-| IBMCloud Provider v1beta1 (v0.2, main) |                 |                 | ✓              |
+|                                            | v1alpha4 (v0.4) | v1beta1 (v1.x) |
+|--------------------------------------------|-----------------|----------------|
+| IBMCloud Provider v1alpha4 (v0.1.x)        | ✓               |                |
+| IBMCloud Provider v1beta1 (v0.2.x, v0.3.x) |                 | ✓              |
+| IBMCloud Provider v1beta2 (v0.4.x, main)   |                 | ✓              |
 
 
 (See [Kubernetes support matrix][cluster-api-supported-v] of Cluster API versions).
