@@ -11,7 +11,7 @@
 ### Deploy VPC cluster with Load Balancer and IBM cloud provider
 
 ```console
-  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX" \
+  IBMCLOUD_API_KEY="XXXXXXXXXXXXXXXXXX" \
   IBMVPC_REGION=us-south \
   IBMVPC_ZONE=us-south-1 \
   IBMVPC_RESOURCEGROUP_NAME="ibm-hypershift-dev" \
