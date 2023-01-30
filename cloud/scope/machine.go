@@ -234,18 +234,41 @@ func (m *MachineScope) DeleteMachine() error {
 }
 
 func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instance, error) {
-	options := &vpcv1.ListInstancesOptions{}
-	instances, _, err := m.IBMVPCClient.ListInstances(options)
+	var instance *vpcv1.Instance
+	f := func(start string) (bool, string, error) {
+		// check for existing instances
+		listInstancesOptions := &vpcv1.ListInstancesOptions{}
+		if start != "" {
+			listInstancesOptions.Start = &start
+		}
 
-	if err != nil {
+		instancesList, _, err := m.IBMVPCClient.ListInstances(listInstancesOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if instancesList == nil {
+			return false, "", fmt.Errorf("instance list returned is nil")
+		}
+
+		for i, ins := range instancesList.Instances {
+			if (*ins.Name) == instanceName {
+				instance = &instancesList.Instances[i]
+				return true, "", nil
+			}
+		}
+
+		if instancesList.Next != nil && *instancesList.Next.Href != "" {
+			return false, *instancesList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
-	for _, instance := range instances.Instances {
-		if *instance.Name == instanceName {
-			return &instance, nil
-		}
-	}
-	return nil, nil
+
+	return instance, nil
 }
 
 // CreateVPCLoadBalancerPoolMember creates a new pool member and adds it to the load balancer pool.
@@ -387,17 +410,44 @@ func fetchKeyID(key *infrav1beta2.IBMVPCResourceReference, m *MachineScope) (*st
 		return key.ID, nil
 	}
 
-	keys, _, err := m.IBMVPCClient.ListKeys(&vpcv1.ListKeysOptions{})
-	if err != nil {
-		m.Logger.Error(err, "Failed to get keys")
+	var k *vpcv1.Key
+	f := func(start string) (bool, string, error) {
+		// check for existing keys
+		listKeysOptions := &vpcv1.ListKeysOptions{}
+		if start != "" {
+			listKeysOptions.Start = &start
+		}
+
+		keysList, _, err := m.IBMVPCClient.ListKeys(listKeysOptions)
+		if err != nil {
+			m.Logger.Error(err, "Failed to get keys")
+			return false, "", err
+		}
+
+		if keysList == nil {
+			return false, "", fmt.Errorf("key list returned is nil")
+		}
+
+		for i, ks := range keysList.Keys {
+			if *ks.Name == *key.Name {
+				m.Logger.V(3).Info("Key found with ID", "Key", *ks.Name, "ID", *ks.ID)
+				k = &keysList.Keys[i]
+				return true, "", nil
+			}
+		}
+
+		if keysList.Next != nil && *keysList.Next.Href != "" {
+			return false, *keysList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
 
-	for _, k := range keys.Keys {
-		if *k.Name == *key.Name {
-			m.Logger.V(3).Info("Key found with ID", "Key", *k.Name, "ID", *k.ID)
-			return k.ID, nil
-		}
+	if k != nil {
+		return k.ID, nil
 	}
 
 	return nil, fmt.Errorf("sshkey does not exist - failed to find Key ID")
@@ -412,19 +462,46 @@ func fetchImageID(image *infrav1beta2.IBMVPCResourceReference, m *MachineScope) 
 		return image.ID, nil
 	}
 
-	images, _, err := m.IBMVPCClient.ListImages(&vpcv1.ListImagesOptions{
-		ResourceGroupID: &m.IBMVPCCluster.Spec.ResourceGroup,
-	})
-	if err != nil {
-		m.Logger.Error(err, "Failed to get images")
+	var img *vpcv1.Image
+	f := func(start string) (bool, string, error) {
+		// check for existing images
+		listImagesOptions := &vpcv1.ListImagesOptions{
+			ResourceGroupID: &m.IBMVPCCluster.Spec.ResourceGroup,
+		}
+		if start != "" {
+			listImagesOptions.Start = &start
+		}
+
+		imagesList, _, err := m.IBMVPCClient.ListImages(listImagesOptions)
+		if err != nil {
+			m.Logger.Error(err, "Failed to get images")
+			return false, "", err
+		}
+
+		if imagesList == nil {
+			return false, "", fmt.Errorf("image list returned is nil")
+		}
+
+		for j, i := range imagesList.Images {
+			if *image.Name == *i.Name {
+				m.Logger.Info("Image found with ID", "Image", *i.Name, "ID", *i.ID)
+				img = &imagesList.Images[j]
+				return true, "", nil
+			}
+		}
+
+		if imagesList.Next != nil && *imagesList.Next.Href != "" {
+			return false, *imagesList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
 		return nil, err
 	}
 
-	for _, img := range images.Images {
-		if *image.Name == *img.Name {
-			m.Logger.Info("Image found with ID", "Image", *image.Name, "ID", *img.ID)
-			return img.ID, nil
-		}
+	if img != nil {
+		return img.ID, nil
 	}
 
 	return nil, fmt.Errorf("image does not exist - failed to find an image ID")
