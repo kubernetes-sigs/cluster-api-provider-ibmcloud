@@ -216,7 +216,6 @@ kind: KubeadmConfigTemplate
 metadata:
   labels:
     cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
-    cluster.x-k8s.io/control-plane: ""
   name: "${CLUSTER_NAME}-md-0"
 spec:
   template:

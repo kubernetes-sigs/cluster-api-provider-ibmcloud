@@ -39,7 +39,7 @@ OS=$(uname -s)
 IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.13.0"}
 PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.9"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
-REGION=${REGION:-"us-south"}
+REGION=${REGION:-"jp-osa"}
 
 [ "${ARCH}" == "x86_64" ] && ARCH="amd64"
 
