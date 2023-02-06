@@ -22,15 +22,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
-// NewNetworkCommand function to add PowerVS network commands.
-func NewNetworkCommand() *cobra.Command {
+// Commands function to add PowerVS network commands.
+func Commands() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "network",
 		Short: "Perform PowerVS network operations",
 	}
 	options.AddPowerVSCommonFlags(cmd)
 
-	cmd.AddCommand(NewNetworkCreateCommand())
+	cmd.AddCommand(CreateCommand())
 
 	return cmd
 }
