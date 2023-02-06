@@ -31,8 +31,8 @@ type networkCreateOptions struct {
 	dnsServers []string
 }
 
-// NewNetworkCreateCommand function to create PowerVS network.
-func NewNetworkCreateCommand() *cobra.Command {
+// CreateCommand function to create PowerVS network.
+func CreateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create NETWORK_NAME",
 		Short: "Create PowerVS network",

@@ -25,7 +25,7 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	powervscmd "sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
@@ -49,7 +49,7 @@ func rootCommand() *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
-	cmd.AddCommand(powervscmd.NewPowerVSCommand())
+	cmd.AddCommand(powervs.Commands())
 
 	return cmd
 }

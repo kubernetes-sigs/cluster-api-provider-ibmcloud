@@ -19,16 +19,16 @@ package powervs
 import (
 	"github.com/spf13/cobra"
 
-	networkcmd "sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/network"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/network"
 )
 
-// NewPowerVSCommand initialises and returns powervs command.
-func NewPowerVSCommand() *cobra.Command {
+// Commands initialises and returns powervs command.
+func Commands() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "powervs",
 		Short: "Commands for operations on PowerVS resources",
 	}
-	cmd.AddCommand(networkcmd.NewNetworkCommand())
+	cmd.AddCommand(network.Commands())
 
 	return cmd
 }
