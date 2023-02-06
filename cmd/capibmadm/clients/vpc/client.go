@@ -23,8 +23,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 )
 
-// To-Do: Need to handle custom endpoint URL if user wants to use staging env.
 // NewV1Client creates new vpcv1 client.
+// To-Do: Need to handle custom endpoint URL if user wants to use staging env.
 func NewV1Client(region string) (*vpcv1.VpcV1, error) {
 	svcEndpoint := "https://" + region + ".iaas.cloud.ibm.com/v1"
 

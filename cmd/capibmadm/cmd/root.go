@@ -17,9 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -56,8 +59,20 @@ func rootCommand() *cobra.Command {
 
 // Execute executes the root command.
 func Execute() {
-	if err := rootCommand().Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	cmd := rootCommand()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT)
+	go func() {
+		<-sigs
+		fmt.Fprintln(os.Stderr, "\nAborted...")
+		cancel()
+	}()
+
+	if err := cmd.ExecuteContext(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 }

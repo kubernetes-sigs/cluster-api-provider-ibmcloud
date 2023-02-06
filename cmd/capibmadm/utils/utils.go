@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package utils contains utility functions for cli.
+// Package utils contains utility and printer functions for cli.
 package utils
 
 import (

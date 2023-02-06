@@ -25,8 +25,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 )
 
-// To-Do: Need to handle custom endpoint URL if user wants to use staging env.
 // NewPISession creates new powervs client.
+// To-Do: Need to handle custom endpoint URL if user wants to use staging env.
 func NewPISession(accountID string, region string, zone string, debug bool) (*ibmpisession.IBMPISession, error) {
 	return ibmpisession.NewIBMPISession(&ibmpisession.IBMPIOptions{Authenticator: iam.GetIAMAuth(),
 		Debug:       debug,
