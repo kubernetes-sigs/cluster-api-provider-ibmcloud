@@ -17,23 +17,23 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// NetworkSpec defines a Network.
-type NetworkSpec struct {
+// NetSpec defines a Network.
+type NetSpec struct {
 	NetworkID   string  `json:"id"`
 	Name        string  `json:"name"`
 	Type        string  `json:"type"`
 	VlanID      float64 `json:"vlanID"`
 	Jumbo       bool    `json:"jumbo"`
-	DhcpManaged bool    `json:"dhcpManaged,omitempty"`
+	DhcpManaged bool    `json:"dhcpManaged"`
 }
 
-// NetworkIList defines a list of Networks.
-type NetworkIList struct {
-	Items []NetworkSpec `json:"items"`
+// IList defines a list of Networks.
+type IList struct {
+	Items []NetSpec `json:"items"`
 }
 
 // ToTable converts List to *metav1.Table.
-func (netList *NetworkIList) ToTable() *metav1.Table {
+func (netList *IList) ToTable() *metav1.Table {
 	table := &metav1.Table{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: metav1.SchemeGroupVersion.String(),

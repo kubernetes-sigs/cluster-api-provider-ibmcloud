@@ -30,8 +30,8 @@ func Commands() *cobra.Command {
 		Short: "Commands for operations on PowerVS resources",
 	}
 
-	cmd.PersistentFlags().StringVar(&options.GlobalOptions.ServiceInstanceID, "service-instance-id", "", "PowerVS service instance id")
-	cmd.PersistentFlags().StringVar(&options.GlobalOptions.PowerVSZone, "zone", options.GlobalOptions.PowerVSZone, "IBM cloud PowerVS zone (Required)")
+	cmd.PersistentFlags().StringVar(&options.GlobalOptions.ServiceInstanceID, "service-instance-id", "", "PowerVS service instance id (Required)")
+	cmd.PersistentFlags().StringVar(&options.GlobalOptions.PowerVSZone, "zone", options.GlobalOptions.PowerVSZone, "PowerVS service instance location (Required)")
 	cmd.PersistentFlags().BoolVar(&options.GlobalOptions.Debug, "debug", false, "Enable/Disable http transport debugging log")
 
 	_ = cmd.MarkPersistentFlagRequired("service-instance-id")

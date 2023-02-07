@@ -19,6 +19,8 @@ package options
 
 import (
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
 )
 
 // IBMCloudAPIKeyEnvName holds the environmental variable name to set PowerVS service instance ID.
@@ -34,20 +36,10 @@ type options struct {
 	VPCRegion         string
 	ResourceGroupName string
 	Debug             bool
-	Output            string
+	Output            printer.PType
 }
 
 // AddCommonFlags will add common flags to the cli.
 func AddCommonFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&GlobalOptions.Output, "output", "o", "table", "The output format of the results. Possible values: table,json,yaml")
-}
-
-// AddPowerVSCommonFlags will add a common Power VS flag to the cli.
-func AddPowerVSCommonFlags(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringVar(&GlobalOptions.ServiceInstanceID, "service-instance-id", "", "PowerVS service instance id")
-	cmd.PersistentFlags().StringVar(&GlobalOptions.PowerVSZone, "zone", GlobalOptions.PowerVSZone, "IBM cloud PowerVS location. (Required)")
-	cmd.PersistentFlags().BoolVar(&GlobalOptions.Debug, "debug", false, "To display the debugging output")
-
-	_ = cmd.MarkPersistentFlagRequired("service-instance-id")
-	_ = cmd.MarkPersistentFlagRequired("zone")
+	cmd.Flags().StringVarP((*string)(&GlobalOptions.Output), "output", "o", "table", "The output format of the results. Supported printer types: table, json")
 }

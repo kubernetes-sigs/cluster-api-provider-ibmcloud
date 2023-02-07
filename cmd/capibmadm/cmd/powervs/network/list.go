@@ -23,16 +23,18 @@ import (
 
 	"github.com/spf13/cobra"
 
+	v "github.com/IBM-Cloud/power-go-client/clients/instance"
+
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	v "github.com/IBM-Cloud/power-go-client/clients/instance"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
 )
 
-// NetworkListCommand function to create PowerVS network.
+// ListCommand function to create PowerVS network.
 func ListCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "list",
@@ -77,33 +79,32 @@ func listNetwork(ctx context.Context) error {
 		return nil
 	}
 
-	listByVersion := NetworkIList{
-		Items: []NetworkSpec{},
+	listByVersion := IList{
+		Items: []NetSpec{},
 	}
 
 	for _, network := range nets.Networks {
-		listByVersion.Items = append(listByVersion.Items, NetworkSpec{
+		listByVersion.Items = append(listByVersion.Items, NetSpec{
 			NetworkID:   *network.NetworkID,
 			Name:        *network.Name,
 			Type:        *network.Type,
 			VlanID:      *network.VlanID,
 			Jumbo:       *network.Jumbo,
-			DhcpManaged: *network.Jumbo,
+			DhcpManaged: network.DhcpManaged,
 		})
-
 	}
 
-	printer, err := utils.NewPrinter(options.GlobalOptions.Output, os.Stdout)
+	pr, err := printer.New(options.GlobalOptions.Output, os.Stdout)
 	if err != nil {
-		return fmt.Errorf("failed creating output printer: %w", err)
+		return err
 	}
 
-	if options.GlobalOptions.Output == string(utils.PrinterTypeTable) {
-		table := listByVersion.ToTable()
-		printer.Print(table)
+	if options.GlobalOptions.Output == printer.PrinterTypeJSON {
+		err = pr.Print(listByVersion)
 	} else {
-		printer.Print(listByVersion)
+		table := listByVersion.ToTable()
+		err = pr.Print(table)
 	}
 
-	return nil
+	return err
 }
