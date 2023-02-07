@@ -14,20 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package network
+// Package vpc contains the commands to operate on vpc resources.
+package vpc
 
 import (
 	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
-// Commands function to add PowerVS network commands.
+// Commands initialises and returns VPC command.
 func Commands() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "network",
-		Short: "Perform PowerVS network operations",
+		Use:   "vpc",
+		Short: "Commands for operations on VPC resources",
 	}
 
-	cmd.AddCommand(CreateCommand())
+	cmd.PersistentFlags().StringVar(&options.GlobalOptions.VPCRegion, "region", options.GlobalOptions.VPCRegion, "IBM cloud vpc region. (Required)")
+	cmd.PersistentFlags().StringVar(&options.GlobalOptions.ResourceGroupName, "resource-group-name", options.GlobalOptions.ResourceGroupName, "IBM cloud resource group name")
+
+	_ = cmd.MarkPersistentFlagRequired("region")
 
 	return cmd
 }

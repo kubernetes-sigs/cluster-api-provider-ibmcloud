@@ -14,20 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package network
-
-import (
-	"github.com/spf13/cobra"
-)
-
-// Commands function to add PowerVS network commands.
-func Commands() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "network",
-		Short: "Perform PowerVS network operations",
-	}
-
-	cmd.AddCommand(CreateCommand())
-
-	return cmd
-}
+// Package port contains the commands to operate on Power VS Port resources.
+package port

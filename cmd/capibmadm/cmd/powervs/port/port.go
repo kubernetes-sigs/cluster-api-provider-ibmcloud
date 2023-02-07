@@ -14,20 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package powervs contains powervs client functions.
-package powervs
+package port
 
 import (
-	"github.com/IBM-Cloud/power-go-client/ibmpisession"
+	"github.com/spf13/cobra"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
-// NewPISession creates new powervs client.
-// To-Do: Need to handle custom endpoint URL if user wants to use staging env.
-func NewPISession(accountID string, zone string, debug bool) (*ibmpisession.IBMPISession, error) {
-	return ibmpisession.NewIBMPISession(&ibmpisession.IBMPIOptions{Authenticator: iam.GetIAMAuth(),
-		Debug:       debug,
-		UserAccount: accountID,
-		Zone:        zone})
+// Commands function to add PowerVS port commands.
+func Commands() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "port",
+		Short: "Perform PowerVS port operations",
+	}
+	options.AddPowerVSCommonFlags(cmd)
+
+	cmd.AddCommand(DeleteCommand())
+	return cmd
 }

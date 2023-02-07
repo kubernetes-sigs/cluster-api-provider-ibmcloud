@@ -17,7 +17,11 @@ limitations under the License.
 // Package options contains the reusable and global variables.
 package options
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
+)
 
 // IBMCloudAPIKeyEnvName holds the environmental variable name to set PowerVS service instance ID.
 const IBMCloudAPIKeyEnvName = "IBMCLOUD_API_KEY" //nolint:gosec
@@ -28,11 +32,16 @@ var GlobalOptions = &options{}
 type options struct {
 	IBMCloudAPIKey    string
 	ServiceInstanceID string
+	PowerVSZone       string
+	Debug             bool
 }
 
 // AddPowerVSCommonFlags will add a common Power VS flag to the cli.
 func AddPowerVSCommonFlags(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringVar(&GlobalOptions.ServiceInstanceID, "service-instance-id", "", "PowerVS service instance id")
+	cmd.PersistentFlags().StringVar(&GlobalOptions.PowerVSZone, "zone", GlobalOptions.PowerVSZone, "IBM cloud PowerVS location. (Required)")
+	cmd.PersistentFlags().BoolVar(&GlobalOptions.Debug, "debug", false, "To display the debugging output of API Call ")
 
 	_ = cmd.MarkPersistentFlagRequired("service-instance-id")
+	_ = cmd.MarkPersistentFlagRequired("zone")
 }
