@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package utils
+// Package printer implements printing functionality for cli.
+package printer
 
 import (
 	"encoding/json"
@@ -27,14 +28,35 @@ import (
 	"k8s.io/cli-runtime/pkg/printers"
 )
 
-// PrinterType is a type declaration for a printer type.
-type PrinterType string
+// PType is a type declaration for a printer type.
+type PType string
 
-var (
-	// PrinterTypeTable is a table printer type.
-	PrinterTypeTable = PrinterType("table")
-	// PrinterTypeJSON is a json printer type.
-	PrinterTypeJSON = PrinterType("json")
+// String type casts to string.
+func (p *PType) String() string {
+	return string(*p)
+}
+
+// Set sets value for var.
+func (p *PType) Set(s string) error {
+	switch s {
+	case string(PrinterTypeTable), string(PrinterTypeJSON):
+		*p = PType(s)
+		return nil
+	default:
+		return ErrUnknowPrinterType
+	}
+}
+
+// Type returns type in string format.
+func (p *PType) Type() string {
+	return "PType"
+}
+
+const (
+	// PrinterTypeTable is a table printer PType.
+	PrinterTypeTable = PType("table")
+	// PrinterTypeJSON is a json printer PType.
+	PrinterTypeJSON = PType("json")
 )
 
 var (
@@ -51,12 +73,12 @@ type Printer interface {
 	Print(in interface{}) error
 }
 
-// NewPrinter creates a new printer.
-func NewPrinter(printerType string, writer io.Writer) (Printer, error) {
+// New creates a new printer.
+func New(printerType PType, writer io.Writer) (Printer, error) {
 	switch printerType {
-	case string(PrinterTypeTable):
+	case PrinterTypeTable:
 		return &tablePrinter{writer: writer}, nil
-	case string(PrinterTypeJSON):
+	case PrinterTypeJSON:
 		return &jsonPrinter{writer: writer}, nil
 	default:
 		return nil, ErrUnknowPrinterType
