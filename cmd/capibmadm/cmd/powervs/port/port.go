@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package port contains the commands to operate on PowerVS Port resources.
 package port
 
 import (
@@ -30,6 +31,7 @@ func Commands() *cobra.Command {
 	}
 	options.AddCommonFlags(cmd)
 
+	cmd.AddCommand(DeleteCommand())
 	cmd.AddCommand(ListCommand())
 
 	return cmd
