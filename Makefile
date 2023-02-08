@@ -203,9 +203,10 @@ test: generate fmt vet setup-envtest $(GOTESTSUM) ## Run tests
 GINKGO_FOCUS ?= Workload cluster creation
 GINKGO_NODES ?= 3
 GINKGO_NOCOLOR ?= false
+GINKGO_TIMEOUT ?= 2h
 E2E_FLAVOR ?= powervs-md-remediation
 JUNIT_FILE ?= junit.e2e_suite.1.xml
-GINKGO_ARGS ?= -v --trace --tags=e2e --focus=$(GINKGO_FOCUS) --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="$(JUNIT_FILE)"
+GINKGO_ARGS ?= -v --trace --tags=e2e --timeout=$(GINKGO_TIMEOUT) --focus=$(GINKGO_FOCUS) --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="$(JUNIT_FILE)"
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
