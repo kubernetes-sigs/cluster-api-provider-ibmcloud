@@ -26,8 +26,9 @@ import (
 // NewPISession creates new powervs client.
 // To-Do: Need to handle custom endpoint URL if user wants to use staging env.
 func NewPISession(accountID string, zone string, debug bool) (*ibmpisession.IBMPISession, error) {
-	return ibmpisession.NewIBMPISession(&ibmpisession.IBMPIOptions{Authenticator: iam.GetIAMAuth(),
-		Debug:       debug,
-		UserAccount: accountID,
-		Zone:        zone})
+	return ibmpisession.NewIBMPISession(&ibmpisession.IBMPIOptions{
+		Authenticator: iam.GetIAMAuth(),
+		Debug:         debug,
+		UserAccount:   accountID,
+		Zone:          zone})
 }

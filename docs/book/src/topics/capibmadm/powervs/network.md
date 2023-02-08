@@ -2,7 +2,7 @@
 
 ### 1. capibmadm powervs network create
 
-#### Usage: 
+#### Usage:
 Create Power VS network.
 
 #### Environmental Variable:
@@ -17,4 +17,25 @@ IBMCLOUD_API_KEY: IBM Cloud api key.
 ```shell
 export IBMCLOUD_API_KEY=<api-key>
 capibmadm powervs network create <network-name> --service-instance-id <service-instance-id>
+```
+
+
+
+### 2. capibmadm powervs network list
+
+#### Usage:
+List PowerVS networks.
+
+#### Environmental Variable:
+IBMCLOUD_API_KEY: IBM Cloud api key.
+
+#### Arguments:
+--service-instance-id: PowerVS service instance id.
+
+--zone: PowerVS service instance zone.
+
+#### Example:
+```shell
+export IBMCLOUD_API_KEY=<api-key>
+capibmadm powervs network list --service-instance-id <service-instance-id> --zone <zone>
 ```
