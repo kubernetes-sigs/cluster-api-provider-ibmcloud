@@ -9,6 +9,7 @@
     - [create](/topics/capibmadm/powervs/network.html#1-capibmadm-powervs-network-create)
     - [list](/topics/capibmadm/powervs/network.html#2-capibmadm-powervs-network-list)
 - [port](./port.md)
-    - [delete](/topics/capibmadm/powervs/port.html#1-capibmadm-powervs-port-delete)
-    - [list](/topics/capibmadm/powervs/port.html#1-capibmadm-powervs-port-list)
-
+    - [create](/topics/capibmadm/powervs/port.html#1-capibmadm-powervs-port-create)
+    - [delete](/topics/capibmadm/powervs/port.html#2-capibmadm-powervs-port-delete)
+    - [list](/topics/capibmadm/powervs/port.html#3-capibmadm-powervs-port-list)
+    
