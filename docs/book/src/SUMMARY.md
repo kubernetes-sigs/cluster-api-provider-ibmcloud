@@ -20,6 +20,8 @@
 - [capibmadm CLI](./topics/capibmadm/index.md)
   - [Power VS Commands](./topics/capibmadm/powervs/index.md)
     - [Network Commands](./topics/capibmadm/powervs/network.md)
+  - [VPC Commands](./topics/capibmadm/vpc/index.md)
+    - [Key Commands](./topics/capibmadm/vpc/key.md)
 - [Developer Guide](./developer/index.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)
