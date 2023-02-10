@@ -20,6 +20,7 @@ package vpc
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/vpc/image"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
@@ -34,6 +35,8 @@ func Commands() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&options.GlobalOptions.ResourceGroupName, "resource-group-name", options.GlobalOptions.ResourceGroupName, "IBM cloud resource group name")
 
 	_ = cmd.MarkPersistentFlagRequired("region")
+
+	cmd.AddCommand(image.Commands())
 
 	return cmd
 }
