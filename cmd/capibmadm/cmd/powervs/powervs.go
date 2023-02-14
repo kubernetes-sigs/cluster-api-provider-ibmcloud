@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/network"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/port"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
@@ -38,6 +39,7 @@ func Commands() *cobra.Command {
 	_ = cmd.MarkPersistentFlagRequired("zone")
 
 	cmd.AddCommand(network.Commands())
+	cmd.AddCommand(port.Commands())
 
 	return cmd
 }
