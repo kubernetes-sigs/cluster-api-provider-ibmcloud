@@ -22,6 +22,8 @@
     - [Network Commands](./topics/capibmadm/powervs/network.md)
     - [Port Commands](./topics/capibmadm/powervs/port.md)
     - [SSH key Commands](./topics/capibmadm/powervs/key.md)
+  - [VPC Commands](./topics/capibmadm/vpc/index.md)
+    - [Image Commands](./topics/capibmadm/vpc/image.md)
 - [Developer Guide](./developer/index.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)
