@@ -49,8 +49,8 @@ func CreateCommand() *cobra.Command {
 		Example: `
 # Create key in VPC
 export IBMCLOUD_API_KEY=<api-key>
-capibmadm vpc key create --name <key-name> --region <region> --resource-group-name <resource-group-name> --public-key "<public-key-string>" 
-Using file-path to VPC key : capibmadm vpc key create --name <key-name> --region <region> --resource-group-name <resource-group-name> --key-path <path/to/vpc/key>
+capibmadm vpc key create --name <key-name> --region <region> --public-key "<public-key-string>"
+Using file-path to VPC key : capibmadm vpc key create --name <key-name> --region <region> --key-path <path/to/vpc/key>
 `,
 	}
 
