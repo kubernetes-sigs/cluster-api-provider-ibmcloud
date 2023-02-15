@@ -29,7 +29,7 @@
 
  capibmadm vpc key create --name <key-name> --region <region> --resource-group-name <resource-group-name> --public-key "<public-key-string>"
 
- capibmadm vpc key create --name <key-name> --region <region> --resource-group-name <resource-group-name> --key-path <path/to/vpc/key>>
+ capibmadm vpc key create --name <key-name> --region <region> --resource-group-name <resource-group-name> --key-path <path/to/vpc/key>
  ```
 
  ### 2. capibmadm vpc key delete
