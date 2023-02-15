@@ -12,7 +12,7 @@
 
   --name: The name of the key. 
 
-  --resource-group-name: Optional VPC resource group name.
+  --resource-group-name: VPC resource group name.
 
   --region: VPC region.
 
