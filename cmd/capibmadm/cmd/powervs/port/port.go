@@ -33,6 +33,7 @@ func Commands() *cobra.Command {
 
 	cmd.AddCommand(DeleteCommand())
 	cmd.AddCommand(ListCommand())
+	cmd.AddCommand(CreateCommand())
 
 	return cmd
 }
