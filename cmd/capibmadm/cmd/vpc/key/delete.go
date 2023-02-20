@@ -49,10 +49,7 @@ capibmadm vpc key delete --name <key-name> --region <region>`,
 	cmd.Flags().StringVar(&keyDeleteOption.name, "name", keyDeleteOption.name, "Key Name")
 	_ = cmd.MarkFlagRequired("name")
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := deleteKey(keyDeleteOption); err != nil {
-			return err
-		}
-		return nil
+		return deleteKey(keyDeleteOption)
 	}
 
 	return cmd
@@ -95,9 +92,9 @@ func deleteKey(keyDeleteOption keyDeleteOptions) error {
 	options := &vpcv1.DeleteKeyOptions{}
 	options.SetID(keyID)
 
-	_, err = vpcClient.DeleteKey(options)
-	if err == nil {
-		log.Info("VPC Key deleted succssfully,", "key-name", keyDeleteOption.name)
+	if _, err := vpcClient.DeleteKey(options); err != nil {
+	  return err
 	}
-	return err
+        log.Info("VPC Key deleted succssfully,", "key-name", keyDeleteOption.name)
+	return nil
 }

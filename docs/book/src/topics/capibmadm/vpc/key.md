@@ -6,7 +6,7 @@
  Create a key in the VPC environment.
 
  #### Environmental Variable:
- IBMCLOUD_API_KEY: IBM Cloud api key.
+ IBMCLOUD_API_KEY: IBM Cloud API key.
 
  #### Arguments:
 
@@ -38,7 +38,7 @@
  Delete a key in the VPC environment.
 
  #### Environmental Variable:
- IBMCLOUD_API_KEY: IBM Cloud api key.
+ IBMCLOUD_API_KEY: IBM Cloud API key.
 
  #### Arguments:
 

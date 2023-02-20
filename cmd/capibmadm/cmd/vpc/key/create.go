@@ -124,8 +124,9 @@ func createKey(ctx context.Context, keyCreateOption keyCreateOptions) error {
 	}
 
 	key, _, err := vpcClient.CreateKey(options)
-	if err == nil {
-		log.Info("VPC Key created successfully,", "key-name", *key.Name)
+	if err != nil {
+	        return err
 	}
-	return err
+	log.Info("VPC Key created successfully,", "key-name", *key.Name)
+	return nil
 }
