@@ -17,7 +17,6 @@ limitations under the License.
 package key
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -71,27 +70,18 @@ Using file-path to VPC key : capibmadm vpc key create --name <key-name> --region
 	}
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if filePath != "" {
-			publicKeyFile, err := os.Open(filePath) // #nosec
+			sshKey, err := os.ReadFile(filePath) // #nosec
 			if err != nil {
-				return fmt.Errorf("unable to open file. %w", err)
+				return fmt.Errorf("error while reading the SSH key from path. %w", err)
 			}
-			defer publicKeyFile.Close()
-
-			publicKeyScanner := bufio.NewScanner(publicKeyFile)
-			for publicKeyScanner.Scan() {
-				keyCreateOption.publicKey = publicKeyScanner.Text()
-			}
+			keyCreateOption.publicKey = string(sshKey)
 		}
 
 		if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(keyCreateOption.publicKey)); err != nil {
 			return fmt.Errorf("the provided VPC key is invalid. %w ", err)
 		}
-		if err := createKey(cmd.Context(), keyCreateOption); err != nil {
-			return err
-		}
-		return nil
+		return createKey(cmd.Context(), keyCreateOption)
 	}
-
 	return cmd
 }
 
@@ -125,7 +115,7 @@ func createKey(ctx context.Context, keyCreateOption keyCreateOptions) error {
 
 	key, _, err := vpcClient.CreateKey(options)
 	if err != nil {
-	        return err
+		return err
 	}
 	log.Info("VPC Key created successfully,", "key-name", *key.Name)
 	return nil

@@ -65,14 +65,14 @@ func deleteKey(keyDeleteOption keyDeleteOptions) error {
 	listKeysOptions := &vpcv1.ListKeysOptions{}
 	pager, err := vpcClient.NewKeysPager(listKeysOptions)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var allResults []vpcv1.Key
 	for pager.HasNext() {
 		nextPage, err := pager.GetNext()
 		if err != nil {
-			panic(err)
+			return err
 		}
 		allResults = append(allResults, nextPage...)
 	}
@@ -93,8 +93,8 @@ func deleteKey(keyDeleteOption keyDeleteOptions) error {
 	options.SetID(keyID)
 
 	if _, err := vpcClient.DeleteKey(options); err != nil {
-	  return err
+		return err
 	}
-        log.Info("VPC Key deleted succssfully,", "key-name", keyDeleteOption.name)
+	log.Info("VPC Key deleted succssfully,", "key-name", keyDeleteOption.name)
 	return nil
 }
