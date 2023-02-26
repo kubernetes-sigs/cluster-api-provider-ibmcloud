@@ -57,7 +57,7 @@ RELEASE_DIR := out
 
 TAG ?= dev
 ARCH ?= amd64
-ALL_ARCH ?= amd64 ppc64le
+ALL_ARCH ?= amd64 ppc64le arm64
 PULL_POLICY ?= Always
 
 KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.24.1
