@@ -19,6 +19,7 @@
     - [Using autoscaler with scaling from 0 machine](./topics/powervs/autoscaler-scalling-from-0.md)
 - [capibmadm CLI](./topics/capibmadm/index.md)
   - [Power VS Commands](./topics/capibmadm/powervs/index.md)
+    - [Image Commands](./topics/capibmadm/powervs/image.md)
     - [Network Commands](./topics/capibmadm/powervs/network.md)
     - [Port Commands](./topics/capibmadm/powervs/port.md)
     - [SSH key Commands](./topics/capibmadm/powervs/key.md)
