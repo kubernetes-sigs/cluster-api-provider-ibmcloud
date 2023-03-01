@@ -24,6 +24,7 @@
     - [SSH key Commands](./topics/capibmadm/powervs/key.md)
   - [VPC Commands](./topics/capibmadm/vpc/index.md)
     - [Image Commands](./topics/capibmadm/vpc/image.md)
+    - [Key Commands](./topics/capibmadm/vpc/key.md)
 - [Developer Guide](./developer/index.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)

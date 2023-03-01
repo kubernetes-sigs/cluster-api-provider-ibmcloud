@@ -1,9 +1,9 @@
-## VPC image Commands
+## VPC SSH key Commands
 
-### 1. capibmadm vpc image list
+### 1. capibmadm vpc key list
 
 #### Usage:
-List images in given VPC region.
+List SSH keys in given VPC region.
 
 #### Environmental Variable:
 IBMCLOUD_API_KEY: IBM Cloud API key.
@@ -16,5 +16,5 @@ IBMCLOUD_API_KEY: IBM Cloud API key.
 #### Example:
 ```shell
 export IBMCLOUD_API_KEY=<api-key>
-capibmadm vpc image list --region <region> --resource-group-name <resource-group>
+capibmadm vpc key list --region <region> --resource-group-name <resource-group>
 ```

@@ -69,7 +69,7 @@ var (
 
 // Printer is an interface for a printer.
 type Printer interface {
-	// Print is a method to print an object
+	// Print is a method to print an object.
 	Print(in interface{}) error
 }
 

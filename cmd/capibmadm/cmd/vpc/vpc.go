@@ -21,6 +21,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/vpc/image"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/vpc/key"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
@@ -36,6 +37,7 @@ func Commands() *cobra.Command {
 
 	_ = cmd.MarkPersistentFlagRequired("region")
 
+	cmd.AddCommand(key.Commands())
 	cmd.AddCommand(image.Commands())
 
 	return cmd
