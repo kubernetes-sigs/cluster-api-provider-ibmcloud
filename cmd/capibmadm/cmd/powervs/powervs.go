@@ -19,6 +19,7 @@ package powervs
 import (
 	"github.com/spf13/cobra"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/image"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/key"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/network"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs/port"
@@ -42,6 +43,7 @@ func Commands() *cobra.Command {
 	cmd.AddCommand(key.Commands())
 	cmd.AddCommand(network.Commands())
 	cmd.AddCommand(port.Commands())
+	cmd.AddCommand(image.Commands())
 
 	return cmd
 }
