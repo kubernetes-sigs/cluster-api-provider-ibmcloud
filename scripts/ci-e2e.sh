@@ -30,6 +30,8 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=../hack/boskos.sh
 source ${REPO_ROOT}/hack/boskos.sh
+# shellcheck source=../hack/kind-network-fix.sh
+source "${REPO_ROOT}/hack/kind-network-fix.sh"
 
 ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs/"
