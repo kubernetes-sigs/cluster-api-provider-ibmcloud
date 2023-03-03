@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.19
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.3.4
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.3.5
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.2.2
@@ -28,8 +28,8 @@ require (
 	k8s.io/client-go v0.25.0
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/utils v0.0.0-20220823124924-e9cbc92d1a73
-	sigs.k8s.io/cluster-api v1.3.4
-	sigs.k8s.io/cluster-api/test v1.3.4
+	sigs.k8s.io/cluster-api v1.3.5
+	sigs.k8s.io/cluster-api/test v1.3.5
 	sigs.k8s.io/controller-runtime v0.13.1
 )
 
