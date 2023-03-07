@@ -32,7 +32,7 @@
     ```
 - Wait for the google cloud build to be finished
 - Create a draft release with release notes for the tag
-- Perform the [image promotion process](https://github.com/kubernetes/k8s.io/tree/main/registry.k8s.io#image-promoter):
+- Perform the [image promotion process](https://github.com/kubernetes/k8s.io/tree/main/k8s.gcr.io#image-promoter):
   - Clone and pull down the latest from [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io)
   - Create a new branch in your fork of `kubernetes/k8s.io`. 
   - The staging repository is [here](https://console.cloud.google.com/gcr/images/k8s-staging-capi-ibmcloud/GLOBAL).
