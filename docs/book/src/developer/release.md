@@ -41,7 +41,7 @@
   $ manifest-tool inspect --raw gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller:v0.1.0 | jq '.[0].Digest'
   "sha256:6c92a6a337ca5152eda855ac27c9e4ca1f30bba0aa4de5c3a0b937270ead4363"
   ```
-  - In your `kubernetes/k8s.io` branch edit `registry.k8s.io/images/k8s-staging-capi-ibmcloud/images.yaml` and add an entry for the version using the sha256 value got from the above command. For example: `"sha256:6c92a6a337ca5152eda855ac27c9e4ca1f30bba0aa4de5c3a0b937270ead4363": ["v0.1.0"]`
+  - In your `kubernetes/k8s.io` branch edit `k8s.gcr.io/images/k8s-staging-capi-ibmcloud/images.yaml` and add an entry for the version using the sha256 value got from the above command. For example: `"sha256:6c92a6a337ca5152eda855ac27c9e4ca1f30bba0aa4de5c3a0b937270ead4363": ["v0.1.0"]`
   - You can use [this PR](https://github.com/kubernetes/k8s.io/pull/3185) as example 
   - Wait for the PR to be approved and merged
   - Run `make release` command
