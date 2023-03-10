@@ -8,13 +8,13 @@ require (
 	github.com/IBM-Cloud/power-go-client v1.2.2
 	github.com/IBM/go-sdk-core/v5 v5.12.1
 	github.com/IBM/platform-services-go-sdk v0.31.6
-	github.com/IBM/vpc-go-sdk v0.32.0
+	github.com/IBM/vpc-go-sdk v0.33.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-openapi/strfmt v0.21.3
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.6.0
-	github.com/onsi/gomega v1.24.1
+	github.com/onsi/ginkgo/v2 v2.8.1
+	github.com/onsi/gomega v1.27.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
