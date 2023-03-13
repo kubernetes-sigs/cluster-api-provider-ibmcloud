@@ -472,7 +472,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						capiv1beta1.ClusterLabelName: "powervs-cluster",
+						capiv1beta1.ClusterNameLabel: "powervs-cluster",
 					},
 					Name:      "bootsecret",
 					Namespace: "default",

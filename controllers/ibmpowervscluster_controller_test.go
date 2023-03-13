@@ -226,7 +226,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 							UID:        "1",
 						},
 					},
-					Labels: map[string]string{capiv1beta1.ClusterLabelName: "capi-powervs-cluster"},
+					Labels: map[string]string{capiv1beta1.ClusterNameLabel: "capi-powervs-cluster"},
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
@@ -246,7 +246,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 							UID:        "1",
 						},
 					},
-					Labels: map[string]string{capiv1beta1.ClusterLabelName: "capi-powervs-cluster"},
+					Labels: map[string]string{capiv1beta1.ClusterNameLabel: "capi-powervs-cluster"},
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
