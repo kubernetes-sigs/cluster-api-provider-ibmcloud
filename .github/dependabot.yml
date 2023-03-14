@@ -38,3 +38,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "docker"
+    directory: "/hack/ccm"
+    schedule:
+      interval: "weekly"

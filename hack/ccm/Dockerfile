@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GOLANG_IMAGE=golang:1.19.6
 ARG TARGETPLATFORM=linux/amd64
 ARG ARCH=amd64
 
 # Build IBM cloud controller manager binary
-FROM ${GOLANG_IMAGE} AS ccm-builder
+FROM golang:1.20.2 AS ccm-builder
 ARG ARCH
 ARG POWERVS_CLOUD_CONTROLLER_COMMIT
 WORKDIR /build
