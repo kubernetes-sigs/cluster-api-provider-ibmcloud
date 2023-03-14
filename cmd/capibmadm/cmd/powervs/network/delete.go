@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
 )
 
-// DeleteCommand function to delete network's port.
+// DeleteCommand function to delete network.
 func DeleteCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete",
@@ -54,7 +54,7 @@ capibmadm powervs network delete --network <network-name/network-id> --service-i
 
 func deleteNetwork(ctx context.Context, networkID string) error {
 	log := logf.Log
-	log.Info("Deleting Power VS network", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
+	log.Info("Deleting PowerVS network", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
 
 	accountID, err := utils.GetAccountID(ctx, iam.GetIAMAuth())
 	if err != nil {

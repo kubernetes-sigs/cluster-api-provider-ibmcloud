@@ -82,7 +82,7 @@ Private network with ip address ranges: capibmadm powervs network create --priva
 
 func createNetwork(ctx context.Context, netCreateOption networkCreateOptions) error {
 	log := logf.Log
-	log.Info("Creating Power VS network", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
+	log.Info("Creating PowerVS network", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
 
 	accountID, err := utils.GetAccountID(ctx, iam.GetIAMAuth())
 	if err != nil {

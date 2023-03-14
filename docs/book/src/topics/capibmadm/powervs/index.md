@@ -1,7 +1,7 @@
 # capibmadm powervs `<commands>`
 
 
-## 1. Power VS commands
+## 1. PowerVS commands
 - [key](./key.md)
     - [create](/topics/capibmadm/powervs/key.html#1-capibmadm-powervs-key-create)
     - [delete](/topics/capibmadm/powervs/key.html#2-capibmadm-powervs-key-delete)

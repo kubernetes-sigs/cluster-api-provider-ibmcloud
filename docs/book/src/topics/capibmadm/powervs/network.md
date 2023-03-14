@@ -1,4 +1,4 @@
-## Power VS Network Commands
+## PowerVS Network Commands
 
 ### 1. capibmadm powervs network create
 
@@ -6,10 +6,10 @@
 Create PowerVS network.
 
 #### Environmental Variable:
-IBMCLOUD_API_KEY: IBM Cloud api key.
+IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: Power VS service instance id.
+--service-instance-id: PowerVS service instance id.
 
 --cidr: The network CIDR. Required for private network type.
 
@@ -46,7 +46,7 @@ capibmadm powervs network create --private --cidr <cidr> --ip-ranges <start-ip>-
 Delete PowerVS network.
 
 #### Environmental Variable:
-IBMCLOUD_API_KEY: IBM Cloud api key.
+IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
 --service-instance-id: PowerVS service instance id.
@@ -68,7 +68,7 @@ capibmadm powervs network delete --network <network-name/network-id> --service-i
 List PowerVS networks.
 
 #### Environmental Variable:
-IBMCLOUD_API_KEY: IBM Cloud api key.
+IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
 --service-instance-id: PowerVS service instance id.
