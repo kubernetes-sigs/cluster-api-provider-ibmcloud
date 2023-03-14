@@ -197,7 +197,7 @@ func (r *IBMPowerVSClusterReconciler) listDescendants(ctx context.Context, clust
 
 	listOptions := []client.ListOption{
 		client.InNamespace(cluster.Namespace),
-		client.MatchingLabels(map[string]string{capiv1beta1.ClusterLabelName: cluster.Name}),
+		client.MatchingLabels(map[string]string{capiv1beta1.ClusterNameLabel: cluster.Name}),
 	}
 
 	if err := r.Client.List(ctx, &descendants.ibmPowerVSImages, listOptions...); err != nil {

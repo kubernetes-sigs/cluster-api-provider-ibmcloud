@@ -106,8 +106,8 @@ func (r *IBMPowerVSImageReconciler) reconcile(cluster *infrav1beta2.IBMPowerVSCl
 		imageScope.IBMPowerVSImage.Labels = make(map[string]string)
 	}
 
-	if _, ok := imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterLabelName]; !ok {
-		imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterLabelName] = imageScope.IBMPowerVSImage.Spec.ClusterName
+	if _, ok := imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterNameLabel]; !ok {
+		imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterNameLabel] = imageScope.IBMPowerVSImage.Spec.ClusterName
 	}
 
 	if r.shouldAdopt(*imageScope.IBMPowerVSImage) {

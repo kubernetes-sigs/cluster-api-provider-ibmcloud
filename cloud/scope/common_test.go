@@ -78,7 +78,7 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				capiv1beta1.ClusterLabelName: clusterName,
+				capiv1beta1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",

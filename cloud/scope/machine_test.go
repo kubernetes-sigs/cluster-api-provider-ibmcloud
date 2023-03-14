@@ -43,7 +43,7 @@ func newVPCMachine(clusterName, machineName string) *infrav1beta2.IBMVPCMachine 
 	return &infrav1beta2.IBMVPCMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				capiv1beta1.ClusterLabelName: clusterName,
+				capiv1beta1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",
@@ -213,7 +213,7 @@ func TestCreateMachine(t *testing.T) {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						capiv1beta1.ClusterLabelName: clusterName,
+						capiv1beta1.ClusterNameLabel: clusterName,
 					},
 					Name:      machineName,
 					Namespace: "default",

@@ -166,7 +166,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 				Address: *instance.PrimaryNetworkInterface.PrimaryIP.Address,
 			},
 		}
-		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneLabelName]
+		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]
 		if err = machineScope.SetProviderID(instance.ID); err != nil {
 			return ctrl.Result{}, errors.Wrapf(err, "failed to set provider id IBMVPCMachine %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
 		}
@@ -214,7 +214,7 @@ func (r *IBMVPCMachineReconciler) getOrCreate(scope *scope.MachineScope) (*vpcv1
 func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ ctrl.Result, reterr error) {
 	scope.Info("Handling deleted IBMVPCMachine")
 
-	if _, ok := scope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneLabelName]; ok && scope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer != nil {
+	if _, ok := scope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]; ok && scope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer != nil {
 		if err := scope.DeleteVPCLoadBalancerPoolMember(); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to delete loadBalancer pool member")
 		}
