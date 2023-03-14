@@ -20,8 +20,29 @@ capibmadm powervs network create <network-name> --service-instance-id <service-i
 ```
 
 
+### 2. capibmadm powervs network delete
 
-### 2. capibmadm powervs network list
+#### Usage:
+Delete PowerVS network.
+
+#### Environmental Variable:
+IBMCLOUD_API_KEY: IBM Cloud api key.
+
+#### Arguments:
+--service-instance-id: PowerVS service instance id.
+
+--zone: PowerVS service instance zone.
+
+--network: Network ID or Name.
+
+#### Example:
+```shell
+export IBMCLOUD_API_KEY=<api-key>
+capibmadm powervs network delete --network <network-name/network-id> --service-instance-id <service-instance-id> --zone <zone>
+```
+
+
+### 3. capibmadm powervs network list
 
 #### Usage:
 List PowerVS networks.
