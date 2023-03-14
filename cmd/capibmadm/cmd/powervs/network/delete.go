@@ -19,13 +19,16 @@ package network
 import (
 	"context"
 
-	v "github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/spf13/cobra"
+
+	v "github.com/IBM-Cloud/power-go-client/clients/instance"
+
+	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
+
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 )
 
 // DeleteCommand function to delete network's port.
