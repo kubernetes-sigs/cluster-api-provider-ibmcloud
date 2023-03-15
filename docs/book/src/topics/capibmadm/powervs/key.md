@@ -2,7 +2,7 @@
 
 ### 1. capibmadm powervs key create
 
-#### Usage: 
+#### Usage:
 Create an SSH key in the PowerVS environment.
 
 #### Environmental Variable:
@@ -51,4 +51,23 @@ IBMCLOUD_API_KEY: IBM Cloud API key.
 ```shell
 export IBMCLOUD_API_KEY=<api-key>
 capibmadm powervs key delete --name <key-name> --service-instance-id <service-instance-id> --zone <zone>
+```
+
+### 3. capibmadm powervs key list
+
+#### Usage:
+List all SSH Keys in the PowerVS environment.
+
+#### Environmental Variable:
+IBMCLOUD_API_KEY: IBM Cloud API key.
+
+#### Arguments:
+--service-instance-id: PowerVS service instance id.
+
+--zone: PowerVS zone.
+
+#### Example:
+```shell
+export IBMCLOUD_API_KEY=<api-key>
+capibmadm powervs key list --service-instance-id <service-instance-id> --zone <zone>
 ```

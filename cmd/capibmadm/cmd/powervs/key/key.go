@@ -29,5 +29,6 @@ func Commands() *cobra.Command {
 	}
 	cmd.AddCommand(CreateSSHKeyCommand())
 	cmd.AddCommand(DeleteSSHKeyCommand())
+	cmd.AddCommand(ListSSHKeyCommand())
 	return cmd
 }
