@@ -15,7 +15,7 @@ require (
 	github.com/IBM/platform-services-go-sdk v0.32.2
 	github.com/IBM/vpc-go-sdk v0.33.0
 	github.com/go-logr/logr v1.2.3
-	github.com/go-openapi/strfmt v0.21.3
+	github.com/go-openapi/strfmt v0.21.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo/v2 v2.9.0
