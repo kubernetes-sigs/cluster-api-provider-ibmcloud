@@ -42,5 +42,5 @@ type options struct {
 // AddCommonFlags will add common flags to the cli.
 func AddCommonFlags(cmd *cobra.Command) {
 	GlobalOptions.Output = printer.PrinterTypeTable
-	cmd.Flags().Var(&GlobalOptions.Output, "output", "The output format of the results. Supported printer types: table, json")
+	cmd.Flags().VarP(&GlobalOptions.Output, "output", "o", "The output format of the results. Supported printer types: table, json")
 }
