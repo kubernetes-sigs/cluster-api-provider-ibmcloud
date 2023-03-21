@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.19
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0-beta.2
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0-rc.0
 
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
@@ -10,10 +10,10 @@ require (
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/itchyny/gojq v0.12.9
 	github.com/joelanford/go-apidiff v0.5.0
-	github.com/onsi/ginkgo/v2 v2.9.0
+	github.com/onsi/ginkgo/v2 v2.9.1
 	gotest.tools/gotestsum v1.8.2
 	k8s.io/code-generator v0.26.1
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230307052017-35359f4aa432
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230314140816-47193a3b994d
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.11.3
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.7
@@ -57,7 +57,7 @@ require (
 	github.com/esimonov/ifshort v1.0.4 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
-	github.com/fatih/color v1.14.1 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -85,7 +85,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golangci/check v0.0.0-20180506172741-cfe4005ccda2 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
 	github.com/golangci/go-misc v0.0.0-20220329215616-d24fe342adfe // indirect
@@ -214,13 +214,13 @@ require (
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91 // indirect
-	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/mod v0.9.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

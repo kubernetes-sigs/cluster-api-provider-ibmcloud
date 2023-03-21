@@ -4,9 +4,9 @@ go 1.19
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
-	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.0
-	github.com/onsi/gomega => github.com/onsi/gomega v1.27.2
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0-beta.2
+	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.1
+	github.com/onsi/gomega => github.com/onsi/gomega v1.27.4
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0-rc.0
 )
 
 require (
@@ -18,8 +18,8 @@ require (
 	github.com/go-openapi/strfmt v0.21.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.9.0
-	github.com/onsi/gomega v1.27.2
+	github.com/onsi/ginkgo/v2 v2.9.1
+	github.com/onsi/gomega v1.27.4
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
@@ -33,8 +33,8 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/cluster-api v1.4.0-beta.2
-	sigs.k8s.io/cluster-api/test v1.4.0-beta.2
+	sigs.k8s.io/cluster-api v1.4.0-rc.0
+	sigs.k8s.io/cluster-api/test v1.4.0-rc.0
 	sigs.k8s.io/controller-runtime v0.14.5
 )
 
@@ -80,7 +80,7 @@ require (
 	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.12.6 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -136,7 +136,7 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.6.0 // indirect
+	golang.org/x/tools v0.7.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
