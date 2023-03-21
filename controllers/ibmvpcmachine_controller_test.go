@@ -356,6 +356,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 					},
 				},
 			},
+			Cluster:      &capiv1beta1.Cluster{},
 			IBMVPCClient: mockvpc,
 		}
 		return gomock.NewController(t), mockvpc, machineScope, reconciler
