@@ -57,7 +57,7 @@ func (r *IBMPowerVSMachine) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMPowerVSMachine) ValidateUpdate(old runtime.Object) error {
+func (r *IBMPowerVSMachine) ValidateUpdate(_ runtime.Object) error {
 	ibmpowervsmachinelog.Info("validate update", "name", r.Name)
 	return r.validateIBMPowerVSMachine()
 }

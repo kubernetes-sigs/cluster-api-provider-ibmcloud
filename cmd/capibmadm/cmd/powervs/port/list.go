@@ -27,7 +27,6 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
@@ -62,8 +61,7 @@ func listPorts(ctx context.Context, network string) error {
 	log := logf.Log
 	log.Info("Listing PowerVS ports", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "network", network)
 
-	auth := iam.GetIAMAuth()
-	accountID, err := utils.GetAccountID(ctx, auth)
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}

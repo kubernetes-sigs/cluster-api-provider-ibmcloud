@@ -23,7 +23,6 @@ import (
 
 	"github.com/go-openapi/strfmt"
 
-	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/iamidentityv1"
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 
@@ -32,7 +31,7 @@ import (
 )
 
 // GetAccountID returns IBM cloud account ID of API key used.
-func GetAccountID(ctx context.Context, auth *core.IamAuthenticator) (string, error) {
+func GetAccountID(ctx context.Context) (string, error) {
 	iamv1, err := platformservices.NewIAMIdentityClient()
 	if err != nil {
 		return "", err

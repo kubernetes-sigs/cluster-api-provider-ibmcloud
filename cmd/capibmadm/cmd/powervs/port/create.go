@@ -28,7 +28,6 @@ import (
 
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
@@ -57,10 +56,7 @@ capibmadm powervs port create --network <netword-id/network-name> --description 
 	cmd.Flags().StringVar(&portCreateOption.ipAddress, "ip-address", "", "IP Address to be assigned to the port")
 	cmd.Flags().StringVar(&portCreateOption.description, "description", "", "Description of the port")
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := createPort(cmd.Context(), portCreateOption); err != nil {
-			return err
-		}
-		return nil
+		return createPort(cmd.Context(), portCreateOption)
 	}
 	options.AddCommonFlags(cmd)
 	_ = cmd.MarkFlagRequired("network")
@@ -70,7 +66,7 @@ capibmadm powervs port create --network <netword-id/network-name> --description 
 func createPort(ctx context.Context, portCreateOption portCreateOptions) error {
 	logger := log.Log
 	logger.Info("Creating Port ", "Network ID/Name", portCreateOption.network, "IP Address", portCreateOption.ipAddress, "Description", portCreateOption.description, "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
-	accountID, err := utils.GetAccountID(ctx, iam.GetIAMAuth())
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}
