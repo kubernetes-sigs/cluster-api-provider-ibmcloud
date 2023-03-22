@@ -190,7 +190,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 					return ctrl.Result{}, fmt.Errorf("invalid primary ip address")
 				}
 				internalIP := instance.PrimaryNetworkInterface.PrimaryIP.Address
-				port := int64(6443)
+				port := int64(machineScope.APIServerPort())
 				poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(internalIP, port)
 				if err != nil {
 					return ctrl.Result{}, errors.Wrapf(err, "failed to bind port %d to control plane %s/%s", port, machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)

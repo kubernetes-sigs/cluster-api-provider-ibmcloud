@@ -522,3 +522,11 @@ func (m *MachineScope) SetProviderID(id *string) error {
 	}
 	return nil
 }
+
+// APIServerPort returns the APIServerPort.
+func (m *MachineScope) APIServerPort() int32 {
+	if m.Cluster.Spec.ClusterNetwork != nil && m.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
+		return *m.Cluster.Spec.ClusterNetwork.APIServerPort
+	}
+	return 6443
+}
