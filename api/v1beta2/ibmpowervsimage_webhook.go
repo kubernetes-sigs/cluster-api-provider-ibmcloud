@@ -54,7 +54,7 @@ func (r *IBMPowerVSImage) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMPowerVSImage) ValidateUpdate(old runtime.Object) error {
+func (r *IBMPowerVSImage) ValidateUpdate(_ runtime.Object) error {
 	ibmpowervsimagelog.Info("validate update", "name", r.Name)
 	return nil
 }

@@ -1,5 +1,5 @@
-//go:build tools
-// +build tools
+//go:build capibmtools
+// +build capibmtools
 
 /*
 Copyright 2019 The Kubernetes Authors.

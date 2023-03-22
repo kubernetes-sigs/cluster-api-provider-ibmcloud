@@ -28,7 +28,6 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
@@ -45,10 +44,7 @@ func ListCommand() *cobra.Command {
 export IBMCLOUD_API_KEY=<api-key>
 capibmadm powervs image list --service-instance-id <service-instance-id> --zone <zone>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := listimage(cmd.Context()); err != nil {
-				return err
-			}
-			return nil
+			return listimage(cmd.Context())
 		},
 	}
 	options.AddCommonFlags(cmd)
@@ -59,8 +55,7 @@ func listimage(ctx context.Context) error {
 	log := logf.Log
 	log.Info("Listing PowerVS images", "service-instance-id", options.GlobalOptions.ServiceInstanceID)
 
-	auth := iam.GetIAMAuth()
-	accountID, err := utils.GetAccountID(ctx, auth)
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}

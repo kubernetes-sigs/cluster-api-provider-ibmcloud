@@ -27,7 +27,6 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
@@ -44,10 +43,7 @@ func ListSSHKeyCommand() *cobra.Command {
 export IBMCLOUD_API_KEY=<api-key>
 capibmadm powervs key list --service-instance-id <service-instance-id> --zone <zone>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := listSSHKeys(cmd.Context()); err != nil {
-				return err
-			}
-			return nil
+			return listSSHKeys(cmd.Context())
 		},
 	}
 
@@ -59,7 +55,7 @@ func listSSHKeys(ctx context.Context) error {
 	log := logf.Log
 	log.Info("Listing PowerVS SSH Keys", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
 
-	accountID, err := utils.GetAccountID(ctx, iam.GetIAMAuth())
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}

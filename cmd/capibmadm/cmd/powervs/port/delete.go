@@ -25,7 +25,6 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
@@ -54,10 +53,7 @@ capibmadm powervs port delete --port-id <port-id> --network <network-name/networ
 	_ = cmd.MarkFlagRequired("network")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := deletePort(cmd.Context(), portDeleteOption); err != nil {
-			return err
-		}
-		return nil
+		return deletePort(cmd.Context(), portDeleteOption)
 	}
 	return cmd
 }
@@ -65,8 +61,7 @@ capibmadm powervs port delete --port-id <port-id> --network <network-name/networ
 func deletePort(ctx context.Context, portDeleteOption portDeleteOptions) error {
 	log := logf.Log
 	log.Info("Deleting PowerVS network port", "network", portDeleteOption.network, "service-instance-id", options.GlobalOptions.ServiceInstanceID, "port-id", portDeleteOption.portID)
-	auth := iam.GetIAMAuth()
-	accountID, err := utils.GetAccountID(ctx, auth)
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}

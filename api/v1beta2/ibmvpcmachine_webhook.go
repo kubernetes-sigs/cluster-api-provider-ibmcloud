@@ -60,7 +60,7 @@ func (r *IBMVPCMachine) ValidateCreate() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMVPCMachine) ValidateUpdate(old runtime.Object) error {
+func (r *IBMVPCMachine) ValidateUpdate(_ runtime.Object) error {
 	ibmvpcmachinelog.Info("validate update", "name", r.Name)
 	return nil
 }

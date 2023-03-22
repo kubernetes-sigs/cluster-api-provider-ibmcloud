@@ -29,7 +29,6 @@ import (
 
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
@@ -89,8 +88,7 @@ func createSSHKey(ctx context.Context, keyCreateOption keyCreateOptions) error {
 	logger := log.Log
 	logger.Info("Creating SSH key...")
 
-	auth := iam.GetIAMAuth()
-	accountID, err := utils.GetAccountID(ctx, auth)
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}

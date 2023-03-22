@@ -58,7 +58,7 @@ $(GO_APIDIFF): $(BIN_DIR) go.mod go.sum ## Build a local copy of go-apidiff.
 
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
 $(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lint.
-	go build -tags=tools -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
+	go build -tags=capibmtools -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
 GOTESTSUM := $(BIN_DIR)/gotestsum
 $(GOTESTSUM): $(BIN_DIR) go.mod go.sum

@@ -25,7 +25,6 @@ import (
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
@@ -47,10 +46,7 @@ func ListCommand() *cobra.Command {
 	options.AddCommonFlags(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := listImages(cmd.Context(), options.GlobalOptions.ResourceGroupName); err != nil {
-			return err
-		}
-		return nil
+		return listImages(cmd.Context(), options.GlobalOptions.ResourceGroupName)
 	}
 
 	return cmd
@@ -62,7 +58,7 @@ func listImages(ctx context.Context, resourceGroupName string) error {
 		return err
 	}
 
-	accountID, err := utils.GetAccountID(ctx, iam.GetIAMAuth())
+	accountID, err := utils.GetAccountID(ctx)
 	if err != nil {
 		return err
 	}
