@@ -26,6 +26,7 @@ CRD_OPTIONS ?= "crd:crdVersions=v1"
 # Directories.
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts
+BIN_DIR := bin
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
@@ -55,10 +56,16 @@ PULL_BASE_REF ?= $(RELEASE_TAG) # PULL_BASE_REF will be provided by Prow
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 RELEASE_DIR := out
 
+# image name used to build the cmd/capibmadm
+TOOLCHAIN_IMAGE := toolchain
+
 TAG ?= dev
 ARCH ?= amd64
 ALL_ARCH ?= amd64 ppc64le arm64
 PULL_POLICY ?= Always
+
+# Set build time variables including version details
+LDFLAGS := $(shell ./hack/version.sh)
 
 KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.24.1
 
@@ -94,9 +101,16 @@ all: manager
 
 ##@ build:
 
+.PHONY: binaries
+binaries: manager capibmadm ## Builds and installs all binaries
+
+.PHONY: capibmadm
+capibmadm: ## Build the capibmadm binary into the ./bin folder
+	go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/capibmadm ./cmd/capibmadm
+
 # Build manager binary
 manager: generate fmt vet ## Build the manager binary into the ./bin folder
-	go build -o bin/manager main.go
+	go build -ldflags "${LDFLAGS} -extldflags '-static'" -o $(BIN_DIR)/manager main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -245,6 +259,10 @@ $(RELEASE_DIR):
 $(ARTIFACTS):
 	mkdir -p $@
 
+.PHONY: build-toolchain
+build-toolchain: ## Build the toolchain
+	docker build --target toolchain -t $(TOOLCHAIN_IMAGE) .
+
 .PHONY: list-staging-releases
 list-staging-releases: ## List staging images for image promotion
 	@echo $(CORE_IMAGE_NAME):
@@ -271,6 +289,7 @@ release: clean-release check-release-tag $(RELEASE_DIR)  ## Build and push conta
 	git checkout "${RELEASE_TAG}"
 	CORE_CONTROLLER_IMG=$(PROD_REGISTRY)/$(CORE_IMAGE_NAME) $(MAKE) release-manifests
 	$(MAKE) release-templates
+	$(MAKE) release-binaries
 
 .PHONY: release-manifests
 release-manifests: ## Build the manifests to publish with a release
@@ -285,6 +304,7 @@ release-staging: ## Build and push container images to the staging bucket
 	$(MAKE) release-alias-tag
 	$(MAKE) staging-manifests
 	$(MAKE) release-templates
+	$(MAKE) release-binaries
 	$(MAKE) upload-staging-artifacts
 
 .PHONY: staging-manifests
@@ -303,6 +323,31 @@ release-alias-tag: ## Add the release alias tag to the last build tag
 .PHONY: release-templates
 release-templates: $(RELEASE_DIR) ## Generate release templates
 	cp templates/cluster-template*.yaml $(RELEASE_DIR)/
+
+.PHONY: release-binaries
+release-binaries: ## Builds the binaries to publish with a release
+	RELEASE_BINARY=./cmd/capibmadm GOOS=linux GOARCH=ppc64le $(MAKE) release-binary
+	RELEASE_BINARY=./cmd/capibmadm GOOS=linux GOARCH=amd64 $(MAKE) release-binary
+	RELEASE_BINARY=./cmd/capibmadm GOOS=linux GOARCH=arm64 $(MAKE) release-binary
+	RELEASE_BINARY=./cmd/capibmadm GOOS=darwin GOARCH=amd64 $(MAKE) release-binary
+	RELEASE_BINARY=./cmd/capibmadm GOOS=darwin GOARCH=arm64 $(MAKE) release-binary
+	RELEASE_BINARY=./cmd/capibmadm GOOS=windows GOARCH=amd64 EXT=.exe $(MAKE) release-binary
+	RELEASE_BINARY=./cmd/capibmadm GOOS=windows GOARCH=arm64 EXT=.exe $(MAKE) release-binary
+
+.PHONY: release-binary
+release-binary: $(RELEASE_DIR) build-toolchain ## Release binary
+	docker run \
+		--rm \
+		-e CGO_ENABLED=0 \
+		-e GOOS=$(GOOS) \
+		-e GOARCH=$(GOARCH) \
+		--mount=source=gocache,target=/go/pkg/mod \
+		--mount=source=gocache,target=/root/.cache/go-build \
+		-v "$$(pwd):/workspace" \
+		-w /workspace \
+		$(TOOLCHAIN_IMAGE) \
+		go build -ldflags '$(LDFLAGS) -extldflags "-static"' \
+		-o $(RELEASE_DIR)/$(notdir $(RELEASE_BINARY))-$(GOOS)-$(GOARCH)$(EXT) $(RELEASE_BINARY)
 
 IMAGE_PATCH_DIR := $(ARTIFACTS)/image-patch
 
@@ -347,7 +392,7 @@ image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
-	docker build --build-arg ARCH=$(ARCH) . -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker build --build-arg ARCH=$(ARCH) --build-arg LDFLAGS="$(LDFLAGS)" . -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
 
 .PHONY: docker-push
 docker-push: ## Push the docker image
@@ -484,6 +529,7 @@ clean: ## Remove all generated files
 .PHONY: clean-bin
 clean-bin: ## Remove all generated binaries
 	rm -rf $(TOOLS_BIN_DIR)
+	rm -rf $(BIN_DIR)
 
 .PHONY: clean-book
 clean-book: ## Remove all generated GitBook files

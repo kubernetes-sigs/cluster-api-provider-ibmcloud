@@ -15,16 +15,22 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.20.3 as builder
+FROM golang:1.20.3 as toolchain
 
+# Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
+ARG goproxy=https://proxy.golang.org,direct
+ENV GOPROXY=$goproxy
+
+FROM toolchain as builder
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
-ENV GOPROXY https://proxy.golang.org,direct
-RUN go mod download
+RUN  --mount=type=cache,target=/root/.local/share/golang \
+     --mount=type=cache,target=/go/pkg/mod \
+     go mod download
 
 # Copy the go source
 COPY main.go main.go
@@ -36,13 +42,17 @@ COPY util/ util/
 
 # Build
 ARG ARCH
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} GO111MODULE=on go build -ldflags "-extldflags '-static'" -a -o manager main.go
+ARG LDFLAGS
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.local/share/golang \
+    CGO_ENABLED=0 GOOS=linux GOARCH=${ARCH} GO111MODULE=on go build -ldflags "${LDFLAGS} -extldflags '-static'"  -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
-USER nonroot:nonroot
-
+# Use uid of nonroot user (65532) because kubernetes expects numeric user when applying pod security policies
+USER 65532
 ENTRYPOINT ["/manager"]
