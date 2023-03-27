@@ -7,7 +7,7 @@ replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0-rc.0
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golang/mock v1.6.0
-	github.com/golangci/golangci-lint v1.52.1
+	github.com/golangci/golangci-lint v1.52.2
 	github.com/itchyny/gojq v0.12.9
 	github.com/joelanford/go-apidiff v0.5.0
 	github.com/onsi/ginkgo/v2 v2.9.1
@@ -149,7 +149,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
-	github.com/moricho/tparallel v0.3.0 // indirect
+	github.com/moricho/tparallel v0.3.1 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 // indirect
 	github.com/nishanths/exhaustive v0.9.5 // indirect
