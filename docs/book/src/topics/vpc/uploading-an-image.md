@@ -1,7 +1,7 @@
 # Uploading an image to the IBM Cloud
 
 Build the Ubuntu image as described in the previous [VPC section](prerequisites.md).
-Make sure to build the qcow2 version by following the instructions for [raw image build](https://image-builder.sigs.k8s.io/capi/providers/raw.html).
+Make sure to build the qcow2 version by following the instructions for [ibmcloud vpc image build](https://image-builder.sigs.k8s.io/capi/providers/ibmcloud.html#capibm---vpc).
 
 Since the IBM Cloud does not support dots before the qcow2 extension, rename the file as follows:
 ```console

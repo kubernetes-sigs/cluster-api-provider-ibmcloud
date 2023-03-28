@@ -11,8 +11,10 @@
 
 ### Build workload cluster image:
 
-1. Build a qcow2 image suitable for use as a Kubernetes cluster machine as detailed in the image builder [book](https://image-builder.sigs.k8s.io/capi/providers/raw.html).
+1. Build a qcow2 image suitable for use as a Kubernetes cluster machine as detailed in the image builder [book](https://image-builder.sigs.k8s.io/capi/providers/ibmcloud.html#capibm---vpc).
 
     **Note:** Rename the output image to add the `.qcow2` extension. This is required by the next step.
+
+    For more information about the images can be found at [machine-images](../../machine-images/vpc.md) section
 
 2. Upload the VPC Gen2 custom image to IBM Cloud following [this section](uploading-an-image.md) or the detailed explainations in the VPC [documentation](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images).
