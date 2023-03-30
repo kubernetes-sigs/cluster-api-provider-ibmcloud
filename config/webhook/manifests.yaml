@@ -33,6 +33,27 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsclustertemplate
+  failurePolicy: Fail
+  name: mibmpowervsclustertemplate.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsclustertemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsimage
   failurePolicy: Fail
   name: mibmpowervsimage.kb.io
@@ -179,6 +200,27 @@ webhooks:
     - UPDATE
     resources:
     - ibmpowervsclusters
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsclustertemplate
+  failurePolicy: Fail
+  name: vibmpowervsclustertemplate.kb.io
+  rules:
+  - apiGroups:
+    - infrastructure.cluster.x-k8s.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - ibmpowervsclustertemplates
   sideEffects: None
 - admissionReviewVersions:
   - v1

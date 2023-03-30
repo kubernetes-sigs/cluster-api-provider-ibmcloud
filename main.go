@@ -300,6 +300,10 @@ func setupWebhooks(mgr ctrl.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
 		os.Exit(1)
 	}
+	if err := (&infrav1beta2.IBMPowerVSClusterTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSClusterTemplate")
+		os.Exit(1)
+	}
 }
 
 func setupChecks(mgr ctrl.Manager) {
