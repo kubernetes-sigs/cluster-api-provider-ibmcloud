@@ -4,9 +4,9 @@ go 1.19
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
-	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.1
-	github.com/onsi/gomega => github.com/onsi/gomega v1.27.4
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0
+	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.2
+	github.com/onsi/gomega => github.com/onsi/gomega v1.27.5
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.1
 )
 
 require (
@@ -18,8 +18,8 @@ require (
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.9.1
-	github.com/onsi/gomega v1.27.4
+	github.com/onsi/ginkgo/v2 v2.9.2
+	github.com/onsi/gomega v1.27.5
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
@@ -33,8 +33,8 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/cluster-api v1.4.0
-	sigs.k8s.io/cluster-api/test v1.4.0
+	sigs.k8s.io/cluster-api v1.4.1
+	sigs.k8s.io/cluster-api/test v1.4.1
 	sigs.k8s.io/controller-runtime v0.14.5
 )
 
@@ -76,7 +76,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.11.2 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
+	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
