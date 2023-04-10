@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.19
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.0
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.1
 
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
@@ -10,10 +10,10 @@ require (
 	github.com/golangci/golangci-lint v1.52.2
 	github.com/itchyny/gojq v0.12.9
 	github.com/joelanford/go-apidiff v0.5.0
-	github.com/onsi/ginkgo/v2 v2.9.1
+	github.com/onsi/ginkgo/v2 v2.9.2
 	gotest.tools/gotestsum v1.8.2
 	k8s.io/code-generator v0.26.1
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230328130021-2c0771782941
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230404164741-39d87e910800
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.11.3
 	sigs.k8s.io/kustomize/kustomize/v4 v4.5.7
@@ -73,7 +73,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
-	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
+	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
 	github.com/go-toolsmith/astcast v1.1.0 // indirect
 	github.com/go-toolsmith/astcopy v1.1.0 // indirect
 	github.com/go-toolsmith/astequal v1.1.0 // indirect
