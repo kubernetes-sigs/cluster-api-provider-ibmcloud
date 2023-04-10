@@ -72,6 +72,10 @@ func setup() {
 	if err := (&IBMVPCMachineTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMVPCMachineTemplate webhook: %v", err))
 	}
+	if err := (&IBMPowerVSClusterTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMPowerVSClusterTemplate webhook: %v", err))
+	}
+
 	go func() {
 		fmt.Println("Starting the manager")
 		if err := testEnv.StartManager(ctx); err != nil {
