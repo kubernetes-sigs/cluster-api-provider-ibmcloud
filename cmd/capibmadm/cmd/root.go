@@ -29,8 +29,8 @@ import (
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/version"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cmd/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
 
 func init() {
@@ -43,19 +43,12 @@ func rootCommand() *cobra.Command {
 		Use:   "capibmadm",
 		Short: "Kubernetes Cluster API Provider IBM Cloud Management Utility",
 		Long:  `capibmadm provides helpers for completing the prerequisite operations for creating IBM Cloud Power VS or VPC clusters.`,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			apiKey := os.Getenv(options.IBMCloudAPIKeyEnvName)
-			if apiKey == "" {
-				return fmt.Errorf("ibmcloud api key is not provided, set %s environmental variable", options.IBMCloudAPIKeyEnvName)
-			}
-			options.GlobalOptions.IBMCloudAPIKey = apiKey
-			return nil
-		},
 	}
 
 	cmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	cmd.AddCommand(powervs.Commands())
 	cmd.AddCommand(vpc.Commands())
+	cmd.AddCommand(version.Commands(os.Stdout))
 
 	return cmd
 }
