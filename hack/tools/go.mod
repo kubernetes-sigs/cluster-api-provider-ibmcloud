@@ -11,7 +11,7 @@ require (
 	github.com/itchyny/gojq v0.12.9
 	github.com/joelanford/go-apidiff v0.5.0
 	github.com/onsi/ginkgo/v2 v2.9.2
-	gotest.tools/gotestsum v1.8.2
+	gotest.tools/gotestsum v1.10.0
 	k8s.io/code-generator v0.26.1
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230404164741-39d87e910800
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
