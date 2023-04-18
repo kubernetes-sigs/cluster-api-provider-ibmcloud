@@ -111,8 +111,6 @@ prerequisites_powervs(){
     export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams8-1-25-1"}
     export IBMPOWERVS_SERVICE_INSTANCE_ID=${BOSKOS_RESOURCE_ID:-"d53da3bf-1f4a-42fa-9735-acf16b1a05cd"}
     export IBMPOWERVS_NETWORK_NAME="capi-net-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
-    # Setting controller loglevel to allow debug logs from the PowerVS client
-    export LOGLEVEL=5
 }
 
 prerequisites_vpc(){
@@ -124,8 +122,6 @@ prerequisites_vpc(){
     export IBMVPC_IMAGE_NAME=${IBMVPC_IMAGE_NAME:-"capibm-vpc-ubuntu-2004-kube-v1-25-2"}
     export IBMVPC_PROFILE=${IBMVPC_PROFILE:-"bx2-4x16"}
     export IBMVPC_SSHKEY_NAME=${IBMVPC_SSHKEY_NAME:-"vpc-cloud-bot-key"}
-    # Setting controller loglevel to allow debug logs from the VPC client
-    export LOGLEVEL=5
 }
 
 prerequisites_vpc_load_balancer(){
@@ -166,6 +162,12 @@ main(){
         heartbeat_account >> "$ARTIFACTS/logs/boskos.log" 2>&1 &
         HEART_BEAT_PID=$(echo $!)
     fi
+
+    # Set common variables
+    export LOGLEVEL=5
+    # Setting controller loglevel to allow debug logs from the VPC/PowerVS client
+    export DOCKER_BUILDKIT=1
+
 
     if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "powervs-md-remediation" ]]; then
         prerequisites_powervs
