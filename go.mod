@@ -11,9 +11,9 @@ replace (
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.2.2
-	github.com/IBM/go-sdk-core/v5 v5.13.0
+	github.com/IBM/go-sdk-core/v5 v5.13.1
 	github.com/IBM/platform-services-go-sdk v0.35.1
-	github.com/IBM/vpc-go-sdk v0.35.0
+	github.com/IBM/vpc-go-sdk v0.36.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
