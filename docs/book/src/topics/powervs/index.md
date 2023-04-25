@@ -1,4 +1,4 @@
-# Power VS Cluster
+# PowerVS Cluster
 
 ## Contents
 - [Prerequisites](/topics/powervs/prerequisites.html)

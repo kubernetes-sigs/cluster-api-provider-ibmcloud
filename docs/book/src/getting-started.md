@@ -55,13 +55,13 @@ it into a management cluster using `clusterctl`.
        export EXP_CLUSTER_RESOURCE_SET=true
      ```
 
-    > Note: To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage. Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
+    > Note: To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage. Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
     Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` environmental variables.
     ```console
        export POWERVS_PROVIDER_ID_FORMAT=v2
        export EXP_CLUSTER_RESOURCE_SET=true
      ```
-    > Note: To deploy workload cluster with [Power VS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
+    > Note: To deploy workload cluster with [PowerVS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
       Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
      ```console
         export POWERVS_PROVIDER_ID_FORMAT=v2

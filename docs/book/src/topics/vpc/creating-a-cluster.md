@@ -12,10 +12,10 @@ following the steps below.
     IBMVPC_ZONE=us-south-1 \
     IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
     IBMVPC_NAME=ibm-vpc-0 \
-    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2004-kube-v1-25-2 \
+    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2004-kube-v1-26-2 \
     IBMVPC_PROFILE=bx2-4x16 \
     IBMVPC_SSHKEY_NAME=capi-vpc-key \
-    clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.19.9 \
+    clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.26.2 \
     --target-namespace default \
     --control-plane-machine-count=1 \
     --worker-machine-count=2 | kubectl apply -f -
@@ -23,13 +23,13 @@ following the steps below.
 
     Output:
     ```console
-    cluster.cluster.x-k8s.io/ibm-vpc-5 created
-    ibmvpccluster.infrastructure.cluster.x-k8s.io/ibm-vpc-5 created
-    kubeadmcontrolplane.controlplane.cluster.x-k8s.io/ibm-vpc-5-control-plane created
-    ibmvpcmachinetemplate.infrastructure.cluster.x-k8s.io/ibm-vpc-5-control-plane created
-    machinedeployment.cluster.x-k8s.io/ibm-vpc-5-md-0 created
-    ibmvpcmachinetemplate.infrastructure.cluster.x-k8s.io/ibm-vpc-5-md-0 created
-    kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-vpc-5-md-0 created
+    cluster.cluster.x-k8s.io/ibm-vpc-0 created
+    ibmvpccluster.infrastructure.cluster.x-k8s.io/ibm-vpc-0 created
+    kubeadmcontrolplane.controlplane.cluster.x-k8s.io/ibm-vpc-0-control-plane created
+    ibmvpcmachinetemplate.infrastructure.cluster.x-k8s.io/ibm-vpc-0-control-plane created
+    machinedeployment.cluster.x-k8s.io/ibm-vpc-0-md-0 created
+    ibmvpcmachinetemplate.infrastructure.cluster.x-k8s.io/ibm-vpc-0-md-0 created
+    kubeadmconfigtemplate.bootstrap.cluster.x-k8s.io/ibm-vpc-0-md-0 created
     ```
 
     **Note:** Refer below for more detailed information on VPC variables.
@@ -53,15 +53,15 @@ following the steps below.
     ```console
     ~ kubectl get kubeadmcontrolplane
     NAME                       INITIALIZED   API SERVER AVAILABLE   VERSION   REPLICAS   READY   UPDATED   UNAVAILABLE
-    ibm-vpc-0-control-plane    true          true                   v1.19.9   1          1       1
+    ibm-vpc-0-control-plane    true          true                   v1.26.2   1          1       1
     ```
 
     Machines
     ```console
     ~ kubectl get machines
-    ibm-vpc-0-control-plane-vzz47     ibmvpc://ibm-vpc-0/ibm-vpc-0-control-plane-rg6xv   Running        v1.19.9
-    ibm-vpc-0-md-0-5444cfcbcd-6gg5z   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-dbxb7            Running        v1.19.9
-    ibm-vpc-0-md-0-5444cfcbcd-7kr9x   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-k7blr            Running        v1.19.9
+    ibm-vpc-0-control-plane-vzz47     ibmvpc://ibm-vpc-0/ibm-vpc-0-control-plane-rg6xv   Running        v1.26.2
+    ibm-vpc-0-md-0-5444cfcbcd-6gg5z   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-dbxb7            Running        v1.26.2
+    ibm-vpc-0-md-0-5444cfcbcd-7kr9x   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-k7blr            Running        v1.26.2
     ```
 
 3. Deploy Container Network Interface (CNI)
@@ -78,7 +78,7 @@ following the steps below.
     ```console
     ~ kubectl get nodes
     NAME                             STATUS   ROLES    AGE   VERSION
-    ibm-vpc-0-control-plane-rg6xv    Ready    master   41h   v1.18.15
-    ibm-vpc-0-md-0-4dc5c             Ready    <none>   41h   v1.18.15
-    ibm-vpc-0-md-0-dbxb7             Ready    <none>   20h   v1.18.15
+    ibm-vpc-0-control-plane-rg6xv    Ready    master   41h   v1.26.2
+    ibm-vpc-0-md-0-4dc5c             Ready    <none>   41h   v1.26.2
+    ibm-vpc-0-md-0-dbxb7             Ready    <none>   20h   v1.26.2
     ```

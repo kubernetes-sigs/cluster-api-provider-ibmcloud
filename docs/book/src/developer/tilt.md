@@ -47,7 +47,7 @@ kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
 ```
 
-Add following extra_args to log Power VS REST API Requests/Responses
+Add following extra_args to log PowerVS REST API Requests/Responses
 
 ```yaml
 extra_args:
@@ -55,9 +55,9 @@ extra_args:
     - '-v=5'
 ```
 
-### 1.  Configuration to deploy Power VS workload cluster with external cloud controller manager
+### 1.  Configuration to deploy PowerVS workload cluster with external cloud controller manager
 
-To deploy workload cluster with [Power VS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage, Set `POWERVS_PROVIDER_ID_FORMAT` to `v2` and enable cluster resourceset feature gate under kustomize_substitutions.
+To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage, Set `POWERVS_PROVIDER_ID_FORMAT` to `v2` and enable cluster resourceset feature gate under kustomize_substitutions.
 Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` variable under kustomize_substitutions.
 
 ```yaml
