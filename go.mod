@@ -5,7 +5,7 @@ go 1.18
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.9
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.2.2
+	github.com/IBM-Cloud/power-go-client v1.2.3
 	github.com/IBM/go-sdk-core/v5 v5.13.1
 	github.com/IBM/platform-services-go-sdk v0.36.0
 	github.com/IBM/vpc-go-sdk v0.36.0
