@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.18
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.9
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.2.12
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.2.3
@@ -24,8 +24,8 @@ require (
 	k8s.io/client-go v0.24.4
 	k8s.io/klog/v2 v2.60.1
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9
-	sigs.k8s.io/cluster-api v1.2.9
-	sigs.k8s.io/cluster-api/test v1.2.9
+	sigs.k8s.io/cluster-api v1.2.12
+	sigs.k8s.io/cluster-api/test v1.2.12
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
@@ -46,7 +46,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coredns/caddy v1.1.0 // indirect
-	github.com/coredns/corefile-migration v1.0.18 // indirect
+	github.com/coredns/corefile-migration v1.0.20 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
