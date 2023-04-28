@@ -18,10 +18,10 @@ The [Cluster API](https://github.com/kubernetes-sigs/cluster-api) brings declara
 
 Please see our [book](https://cluster-api-ibmcloud.sigs.k8s.io) for in-depth documentation.
 
-## Launching a Kubernetes cluster on IBMCloud
+## Launching a Kubernetes cluster on IBM Cloud
 
-Check out the [Cluster API IBMCloud Quick Start](https://cluster-api-ibmcloud.sigs.k8s.io/getting-started.html) for launching a
-cluster on IBMCloud.
+Check out the [Cluster API IBM Cloud Quick Start](https://cluster-api-ibmcloud.sigs.k8s.io/getting-started.html) for launching a
+cluster on IBM Cloud.
 
 ## Compatibility with Cluster API and Kubernetes Versions
 

@@ -1,9 +1,9 @@
 [book]
-authors = ["The Cluster API Provider IBMCloud Maintainers"]
+authors = ["The Cluster API Provider IBM Cloud Maintainers"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Kubernetes Cluster API Provider IBMCloud"
+title = "Kubernetes Cluster API Provider IBM Cloud"
 
 [output.html]
 curly-quotes = true

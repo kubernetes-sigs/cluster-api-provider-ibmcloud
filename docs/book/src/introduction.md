@@ -58,7 +58,7 @@ This repository uses the Kubernetes bots.  See a full list of the commands [here
 
 ### Join us
 
-The community holds a weekly meeting every Friday at 09:00 (IST) / 03:30 (UTC) on [Zoom](https://zoom.us/j/9392903494). Subscribe to the [SIG Cluster Lifecycle](https://groups.google.com/g/kubernetes-sig-cluster-lifecycle) Google Group for access to documents and calendars
+The community holds a bi-weekly meeting every Friday at 09:00 (IST) / 03:30 (UTC) on [Zoom](https://zoom.us/j/9392903494). Subscribe to the [SIG Cluster Lifecycle](https://groups.google.com/g/kubernetes-sig-cluster-lifecycle) Google Group for access to documents and calendars
 
 
 ### Other ways to communicate with the contributors

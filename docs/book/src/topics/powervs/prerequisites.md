@@ -9,8 +9,7 @@
 4. An appropriately configured [Go development environment](https://golang.org/doc/install)
 5. Install `clusterctl` tool (see [here](https://cluster-api.sigs.k8s.io/user/quick-start.html#install-clusterctl))
 6. Install `pvsadm` tool (see [here](https://github.com/ppc64le-cloud/pvsadm#installation))
-6. Install `ibmcloud` tool (see [here](https://github.com/IBM-Cloud/ibm-cloud-cli-release#downloads))
-
+7. Install `capibmadm` tool (see [here](../capibmadm/index.md#install-capibmadm))
 
 ## **PowerVS Prerequisites**
 
@@ -37,22 +36,14 @@ A public network is required for your kubernetes cluster. Perform the following 
 1. Create Public Network
 
     ```console
-    ~ ibmcloud pi network-create-public capi-test --dns-servers "8.8.8.8 9.9.9.9"
+    ~ export IBMCLOUD_API_KEY=<API_KEY>
+    ~ capibmadm powervs network create --name capi-test --service-instance-id 3229a94c-af54-4212-bf60-6202b6fd0a07 --zone osa21
     ```
 
     Output:
     ```console
-    Network capi-test created.
-                        
-    ID                fea9ac26-693d-402b-b22f-aa3d90ed0a31   
-    Name              capi-test  
-    Type              pub-vlan   
-    VLAN              2008   
-    CIDR Block        192.168.150.96/29   
-    IP Range          [192.168.150.98 192.168.150.102]   
-    Public IP Range   [158.175.161.98 158.175.161.102]   
-    Gateway           192.168.150.97   
-    DNS               8.8.8.8, 9.9.9.9
+    Creating PowerVS network service-instance-id="3229a94c-af54-4212-bf60-6202b6fd0a07" zone="osa21"
+    Successfully created a network networkID="3ee5a1ca-19b4-48c7-a89d-44babdd18703"
     ```
 
 ## Import the machine boot image: 

@@ -17,12 +17,12 @@
   IBMVPC_RESOURCEGROUP_NAME="ibm-hypershift-dev" \
   IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
   IBMVPC_NAME=ibm-vpc-0 \
-  IBMVPC_IMAGE_ID=r134-ea84bbec-7986-4ff5-8489-d9ec34611dd4 \
+  IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2004-kube-v1-26-2 \
   IBMVPC_PROFILE=bx2-4x16 \
-  IBMVPC_SSHKEY_ID=r134-2a82b725-e570-43d3-8b23-9539e8641944 \
+  IBMVPC_SSHKEY_NAME=capi-vpc-key \
   IBMACCOUNT_ID="ibm-accountid" \
   BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
-  clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.25.2 \
+  clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.26.2 \
   --target-namespace default \
   --control-plane-machine-count=1 \
   --worker-machine-count=2 \
