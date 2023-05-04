@@ -60,7 +60,7 @@ RELEASE_DIR := out
 TOOLCHAIN_IMAGE := toolchain
 
 TAG ?= dev
-ARCH ?= amd64
+ARCH ?= $(shell go env GOARCH)
 ALL_ARCH ?= amd64 ppc64le arm64
 PULL_POLICY ?= Always
 
@@ -392,7 +392,7 @@ image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
-	docker build --build-arg ARCH=$(ARCH) --build-arg LDFLAGS="$(LDFLAGS)" . -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker buildx build --platform linux/$(ARCH) --output=type=docker --pull --build-arg LDFLAGS="$(LDFLAGS)" -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG) .
 
 .PHONY: docker-push
 docker-push: ## Push the docker image
@@ -405,7 +405,7 @@ docker-pull-prerequisites:
 
 .PHONY: e2e-image
 e2e-image: docker-pull-prerequisites
-	docker build --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
+	docker buildx build --platform linux/$(ARCH) --output=type=docker --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
 
@@ -431,21 +431,18 @@ docker-build-%:
 
 .PHONY: docker-push-all ## Push all the architecture docker images
 docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))
-	$(MAKE) docker-push-core-manifest
+	$(MAKE) docker-push-core-image
 
 docker-push-%:
 	$(MAKE) ARCH=$* docker-push
 
-.PHONY: docker-push-core-manifest
-docker-push-core-manifest: ## Push the multiarch manifest for the core docker images
-	## Minimum docker version 18.06.0 is required for creating and pushing manifest images.
-	$(MAKE) docker-push-manifest CONTROLLER_IMG=$(CORE_CONTROLLER_IMG) MANIFEST_FILE=$(CORE_MANIFEST_FILE)
-
-.PHONY: docker-push-manifest
-docker-push-manifest:
-	docker manifest create --amend $(CONTROLLER_IMG):$(TAG) $(shell echo $(ALL_ARCH) | sed -e "s~[^ ]*~$(CONTROLLER_IMG)\-&:$(TAG)~g")
-	@for arch in $(ALL_ARCH); do docker manifest annotate --arch $${arch} ${CONTROLLER_IMG}:${TAG} ${CONTROLLER_IMG}-$${arch}:${TAG}; done
-	docker manifest push --purge ${CONTROLLER_IMG}:${TAG}
+.PHONY: docker-push-core-image
+docker-push-core-image: ## Push the multiarch core docker image
+	docker buildx inspect capibm &>/dev/null || docker buildx create --name capibm
+	docker buildx build --builder capibm --platform linux/amd64,linux/arm64,linux/ppc64le --output=type=registry \
+		--pull --build-arg ldflags="$(LDFLAGS)" \
+		-t $(CORE_CONTROLLER_IMG):$(TAG) .
+	docker buildx rm capibm
 
 ## --------------------------------------
 ## Lint / Verify
