@@ -15,4 +15,5 @@
     - [delete](/topics/capibmadm/powervs/port.html#2-capibmadm-powervs-port-delete)
     - [list](/topics/capibmadm/powervs/port.html#3-capibmadm-powervs-port-list)
 - [image](./image.md)
-    - [list](/topics/capibmadm/powervs/image.html#1-capibmadm-powervs-image-list)
+    - [import](/topics/capibmadm/powervs/image.html#1-capibmadm-powervs-image-import)
+    - [list](/topics/capibmadm/powervs/image.html#2-capibmadm-powervs-image-list)

@@ -32,6 +32,7 @@ func Commands() *cobra.Command {
 	options.AddCommonFlags(cmd)
 
 	cmd.AddCommand(ListCommand())
+	cmd.AddCommand(ImportCommand())
 
 	return cmd
 }
