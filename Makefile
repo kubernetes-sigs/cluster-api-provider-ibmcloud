@@ -390,8 +390,12 @@ image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
 ## Docker
 ## --------------------------------------
 
+.PHONY: ensure-buildx
+ensure-buildx:
+	./hack/init-buildx.sh
+
 .PHONY: docker-build
-docker-build: docker-pull-prerequisites ## Build the docker image for controller-manager
+docker-build: docker-pull-prerequisites ensure-buildx ## Build the docker image for controller-manager
 	docker buildx build --platform linux/$(ARCH) --output=type=docker --pull --build-arg LDFLAGS="$(LDFLAGS)" -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG) .
 
 .PHONY: docker-push
@@ -404,7 +408,7 @@ docker-pull-prerequisites:
 	docker pull gcr.io/distroless/static:latest
 
 .PHONY: e2e-image
-e2e-image: docker-pull-prerequisites
+e2e-image: docker-pull-prerequisites ensure-buildx
 	docker buildx build --platform linux/$(ARCH) --output=type=docker --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
@@ -437,12 +441,10 @@ docker-push-%:
 	$(MAKE) ARCH=$* docker-push
 
 .PHONY: docker-push-core-image
-docker-push-core-image: ## Push the multiarch core docker image
-	docker buildx inspect capibm &>/dev/null || docker buildx create --name capibm
+docker-push-core-image: ensure-buildx ## Push the multiarch core docker image
 	docker buildx build --builder capibm --platform linux/amd64,linux/arm64,linux/ppc64le --output=type=registry \
 		--pull --build-arg ldflags="$(LDFLAGS)" \
 		-t $(CORE_CONTROLLER_IMG):$(TAG) .
-	docker buildx rm capibm
 
 ## --------------------------------------
 ## Lint / Verify
