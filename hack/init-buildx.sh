@@ -24,6 +24,12 @@ set -o pipefail
 
 export DOCKER_CLI_EXPERIMENTAL=enabled
 
+echo "Dump Docker Info"
+docker info
+
+echo "Docker version"
+docker version
+
 if ! docker buildx 2>&1 >/dev/null; then
   echo "buildx not available. Docker 19.03 or higher is required with experimental features enabled or buildx is not installed."
   exit 1
