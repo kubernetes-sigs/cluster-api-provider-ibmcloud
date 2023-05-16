@@ -47,5 +47,5 @@ if [ "$(uname)" == 'Linux' ]; then
 fi
 
 # Ensure we use a builder that can leverage it (the default on linux will not)
-docker buildx rm capibm || true
+docker buildx rm capibm >/dev/null 2>&1 || true
 docker buildx create --use --name=capibm
