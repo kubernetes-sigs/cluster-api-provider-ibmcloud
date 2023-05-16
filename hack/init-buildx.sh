@@ -22,36 +22,28 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-export DOCKER_CLI_EXPERIMENTAL=enabled
-
-echo "Dump Docker Info"
-docker info
-
-echo "Docker version"
-docker version
-
 if ! docker buildx 2>&1 >/dev/null; then
-  echo "buildx not available. Docker 19.03 or higher is required with experimental features enabled or buildx is not installed."
+  echo "buildx not available. Ensure buildx is installed and Docker version >= 19.03 is installed with experimental features enabled."
   exit 1
-fi
-
-# Ensure qemu is in binfmt_misc
-# Docker desktop already has these in versions recent enough to have buildx
-# We only need to do this setup on linux hosts
-if [ "$(uname)" == 'Linux' ]; then
-  docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 fi
 
 # We can skip setup if the current builder already has multi-arch
 # AND if it isn't the docker driver, which doesn't work
 current_builder="$(docker buildx inspect)"
 # linux/amd64, linux/arm64, linux/riscv64, linux/ppc64le, linux/s390x, linux/386, linux/arm/v7, linux/arm/v6
-if ! grep -q "^Driver: docker$"  <<<"${current_builder}" && \
+if ! grep -q "^Driver: docker$" <<<"${current_builder}" && \
      grep -q "linux/amd64" <<<"${current_builder}" && \
-     grep -q "linux/arm"   <<<"${current_builder}" && \
      grep -q "linux/arm64" <<<"${current_builder}" && \
-     grep -q "linux/s390x" <<<"${current_builder}"; then
+     grep -q "linux/ppc64le" <<<"${current_builder}"; then
   exit 0
+fi
+
+# Ensure qemu is in binfmt_misc
+# Docker desktop already has these in versions recent enough to have buildx
+# We only need to do this setup on linux hosts
+if [ "$(uname)" == 'Linux' ]; then
+  # NOTE: this is pinned to a digest for a reason!
+  docker run --rm --privileged tonistiigi/binfmt:qemu-v7.0.0-28@sha256:66e11bea77a5ea9d6f0fe79b57cd2b189b5d15b93a2bdb925be22949232e4e55 --install all
 fi
 
 # Ensure we use a builder that can leverage it (the default on linux will not)

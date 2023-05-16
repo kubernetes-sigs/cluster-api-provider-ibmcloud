@@ -62,6 +62,7 @@ TOOLCHAIN_IMAGE := toolchain
 TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
 ALL_ARCH ?= amd64 ppc64le arm64
+BUILDX_PLATFORMS ?= linux/amd64,linux/arm64,linux/s390x
 PULL_POLICY ?= Always
 
 # Set build time variables including version details
@@ -442,7 +443,7 @@ docker-push-%:
 
 .PHONY: docker-push-core-image
 docker-push-core-image: ensure-buildx ## Push the multiarch core docker image
-	docker buildx build --builder capibm --platform linux/amd64,linux/arm64,linux/ppc64le --output=type=registry \
+	docker buildx build --builder capibm --platform $(BUILDX_PLATFORMS) --output=type=registry \
 		--pull --build-arg ldflags="$(LDFLAGS)" \
 		-t $(CORE_CONTROLLER_IMG):$(TAG) .
 

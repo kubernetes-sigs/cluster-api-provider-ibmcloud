@@ -10,6 +10,7 @@ steps:
       - TAG=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
       - DOCKER_BUILDKIT=1
+      - HOME=/root
     args:
       - release-staging
 substitutions:
