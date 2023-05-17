@@ -55,6 +55,7 @@ RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
 PULL_BASE_REF ?= $(RELEASE_TAG) # PULL_BASE_REF will be provided by Prow
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 RELEASE_DIR := out
+OUTPUT_TYPE ?= type=registry
 
 # image name used to build the cmd/capibmadm
 TOOLCHAIN_IMAGE := toolchain
@@ -301,7 +302,7 @@ release-manifests: ## Build the manifests to publish with a release
 .PHONY: release-staging
 release-staging: ## Build and push container images to the staging bucket
 	$(MAKE) docker-build-all
-	$(MAKE) docker-push-all
+	$(MAKE) docker-build-core-image
 	$(MAKE) release-alias-tag
 	$(MAKE) staging-manifests
 	$(MAKE) release-templates
@@ -397,11 +398,7 @@ ensure-buildx:
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ensure-buildx ## Build the docker image for controller-manager
-	docker buildx build --platform linux/$(ARCH) --output=type=docker --pull --build-arg LDFLAGS="$(LDFLAGS)" -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG) .
-
-.PHONY: docker-push
-docker-push: ## Push the docker image
-	docker push $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG)
+	docker buildx build --platform linux/$(ARCH) --output=$(OUTPUT_TYPE) --pull --build-arg LDFLAGS="$(LDFLAGS)" -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG) .
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
@@ -410,7 +407,7 @@ docker-pull-prerequisites:
 
 .PHONY: e2e-image
 e2e-image: docker-pull-prerequisites ensure-buildx
-	docker buildx build --platform linux/$(ARCH) --output=type=docker --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
+	docker buildx build --platform linux/$(ARCH) --load --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
 
@@ -434,16 +431,9 @@ docker-build-all: $(addprefix docker-build-,$(ALL_ARCH))
 docker-build-%:
 	$(MAKE) ARCH=$* docker-build
 
-.PHONY: docker-push-all ## Push all the architecture docker images
-docker-push-all: $(addprefix docker-push-,$(ALL_ARCH))
-	$(MAKE) docker-push-core-image
-
-docker-push-%:
-	$(MAKE) ARCH=$* docker-push
-
-.PHONY: docker-push-core-image
-docker-push-core-image: ensure-buildx ## Push the multiarch core docker image
-	docker buildx build --builder capibm --platform $(BUILDX_PLATFORMS) --output=type=registry \
+.PHONY: docker-build-core-image
+docker-build-core-image: ensure-buildx ## Build the multiarch core docker image
+	docker buildx build --builder capibm --platform $(BUILDX_PLATFORMS) --output=$(OUTPUT_TYPE) \
 		--pull --build-arg ldflags="$(LDFLAGS)" \
 		-t $(CORE_CONTROLLER_IMG):$(TAG) .
 
