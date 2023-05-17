@@ -30,79 +30,173 @@ Here provider can be either vpc or powervs
   * --service-instance-id: Power VS service instance id.
 
 ### 1. capibmadm powervs image list
+
+**Arguments:**
+
+* --zone: PowerVS service instance zone.
   
 ### 2. capibmadm powervs image import
 
-* **Arguments:**
-  * _Similar to [pvsadm image import](https://github.com/ppc64le-cloud/pvsadm/blob/824f87baebd430b26ed8d3ec517077a9d5b5824b/cmd/image/import/import.go#L63) command_
+**Arguments:**
 
+* --bucket: Cloud Object Storage bucket name.
+
+* --bucket-region: Cloud Object Storage bucket location.
+
+* --object: Cloud Object Storage object name.
+
+* --accesskey: Cloud Object Storage HMAC access key.
+
+* --secretkey: Cloud Object Storage HMAC secret key.
+
+* --name: Name to PowerVS imported image.
+
+* --public-bucket: Cloud Object Storage public bucket.
+
+* --watch-timeout: watch timeout.
+
+* --pvs-storagetype: PowerVS Storage type, accepted values are [tier1, tier3]..
 
 ### 3. capibmadm powervs network create <network_name>
 
-* **Arguments:**
-  * --dns-servers: Comma separated list of DNS Servers to use for this network.
+**Arguments:**
 
+* --cidr: The network CIDR. Required for private network type.
+
+* --name: The name of the network.
+
+* --public: Public (pub-vlan) network type (default true)
+
+* --private: Private (vlan) network type (default false)
+
+* --gateway: The gateway ip address.
+
+* --dns-servers: Comma separated list of DNS Servers to use for this network, Defaults to 8.8.8.8, 9.9.9.9.
+
+* --ip-ranges: Comma separated IP Address Ranges.
+
+* --jumbo: Enable MTU Jumbo Network.
 
 ### 4. capibmadm powervs network delete <network_name>
 
-* **Arguments:**
-  * force: Boolean flag to force delete network by deleting all the open ports attached to network.
+**Arguments:**
+
+* --zone: PowerVS service instance zone.
+
+* --network: Network ID or Name.
 
 ### 5. capibmadm powervs network list
 
+**Arguments:**
+
+* --zone: PowerVS service instance zone.
 
 ### 6. capibmadm powervs port create
 
-* **Arguments:**
-  * _Similar to [pvsadm create port](https://github.com/ppc64le-cloud/pvsadm/blob/824f87baebd430b26ed8d3ec517077a9d5b5824b/cmd/create/port/port.go#L34) command_
+**Arguments:**
 
+* --zone: PowerVS service instance zone.
+
+* --network: Network ID/ Network Name.
+
+* --description: Description of the port.
+
+* --ip-address: The requested IP address of this port
 
 ### 7. capibmadm powervs port delete
 
-* **Arguments:**
-  * _Similar to [pvsadm delete port](https://github.com/ppc64le-cloud/pvsadm/blob/824f87baebd430b26ed8d3ec517077a9d5b5824b/cmd/delete/port/port.go#L33) command_
+**Arguments:**
 
+* --zone: PowerVS zone.
+
+* --port-id: ID of network port.
+
+* --network: Network ID or Name.
 
 ### 8. capibmadm powervs port list
 
-* **Arguments:**
-  * _Similar to [pvsadm get port](https://github.com/ppc64le-cloud/pvsadm/blob/824f87baebd430b26ed8d3ec517077a9d5b5824b/cmd/get/ports/ports.go#L33) command_
+**Arguments:**
+
+* --zone: PowerVS zone.
+
+* --network: Network ID or Name.
 
 ### 9. capibmadm powervs key create
 
-* **Arguments:**
-    * _Similar to ibmcloud pi key-create_
+**Arguments:**
 
-### 10. capibmadm powervs key list
+* --zone: PowerVS zone.
 
-* **Arguments:**
-  * _Similar to ibmcloud pi keys_
+* --name: The name of the SSH key.
+
+Either of the arguments need to be provided:
+
+* --key: SSH RSA key string within a double quotation marks. For example, “ssh-rsa AAA... “.
+
+* --key-path: The absolute path to the SSH key file.
+
+### 10. capibmadm powervs key delete
+
+**Arguments:**
+
+* --zone: PowerVS zone.
+
+* --name: The name of the SSH key.
+
+### 11. capibmadm powervs key list
+
+**Arguments:**
+
+* --zone: PowerVS zone.
 
 ## VPC Commands
+
 * **Environment Variables:**
   * IBMCLOUD_API_KEY: IBM Cloud api key of user.
 
+* **Arguments:**
+  * --region: VPC region.
+
 ### 1. capibmadm vpc key create
 
-* **Arguments:**
-  * _Similar to ibmcloud is key-create_
+**Arguments:**
 
-### 2. capibmadm vpc key list
+* --name: The name of the key.
 
-* **Arguments:**
-  * _Similar to ibmcloud is keys_
+* --resource-group-name: VPC resource group name.
+
+* --region: VPC region.
+
+Either of the arguments need to be provided:
+
+* --public-key: Public key string within a double quotation marks. For example, “ssh-rsa AAA... “.
+
+* --key-path: The absolute path to the SSH key file.
+
+### 2. capibmadm vpc key delete
+
+**Arguments:**
+
+* --name: The name of the key to delete.
+
+### 3. capibmadm vpc key list
+
+**Arguments:**
+
+* --resource-group-name: IBM Cloud resource group name.
 
 
 ### 3. capibmadm vpc image list
 
-* **Arguments:**
-  * resource-group-name: Resource group name to list images
-  * region: Region name to list images
+**Arguments:**
+
+* --name: The name of the key.
 
 ### 4. capibmadm vpc image import
 
-* **Arguments:**
-  * _Similar to ibmcloud is image-create_
+**Arguments:**
+
+* --resource-group-name: IBM Cloud resource group name.
 
 
 ##  Directory structure
@@ -115,12 +209,12 @@ Here provider can be either vpc or powervs
               |   |   |-- image
               |   |   |-- network
               |   |   |-- port
-              |   |   |-- ssh
+              |   |   |-- key
               |   |-- vpc
               |   |   |-- image
-              |   |   |-- ssh
+              |   |   |-- key
               |   |-- root.go
               |-- options
-              |-- utility
+              |-- utils
               |-- main.go
 ```
