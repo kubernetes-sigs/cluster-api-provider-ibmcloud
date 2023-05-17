@@ -18,8 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+OUTPUT_TYPE=${OUTPUT_TYPE:-"type=docker"}
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 # shellcheck source=../hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
 
-cd "${REPO_ROOT}" && make docker-build
+cd "${REPO_ROOT}" && make docker-build OUTPUT_TYPE=${OUTPUT_TYPE}
