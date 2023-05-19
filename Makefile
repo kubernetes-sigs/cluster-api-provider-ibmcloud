@@ -63,7 +63,7 @@ TOOLCHAIN_IMAGE := toolchain
 TAG ?= dev
 ARCH ?= $(shell go env GOARCH)
 ALL_ARCH ?= amd64 ppc64le arm64
-BUILDX_PLATFORMS ?= linux/amd64,linux/arm64,linux/s390x
+BUILDX_PLATFORMS ?= linux/amd64,linux/arm64,linux/ppc64le
 PULL_POLICY ?= Always
 
 # Set build time variables including version details
