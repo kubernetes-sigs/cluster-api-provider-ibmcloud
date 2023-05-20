@@ -33,7 +33,7 @@ providers:
   - name: ibmcloud
     type: InfrastructureProvider
     versions:
-    - name: v0.5.0
+    - name: v0.6.0
       value: "${PWD}/config/default"
       files:
       - sourcePath: "${PWD}/metadata.yaml"
