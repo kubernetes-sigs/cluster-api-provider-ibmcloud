@@ -13,7 +13,7 @@
 | Package | Used by | GitHub |
 | --- | ----------- | ------ |
 | IBM Cloud CLI | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh) | [ibm-cloud-cli-release](https://github.com/IBM-Cloud/ibm-cloud-cli-release.git) |
-| pvsadm | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh) | [pvsadm](https://github.com/ppc64le-cloud/pvsadm.git) |
+| capibmadm | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh) | [capibmadm](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/tree/main/cmd/capibmadm) |
 
 
 [go.mod1]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/go.mod
