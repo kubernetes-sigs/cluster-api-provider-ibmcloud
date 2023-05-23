@@ -45,6 +45,7 @@ checkout_account(){
         echo "export BOSKOS_REGION=$(echo ${output} | jq -r '.userdata["region"]')"
         if [[ ${resource_type} == "powervs-service" ]]; then
             echo "export BOSKOS_RESOURCE_ID=$(echo ${output} | jq -r '.userdata["service-instance-id"]')"
+             echo "export BOSKOS_ZONE=$(echo ${output} | jq -r '.userdata["zone"]')"
         fi
     else
         echo "Got invalid response- ${status_code}"

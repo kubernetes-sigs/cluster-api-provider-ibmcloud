@@ -38,8 +38,8 @@ mkdir -p "${ARTIFACTS}/logs/"
 
 ARCH=$(uname -m)
 OS=$(uname -s)
-IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.14.0"}
-PVSADM_VERSION=${PVSADM_VERSION:-"v0.1.9"}
+IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.16.0"}
+CAPIBMADM_VERSION=${CAPIBMADM_VERSION:-"0.5.0"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 REGION=${REGION:-"jp-osa"}
 
@@ -53,11 +53,12 @@ cleanup(){
 }
 
 # Installing binaries from github releases
-install_pvsadm(){
+install_capibmadm(){
     platform="$(echo ${OS} | tr '[:upper:]' '[:lower:]')-${ARCH}"
 
-    curl -fsL https://github.com/ppc64le-cloud/pvsadm/releases/download/${PVSADM_VERSION}/pvsadm-${platform} -o pvsadm
-    chmod +x ./pvsadm
+    curl -fsL  https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v${CAPIBMADM_VERSION}/capibmadm-${platform} -o capibmadm
+    chmod +x ./capibmadm
+    install ./capibmadm /usr/local/bin
 }
 
 install_ibmcloud_cli(){
@@ -86,22 +87,26 @@ create_powervs_network_instance(){
     ibmcloud pi service-target ${CRN}
 
     # Create the network instance
-    ibmcloud pi network-create-public ${IBMPOWERVS_NETWORK_NAME} --dns-servers "8.8.8.8 9.9.9.9"
+    capibmadm powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
 
 }
 
 init_network_powervs(){
-    install_pvsadm
+    install_capibmadm
     create_powervs_network_instance
 
     # Creating ports using the pvsadm tool
-    ./pvsadm create port --description "capi-port-e2e" --network ${IBMPOWERVS_NETWORK_NAME} --instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+    capibmadm powervs port create --network ${IBMPOWERVS_NETWORK_NAME} --description "capi-e2e" --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
 
     # Get and assign the IPs to the required variables
-    NEW_PORT=$(./pvsadm get ports --network ${IBMPOWERVS_NETWORK_NAME} --instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} | sed -n '4 p')
-    PORT_ID="$(echo ${NEW_PORT} | cut -d'|' -f6 | xargs )"
-    export IBMPOWERVS_VIP="$(echo ${NEW_PORT} | cut -d'|' -f4 | xargs )"
-    export IBMPOWERVS_VIP_EXTERNAL="$(echo ${NEW_PORT} | cut -d'|' -f3 | xargs )"
+    NEW_PORT=$(capibmadm powervs port list --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE} --network ${IBMPOWERVS_NETWORK_NAME} -o json)
+    no_of_ports=$(echo ${NEW_PORT} | jq '.items | length')
+    if [[ ${no_of_ports} != 1 ]]; then
+        echo "Failed to get the required number or ports, got - ${no_of_ports}"
+        exit 1
+    fi
+    export IBMPOWERVS_VIP="$(echo ${NEW_PORT} | jq -r '.items[0].ipAddress')"
+    export IBMPOWERVS_VIP_EXTERNAL="$(echo ${NEW_PORT} | jq -r '.items[0].externalIP')"
     export IBMPOWERVS_VIP_CIDR=${IBMPOWERVS_VIP_CIDR:="29"}
 }
 
@@ -111,6 +116,7 @@ prerequisites_powervs(){
     export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams8-1-25-1"}
     export IBMPOWERVS_SERVICE_INSTANCE_ID=${BOSKOS_RESOURCE_ID:-"d53da3bf-1f4a-42fa-9735-acf16b1a05cd"}
     export IBMPOWERVS_NETWORK_NAME="capi-net-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
+    export ZONE=${BOSKOS_ZONE:-"osa21"}
 }
 
 prerequisites_vpc(){
@@ -164,9 +170,10 @@ main(){
     fi
 
     # Set common variables
-    export LOGLEVEL=5
-    # Setting controller loglevel to allow debug logs from the VPC/PowerVS client
     export DOCKER_BUILDKIT=1
+    # Setting controller loglevel to allow debug logs from the VPC/PowerVS client
+    export LOGLEVEL=5
+   
 
 
     if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "powervs-md-remediation" ]]; then
