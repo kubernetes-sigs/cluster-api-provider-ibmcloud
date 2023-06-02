@@ -28,9 +28,11 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 type keyCreateOptions struct {
@@ -91,7 +93,7 @@ func createKey(ctx context.Context, keyCreateOption keyCreateOptions) error {
 		return err
 	}
 
-	accountID, err := utils.GetAccountID(ctx)
+	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}

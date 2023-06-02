@@ -28,9 +28,10 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 type networkCreateOptions struct {
@@ -83,7 +84,7 @@ func createNetwork(ctx context.Context, netCreateOption networkCreateOptions) er
 	log := logf.Log
 	log.Info("Creating PowerVS network", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
 
-	accountID, err := utils.GetAccountID(ctx)
+	accountID, err := utils.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}

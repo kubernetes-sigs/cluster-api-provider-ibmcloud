@@ -31,9 +31,10 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 type imageImportOptions struct {
@@ -106,7 +107,7 @@ func importimage(ctx context.Context, imageImportOption imageImportOptions) erro
 	log := logf.Log
 	log.Info("Importing PowerVS images: ", "service-instance-id", options.GlobalOptions.ServiceInstanceID)
 
-	accountID, err := utils.GetAccountID(ctx)
+	accountID, err := utils.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}

@@ -28,10 +28,12 @@ import (
 
 	logf "sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 // ListCommand powervs image list command.
@@ -55,7 +57,7 @@ func listimage(ctx context.Context) error {
 	log := logf.Log
 	log.Info("Listing PowerVS images", "service-instance-id", options.GlobalOptions.ServiceInstanceID)
 
-	accountID, err := utils.GetAccountID(ctx)
+	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}
