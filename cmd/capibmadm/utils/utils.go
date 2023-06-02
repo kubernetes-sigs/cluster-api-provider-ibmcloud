@@ -23,31 +23,10 @@ import (
 
 	"github.com/go-openapi/strfmt"
 
-	"github.com/IBM/platform-services-go-sdk/iamidentityv1"
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/platformservices"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 )
-
-// GetAccountID returns IBM cloud account ID of API key used.
-func GetAccountID(ctx context.Context) (string, error) {
-	iamv1, err := platformservices.NewIAMIdentityClient()
-	if err != nil {
-		return "", err
-	}
-
-	apiKeyDetailsOpt := iamidentityv1.GetAPIKeysDetailsOptions{IamAPIKey: &options.GlobalOptions.IBMCloudAPIKey}
-	apiKey, _, err := iamv1.GetAPIKeysDetailsWithContext(ctx, &apiKeyDetailsOpt)
-	if err != nil {
-		return "", err
-	}
-	if apiKey == nil {
-		return "", fmt.Errorf("could not retrieve account id")
-	}
-
-	return *apiKey.AccountID, nil
-}
 
 // GetResourceGroupID returns ID of given resource group name.
 func GetResourceGroupID(ctx context.Context, resourceGroup string, accountID string) (string, error) {

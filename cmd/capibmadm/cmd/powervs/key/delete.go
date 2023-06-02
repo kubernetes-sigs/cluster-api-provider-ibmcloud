@@ -25,9 +25,10 @@ import (
 
 	"sigs.k8s.io/cluster-api/cmd/clusterctl/log"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 // DeleteSSHKeyCommand - child command of 'key' to delete an SSH key.
@@ -55,7 +56,7 @@ func deleteSSHKey(ctx context.Context, keyName string) error {
 	logger := log.Log
 	logger.Info("Deleting SSH key...")
 
-	accountID, err := utils.GetAccountID(ctx)
+	accountID, err := utils.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}

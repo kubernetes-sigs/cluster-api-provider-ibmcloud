@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pagingUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 // ListCommand vpc key list command.
@@ -79,7 +79,7 @@ func listKeys(ctx context.Context) error {
 		return true, "", nil
 	}
 
-	if err = pagingUtil.PagingHelper(f); err != nil {
+	if err = pkgUtils.PagingHelper(f); err != nil {
 		return err
 	}
 

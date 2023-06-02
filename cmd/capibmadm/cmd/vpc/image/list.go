@@ -25,11 +25,12 @@ import (
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pagingUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
 // ListCommand vpc image list command.
@@ -58,7 +59,7 @@ func listImages(ctx context.Context, resourceGroupName string) error {
 		return err
 	}
 
-	accountID, err := utils.GetAccountID(ctx)
+	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ func listImages(ctx context.Context, resourceGroupName string) error {
 		return true, "", nil
 	}
 
-	if err = pagingUtil.PagingHelper(f); err != nil {
+	if err = pkgUtils.PagingHelper(f); err != nil {
 		return err
 	}
 
