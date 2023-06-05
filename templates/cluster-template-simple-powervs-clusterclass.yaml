@@ -69,7 +69,7 @@ spec:
     spec:
       controlPlaneEndpoint:
         host: "${IBMPOWERVS_VIP_EXTERNAL}"
-        port: 6443
+        port: ${API_SERVER_PORT:=6443}
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
       serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
@@ -89,7 +89,7 @@ spec:
               - "${IBMPOWERVS_VIP_EXTERNAL}"
             extraArgs:
               cloud-provider: external
-          controlPlaneEndpoint: ${IBMPOWERVS_VIP}:6443
+          controlPlaneEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
           controllerManager:
             extraArgs:
               cloud-provider: external
@@ -110,7 +110,7 @@ spec:
                   - name: vip_arp
                     value: "true"
                   - name: port
-                    value: "6443"
+                    value: "${API_SERVER_PORT:=6443}"
                   - name: vip_interface
                     value: env2
                   - name: vip_cidr
@@ -168,7 +168,7 @@ spec:
         joinConfiguration:
           discovery:
             bootstrapToken:
-              apiServerEndpoint: 192.168.167.85:6443
+              apiServerEndpoint: 192.168.167.85:${API_SERVER_PORT:=6443}
               caCertHashes: []
               token: ""
               unsafeSkipCAVerification: false
@@ -199,7 +199,7 @@ spec:
       joinConfiguration:
         discovery:
           bootstrapToken:
-            apiServerEndpoint: ${IBMPOWERVS_VIP}:6443
+            apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
             caCertHashes: []
             token: ""
             unsafeSkipCAVerification: false
