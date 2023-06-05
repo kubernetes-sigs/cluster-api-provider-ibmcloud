@@ -77,6 +77,11 @@ following the steps below.
     IBMPOWERVS_COMPUTE_PROCTYPE
     ```
 
+    Additional parameters for modifying PowerVS Cluster API server port
+    ```
+    API_SERVER_PORT
+    ```
+
 3. Check the state of the provisioned cluster and machine objects within the local management cluster
 
     Clusters

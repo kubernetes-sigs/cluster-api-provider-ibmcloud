@@ -50,3 +50,8 @@ IBMPOWERVS_COMPUTE_PROCESSORS
 IBMPOWERVS_COMPUTE_SYSTYPE
 IBMPOWERVS_COMPUTE_PROCTYPE
 ```
+
+### Additional parameters for modifying PowerVS Cluster API server port
+```
+API_SERVER_PORT
+```
