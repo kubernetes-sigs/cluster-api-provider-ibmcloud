@@ -29,7 +29,7 @@ source "${REPO_ROOT}/hack/ensure-go.sh"
 # shellcheck source=../hack/ensure-kubectl.sh
 source "${REPO_ROOT}/hack/ensure-kubectl.sh"
 # shellcheck source=../hack/boskos.sh
-source ${REPO_ROOT}/hack/boskos.sh
+source "${REPO_ROOT}/hack/boskos.sh"
 # shellcheck source=../hack/kind-network-fix.sh
 source "${REPO_ROOT}/hack/kind-network-fix.sh"
 
@@ -39,9 +39,9 @@ mkdir -p "${ARTIFACTS}/logs/"
 ARCH=$(uname -m)
 OS=$(uname -s)
 IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.16.0"}
-CAPIBMADM_VERSION=${CAPIBMADM_VERSION:-"0.5.0"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 REGION=${REGION:-"jp-osa"}
+capibmadm=$(pwd)/bin/capibmadm
 
 [ "${ARCH}" == "x86_64" ] && ARCH="amd64"
 
@@ -50,15 +50,6 @@ trap cleanup EXIT
 cleanup(){
     # stop the boskos heartbeat
     [[ -z ${HEART_BEAT_PID:-} ]] || kill -9 "${HEART_BEAT_PID}" || true
-}
-
-# Installing binaries from github releases
-install_capibmadm(){
-    platform="$(echo ${OS} | tr '[:upper:]' '[:lower:]')-${ARCH}"
-
-    curl -fsL  https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v${CAPIBMADM_VERSION}/capibmadm-${platform} -o capibmadm
-    chmod +x ./capibmadm
-    install ./capibmadm /usr/local/bin
 }
 
 install_ibmcloud_cli(){
@@ -87,19 +78,21 @@ create_powervs_network_instance(){
     ibmcloud pi service-target ${CRN}
 
     # Create the network instance
-    capibmadm powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
+    ${capibmadm} powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
 
 }
 
 init_network_powervs(){
-    install_capibmadm
+    # Builds the capibmadm binary 
+    make capibmadm
+
     create_powervs_network_instance
 
-    # Creating ports using the pvsadm tool
-    capibmadm powervs port create --network ${IBMPOWERVS_NETWORK_NAME} --description "capi-e2e" --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
+    # Creating PowerVS network port 
+    ${capibmadm} powervs port create --network ${IBMPOWERVS_NETWORK_NAME} --description "capi-e2e" --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
 
     # Get and assign the IPs to the required variables
-    NEW_PORT=$(capibmadm powervs port list --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE} --network ${IBMPOWERVS_NETWORK_NAME} -o json)
+    NEW_PORT=$(${capibmadm} powervs port list --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE} --network ${IBMPOWERVS_NETWORK_NAME} -o json)
     no_of_ports=$(echo ${NEW_PORT} | jq '.items | length')
     if [[ ${no_of_ports} != 1 ]]; then
         echo "Failed to get the required number or ports, got - ${no_of_ports}"
