@@ -69,13 +69,13 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	if params.Client == nil {
 		err = errors.New("failed to generate new scope from nil Client")
-		return
+		return nil, err
 	}
 	scope.Client = params.Client
 
 	if params.IBMPowerVSImage == nil {
 		err = errors.New("failed to generate new scope from nil IBMPowerVSImage")
-		return
+		return nil, err
 	}
 	scope.IBMPowerVSImage = params.IBMPowerVSImage
 
@@ -87,7 +87,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	helper, err := patch.NewHelper(params.IBMPowerVSImage, params.Client)
 	if err != nil {
 		err = errors.Wrap(err, "failed to init patch helper")
-		return
+		return nil, err
 	}
 	scope.patchHelper = helper
 
@@ -95,7 +95,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// Fetch the resource controller endpoint.
@@ -112,7 +112,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 		})
 	if err != nil {
 		err = errors.Wrap(err, "failed to get resource instance")
-		return
+		return nil, err
 	}
 
 	options := powervs.ServiceOptions{
@@ -132,7 +132,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	c, err := powervs.NewService(options)
 	if err != nil {
 		err = fmt.Errorf("failed to create NewIBMPowerVSClient")
-		return
+		return nil, err
 	}
 	scope.IBMPowerVSClient = c
 

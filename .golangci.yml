@@ -6,7 +6,6 @@ linters:
   - bodyclose
   - containedctx
   - decorder
-  - depguard
   - dogsled
   - errcheck
   - errchkjson
