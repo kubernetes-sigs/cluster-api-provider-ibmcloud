@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.1-experimental
+# syntax=docker/dockerfile:1.5
 
 # Copyright 2021 The Kubernetes Authors.
 #

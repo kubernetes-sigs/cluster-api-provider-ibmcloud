@@ -402,7 +402,7 @@ docker-build: docker-pull-prerequisites ensure-buildx ## Build the docker image 
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
-	docker pull docker.io/docker/dockerfile:1.1-experimental
+	docker pull docker.io/docker/dockerfile:1.5
 	docker pull gcr.io/distroless/static:latest
 
 .PHONY: e2e-image
