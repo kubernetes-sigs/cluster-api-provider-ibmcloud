@@ -90,25 +90,25 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 
 	if params.Client == nil {
 		err = errors.New("client is required when creating a MachineScope")
-		return
+		return nil, err
 	}
 	scope.Client = params.Client
 
 	if params.Machine == nil {
 		err = errors.New("machine is required when creating a MachineScope")
-		return
+		return nil, err
 	}
 	scope.Machine = params.Machine
 
 	if params.Cluster == nil {
 		err = errors.New("cluster is required when creating a MachineScope")
-		return
+		return nil, err
 	}
 	scope.Cluster = params.Cluster
 
 	if params.IBMPowerVSMachine == nil {
 		err = errors.New("PowerVS machine is required when creating a MachineScope")
-		return
+		return nil, err
 	}
 	scope.IBMPowerVSMachine = params.IBMPowerVSMachine
 	scope.IBMPowerVSCluster = params.IBMPowerVSCluster
@@ -122,7 +122,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	helper, err := patch.NewHelper(params.IBMPowerVSMachine, params.Client)
 	if err != nil {
 		err = errors.Wrap(err, "failed to init patch helper")
-		return
+		return nil, err
 	}
 	scope.patchHelper = helper
 
@@ -130,7 +130,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 
 	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	// Fetch the resource controller endpoint.
@@ -147,7 +147,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		})
 	if err != nil {
 		err = errors.Wrap(err, "failed to get resource instance")
-		return
+		return nil, err
 	}
 
 	region := endpoints.CostructRegionFromZone(*res.RegionID)
@@ -171,7 +171,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	c, err := powervs.NewService(serviceOptions)
 	if err != nil {
 		err = fmt.Errorf("failed to create PowerVS service")
-		return
+		return nil, err
 	}
 	scope.IBMPowerVSClient = c
 	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
