@@ -6,7 +6,7 @@ go 1.19
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.2
 	github.com/onsi/gomega => github.com/onsi/gomega v1.27.5
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.2
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.3
 )
 
 require (
@@ -34,8 +34,8 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/cluster-api v1.4.2
-	sigs.k8s.io/cluster-api/test v1.4.2
+	sigs.k8s.io/cluster-api v1.4.3
+	sigs.k8s.io/cluster-api/test v1.4.3
 	sigs.k8s.io/controller-runtime v0.14.5
 )
 
@@ -56,7 +56,7 @@ require (
 	github.com/coredns/caddy v1.1.0 // indirect
 	github.com/coredns/corefile-migration v1.0.20 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/docker v20.10.24+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
