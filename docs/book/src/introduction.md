@@ -1,8 +1,7 @@
 # Kubernetes Cluster API Provider IBM Cloud
 
 <p align="center">
-<img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100x"> 
-<img src="../images/ibm-cloud.svg" height="100x" width="200x" alt="IBM Cloud">
+<img src="../images/k8s-ibm-cloud.png" alt="Kubernetes Cluster API Provider IBM Cloud">
 </p>
 
 ------
