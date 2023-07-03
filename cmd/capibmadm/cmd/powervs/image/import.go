@@ -140,7 +140,7 @@ func importimage(ctx context.Context, imageImportOption imageImportOptions) erro
 	}
 
 	start := time.Now()
-	pollErr := wait.PollImmediate(2*time.Minute, imageImportOption.WatchTimeout, func() (bool, error) {
+	pollErr := wait.PollUntilContextTimeout(ctx, 2*time.Minute, imageImportOption.WatchTimeout, false, func(context.Context) (bool, error) {
 		jobclient := powerClient.NewIBMPIJobClient(ctx, sess, options.GlobalOptions.ServiceInstanceID)
 		job, err := jobclient.Get(*jobRef.ID)
 		if err != nil {
@@ -156,9 +156,6 @@ func importimage(ctx context.Context, imageImportOption imageImportOptions) erro
 		log.Info("Image Import Job in-progress,", "current state", job.Status.State)
 		return false, nil
 	})
-	if pollErr == wait.ErrWaitTimeout {
-		pollErr = fmt.Errorf("timed out while waiting for image import job to complete")
-	}
 
 	if pollErr != nil {
 		return fmt.Errorf("image import job failed to complete, err: %v", pollErr)
