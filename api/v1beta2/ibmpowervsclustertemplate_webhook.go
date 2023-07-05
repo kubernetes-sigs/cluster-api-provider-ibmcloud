@@ -26,6 +26,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -51,28 +52,28 @@ func (r *IBMPowerVSClusterTemplate) Default() {
 var _ webhook.Validator = &IBMPowerVSClusterTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMPowerVSClusterTemplate) ValidateCreate() error {
+func (r *IBMPowerVSClusterTemplate) ValidateCreate() (admission.Warnings, error) {
 	ibmpowervsclustertemplatelog.Info("validate create", "name", r.Name)
 
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMPowerVSClusterTemplate) ValidateUpdate(oldRaw runtime.Object) error {
+func (r *IBMPowerVSClusterTemplate) ValidateUpdate(oldRaw runtime.Object) (admission.Warnings, error) {
 	ibmpowervsclustertemplatelog.Info("validate update", "name", r.Name)
 	old, ok := oldRaw.(*IBMPowerVSClusterTemplate)
 	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected an IBMPowerVSClusterTemplate but got a %T", oldRaw))
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an IBMPowerVSClusterTemplate but got a %T", oldRaw))
 	}
 	if !reflect.DeepEqual(r.Spec, old.Spec) {
-		return apierrors.NewBadRequest("IBMPowerVSClusterTemplate.Spec is immutable")
+		return nil, apierrors.NewBadRequest("IBMPowerVSClusterTemplate.Spec is immutable")
 	}
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMPowerVSClusterTemplate) ValidateDelete() error {
+func (r *IBMPowerVSClusterTemplate) ValidateDelete() (admission.Warnings, error) {
 	ibmpowervsclustertemplatelog.Info("validate delete", "name", r.Name)
 
-	return nil
+	return nil, nil
 }
