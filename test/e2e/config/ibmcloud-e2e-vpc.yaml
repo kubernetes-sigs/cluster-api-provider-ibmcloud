@@ -42,7 +42,7 @@ providers:
         targetName: "cluster-template-vpc-load-balancer.yaml"
 
 variables:
-  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.25.2}"
+  KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.27.2}"
   # Below variable should be set based on the targeted environment
   SERVICE_ENDPOINT: "${SERVICE_ENDPOINT:-}"
   # Cluster Addons
