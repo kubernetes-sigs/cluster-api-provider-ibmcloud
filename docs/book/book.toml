@@ -8,6 +8,7 @@ title = "Kubernetes Cluster API Provider IBM Cloud"
 [output.html]
 curly-quotes = true
 git-repository-url = "https://sigs.k8s.io/cluster-api-provider-ibmcloud"
+additional-css = ["theme/css/custom.css"]
 
 [preprocessor.tabulate]
 command = "mdbook-tabulate"
