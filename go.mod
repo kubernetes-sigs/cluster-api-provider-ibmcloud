@@ -6,15 +6,15 @@ go 1.19
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.2
 	github.com/onsi/gomega => github.com/onsi/gomega v1.27.5
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.3
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.4
 )
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.2.3
-	github.com/IBM/go-sdk-core/v5 v5.13.2
-	github.com/IBM/platform-services-go-sdk v0.37.3
-	github.com/IBM/vpc-go-sdk v0.36.0
-	github.com/go-logr/logr v1.2.3
+	github.com/IBM/go-sdk-core/v5 v5.13.4
+	github.com/IBM/platform-services-go-sdk v0.41.0
+	github.com/IBM/vpc-go-sdk v0.40.0
+	github.com/go-logr/logr v1.2.4
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang/mock v1.6.0
@@ -34,8 +34,8 @@ require (
 	k8s.io/client-go v0.26.1
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
-	sigs.k8s.io/cluster-api v1.4.3
-	sigs.k8s.io/cluster-api/test v1.4.3
+	sigs.k8s.io/cluster-api v1.4.4
+	sigs.k8s.io/cluster-api/test v1.4.4
 	sigs.k8s.io/controller-runtime v0.14.5
 )
 
@@ -150,7 +150,7 @@ require (
 	k8s.io/component-base v0.26.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
-	sigs.k8s.io/kind v0.18.0 // indirect
+	sigs.k8s.io/kind v0.20.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
