@@ -202,6 +202,15 @@ func (m *PowerVSMachineScope) CreateMachine() (*models.PVMInstanceReference, err
 		// TODO need a reasonable wrapped error.
 		return instanceReply, nil
 	}
+
+	// Check if create request has been already triggered.
+	// If InstanceReadyCondition is Unknown then return and wait for it to get updated.
+	for _, con := range m.IBMPowerVSMachine.Status.Conditions {
+		if con.Type == infrav1beta2.InstanceReadyCondition && con.Status == corev1.ConditionUnknown {
+			return nil, nil
+		}
+	}
+
 	cloudInitData, err := m.GetBootstrapData()
 	if err != nil {
 		return nil, err
