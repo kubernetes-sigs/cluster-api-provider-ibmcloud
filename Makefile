@@ -465,14 +465,10 @@ define checkdiff
 	git --no-pager diff --name-only FETCH_HEAD
 endef
 
-ALL_VERIFY_CHECKS = doctoc boilerplate shellcheck modules gen conversions
+ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions
 
 .PHONY: verify
 verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
-
-.PHONY: verify-doctoc
-verify-doctoc:
-	./hack/verify-doctoc.sh
 
 .PHONY: verify-boilerplate
 verify-boilerplate: ## Verify boilerplate text exists in each file
