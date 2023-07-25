@@ -56,7 +56,7 @@ checkout_account(){
 heartbeat_account(){
     count=0
     url="http://${BOSKOS_HOST}/update?name=${BOSKOS_RESOURCE_NAME}&state=busy&owner=${USER}"
-    while [ ${count} -lt 120 ]
+    while [ ${count} -lt 180 ]
     do
         status_code=$(curl -s -o /dev/null -w '%{http_code}' -X POST ${url})
         if [[ ${status_code} != 200 ]]; then

@@ -43,6 +43,8 @@ E2E_FLAVOR=${E2E_FLAVOR:-}
 REGION=${REGION:-"jp-osa"}
 capibmadm=$(pwd)/bin/capibmadm
 
+GINKGO_TIMEOUT=${GINKGO_TIMEOUT:-"2h"}
+
 [ "${ARCH}" == "x86_64" ] && ARCH="amd64"
 
 trap cleanup EXIT
@@ -172,6 +174,7 @@ main(){
     if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "powervs-md-remediation" ]]; then
         prerequisites_powervs
         init_network_powervs
+        GINKGO_TIMEOUT=3h
     fi
 
     if [[ "${E2E_FLAVOR}" == "vpc"* ]]; then
@@ -183,7 +186,7 @@ main(){
     fi
 
     # Run the e2e tests
-    make test-e2e E2E_FLAVOR=${E2E_FLAVOR}
+    make test-e2e E2E_FLAVOR=${E2E_FLAVOR} GINKGO_TIMEOUT=${GINKGO_TIMEOUT}
     test_status="${?}"
     echo TESTSTATUS="${test_status}"
 
