@@ -257,6 +257,22 @@ func TestCreateMachinePVS(t *testing.T) {
 			require.Equal(t, expectedOutput.ServerName, out.ServerName)
 		})
 
+		t.Run("Return NIL when Machine is not present in the Instance list and Machine state is unknown", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			expectedOutput := (*models.PVMInstanceReference)(nil)
+			scope := setupPowerVSMachineScope(clusterName, *core.StringPtr("foo-machine-2"), core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			scope.IBMPowerVSMachine.Status.Conditions = append(scope.IBMPowerVSMachine.Status.Conditions, capiv1beta1.Condition{
+				Type:   infrav1beta2.InstanceReadyCondition,
+				Status: corev1.ConditionUnknown,
+			})
+			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			out, err := scope.CreateMachine()
+			g.Expect(err).To(BeNil())
+			require.Equal(t, expectedOutput, out)
+		})
+
 		t.Run("Eror while getting instances", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
