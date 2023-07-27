@@ -54,7 +54,7 @@ help:  # Display this help
 
 GO_APIDIFF := $(BIN_DIR)/go-apidiff
 $(GO_APIDIFF): $(BIN_DIR) go.mod go.sum ## Build a local copy of go-apidiff.
-	go build -tags=tools -o $@ github.com/joelanford/go-apidiff
+	go build -tags=capibmtools -o $@ github.com/joelanford/go-apidiff
 
 GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
 $(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lint.
@@ -62,11 +62,11 @@ $(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lin
 
 GOTESTSUM := $(BIN_DIR)/gotestsum
 $(GOTESTSUM): $(BIN_DIR) go.mod go.sum
-	go build -tags=tools -o $@ gotest.tools/gotestsum
+	go build -tags=capibmtools -o $@ gotest.tools/gotestsum
 
 KUSTOMIZE := $(BIN_DIR)/kustomize
 $(KUSTOMIZE): $(BIN_DIR) go.mod go.sum ## Build a local copy of kustomize.
-	CGO_ENABLED=0 go build -tags=tools -o $@ sigs.k8s.io/kustomize/kustomize/v4
+	CGO_ENABLED=0 go build -tags=capibmtools -o $@ sigs.k8s.io/kustomize/kustomize/v4
 
 MDBOOK_SHARE := $(SHARE_DIR)/mdbook$(MDBOOK_ARCHIVE_EXT)
 $(MDBOOK_SHARE): ../../versions.mk $(SHARE_DIR)
@@ -92,32 +92,32 @@ $(MDBOOK_TABULATE): $(BIN_DIR) go.mod go.sum
 
 GOJQ := $(BIN_DIR)/gojq
 $(GOJQ): $(BIN_DIR) go.mod go.sum ## Build a local copy of gojq.
-	go build -tags=tools -o $@ github.com/itchyny/gojq/cmd/gojq
+	go build -tags=capibmtools -o $@ github.com/itchyny/gojq/cmd/gojq
 
 CONVERSION_GEN := $(BIN_DIR)/conversion-gen
 $(CONVERSION_GEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of conversion-gen.
-	go build -tags=tools -o $@ k8s.io/code-generator/cmd/conversion-gen
+	go build -tags=capibmtools -o $@ k8s.io/code-generator/cmd/conversion-gen
 
 GINKGO := $(BIN_DIR)/ginkgo
 $(GINKGO): $(BIN_DIR) go.mod go.sum ## Build a local copy of ginkgo.
-	go build -tags=tools -o $@ github.com/onsi/ginkgo/v2/ginkgo
+	go build -tags=capibmtools -o $@ github.com/onsi/ginkgo/v2/ginkgo
 
 ENVSUBST := $(BIN_DIR)/envsubst
 $(ENVSUBST): $(BIN_DIR) go.mod go.sum ## Build a local copy of envsubst.
-	go build -tags=tools -o $@ github.com/drone/envsubst/v2/cmd/envsubst
+	go build -tags=capibmtools -o $@ github.com/drone/envsubst/v2/cmd/envsubst
 
 MOCKGEN := $(BIN_DIR)/mockgen
 $(MOCKGEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of mockgen.
-	go build -tags=tools -o $@ github.com/golang/mock/mockgen
+	go build -tags=capibmtools -o $@ github.com/golang/mock/mockgen
 
 CONTROLLER_GEN := $(BIN_DIR)/controller-gen
 $(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of controller-gen.
-	go build -tags=tools -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen
+	go build -tags=capibmtools -o $@ sigs.k8s.io/controller-tools/cmd/controller-gen
 
 CONVERSION_VERIFIER := $(BIN_DIR)/conversion-verifier
 $(CONVERSION_VERIFIER): $(BIN_DIR) go.mod go.sum ## Build a local copy of conversion-verifier.
-	go build -tags=tools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
+	go build -tags=capibmtools -o $@ sigs.k8s.io/cluster-api/hack/tools/conversion-verifier
 
 SETUP_ENVTEST := $(BIN_DIR)/setup-envtest
 $(SETUP_ENVTEST): $(BIN_DIR) go.mod go.sum ## Build a local copy of setup-envtest.
-	go build -tags=tools -o $@ sigs.k8s.io/controller-runtime/tools/setup-envtest
+	go build -tags=capibmtools -o $@ sigs.k8s.io/controller-runtime/tools/setup-envtest
