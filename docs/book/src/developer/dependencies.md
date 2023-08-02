@@ -5,6 +5,10 @@
 | cluster-api | [sigs.k8s.io/cluster-api](https://github.com/kubernetes-sigs/cluster-api) | [go.mod][go.mod1] |
 | cluster-api/test | [sigs.k8s.io/cluster-api/test](https://github.com/kubernetes-sigs/cluster-api/tree/main/test) | [go.mod][go.mod1]  |
 | cluster-api/hack/tools | [sigs.k8s.io/cluster-api/hack/tools](https://github.com/kubernetes-sigs/cluster-api/tree/main/hack/tools) | [hack/tool/go.mod][go.mod2] |
+| IBM-Cloud/power-go-client | [github.com/IBM-Cloud/power-go-client](https://github.com/IBM-Cloud/power-go-client) | [go.mod][go.mod1] |
+| IBM/go-sdk-core/v5 | [github.com/IBM/go-sdk-core/v5](https://github.com/IBM/go-sdk-core) | [go.mod][go.mod1] |
+| IBM/platform-services-go-sdk | [github.com/IBM/platform-services-go-sdk](https://github.com/IBM/platform-services-go-sdk) | [go.mod][go.mod1] |
+| IBM/vpc-go-sdk | [github.com/IBM/vpc-go-sdk](https://github.com/IBM/vpc-go-sdk) | [go.mod][go.mod1] |
 
 
 
