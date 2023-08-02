@@ -41,44 +41,24 @@ it into a management cluster using `clusterctl`.
     ```console
     export IBMCLOUD_API_KEY=<YOUR_API_KEY>
     ```
-    For enabling debug level logs for the controller, set the `LOGLEVEL` environment variable(defaults to 0).
-    ```console
-    export LOGLEVEL=5
-    ```
+    
+3. To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format:
+     
+   > `${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1...}`.
+   
 
-    > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
-
-    > Note: To deploy VPC workload cluster with [IBM cloud controller manager](/topics/vpc/load-balancer.html) which is currently in experimental stage. Set the `PROVIDER_ID_FORMAT` environmental variable.
-    Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature, so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` environmental variables.
-    ```console
-       export PROVIDER_ID_FORMAT=v2
-       export EXP_CLUSTER_RESOURCE_SET=true
-     ```
-
-    > Note: To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html) which is currently in experimental stage. Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
-    Currently, [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) is experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET` environmental variables.
-    ```console
-       export POWERVS_PROVIDER_ID_FORMAT=v2
-       export EXP_CLUSTER_RESOURCE_SET=true
-     ```
-    > Note: To deploy workload cluster with [PowerVS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
-      Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
-     ```console
-        export POWERVS_PROVIDER_ID_FORMAT=v2
-        export EXP_CLUSTER_RESOURCE_SET=true
-        export CLUSTER_TOPOLOGY=true
-     ```
-
-    > Note: To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format:
-     ```console
-        `${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1...}`.
-     ```
     Supported ServiceIDs include - `vpc, powervs, rc`
      ```console
-        export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
+      export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
      ```
+   > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
 
-2. Initialize local bootstrap cluster as a management cluster
+4. For enabling debug level logs for the controller, set the `LOGLEVEL` environment variable(defaults to 0).
+   ```console
+   export LOGLEVEL=5
+   ```
+
+5. Initialize local bootstrap cluster as a management cluster
     
     When executed for the first time, the following command accepts the infrastructure provider as an input to install. `clusterctl init` automatically adds to the list the cluster-api core provider, and if unspecified, it also adds the kubeadm bootstrap and kubeadm control-plane providers, thereby converting it into a management cluster which will be used to provision a workload cluster in IBM Cloud.
 
@@ -106,4 +86,34 @@ it into a management cluster using `clusterctl`.
     clusterctl generate cluster [name] --kubernetes-version [version] | kubectl apply -f -
     ```
 
-5. Once the management cluster is ready with the required providers up and running, proceed to provisioning the workload cluster. Check the respective sections for [VPC](/topics/vpc/creating-a-cluster.html) and [PowerVS](/topics/powervs/creating-a-cluster.html) to deploy the cluster. 
+6. Once the management cluster is ready with the required providers up and running, proceed to provisioning the workload cluster. Check the respective sections for [VPC](/topics/vpc/creating-a-cluster.html) and [PowerVS](/topics/powervs/creating-a-cluster.html) to deploy the cluster. 
+
+7. For deploying with your workload cluster with Cloud Controller manager or Cluster Class template, refer to [deploy with cloud controller manager](#deploy-with-cloud-contoller-manager) and [deploy PowerVS cluster with cluster class template](#deploy-powervs-cluster-with-clusterclass-template) sections respectively.
+
+
+### Deploy with Cloud Contoller manager
+
+   1. To deploy VPC workload cluster with [IBM cloud controller manager](/topics/vpc/load-balancer.html), set the `PROVIDER_ID_FORMAT` environmental variable.
+      ```console
+      export PROVIDER_ID_FORMAT=v2
+      export EXP_CLUSTER_RESOURCE_SET=true
+      ```
+
+   2. To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
+      ```console
+      export POWERVS_PROVIDER_ID_FORMAT=v2
+      export EXP_CLUSTER_RESOURCE_SET=true
+      ```
+   > Note: `EXP_CLUSTER_RESOURCE_SET` should be set for deploying workload cluster with Cloud Controller manager.
+
+### Deploy PowerVS cluster with ClusterClass template
+
+   To deploy workload cluster with [PowerVS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the following environmental variables.
+
+   ```console
+   export POWERVS_PROVIDER_ID_FORMAT=v2
+   export EXP_CLUSTER_RESOURCE_SET=true
+   export CLUSTER_TOPOLOGY=true
+   ```
+      
+   > Note: Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
