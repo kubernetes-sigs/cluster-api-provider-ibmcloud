@@ -1,0 +1,9 @@
+resources:
+- ../bases/vpc
+
+patches:
+- path: kcp.yaml
+- path: kubeadm-config.yaml
+
+sortOptions:
+  order: fifo

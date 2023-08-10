@@ -1,0 +1,38 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  clusterName: "${CLUSTER_NAME}"
+  replicas: ${WORKER_MACHINE_COUNT}
+  template:
+    spec:
+      clusterName: "${CLUSTER_NAME}"
+      version: "${KUBERNETES_VERSION}"
+      bootstrap:
+        configRef:
+          name: "${CLUSTER_NAME}-md-0"
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+      infrastructureRef:
+        name: "${CLUSTER_NAME}-md-0"
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: IBMPowerVSMachineTemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
+      image:
+        name: "${IBMPOWERVS_IMAGE_NAME}"
+      network:
+        name: "${IBMPOWERVS_NETWORK_NAME}"
+      memoryGiB: ${IBMPOWERVS_COMPUTE_MEMORY:=4}
+      processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
+      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
+      processorType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="Shared"}

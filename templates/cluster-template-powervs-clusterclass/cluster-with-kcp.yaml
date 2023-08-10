@@ -1,0 +1,187 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    ccm: external
+    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
+  name: "${CLUSTER_NAME}"
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - ${POD_CIDR:="192.168.0.0/16"}
+    serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
+    services:
+      cidrBlocks:
+        - ${SERVICE_CIDR:="10.128.0.0/12"}
+  topology:
+    class: "${IBMPOWERVS_CLUSTER_CLASS_NAME}"
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    version: ${KUBERNETES_VERSION}
+    workers:
+      machineDeployments:
+        - class: default-worker
+          name: md-0
+          replicas: 2
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${IBMPOWERVS_CLUSTER_CLASS_NAME:="powervs-cc"}
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: IBMPowerVSMachineTemplate
+        name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate"
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: KubeadmControlPlaneTemplate
+      name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane"
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: IBMPowerVSClusterTemplate
+      name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template"
+  workers:
+    machineDeployments:
+      - class: default-worker
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+              kind: IBMPowerVSMachineTemplate
+              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSClusterTemplate
+metadata:
+  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template"
+spec:
+  template:
+    spec:
+      controlPlaneEndpoint:
+        host: "${IBMPOWERVS_VIP_EXTERNAL}"
+        port: ${API_SERVER_PORT:=6443}
+      network:
+        name: "${IBMPOWERVS_NETWORK_NAME}"
+      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlaneTemplate
+metadata:
+  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      kubeadmConfigSpec:
+        clusterConfiguration:
+          apiServer:
+            certSANs:
+              - "${IBMPOWERVS_VIP}"
+              - "${IBMPOWERVS_VIP_EXTERNAL}"
+            extraArgs:
+              cloud-provider: external
+          controlPlaneEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
+          controllerManager:
+            extraArgs:
+              cloud-provider: external
+              enable-hostpath-provisioner: "true"
+        files:
+          - content: |
+              apiVersion: v1
+              kind: Pod
+              metadata:
+                creationTimestamp: null
+                name: kube-vip
+                namespace: kube-system
+              spec:
+                containers:
+                - args:
+                  - manager
+                  env:
+                  - name: vip_arp
+                    value: "true"
+                  - name: port
+                    value: "${API_SERVER_PORT:=6443}"
+                  - name: vip_interface
+                    value: env2
+                  - name: vip_cidr
+                    value: "${IBMPOWERVS_VIP_CIDR}"
+                  - name: cp_enable
+                    value: "true"
+                  - name: cp_namespace
+                    value: kube-system
+                  - name: vip_ddns
+                    value: "false"
+                  - name: svc_enable
+                    value: "true"
+                  - name: vip_leaderelection
+                    value: "true"
+                  - name: vip_leaseduration
+                    value: "5"
+                  - name: vip_renewdeadline
+                    value: "3"
+                  - name: vip_retryperiod
+                    value: "1"
+                  - name: address
+                    value: "${IBMPOWERVS_VIP}"
+                  image: ghcr.io/kube-vip/kube-vip:v0.4.4
+                  imagePullPolicy: Always
+                  name: kube-vip
+                  resources: {}
+                  securityContext:
+                    capabilities:
+                      add:
+                      - NET_ADMIN
+                      - NET_RAW
+                  volumeMounts:
+                  - mountPath: /etc/kubernetes/admin.conf
+                    name: kubeconfig
+                hostAliases:
+                - hostnames:
+                  - kubernetes
+                  ip: 127.0.0.1
+                hostNetwork: true
+                volumes:
+                - hostPath:
+                    path: /etc/kubernetes/admin.conf
+                  name: kubeconfig
+              status: {}
+            owner: root:root
+            path: /etc/kubernetes/manifests/kube-vip.yaml
+            permissions: "0744"
+        initConfiguration:
+          nodeRegistration:
+            criSocket: unix:///var/run/containerd/containerd.sock
+            kubeletExtraArgs:
+              cloud-provider: external
+              eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+            name: '{{ v1.local_hostname }}'
+        joinConfiguration:
+          discovery:
+            bootstrapToken:
+              apiServerEndpoint: 192.168.167.85:${API_SERVER_PORT:=6443}
+              caCertHashes: []
+              token: ""
+              unsafeSkipCAVerification: false
+          nodeRegistration:
+            criSocket: unix:///var/run/containerd/containerd.sock
+            kubeletExtraArgs:
+              cloud-provider: external
+              eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+            name: '{{ v1.local_hostname }}'
+        preKubeadmCommands:
+          - hostname "{{ v1.local_hostname }}"
+          - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+          - echo "127.0.0.1   localhost" >>/etc/hosts
+          - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+          - echo "{{ v1.local_hostname }}" >/etc/hostname
+        useExperimentalRetryJoin: true

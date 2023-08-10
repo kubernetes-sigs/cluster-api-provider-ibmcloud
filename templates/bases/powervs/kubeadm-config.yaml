@@ -1,0 +1,28 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: "${CLUSTER_NAME}-md-0"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        discovery:
+          bootstrapToken:
+            apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
+            token: ""
+            caCertHashes: []
+            unsafeSkipCAVerification: false
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            cloud-provider: external
+            eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+          name: '{{ v1.local_hostname }}'
+      preKubeadmCommands:
+        - hostname "{{ v1.local_hostname }}"
+        - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+        - echo "127.0.0.1   localhost" >>/etc/hosts
+        - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+        - echo "{{ v1.local_hostname }}" >/etc/hostname

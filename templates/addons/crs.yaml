@@ -1,156 +1,3 @@
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: Cluster
-metadata:
-  labels:
-    ccm: external
-    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
-  name: ${CLUSTER_NAME}
-  namespace: ${NAMESPACE}
-spec:
-  clusterNetwork:
-    pods:
-      cidrBlocks:
-      - ${POD_CIDR:="192.168.0.0/16"}
-    serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
-    services:
-      cidrBlocks:
-      - ${SERVICE_CIDR:="10.128.0.0/12"}
-  controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-    kind: KubeadmControlPlane
-    name: ${CLUSTER_NAME}-control-plane
-    namespace: ${NAMESPACE}
-  infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: IBMVPCCluster
-    name: ${CLUSTER_NAME}
-    namespace: ${NAMESPACE}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: IBMVPCCluster
-metadata:
-  labels:
-    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
-  name: ${CLUSTER_NAME}
-spec:
-  controlPlaneLoadBalancer:
-    name: ${CLUSTER_NAME}-load-balancer
-  region: ${IBMVPC_REGION}
-  resourceGroup: ${IBMVPC_RESOURCEGROUP}
-  vpc: ${IBMVPC_NAME}
-  zone: ${IBMVPC_ZONE}
----
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
-kind: KubeadmControlPlane
-metadata:
-  name: ${CLUSTER_NAME}-control-plane
-  namespace: ${NAMESPACE}
-spec:
-  kubeadmConfigSpec:
-    clusterConfiguration:
-      apiServer:
-        certSANs:
-        - localhost
-        - 127.0.0.1
-        extraArgs:
-          cloud-provider: external
-      controllerManager:
-        extraArgs:
-          cloud-provider: external
-          enable-hostpath-provisioner: "true"
-      dns: {}
-      etcd: {}
-      kubernetesVersion: ${KUBERNETES_VERSION}
-      networking: {}
-      scheduler: {}
-    initConfiguration:
-      nodeRegistration:
-        criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs:
-          cloud-provider: external
-          eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
-    joinConfiguration:
-      discovery: {}
-      nodeRegistration:
-        criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs:
-          cloud-provider: external
-          eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
-  machineTemplate:
-    infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      kind: IBMVPCMachineTemplate
-      name: ${CLUSTER_NAME}-control-plane
-      namespace: ${NAMESPACE}
-  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-  version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: IBMVPCMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-control-plane
-spec:
-  template:
-    spec:
-      bootVolume:
-        sizeGiB: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_SIZEGIB:=20}
-      image:
-        name: ${IBMVPC_IMAGE_NAME}
-      profile: ${IBMVPC_PROFILE}
-      sshKeys:
-      - name: ${IBMVPC_SSHKEY_NAME}
-      zone: ${IBMVPC_ZONE}
----
-apiVersion: cluster.x-k8s.io/v1beta1
-kind: MachineDeployment
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-spec:
-  clusterName: ${CLUSTER_NAME}
-  replicas: ${WORKER_MACHINE_COUNT}
-  template:
-    spec:
-      bootstrap:
-        configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-          kind: KubeadmConfigTemplate
-          name: ${CLUSTER_NAME}-md-0
-      clusterName: ${CLUSTER_NAME}
-      infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-        kind: IBMVPCMachineTemplate
-        name: ${CLUSTER_NAME}-md-0
-      version: ${KUBERNETES_VERSION}
----
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-kind: IBMVPCMachineTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-spec:
-  template:
-    spec:
-      bootVolume:
-        sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
-      image:
-        name: ${IBMVPC_IMAGE_NAME}
-      profile: ${IBMVPC_PROFILE}
-      sshKeys:
-      - name: ${IBMVPC_SSHKEY_NAME}
-      zone: ${IBMVPC_ZONE}
----
-apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-kind: KubeadmConfigTemplate
-metadata:
-  name: ${CLUSTER_NAME}-md-0
-spec:
-  template:
-    spec:
-      joinConfiguration:
-        nodeRegistration:
-          kubeletExtraArgs:
-            cloud-provider: external
-            eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
----
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
 metadata:
@@ -160,15 +7,18 @@ spec:
     matchLabels:
       ccm: external
   resources:
-  - kind: Secret
-    name: ibm-credential
-  - kind: ConfigMap
-    name: ibm-cfg
-  - kind: ConfigMap
-    name: cloud-controller-manager-addon
+    - kind: Secret
+      name: ibm-credential
+    - kind: ConfigMap
+      name: ibm-cfg
+    - kind: ConfigMap
+      name: cloud-controller-manager-addon
   strategy: ApplyOnce
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ibm-cfg
 data:
   ibm-cloud-conf.yaml: |-
     apiVersion: v1
@@ -192,14 +42,12 @@ data:
         g2VpcSubnetNames = "${CLUSTER_NAME}-subnet"
         g2VpcName = ${IBMVPC_NAME:=""}
         region =  ${IBMVPC_REGION:=""}
-kind: ConfigMap
-metadata:
-  name: ibm-cfg
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: ibm-credential
+type: addons.cluster.x-k8s.io/resource-set
 stringData:
   ibm-credential.yaml: |-
     apiVersion: v1
@@ -209,9 +57,11 @@ stringData:
       namespace: kube-system
     data:
       ibmcloud_api_key: ${BASE64_API_KEY}
-type: addons.cluster.x-k8s.io/resource-set
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-controller-manager-addon
 data:
   ibm-ccm-external.yaml: |-
     apiVersion: v1
@@ -404,6 +254,3 @@ data:
             - name: ibm-secret
               secret:
                 secretName: ibm-cloud-credentia
-kind: ConfigMap
-metadata:
-  name: cloud-controller-manager-addon

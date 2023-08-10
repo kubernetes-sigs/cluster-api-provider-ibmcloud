@@ -1,0 +1,65 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+    cluster.x-k8s.io/control-plane: ""
+  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        discovery:
+          bootstrapToken:
+            apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
+            caCertHashes: []
+            token: ""
+            unsafeSkipCAVerification: false
+        nodeRegistration:
+          criSocket: unix:///var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            cloud-provider: external
+            eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+          name: '{{ v1.local_hostname }}'
+      preKubeadmCommands:
+        - hostname "{{ v1.local_hostname }}"
+        - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+        - echo "127.0.0.1   localhost" >>/etc/hosts
+        - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+        - echo "{{ v1.local_hostname }}" >/etc/hostname
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSMachineTemplate
+metadata:
+  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate"
+spec:
+  template:
+    spec:
+      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
+      image:
+        name: "${IBMPOWERVS_IMAGE_NAME}"
+      network:
+        name: "${IBMPOWERVS_NETWORK_NAME}"
+      memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSMachineTemplate
+metadata:
+  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+spec:
+  template:
+    spec:
+      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
+      image:
+        name: "${IBMPOWERVS_IMAGE_NAME}"
+      network:
+        name: "${IBMPOWERVS_NETWORK_NAME}"
+      memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
