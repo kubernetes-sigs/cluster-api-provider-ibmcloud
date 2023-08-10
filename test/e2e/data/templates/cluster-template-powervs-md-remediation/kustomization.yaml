@@ -3,6 +3,5 @@ kind: Kustomization
 resources:
   - ../../../../../templates/cluster-template-powervs.yaml
   - mhc-md-powervs.yaml
-  - mhc-kcp-powervs.yaml
 patchesStrategicMerge:
   - patches/mhc-label.yaml
