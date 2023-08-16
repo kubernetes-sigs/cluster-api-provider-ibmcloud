@@ -40,7 +40,7 @@ ARCH=$(uname -m)
 OS=$(uname -s)
 IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.16.0"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
-REGION=${REGION:-"jp-osa"}
+REGION=${REGION:-${BOSKOS_REGION:-"jp-osa"}}
 capibmadm=$(pwd)/bin/capibmadm
 
 [ "${ARCH}" == "x86_64" ] && ARCH="amd64"
