@@ -23,6 +23,7 @@ cd "${REPO_ROOT}" || exit 1
 GOPATH_BIN="$(go env GOPATH)/bin/"
 export PATH="${GOPATH_BIN}:${PATH}"
 RESOURCE_TYPE="${RESOURCE_TYPE:-"powervs-service"}"
+NO_OF_RETRY=${NO_OF_RETRY:-"3"}
 
 # shellcheck source=../hack/ensure-go.sh
 source "${REPO_ROOT}/hack/ensure-go.sh"
@@ -52,6 +53,23 @@ cleanup(){
     [[ -z ${HEART_BEAT_PID:-} ]] || kill -9 "${HEART_BEAT_PID}" || true
 }
 
+retry() {
+  cmd=$1
+  for i in $(seq 1 "$NO_OF_RETRY"); do
+    echo "Attempt: $i/$NO_OF_RETRY"
+    ret_code=0
+    $cmd || ret_code=$?
+    if [ $ret_code = 0 ]; then
+      break
+    elif [ "$i" == "$NO_OF_RETRY" ]; then
+      echo "All retry attempts failed!"
+      exit $ret_code
+    else
+      sleep 1
+    fi
+  done
+}
+
 install_ibmcloud_cli(){
     if [ ${OS} == "Linux" ]; then
         platform="linux_${ARCH}"
@@ -70,7 +88,7 @@ create_powervs_network_instance(){
 
     ibmcloud config --check-version=false
     # Login to IBM Cloud using the API Key
-    ibmcloud login -a cloud.ibm.com -r ${REGION}
+    retry "ibmcloud login -a cloud.ibm.com -r ${REGION}"
 
     # Install power-iaas command-line plug-in and target the required service instance
     ibmcloud plugin install power-iaas -f
