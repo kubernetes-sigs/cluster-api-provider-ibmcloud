@@ -31,7 +31,7 @@ This provider's versions are compatible with the following versions of Cluster A
 |--------------------------------------------|-----------------|----------------|
 | IBMCloud Provider v1alpha4 (v0.1.x)        | ✓               |                |
 | IBMCloud Provider v1beta1 (v0.2.x, v0.3.x) |                 | ✓              |
-| IBMCloud Provider v1beta2 (v0.4.x, main)   |                 | ✓              |
+| IBMCloud Provider v1beta2 (v0.4.x, v0.5.x, main)   |                 | ✓              |
 
 
 (See [Kubernetes support matrix][cluster-api-supported-v] of Cluster API versions).
