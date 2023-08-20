@@ -1,0 +1,7 @@
+resources:
+- cluster-with-kcp.yaml
+- md.yaml
+- ../addons/crs-powervs.yaml
+
+sortOptions:
+  order: fifo

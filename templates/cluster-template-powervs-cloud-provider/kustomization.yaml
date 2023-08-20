@@ -1,0 +1,11 @@
+resources:
+- ../bases/powervs
+- ../addons/crs-powervs.yaml
+
+patches:
+- path: cluster.yaml
+- path: kcp.yaml
+- path: kubeadm-config.yaml
+
+sortOptions:
+  order: fifo

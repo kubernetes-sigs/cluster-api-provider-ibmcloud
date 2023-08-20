@@ -2,9 +2,9 @@ apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
   labels:
-    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
-  name: "${CLUSTER_NAME}"
-  namespace: "${NAMESPACE}"
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
 spec:
   clusterNetwork:
     pods:
@@ -14,125 +14,126 @@ spec:
     services:
       cidrBlocks:
       - ${SERVICE_CIDR:="10.128.0.0/12"}
-  infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-    kind: IBMVPCCluster
-    name: "${CLUSTER_NAME}"
-    namespace: "${NAMESPACE}"
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
-    name: "${CLUSTER_NAME}-control-plane"
-    namespace: "${NAMESPACE}"
+    name: ${CLUSTER_NAME}-control-plane
+    namespace: ${NAMESPACE}
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: IBMVPCCluster
+    name: ${CLUSTER_NAME}
+    namespace: ${NAMESPACE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMVPCCluster
 metadata:
   labels:
-    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
-  name: "${CLUSTER_NAME}"
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
 spec:
-  region: "${IBMVPC_REGION}"
-  zone: "${IBMVPC_ZONE}"
-  resourceGroup: "${IBMVPC_RESOURCEGROUP}"
-  vpc: "${IBMVPC_NAME}"
+  region: ${IBMVPC_REGION}
+  resourceGroup: ${IBMVPC_RESOURCEGROUP}
+  vpc: ${IBMVPC_NAME}
+  zone: ${IBMVPC_ZONE}
 ---
-kind: KubeadmControlPlane
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
 metadata:
-  name: "${CLUSTER_NAME}-control-plane"
-  namespace: "${NAMESPACE}"
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: ${NAMESPACE}
 spec:
-  version: "${KUBERNETES_VERSION}"
-  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
-  machineTemplate:
-    infrastructureRef:
-      kind: IBMVPCMachineTemplate
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-      name: "${CLUSTER_NAME}-control-plane"
-      namespace: "${NAMESPACE}"
   kubeadmConfigSpec:
     clusterConfiguration:
-      kubernetesVersion: ${KUBERNETES_VERSION}
-      controllerManager:
-        extraArgs: {enable-hostpath-provisioner: 'true'}
       apiServer:
-        certSANs: [localhost, 127.0.0.1]
+        certSANs:
+        - localhost
+        - 127.0.0.1
+      controllerManager:
+        extraArgs:
+          enable-hostpath-provisioner: "true"
       dns: {}
       etcd: {}
+      kubernetesVersion: ${KUBERNETES_VERSION}
       networking: {}
       scheduler: {}
     initConfiguration:
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs: 
+        kubeletExtraArgs:
           cloud-provider: external
+          eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
           provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
-          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
     joinConfiguration:
       discovery: {}
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs: 
+        kubeletExtraArgs:
           cloud-provider: external
+          eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
           provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
-          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: IBMVPCMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
+      namespace: ${NAMESPACE}
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}
 ---
-kind: IBMVPCMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-control-plane"
+  name: ${CLUSTER_NAME}-control-plane
 spec:
   template:
     spec:
       image:
-        name: "${IBMVPC_IMAGE_NAME}"
-      zone: "${IBMVPC_ZONE}"
-      profile: "${IBMVPC_PROFILE}"
+        name: ${IBMVPC_IMAGE_NAME}
+      profile: ${IBMVPC_PROFILE}
       sshKeys:
-      - name: "${IBMVPC_SSHKEY_NAME}"
+      - name: ${IBMVPC_SSHKEY_NAME}
+      zone: ${IBMVPC_ZONE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
 metadata:
-  name: "${CLUSTER_NAME}-md-0"
+  name: ${CLUSTER_NAME}-md-0
 spec:
-  clusterName: "${CLUSTER_NAME}"
+  clusterName: ${CLUSTER_NAME}
   replicas: ${WORKER_MACHINE_COUNT}
-  selector:
-    matchLabels:
   template:
     spec:
-      clusterName: "${CLUSTER_NAME}"
-      version: "${KUBERNETES_VERSION}"
       bootstrap:
         configRef:
-          name: "${CLUSTER_NAME}-md-0"
           apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
           kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        name: "${CLUSTER_NAME}-md-0"
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: IBMVPCMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMVPCMachineTemplate
 metadata:
-  name: "${CLUSTER_NAME}-md-0"
+  name: ${CLUSTER_NAME}-md-0
 spec:
   template:
     spec:
       image:
-        name: "${IBMVPC_IMAGE_NAME}"
-      zone: "${IBMVPC_ZONE}"
-      profile: "${IBMVPC_PROFILE}"
+        name: ${IBMVPC_IMAGE_NAME}
+      profile: ${IBMVPC_PROFILE}
       sshKeys:
-      - name: "${IBMVPC_SSHKEY_NAME}"
+      - name: ${IBMVPC_SSHKEY_NAME}
+      zone: ${IBMVPC_ZONE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: "${CLUSTER_NAME}-md-0"
+  name: ${CLUSTER_NAME}-md-0
 spec:
   template:
     spec:
@@ -140,5 +141,5 @@ spec:
         nodeRegistration:
           kubeletExtraArgs:
             cloud-provider: external
-            provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
             eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+            provider-id: ibmvpc://${CLUSTER_NAME}/'{{ v1.local_hostname }}'

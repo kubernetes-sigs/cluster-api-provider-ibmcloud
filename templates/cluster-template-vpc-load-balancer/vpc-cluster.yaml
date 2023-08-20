@@ -1,0 +1,7 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCCluster
+metadata:
+  name: "${CLUSTER_NAME}"
+spec:
+  controlPlaneLoadBalancer:
+    name: "${CLUSTER_NAME}-load-balancer"

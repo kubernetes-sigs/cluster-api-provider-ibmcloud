@@ -1,0 +1,5 @@
+resources:
+- cluster.yaml
+- kcp.yaml
+- md.yaml
+- kubeadm-config.yaml

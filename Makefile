@@ -32,6 +32,7 @@ TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
 GO_INSTALL = ./scripts/go_install.sh
 E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
 E2E_TEMPLATES := $(REPO_ROOT)/test/e2e/data/templates
+TEMPLATES_DIR := $(REPO_ROOT)/templates
 
 GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
@@ -174,6 +175,14 @@ generate-go-conversions: $(CONVERSION_GEN) ## Generate conversions go code
 		--output-file-base=zz_generated.conversion $(CONVERSION_GEN_OUTPUT_BASE) \
 		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
 
+.PHONY: generate-templates
+generate-templates: $(KUSTOMIZE)
+	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template.yaml
+	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs.yaml
+	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider.yaml
+	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-clusterclass --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-clusterclass.yaml
+	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-vpc-load-balancer --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-vpc-load-balancer.yaml
+	
 .PHONY: generate-e2e-templates
 generate-e2e-templates: $(KUSTOMIZE)
 ifeq ($(E2E_FLAVOR), powervs-md-remediation)

@@ -3,27 +3,27 @@ kind: Cluster
 metadata:
   labels:
     ccm: external
-    cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
-  name: "${CLUSTER_NAME}"
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
 spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-        - ${POD_CIDR:="192.168.0.0/16"}
+      - ${POD_CIDR:="192.168.0.0/16"}
     serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
     services:
       cidrBlocks:
-        - ${SERVICE_CIDR:="10.128.0.0/12"}
+      - ${SERVICE_CIDR:="10.128.0.0/12"}
   topology:
-    class: "${IBMPOWERVS_CLUSTER_CLASS_NAME}"
+    class: ${IBMPOWERVS_CLUSTER_CLASS_NAME}
     controlPlane:
       replicas: ${CONTROL_PLANE_MACHINE_COUNT}
     version: ${KUBERNETES_VERSION}
     workers:
       machineDeployments:
-        - class: default-worker
-          name: md-0
-          replicas: 2
+      - class: default-worker
+        name: md-0
+        replicas: 2
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
@@ -35,49 +35,49 @@ spec:
       ref:
         apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
         kind: IBMPowerVSMachineTemplate
-        name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate"
+        name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate
     ref:
       apiVersion: controlplane.cluster.x-k8s.io/v1beta1
       kind: KubeadmControlPlaneTemplate
-      name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane"
+      name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane
   infrastructure:
     ref:
       apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
       kind: IBMPowerVSClusterTemplate
-      name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template"
+      name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template
   workers:
     machineDeployments:
-      - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-              kind: KubeadmConfigTemplate
-              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-              kind: IBMPowerVSMachineTemplate
-              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: IBMPowerVSMachineTemplate
+            name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSClusterTemplate
 metadata:
-  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template"
+  name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-cluster-template
 spec:
   template:
     spec:
       controlPlaneEndpoint:
-        host: "${IBMPOWERVS_VIP_EXTERNAL}"
+        host: ${IBMPOWERVS_VIP_EXTERNAL}
         port: ${API_SERVER_PORT:=6443}
       network:
-        name: "${IBMPOWERVS_NETWORK_NAME}"
-      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+        name: ${IBMPOWERVS_NETWORK_NAME}
+      serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlaneTemplate
 metadata:
-  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane"
+  name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane
 spec:
   template:
     spec:
@@ -85,8 +85,8 @@ spec:
         clusterConfiguration:
           apiServer:
             certSANs:
-              - "${IBMPOWERVS_VIP}"
-              - "${IBMPOWERVS_VIP_EXTERNAL}"
+            - ${IBMPOWERVS_VIP}
+            - ${IBMPOWERVS_VIP_EXTERNAL}
             extraArgs:
               cloud-provider: external
           controlPlaneEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
@@ -95,69 +95,69 @@ spec:
               cloud-provider: external
               enable-hostpath-provisioner: "true"
         files:
-          - content: |
-              apiVersion: v1
-              kind: Pod
-              metadata:
-                creationTimestamp: null
+        - content: |
+            apiVersion: v1
+            kind: Pod
+            metadata:
+              creationTimestamp: null
+              name: kube-vip
+              namespace: kube-system
+            spec:
+              containers:
+              - args:
+                - manager
+                env:
+                - name: vip_arp
+                  value: "true"
+                - name: port
+                  value: "${API_SERVER_PORT:=6443}"
+                - name: vip_interface
+                  value: env2
+                - name: vip_cidr
+                  value: "${IBMPOWERVS_VIP_CIDR}"
+                - name: cp_enable
+                  value: "true"
+                - name: cp_namespace
+                  value: kube-system
+                - name: vip_ddns
+                  value: "false"
+                - name: svc_enable
+                  value: "true"
+                - name: vip_leaderelection
+                  value: "true"
+                - name: vip_leaseduration
+                  value: "5"
+                - name: vip_renewdeadline
+                  value: "3"
+                - name: vip_retryperiod
+                  value: "1"
+                - name: address
+                  value: "${IBMPOWERVS_VIP}"
+                image: ghcr.io/kube-vip/kube-vip:v0.4.4
+                imagePullPolicy: Always
                 name: kube-vip
-                namespace: kube-system
-              spec:
-                containers:
-                - args:
-                  - manager
-                  env:
-                  - name: vip_arp
-                    value: "true"
-                  - name: port
-                    value: "${API_SERVER_PORT:=6443}"
-                  - name: vip_interface
-                    value: env2
-                  - name: vip_cidr
-                    value: "${IBMPOWERVS_VIP_CIDR}"
-                  - name: cp_enable
-                    value: "true"
-                  - name: cp_namespace
-                    value: kube-system
-                  - name: vip_ddns
-                    value: "false"
-                  - name: svc_enable
-                    value: "true"
-                  - name: vip_leaderelection
-                    value: "true"
-                  - name: vip_leaseduration
-                    value: "5"
-                  - name: vip_renewdeadline
-                    value: "3"
-                  - name: vip_retryperiod
-                    value: "1"
-                  - name: address
-                    value: "${IBMPOWERVS_VIP}"
-                  image: ghcr.io/kube-vip/kube-vip:v0.4.4
-                  imagePullPolicy: Always
-                  name: kube-vip
-                  resources: {}
-                  securityContext:
-                    capabilities:
-                      add:
-                      - NET_ADMIN
-                      - NET_RAW
-                  volumeMounts:
-                  - mountPath: /etc/kubernetes/admin.conf
-                    name: kubeconfig
-                hostAliases:
-                - hostnames:
-                  - kubernetes
-                  ip: 127.0.0.1
-                hostNetwork: true
-                volumes:
-                - hostPath:
-                    path: /etc/kubernetes/admin.conf
+                resources: {}
+                securityContext:
+                  capabilities:
+                    add:
+                    - NET_ADMIN
+                    - NET_RAW
+                volumeMounts:
+                - mountPath: /etc/kubernetes/admin.conf
                   name: kubeconfig
-              status: {}
-            owner: root:root
-            path: /etc/kubernetes/manifests/kube-vip.yaml
-            permissions: "0744"
+              hostAliases:
+              - hostnames:
+                - kubernetes
+                ip: 127.0.0.1
+              hostNetwork: true
+              volumes:
+              - hostPath:
+                  path: /etc/kubernetes/admin.conf
+                name: kubeconfig
+            status: {}
+          owner: root:root
+          path: /etc/kubernetes/manifests/kube-vip.yaml
+          permissions: "0744"
         initConfiguration:
           nodeRegistration:
             criSocket: unix:///var/run/containerd/containerd.sock
@@ -179,11 +179,11 @@ spec:
               eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
             name: '{{ v1.local_hostname }}'
         preKubeadmCommands:
-          - hostname "{{ v1.local_hostname }}"
-          - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
-          - echo "127.0.0.1   localhost" >>/etc/hosts
-          - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
-          - echo "{{ v1.local_hostname }}" >/etc/hostname
+        - hostname "{{ v1.local_hostname }}"
+        - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+        - echo "127.0.0.1   localhost" >>/etc/hosts
+        - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+        - echo "{{ v1.local_hostname }}" >/etc/hostname
         useExperimentalRetryJoin: true
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -192,7 +192,7 @@ metadata:
   labels:
     cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
     cluster.x-k8s.io/control-plane: ""
-  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
+  name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0
 spec:
   template:
     spec:
@@ -210,47 +210,47 @@ spec:
             eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
           name: '{{ v1.local_hostname }}'
       preKubeadmCommands:
-        - hostname "{{ v1.local_hostname }}"
-        - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
-        - echo "127.0.0.1   localhost" >>/etc/hosts
-        - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
-        - echo "{{ v1.local_hostname }}" >/etc/hostname
+      - hostname "{{ v1.local_hostname }}"
+      - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+      - echo "127.0.0.1   localhost" >>/etc/hosts
+      - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+      - echo "{{ v1.local_hostname }}" >/etc/hostname
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
 metadata:
-  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate"
+  name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-control-plane-machinetemplate
 spec:
   template:
     spec:
-      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
-      sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
-        name: "${IBMPOWERVS_IMAGE_NAME}"
-      network:
-        name: "${IBMPOWERVS_NETWORK_NAME}"
+        name: ${IBMPOWERVS_IMAGE_NAME}
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
-      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      network:
+        name: ${IBMPOWERVS_NETWORK_NAME}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+      sshKey: ${IBMPOWERVS_SSHKEY_NAME}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSMachineTemplate
 metadata:
-  name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+  name: ${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate
 spec:
   template:
     spec:
-      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
-      sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
-        name: "${IBMPOWERVS_IMAGE_NAME}"
-      network:
-        name: "${IBMPOWERVS_NETWORK_NAME}"
+        name: ${IBMPOWERVS_IMAGE_NAME}
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
-      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      network:
+        name: ${IBMPOWERVS_NETWORK_NAME}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+      sshKey: ${IBMPOWERVS_SSHKEY_NAME}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
@@ -261,18 +261,15 @@ spec:
     matchLabels:
       ccm: external
   resources:
-    - kind: Secret
-      name: ibmpowervs-credential
-    - kind: ConfigMap
-      name: ibmpowervs-cfg
-    - kind: ConfigMap
-      name: cloud-controller-manager-addon
+  - kind: Secret
+    name: ibmpowervs-credential
+  - kind: ConfigMap
+    name: ibmpowervs-cfg
+  - kind: ConfigMap
+    name: cloud-controller-manager-addon
   strategy: ApplyOnce
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ibmpowervs-cfg
 data:
   ibmpowervs-cloud-conf.yaml: |-
     apiVersion: v1
@@ -299,12 +296,14 @@ data:
         powerVSCloudInstanceID = ${IBMPOWERVS_SERVICE_INSTANCE_ID}
         powerVSRegion = ${IBMPOWERVS_REGION}
         powerVSZone = ${IBMPOWERVS_ZONE}
+kind: ConfigMap
+metadata:
+  name: ibmpowervs-cfg
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: ibmpowervs-credential
-type: addons.cluster.x-k8s.io/resource-set
 stringData:
   ibmpowervs-credential.yaml: |-
     apiVersion: v1
@@ -314,11 +313,9 @@ stringData:
       namespace: kube-system
     data:
       ibmcloud_api_key: ${BASE64_API_KEY}
+type: addons.cluster.x-k8s.io/resource-set
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloud-controller-manager-addon
 data:
   ibmpowervs-ccm-external.yaml: |-
     apiVersion: v1
@@ -488,16 +485,14 @@ data:
           serviceAccountName: cloud-controller-manager
           containers:
             - name: ibmpowervs-cloud-controller-manager
-              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:9b99b4e_a6bfa07
+              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:07d19bf
               args:
                 - --v=2
                 - --cloud-provider=ibm
                 - --cloud-config=/etc/cloud/ibmpowervs.conf
                 - --use-service-account-credentials=true
               env:
-                - name: VPCCTL_CLOUD_CONFIG
-                  value: /etc/cloud/ibmpowervs.conf
-                - name: VPCCTL_PUBLIC_ENDPOINT
+                - name: ENABLE_VPC_PUBLIC_ENDPOINT
                   value: "true"
               volumeMounts:
                 - mountPath: /etc/cloud
@@ -516,3 +511,6 @@ data:
             - name: ibm-secret
               secret:
                 secretName: ibmpowervs-cloud-credential
+kind: ConfigMap
+metadata:
+  name: cloud-controller-manager-addon

@@ -1,0 +1,9 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCMachineTemplate
+metadata:
+  name: "${CLUSTER_NAME}-control-plane"
+spec:
+  template:
+    spec:
+      bootVolume:
+        sizeGiB: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_SIZEGIB:=20}
