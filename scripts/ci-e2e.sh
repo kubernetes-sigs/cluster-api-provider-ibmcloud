@@ -40,7 +40,7 @@ ARCH=$(uname -m)
 OS=$(uname -s)
 IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.16.0"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
-REGION=${REGION:-${BOSKOS_REGION:-"jp-osa"}}
+REGION=${REGION:-"jp-osa"}
 capibmadm=$(pwd)/bin/capibmadm
 
 [ "${ARCH}" == "x86_64" ] && ARCH="amd64"
@@ -166,8 +166,10 @@ main(){
     export DOCKER_BUILDKIT=1
     # Setting controller loglevel to allow debug logs from the VPC/PowerVS client
     export LOGLEVEL=5
-   
 
+    if [ -n "${BOSKOS_REGION}" ]; then
+        REGION=${BOSKOS_REGION}
+    fi
 
     if [[ "${E2E_FLAVOR}" == "powervs" || "${E2E_FLAVOR}" == "powervs-md-remediation" ]]; then
         prerequisites_powervs
