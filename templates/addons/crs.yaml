@@ -253,4 +253,4 @@ data:
                 name: ibm-cloud-config
             - name: ibm-secret
               secret:
-                secretName: ibm-cloud-credentia
+                secretName: ibm-cloud-credential
