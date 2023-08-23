@@ -23,7 +23,6 @@ previous cluster managers such as [kops](https://github.com/kubernetes/kops) and
 This book documents Cluster API Provider IBM Cloud v0.4. For other versions please see the corresponding documentation:
 * [main.cluster-api-ibmcloud.sigs.k8s.io](https://main.cluster-api-ibmcloud.sigs.k8s.io)
 * [release-0-4.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-4.cluster-api-ibmcloud.sigs.k8s.io/)
-* [release-0-3.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-3.cluster-api-ibmcloud.sigs.k8s.io/)
 
 </aside>
 
