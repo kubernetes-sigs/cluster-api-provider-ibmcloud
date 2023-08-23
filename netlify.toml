@@ -8,7 +8,7 @@ GO_VERSION = "1.19"
 
 # Standard Netlify redirects
 [[redirects]]
-from = "https://master--cluster-api-ibmcloud.netlify.com/*"
+from = "https://main--kubernetes-sigs-cluster-api-ibmcloud.netlify.com/*"
 to = "https://main.cluster-api-ibmcloud.sigs.k8s.io/:splat"
 status = 301
 force = true
@@ -21,7 +21,7 @@ status = 301
 force = true
 
 [[redirects]]
-from = "http://main--cluster-api-ibmcloud.netlify.com/*"
+from = "http://main--kubernetes-sigs-cluster-api-ibmcloud.netlify.com/*"
 to = "http://main.cluster-api-ibmcloud.sigs.k8s.io/:splat"
 status = 301
 force = true
