@@ -27,6 +27,7 @@
     - [Image Commands](./topics/capibmadm/vpc/image.md)
     - [Key Commands](./topics/capibmadm/vpc/key.md)
 - [Developer Guide](./developer/index.md)
+  - [Podman setup for tilt](./developer/tilt-with-podman.md)
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)
   - [Release Process](./developer/release.md)
