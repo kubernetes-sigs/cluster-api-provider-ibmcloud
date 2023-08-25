@@ -24,7 +24,6 @@ This book documents Cluster API Provider IBM Cloud v0.5. For other versions plea
 * [main.cluster-api-ibmcloud.sigs.k8s.io](https://main.cluster-api-ibmcloud.sigs.k8s.io)
 * [release-0-5.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-5.cluster-api-ibmcloud.sigs.k8s.io/)
 * [release-0-4.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-4.cluster-api-ibmcloud.sigs.k8s.io/)
-* [release-0-3.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-3.cluster-api-ibmcloud.sigs.k8s.io/)
 
 </aside>
 
