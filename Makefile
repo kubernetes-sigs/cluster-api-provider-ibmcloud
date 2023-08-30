@@ -154,8 +154,8 @@ help:  # Display this help
 
 # Generate code
 .PHONY: generate
-generate: ## Run all generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions
-	$(MAKE) generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions
+generate: ## Run all generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates
+	$(MAKE) generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates
 
 generate-go-deepcopy: $(CONTROLLER_GEN) ## Generate deepcopy go code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
