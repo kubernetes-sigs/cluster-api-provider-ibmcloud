@@ -1,4 +1,4 @@
-managementClusterName: capi-ibmcloud-e2e
+managementClusterName: capibm-e2e
 
 images:
   # Use local built images for e2e tests

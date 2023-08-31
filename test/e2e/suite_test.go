@@ -94,7 +94,7 @@ func init() {
 func TestE2E(t *testing.T) {
 	ctrl.SetLogger(klog.Background())
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "capi-ibmcloud-e2e")
+	RunSpecs(t, "capibm-e2e")
 }
 
 // Using a SynchronizedBeforeSuite for controlling how to create resources shared across ParallelNodes (~ginkgo threads).
