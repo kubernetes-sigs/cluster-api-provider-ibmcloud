@@ -131,6 +131,10 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 
 // DeleteVPC deletes IBM VPC associated with a VPC id.
 func (s *ClusterScope) DeleteVPC() error {
+	if s.IBMVPCCluster.Status.VPC.ID == "" {
+		return nil
+	}
+
 	deleteVpcOptions := &vpcv1.DeleteVPCOptions{}
 	deleteVpcOptions.SetID(s.IBMVPCCluster.Status.VPC.ID)
 	_, err := s.IBMVPCClient.DeleteVPC(deleteVpcOptions)
@@ -265,6 +269,10 @@ func (s *ClusterScope) ensureFIPUnique(fipName string) (*vpcv1.FloatingIP, error
 
 // DeleteFloatingIP deletes a Floating IP associated with floating ip id.
 func (s *ClusterScope) DeleteFloatingIP() error {
+	if s.IBMVPCCluster.Status.VPCEndpoint.FIPID == nil {
+		return nil
+	}
+
 	if fipID := *s.IBMVPCCluster.Status.VPCEndpoint.FIPID; fipID != "" {
 		deleteFIPOption := &vpcv1.DeleteFloatingIPOptions{}
 		deleteFIPOption.SetID(fipID)
@@ -408,6 +416,10 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 
 // DeleteSubnet deletes a subnet associated with subnet id.
 func (s *ClusterScope) DeleteSubnet() error {
+	if s.IBMVPCCluster.Status.Subnet.ID == nil {
+		return nil
+	}
+
 	subnetID := *s.IBMVPCCluster.Status.Subnet.ID
 
 	// Lists the subnet available and compare before deleting to avoid any failure(404) later
@@ -701,6 +713,10 @@ func (s *ClusterScope) SetLoadBalancerID(id *string) {
 
 // GetLoadBalancerID will get the id for the load balancer.
 func (s *ClusterScope) GetLoadBalancerID() string {
+	if s.IBMVPCCluster.Status.VPCEndpoint.LBID == nil {
+		return ""
+	}
+
 	return *s.IBMVPCCluster.Status.VPCEndpoint.LBID
 }
 
