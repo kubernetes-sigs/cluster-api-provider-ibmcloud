@@ -114,11 +114,13 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
-	// Always close the scope when exiting this function, so we can persist any IBMVPCMachine changes.
 
+	// Always close the scope when exiting this function, so we can persist any IBMVPCMachine changes.
 	defer func() {
-		if err := machineScope.Close(); err != nil && reterr == nil {
-			reterr = err
+		if machineScope != nil {
+			if err := machineScope.Close(); err != nil && reterr == nil {
+				reterr = err
+			}
 		}
 	}()
 
