@@ -165,15 +165,6 @@ func initFlags(fs *pflag.FlagSet) {
 		"The minimum interval at which watched resources are reconciled.",
 	)
 
-	// Deprecated: Use provider-id-fmt flag go set provider id format for Power VS.
-	fs.StringVar(
-		&options.PowerVSProviderIDFormat,
-		"powervs-provider-id-fmt",
-		string(options.PowerVSProviderIDFormatV1),
-		"ProviderID format is used set the Provider ID format for Machine",
-	)
-	_ = fs.MarkDeprecated("powervs-provider-id-fmt", "please use provider-id-fmt flag")
-
 	fs.StringVar(
 		&options.ProviderIDFormat,
 		"provider-id-fmt",
@@ -190,14 +181,6 @@ func initFlags(fs *pflag.FlagSet) {
 }
 
 func validateFlags() error {
-	switch options.ProviderIDFormatType(options.PowerVSProviderIDFormat) {
-	case options.PowerVSProviderIDFormatV1:
-		setupLog.Info("Power VS ProviderID format is set to v1 version")
-	case options.PowerVSProviderIDFormatV2:
-		setupLog.Info("Power VS ProviderID format is set to v2 version")
-	default:
-		return fmt.Errorf("invalid value for flag powervs-provider-id-fmt: %s, Supported values: v1, v2 ", options.PowerVSProviderIDFormat)
-	}
 	switch options.ProviderIDFormatType(options.ProviderIDFormat) {
 	case options.ProviderIDFormatV1:
 		setupLog.Info("Using v1 version of ProviderID format")
