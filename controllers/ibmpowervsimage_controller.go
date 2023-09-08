@@ -79,10 +79,13 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
 	}
-	// Always close the scope when exiting this function so we can persist any IBM PowerVS Image changes.
+
+	// Always close the scope when exiting this function so we can persist any IBMPowerVSImage changes.
 	defer func() {
-		if err := imageScope.Close(); err != nil && reterr == nil {
-			reterr = err
+		if imageScope != nil {
+			if err := imageScope.Close(); err != nil && reterr == nil {
+				reterr = err
+			}
 		}
 	}()
 
