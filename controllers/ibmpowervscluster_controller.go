@@ -88,10 +88,12 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		ServiceEndpoint:   r.ServiceEndpoint,
 	})
 
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
+	// Always close the scope when exiting this function so we can persist any IBMPowerVSCluster changes.
 	defer func() {
-		if err := clusterScope.Close(); err != nil && reterr == nil {
-			reterr = err
+		if clusterScope != nil {
+			if err := clusterScope.Close(); err != nil && reterr == nil {
+				reterr = err
+			}
 		}
 	}()
 
