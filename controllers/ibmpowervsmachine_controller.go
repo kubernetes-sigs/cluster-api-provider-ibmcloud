@@ -137,11 +137,13 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	if err != nil {
 		return ctrl.Result{}, errors.Errorf("failed to create scope: %v", err)
 	}
-	// Always close the scope when exiting this function so we can persist any GCPMachine changes.
 
+	// Always close the scope when exiting this function so we can persist any IBMPowerVSMachine changes.
 	defer func() {
-		if err := machineScope.Close(); err != nil && reterr == nil {
-			reterr = err
+		if machineScope != nil {
+			if err := machineScope.Close(); err != nil && reterr == nil {
+				reterr = err
+			}
 		}
 	}()
 
