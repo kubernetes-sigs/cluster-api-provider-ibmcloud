@@ -26,7 +26,7 @@
   --target-namespace default \
   --control-plane-machine-count=1 \
   --worker-machine-count=2 \
-  --flavor=load-balancer | kubectl apply -f -
+  --flavor=vpc-load-balancer | kubectl apply -f -
 ```
 
 **Change disk size for the boot volume**
