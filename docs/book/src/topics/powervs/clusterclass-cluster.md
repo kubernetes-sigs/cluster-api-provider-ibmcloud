@@ -24,5 +24,5 @@
   --target-namespace default \
   --control-plane-machine-count=3 \
   --worker-machine-count=1 \
-  --flavor=simple-powervs-clusterclass | kubectl apply -f -
+  --flavor=powervs-clusterclass | kubectl apply -f -
   ```
