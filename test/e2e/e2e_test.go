@@ -28,12 +28,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/pointer"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	kubeadmv1 "sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -110,9 +108,6 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				},
 			}, result)
 
 			By("Scaling worker node to 3")
@@ -134,9 +129,6 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				},
 			}, result)
 		})
 	})
@@ -162,9 +154,6 @@ var _ = Describe("Workload cluster creation", func() {
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
 				WaitForControlPlaneIntervals: e2eConfig.GetIntervals(specName, "wait-control-plane"),
 				WaitForMachineDeployments:    e2eConfig.GetIntervals(specName, "wait-worker-nodes"),
-				ControlPlaneWaiters: clusterctl.ControlPlaneWaiters{
-					WaitForControlPlaneInitialized: EnsureControlPlaneInitialized,
-				},
 			}, result)
 		})
 	})
@@ -238,23 +227,4 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 		Byf("Running additional cleanup for the %q test spec", input.SpecName)
 		input.AdditionalCleanup()
 	}
-}
-
-func EnsureControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) {
-	By("Ensuring API Server is reachable")
-	Eventually(func(g Gomega) {
-		ns := &corev1.Namespace{}
-		clusterProxy := input.ClusterProxy.GetWorkloadCluster(ctx, input.Namespace, input.ClusterName)
-		g.Expect(clusterProxy.GetClient().Get(ctx, client.ObjectKey{Name: "kube-system"}, ns)).To(Succeed(), "Failed to get kube-system namespace")
-	}, input.WaitForControlPlaneIntervals...).Should(Succeed(), "API Server was not reachable in time")
-
-	controlPlane := discoveryAndWaitForControlPlaneInitialized(ctx, input, result)
-	result.ControlPlane = controlPlane
-}
-
-func discoveryAndWaitForControlPlaneInitialized(ctx context.Context, input clusterctl.ApplyCustomClusterTemplateAndWaitInput, result *clusterctl.ApplyCustomClusterTemplateAndWaitResult) *kubeadmv1.KubeadmControlPlane {
-	return framework.DiscoveryAndWaitForControlPlaneInitialized(ctx, framework.DiscoveryAndWaitForControlPlaneInitializedInput{
-		Lister:  input.ClusterProxy.GetClient(),
-		Cluster: result.Cluster,
-	}, input.WaitForControlPlaneIntervals...)
 }
