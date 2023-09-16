@@ -5,6 +5,8 @@
 
 1. Install Podman: Instruction can be found [here](https://podman.io/docs/installation)
 2. Emulate docker cli with Podman: Instructions can be found [here](https://podman-desktop.io/docs/migrating-from-docker/emulating-docker-cli-with-podman)
+3. On `macOS` migrate from Docker to Podman: Instruction can be found
+ [here](https://podman-desktop.io/docs/migrating-from-docker/using-podman-mac-helper).
 
 ## 1. Create Podman machine
 
