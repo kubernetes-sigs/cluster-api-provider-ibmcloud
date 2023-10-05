@@ -1198,10 +1198,10 @@ mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d/go.mod h1:IeHQjmn6TOD+e4Z3RF
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
 rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
 rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
-sigs.k8s.io/cluster-api v1.5.1 h1:+oO4EbVQcbBJr5wjqmdjvewPHSTbVLigXZqPk3ZO8t0=
-sigs.k8s.io/cluster-api v1.5.1/go.mod h1:EGJUNpFWi7dF426tO8MG/jE+w7T0UO5KyMnOwQ5riUY=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230829135722-db17cb237642 h1:5aSgWavWiyAMvNF9upODVnkjBUeHiEcf0OXEmg2tjCE=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230829135722-db17cb237642/go.mod h1:sTYtx38GRzSi/fFCCEiV1Uwb7xAyM8dwDvH04o6CewQ=
+sigs.k8s.io/cluster-api v1.5.2 h1:pCsyEHwTBb7n+U5Z2OA5STxdJ1EuSpJv8FLBx4lii3s=
+sigs.k8s.io/cluster-api v1.5.2/go.mod h1:EGJUNpFWi7dF426tO8MG/jE+w7T0UO5KyMnOwQ5riUY=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231003103052-93daac9ae427 h1:i+GKijn8HGJJfMGySF1HX6fmefntkVTV4daKQN9vNQA=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231003103052-93daac9ae427/go.mod h1:sTYtx38GRzSi/fFCCEiV1Uwb7xAyM8dwDvH04o6CewQ=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9 h1:ylYUI5uaq/guUFerFRVG81FHSA5/3+fERCE1RQbQUZ4=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9/go.mod h1:+sJcI1F0QI0Cv+8fp5rH5B2fK1LxzrAQqYnaPx9nY8I=
 sigs.k8s.io/controller-tools v0.12.0 h1:TY6CGE6+6hzO7hhJFte65ud3cFmmZW947jajXkuDfBw=
