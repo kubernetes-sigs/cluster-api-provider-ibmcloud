@@ -10,7 +10,7 @@ replace (
 )
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.5.0
+	github.com/IBM-Cloud/power-go-client v1.5.1
 	github.com/IBM/go-sdk-core/v5 v5.14.1
 	github.com/IBM/platform-services-go-sdk v0.52.0
 	github.com/IBM/vpc-go-sdk v0.43.0
@@ -135,7 +135,7 @@ require (
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opentelemetry.io/otel v1.14.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
-	golang.org/x/net v0.16.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/term v0.13.0 // indirect

@@ -42,8 +42,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.0.0 h1:dtDWrepsVPfW9H/4y7dDgFc2MBUSeJhlaDtK13CxFlU=
 github.com/BurntSushi/toml v1.0.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/IBM-Cloud/power-go-client v1.5.0 h1:01Y7A2yvcCgwc1hOhGLJcn900tOSicMyCI343+0OdYM=
-github.com/IBM-Cloud/power-go-client v1.5.0/go.mod h1:BBri4Alse/YX3pCTnPeoOos/Wf6HilSSjbixP0i/SKo=
+github.com/IBM-Cloud/power-go-client v1.5.1 h1:irBXhyzfq9pTARoSWINjGjg60Hu4BAdDBSofS6BPg7A=
+github.com/IBM-Cloud/power-go-client v1.5.1/go.mod h1:Vd8aSxWA30soUhE2U+tmzaYDUVNOmQE3/npny7BsN6Y=
 github.com/IBM/go-sdk-core/v5 v5.14.1 h1:WR1r0zz+gDW++xzZjF41r9ueY4JyjS2vgZjiYs8lO3c=
 github.com/IBM/go-sdk-core/v5 v5.14.1/go.mod h1:MUvIr/1mgGh198ZXL+ByKz9Qs1JoEh80v/96x8jPXNY=
 github.com/IBM/platform-services-go-sdk v0.52.0 h1:hbf640xE8T0Rwy2IUf5Pu4OATabGS4IDMnEInXUXs4o=
@@ -713,8 +713,8 @@ golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d/go.mod h1:9nx3DQGgdP8bBQD5qx
 golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/net v0.0.0-20220722155237-a158d28d115b/go.mod h1:XRhObCWvk6IyKnWLug+ECip1KBveYUHfp+8e9klMJ9c=
 golang.org/x/net v0.2.0/go.mod h1:KqCZLdyyvdV855qA2rE3GC2aiw5xGR5TEjj8smXukLY=
-golang.org/x/net v0.16.0 h1:7eBu7KsSvFDtSXUIDbh3aqlK4DPsZ1rByC8PFfBThos=
-golang.org/x/net v0.16.0/go.mod h1:NxSsAGuq816PNPmqtQdLE42eU2Fs7NoRIZrHJAlaCOE=
+golang.org/x/net v0.17.0 h1:pVaXccu2ozPjCXewfr1S7xza/zcXTity9cCdXQYSjIM=
+golang.org/x/net v0.17.0/go.mod h1:NxSsAGuq816PNPmqtQdLE42eU2Fs7NoRIZrHJAlaCOE=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
 golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
