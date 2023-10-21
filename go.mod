@@ -10,7 +10,7 @@ replace (
 )
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.5.1
+	github.com/IBM-Cloud/power-go-client v1.5.2
 	github.com/IBM/go-sdk-core/v5 v5.14.1
 	github.com/IBM/platform-services-go-sdk v0.52.0
 	github.com/IBM/vpc-go-sdk v0.43.0
