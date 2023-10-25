@@ -376,9 +376,8 @@ func getNetworkID(network infrav1beta2.IBMPowerVSResourceReference, m *PowerVSMa
 			}
 		}
 		return nil, fmt.Errorf("failed to find a network ID with RegEx %s", *network.RegEx)
-	} else {
-		return nil, fmt.Errorf("ID, Name and RegEx can't be nil")
 	}
+	return nil, fmt.Errorf("ID, Name and RegEx can't be nil")
 }
 
 // GetNetworks will get list of networks for the powervs service instance.

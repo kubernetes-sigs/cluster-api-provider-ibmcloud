@@ -36,6 +36,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const idSuffix = "-id"
+
 func newPowervsImage(imageName string) *infrav1beta2.IBMPowerVSImage {
 	return &infrav1beta2.IBMPowerVSImage{
 		ObjectMeta: metav1.ObjectMeta{
@@ -226,7 +228,7 @@ func TestDeleteImage(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-			scope.IBMPowerVSImage.Status.ImageID = pvsImage + "-id"
+			scope.IBMPowerVSImage.Status.ImageID = pvsImage + idSuffix
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(nil)
 			err := scope.DeleteImage()
 			g.Expect(err).To(BeNil())
@@ -237,7 +239,7 @@ func TestDeleteImage(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-			scope.IBMPowerVSImage.Status.ImageID = pvsImage + "-id"
+			scope.IBMPowerVSImage.Status.ImageID = pvsImage + idSuffix
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image"))
 			err := scope.DeleteImage()
 			g.Expect(err).To(Not(BeNil()))

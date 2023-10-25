@@ -40,6 +40,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
+const subnetSuffix = "-subnet"
+
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.
 type ClusterScopeParams struct {
 	IBMVPCClient    vpc.Vpc
@@ -289,7 +291,7 @@ func (s *ClusterScope) DeleteFloatingIP() error {
 
 // CreateSubnet creates a subnet within provided vpc and zone.
 func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
-	subnetName := s.IBMVPCCluster.Name + "-subnet"
+	subnetName := s.IBMVPCCluster.Name + subnetSuffix
 	subnetReply, err := s.ensureSubnetUnique(subnetName)
 	if err != nil {
 		return nil, err
@@ -303,7 +305,7 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 	if err != nil {
 		return nil, err
 	}
-	subnetName = s.IBMVPCCluster.Name + "-subnet"
+	subnetName = s.IBMVPCCluster.Name + subnetSuffix
 	options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
 		Ipv4CIDRBlock: &cidrBlock,
 		Name:          &subnetName,
