@@ -433,7 +433,7 @@ func TestCreateSubnet(t *testing.T) {
 			scope.IBMVPCCluster.Status = vpcCluster.Status
 
 			subnet := &vpcv1.Subnet{
-				Name: core.StringPtr(scope.IBMVPCCluster.Name + "-subnet"),
+				Name: core.StringPtr(scope.IBMVPCCluster.Name + subnetSuffix),
 				ID:   core.StringPtr(scope.IBMVPCCluster.Name + "-subnet-id"),
 			}
 			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
@@ -534,7 +534,7 @@ func TestCreateSubnet(t *testing.T) {
 			scope.IBMVPCCluster.Spec = vpcCluster.Spec
 			scope.IBMVPCCluster.Status = vpcCluster.Status
 			subnet := &vpcv1.Subnet{
-				Name: core.StringPtr(scope.IBMVPCCluster.Name + "-subnet"),
+				Name: core.StringPtr(scope.IBMVPCCluster.Name + subnetSuffix),
 				ID:   core.StringPtr(scope.IBMVPCCluster.Name + "-subnet-id"),
 			}
 			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(&vpcv1.SubnetCollection{}, &core.DetailedResponse{}, nil)
