@@ -138,10 +138,6 @@ prerequisites_vpc(){
     export IBMVPC_IMAGE_NAME=${IBMVPC_IMAGE_NAME:-"capibm-vpc-ubuntu-2004-kube-v1-27-2"}
     export IBMVPC_PROFILE=${IBMVPC_PROFILE:-"bx2-4x16"}
     export IBMVPC_SSHKEY_NAME=${IBMVPC_SSHKEY_NAME:-"vpc-cloud-bot-key"}
-}
-
-prerequisites_vpc_load_balancer(){
-    # Assigning VPC LoadBalancer variables
     export PROVIDER_ID_FORMAT=v2
     export EXP_CLUSTER_RESOURCE_SET=true
     export IBMACCOUNT_ID=${IBMACCOUNT_ID:-"7cfbd5381a434af7a09289e795840d4e"}
@@ -150,7 +146,7 @@ prerequisites_vpc_load_balancer(){
 
 main(){
 
-    [[ "${E2E_FLAVOR}" == "vpc"* ]] && RESOURCE_TYPE="vpc-service"
+    [[ "${E2E_FLAVOR}" == "vpc" ]] && RESOURCE_TYPE="vpc-service"
 
     # If BOSKOS_HOST is set then acquire an IBM Cloud resource from Boskos.
     if [ -n "${BOSKOS_HOST:-}" ]; then
@@ -189,12 +185,8 @@ main(){
         init_network_powervs
     fi
 
-    if [[ "${E2E_FLAVOR}" == "vpc"* ]]; then
+    if [[ "${E2E_FLAVOR}" == "vpc" ]]; then
         prerequisites_vpc
-    fi
-
-    if [[ "${E2E_FLAVOR}" == "vpc-load-balancer" ]]; then
-        prerequisites_vpc_load_balancer
     fi
 
     # Run the e2e tests

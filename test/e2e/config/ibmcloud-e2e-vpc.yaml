@@ -38,8 +38,8 @@ providers:
       files:
       - sourcePath: "${PWD}/metadata.yaml"
         targetName: "metadata.yaml"
-      - sourcePath: "${PWD}/templates/cluster-template-vpc-load-balancer.yaml"
-        targetName: "cluster-template-vpc-load-balancer.yaml"
+      - sourcePath: "${PWD}/test/e2e/data/templates/cluster-template-vpc.yaml"
+        targetName: "cluster-template-vpc.yaml"
 
 variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.27.2}"

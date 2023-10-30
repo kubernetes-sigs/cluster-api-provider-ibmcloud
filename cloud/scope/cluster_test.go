@@ -253,140 +253,6 @@ func TestDeleteVPC(t *testing.T) {
 	})
 }
 
-func TestReserveFIP(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
-		t.Helper()
-		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
-	}
-
-	vpcCluster := infrav1beta2.IBMVPCCluster{
-		Spec: infrav1beta2.IBMVPCClusterSpec{
-			ResourceGroup: "foo-resource-group",
-			VPC:           "foo-vpc",
-			Zone:          "foo-zone",
-		},
-	}
-
-	t.Run("Reserve FloatingIP", func(t *testing.T) {
-		t.Run("Should reserve FloatingIP", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope(clusterName, mockvpc)
-			expectedOutput := &vpcv1.FloatingIP{
-				Name: core.StringPtr("foo-cluster-control-plane"),
-			}
-			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			floatingIP := &vpcv1.FloatingIP{Name: core.StringPtr("foo-cluster-control-plane")}
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(&vpcv1.FloatingIPCollection{}, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().CreateFloatingIP(gomock.AssignableToTypeOf(&vpcv1.CreateFloatingIPOptions{})).Return(floatingIP, &core.DetailedResponse{}, nil)
-			out, err := scope.ReserveFIP()
-			g.Expect(err).To(BeNil())
-			require.Equal(t, expectedOutput, out)
-		})
-
-		t.Run("Return exsisting FloatingIP", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope("foo-cluster-1", mockvpc)
-			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			floatingIPCollection := &vpcv1.FloatingIPCollection{
-				FloatingIps: []vpcv1.FloatingIP{
-					{
-						Name: core.StringPtr("foo-cluster-1-control-plane"),
-					},
-				},
-			}
-			expectedOutput := &vpcv1.FloatingIP{
-				Name: core.StringPtr("foo-cluster-1-control-plane"),
-			}
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(floatingIPCollection, &core.DetailedResponse{}, nil)
-			out, err := scope.ReserveFIP()
-			g.Expect(err).To(BeNil())
-			require.Equal(t, expectedOutput, out)
-		})
-
-		t.Run("Error when listing FloatingIPs", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope(clusterName, mockvpc)
-			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(&vpcv1.FloatingIPCollection{}, &core.DetailedResponse{}, errors.New("Error when listing FloatingIPs"))
-			_, err := scope.ReserveFIP()
-			g.Expect(err).To(Not(BeNil()))
-		})
-
-		t.Run("Error when creating FloatingIP", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope(clusterName, mockvpc)
-			scope.IBMVPCCluster.Spec = vpcCluster.Spec
-			mockvpc.EXPECT().ListFloatingIps(gomock.AssignableToTypeOf(&vpcv1.ListFloatingIpsOptions{})).Return(&vpcv1.FloatingIPCollection{}, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().CreateFloatingIP(gomock.AssignableToTypeOf(&vpcv1.CreateFloatingIPOptions{})).Return(nil, &core.DetailedResponse{}, errors.New("Error when creating FloatingIP"))
-			_, err := scope.ReserveFIP()
-			g.Expect(err).To(Not(BeNil()))
-		})
-	})
-}
-
-func TestDeleteFloatingIP(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
-		t.Helper()
-		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
-	}
-
-	vpcCluster := infrav1beta2.IBMVPCCluster{
-		Status: infrav1beta2.IBMVPCClusterStatus{
-			VPCEndpoint: infrav1beta2.VPCEndpoint{
-				FIPID: core.StringPtr("foo-vpc"),
-			},
-		},
-	}
-
-	t.Run("Delete FloatingIP", func(t *testing.T) {
-		t.Run("Should delete FloatingIP", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope(clusterName, mockvpc)
-			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().DeleteFloatingIP(gomock.AssignableToTypeOf(&vpcv1.DeleteFloatingIPOptions{})).Return(&core.DetailedResponse{}, nil)
-			err := scope.DeleteFloatingIP()
-			g.Expect(err).To(BeNil())
-		})
-
-		t.Run("Empty FloatingIP", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope(clusterName, mockvpc)
-			vpcClusterCustom := infrav1beta2.IBMVPCCluster{
-				Status: infrav1beta2.IBMVPCClusterStatus{
-					VPCEndpoint: infrav1beta2.VPCEndpoint{
-						FIPID: core.StringPtr(""),
-					},
-				}}
-			scope.IBMVPCCluster.Status = vpcClusterCustom.Status
-			err := scope.DeleteFloatingIP()
-			g.Expect(err).To(BeNil())
-		})
-
-		t.Run("Error while deleting FloatingIP", func(t *testing.T) {
-			g := NewWithT(t)
-			mockController, mockvpc := setup(t)
-			t.Cleanup(mockController.Finish)
-			scope := setupClusterScope(clusterName, mockvpc)
-			scope.IBMVPCCluster.Status = vpcCluster.Status
-			mockvpc.EXPECT().DeleteFloatingIP(gomock.AssignableToTypeOf(&vpcv1.DeleteFloatingIPOptions{})).Return(&core.DetailedResponse{}, errors.New("Could not delete FloatingIP"))
-			err := scope.DeleteFloatingIP()
-			g.Expect(err).To(Not(BeNil()))
-		})
-	})
-}
-
 func TestCreateSubnet(t *testing.T) {
 	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
@@ -737,6 +603,39 @@ func TestCreateLoadBalancer(t *testing.T) {
 			scope.IBMVPCCluster.Status = vpcClusterCustom.Status
 			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
 			out, err := scope.CreateLoadBalancer()
+			g.Expect(err).To(BeNil())
+			require.Equal(t, expectedOutput, out)
+		})
+		t.Run("Error when listing LoadBalancer (GetLoadBalancerByHostname)", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			scope.IBMVPCCluster.Spec = vpcCluster.Spec
+			scope.IBMVPCCluster.Status = vpcCluster.Status
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, errors.New("Failed to list LoadBalancer"))
+			_, err := scope.GetLoadBalancerByHostname("foo-load-balancer-hostname")
+			g.Expect(err).To(Not(BeNil()))
+		})
+		t.Run("Return LoadBalancer by Hostname", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc := setup(t)
+			t.Cleanup(mockController.Finish)
+			scope := setupClusterScope(clusterName, mockvpc)
+			loadBalancerCollection := &vpcv1.LoadBalancerCollection{
+				LoadBalancers: []vpcv1.LoadBalancer{
+					{
+						Name:     core.StringPtr("foo-load-balancer"),
+						Hostname: core.StringPtr("foo-load-balancer-hostname"),
+					},
+				},
+			}
+			expectedOutput := &vpcv1.LoadBalancer{
+				Name:     core.StringPtr("foo-load-balancer"),
+				Hostname: core.StringPtr("foo-load-balancer-hostname"),
+			}
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
+			out, err := scope.GetLoadBalancerByHostname("foo-load-balancer-hostname")
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
 		})

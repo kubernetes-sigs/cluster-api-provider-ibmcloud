@@ -173,33 +173,17 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			return ctrl.Result{}, errors.Wrapf(err, "failed to set provider id IBMVPCMachine %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
 		}
 		if ok {
-			if machineScope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer == nil {
-				options := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}
-				options.SetID(*machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID)
-				options.SetInstanceID(*instance.ID)
-				options.SetNetworkInterfaceID(*instance.PrimaryNetworkInterface.ID)
-				floatingIP, _, err :=
-					machineScope.IBMVPCClient.AddInstanceNetworkInterfaceFloatingIP(options)
-				if err != nil {
-					return ctrl.Result{}, errors.Wrapf(err, "failed to bind floating IP to control plane %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
-				}
-				machineScope.IBMVPCMachine.Status.Addresses = append(machineScope.IBMVPCMachine.Status.Addresses, corev1.NodeAddress{
-					Type:    corev1.NodeExternalIP,
-					Address: *floatingIP.Address,
-				})
-			} else {
-				if instance.PrimaryNetworkInterface.PrimaryIP.Address == nil || *instance.PrimaryNetworkInterface.PrimaryIP.Address == "0.0.0.0" {
-					return ctrl.Result{}, fmt.Errorf("invalid primary ip address")
-				}
-				internalIP := instance.PrimaryNetworkInterface.PrimaryIP.Address
-				port := int64(machineScope.APIServerPort())
-				poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(internalIP, port)
-				if err != nil {
-					return ctrl.Result{}, errors.Wrapf(err, "failed to bind port %d to control plane %s/%s", port, machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
-				}
-				if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
-					return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
-				}
+			if instance.PrimaryNetworkInterface.PrimaryIP.Address == nil || *instance.PrimaryNetworkInterface.PrimaryIP.Address == "0.0.0.0" {
+				return ctrl.Result{}, fmt.Errorf("invalid primary ip address")
+			}
+			internalIP := instance.PrimaryNetworkInterface.PrimaryIP.Address
+			port := int64(machineScope.APIServerPort())
+			poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(internalIP, port)
+			if err != nil {
+				return ctrl.Result{}, errors.Wrapf(err, "failed to bind port %d to control plane %s/%s", port, machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
+			}
+			if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+				return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 			}
 		}
 		machineScope.IBMVPCMachine.Status.Ready = true
@@ -216,7 +200,7 @@ func (r *IBMVPCMachineReconciler) getOrCreate(scope *scope.MachineScope) (*vpcv1
 func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ ctrl.Result, reterr error) {
 	scope.Info("Handling deleted IBMVPCMachine")
 
-	if _, ok := scope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]; ok && scope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer != nil {
+	if _, ok := scope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]; ok {
 		if err := scope.DeleteVPCLoadBalancerPoolMember(); err != nil {
 			return ctrl.Result{}, errors.Wrap(err, "failed to delete loadBalancer pool member")
 		}

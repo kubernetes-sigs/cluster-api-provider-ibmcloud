@@ -50,38 +50,6 @@ func (m *MockVpc) EXPECT() *MockVpcMockRecorder {
 	return m.recorder
 }
 
-// AddInstanceNetworkInterfaceFloatingIP mocks base method.
-func (m *MockVpc) AddInstanceNetworkInterfaceFloatingIP(options *vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions) (*vpcv1.FloatingIP, *core.DetailedResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddInstanceNetworkInterfaceFloatingIP", options)
-	ret0, _ := ret[0].(*vpcv1.FloatingIP)
-	ret1, _ := ret[1].(*core.DetailedResponse)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// AddInstanceNetworkInterfaceFloatingIP indicates an expected call of AddInstanceNetworkInterfaceFloatingIP.
-func (mr *MockVpcMockRecorder) AddInstanceNetworkInterfaceFloatingIP(options interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddInstanceNetworkInterfaceFloatingIP", reflect.TypeOf((*MockVpc)(nil).AddInstanceNetworkInterfaceFloatingIP), options)
-}
-
-// CreateFloatingIP mocks base method.
-func (m *MockVpc) CreateFloatingIP(options *vpcv1.CreateFloatingIPOptions) (*vpcv1.FloatingIP, *core.DetailedResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateFloatingIP", options)
-	ret0, _ := ret[0].(*vpcv1.FloatingIP)
-	ret1, _ := ret[1].(*core.DetailedResponse)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// CreateFloatingIP indicates an expected call of CreateFloatingIP.
-func (mr *MockVpcMockRecorder) CreateFloatingIP(options interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFloatingIP", reflect.TypeOf((*MockVpc)(nil).CreateFloatingIP), options)
-}
-
 // CreateInstance mocks base method.
 func (m *MockVpc) CreateInstance(options *vpcv1.CreateInstanceOptions) (*vpcv1.Instance, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -192,21 +160,6 @@ func (m *MockVpc) CreateVPC(options *vpcv1.CreateVPCOptions) (*vpcv1.VPC, *core.
 func (mr *MockVpcMockRecorder) CreateVPC(options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVPC", reflect.TypeOf((*MockVpc)(nil).CreateVPC), options)
-}
-
-// DeleteFloatingIP mocks base method.
-func (m *MockVpc) DeleteFloatingIP(options *vpcv1.DeleteFloatingIPOptions) (*core.DetailedResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteFloatingIP", options)
-	ret0, _ := ret[0].(*core.DetailedResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// DeleteFloatingIP indicates an expected call of DeleteFloatingIP.
-func (mr *MockVpcMockRecorder) DeleteFloatingIP(options interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFloatingIP", reflect.TypeOf((*MockVpc)(nil).DeleteFloatingIP), options)
 }
 
 // DeleteInstance mocks base method.
@@ -345,22 +298,6 @@ func (m *MockVpc) GetSubnetPublicGateway(options *vpcv1.GetSubnetPublicGatewayOp
 func (mr *MockVpcMockRecorder) GetSubnetPublicGateway(options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetPublicGateway", reflect.TypeOf((*MockVpc)(nil).GetSubnetPublicGateway), options)
-}
-
-// ListFloatingIps mocks base method.
-func (m *MockVpc) ListFloatingIps(options *vpcv1.ListFloatingIpsOptions) (*vpcv1.FloatingIPCollection, *core.DetailedResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListFloatingIps", options)
-	ret0, _ := ret[0].(*vpcv1.FloatingIPCollection)
-	ret1, _ := ret[1].(*core.DetailedResponse)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// ListFloatingIps indicates an expected call of ListFloatingIps.
-func (mr *MockVpcMockRecorder) ListFloatingIps(options interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListFloatingIps", reflect.TypeOf((*MockVpc)(nil).ListFloatingIps), options)
 }
 
 // ListImages mocks base method.

@@ -61,7 +61,11 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 							Name:       "capi-test",
 							UID:        "1",
 						}}},
-				Spec: infrav1beta2.IBMVPCClusterSpec{}},
+				Spec: infrav1beta2.IBMVPCClusterSpec{
+					ControlPlaneLoadBalancer: &infrav1beta2.VPCLoadBalancerSpec{
+						Name: *core.StringPtr("vpc-load-balancer"),
+					},
+				}},
 			expectError: true,
 		},
 		{
@@ -69,7 +73,11 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 			vpcCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "vpc-test-"},
-				Spec: infrav1beta2.IBMVPCClusterSpec{}},
+				Spec: infrav1beta2.IBMVPCClusterSpec{
+					ControlPlaneLoadBalancer: &infrav1beta2.VPCLoadBalancerSpec{
+						Name: *core.StringPtr("vpc-load-balancer"),
+					},
+				}},
 			expectError: false,
 		},
 		{
@@ -158,6 +166,9 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 				},
 				Spec: infrav1beta2.IBMVPCClusterSpec{
 					VPC: "capi-vpc",
+					ControlPlaneLoadBalancer: &infrav1beta2.VPCLoadBalancerSpec{
+						Name: *core.StringPtr("vpc-load-balancer"),
+					},
 				},
 			},
 		}
@@ -195,36 +206,26 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 				ID:   pointer.String("capi-vpc-id"),
 			},
 		}
-		listFloatingIpsOptions := &vpcv1.ListFloatingIpsOptions{}
-		fips := &vpcv1.FloatingIPCollection{}
-		t.Run("Should fail to reserve FIP", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
-			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
-			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, errors.New("failed to list the FIPs"))
-			_, err := reconciler.reconcile(clusterScope)
-			g.Expect(err).To(Not(BeNil()))
-			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
-		})
-		fips.FloatingIps = []vpcv1.FloatingIP{
-			{
-				Name:    pointer.String("vpc-cluster-control-plane"),
-				Address: pointer.String("192.98.98.45"),
-				ID:      pointer.String("capi-fip-id"),
+		subnetOptions := &vpcv1.ListSubnetsOptions{}
+		subnets := &vpcv1.SubnetCollection{}
+		loadBalancerOptions := &vpcv1.ListLoadBalancersOptions{}
+		loadBalancers := &vpcv1.LoadBalancerCollection{
+			LoadBalancers: []vpcv1.LoadBalancer{
+				{
+					Name:               core.StringPtr("vpc-load-balancer"),
+					Hostname:           core.StringPtr("vpc-load-balancer-hostname"),
+					ID:                 core.StringPtr("vpc-load-balancer-id"),
+					ProvisioningStatus: core.StringPtr("active"),
+				},
 			},
 		}
-		options := &vpcv1.ListSubnetsOptions{}
-		subnets := &vpcv1.SubnetCollection{}
 		t.Run("Should fail to create subnet", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
 			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
-			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, nil)
-			mockvpc.EXPECT().ListSubnets(options).Return(subnets, response, errors.New("Failed to list the subnets"))
+			mockvpc.EXPECT().ListSubnets(subnetOptions).Return(subnets, response, errors.New("Failed to list the subnets"))
 			_, err := reconciler.reconcile(clusterScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
@@ -244,8 +245,8 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			t.Cleanup(teardown)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
 			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
-			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, nil)
-			mockvpc.EXPECT().ListSubnets(options).Return(subnets, response, nil)
+			mockvpc.EXPECT().ListSubnets(subnetOptions).Return(subnets, response, nil)
+			mockvpc.EXPECT().ListLoadBalancers(loadBalancerOptions).Return(loadBalancers, response, nil)
 			_, err := reconciler.reconcile(clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
@@ -259,8 +260,8 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			port := int32(412)
 			clusterScope.Cluster.Spec.ClusterNetwork = &capiv1beta1.ClusterNetwork{APIServerPort: &port}
 			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
-			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, nil)
-			mockvpc.EXPECT().ListSubnets(options).Return(subnets, response, nil)
+			mockvpc.EXPECT().ListSubnets(subnetOptions).Return(subnets, response, nil)
+			mockvpc.EXPECT().ListLoadBalancers(loadBalancerOptions).Return(loadBalancers, response, nil)
 			_, err := reconciler.reconcile(clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
@@ -273,8 +274,8 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			t.Cleanup(teardown)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
 			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
-			mockvpc.EXPECT().ListFloatingIps(listFloatingIpsOptions).Return(fips, response, nil)
-			mockvpc.EXPECT().ListSubnets(options).Return(subnets, response, nil)
+			mockvpc.EXPECT().ListSubnets(subnetOptions).Return(subnets, response, nil)
+			mockvpc.EXPECT().ListLoadBalancers(loadBalancerOptions).Return(loadBalancers, response, nil)
 			_, err := reconciler.reconcile(clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
@@ -337,7 +338,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 					Name:               core.StringPtr("vpc-load-balancer"),
 					ID:                 core.StringPtr("vpc-load-balancer-id"),
 					ProvisioningStatus: core.StringPtr("active"),
-					Hostname:           core.StringPtr("foo"),
+					Hostname:           core.StringPtr("vpc-load-balancer-hostname"),
 					OperatingStatus:    core.StringPtr("online"),
 				},
 			},
@@ -384,6 +385,23 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
 			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(port))
+		})
+		t.Run("Should successfully reconcile IBMVPCCluster and set cluster status as Ready when ControlPlaneEndpoint Host is set", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, clusterScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
+			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
+				Host: *core.StringPtr("vpc-load-balancer-hostname"),
+			}
+			mockvpc.EXPECT().ListVpcs(&vpcv1.ListVpcsOptions{}).Return(vpclist, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnets, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancers(&vpcv1.ListLoadBalancersOptions{}).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
+			_, err := reconciler.reconcile(clusterScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
+			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
+			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(int32(6443)))
 		})
 		t.Run("Should successfully reconcile IBMVPCCluster and set cluster status as NotReady when LoadBalancer is create state", func(t *testing.T) {
 			g := NewWithT(t)
@@ -440,9 +458,6 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 					Finalizers: []string{infrav1beta2.ClusterFinalizer},
 				},
 				Status: infrav1beta2.IBMVPCClusterStatus{
-					VPCEndpoint: infrav1beta2.VPCEndpoint{
-						FIPID: pointer.String("capi-fip-id"),
-					},
 					Subnet: infrav1beta2.Subnet{
 						ID: pointer.String("capi-subnet-id"),
 					},
@@ -503,22 +518,6 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 		})
-		deleteFIPOptions := &vpcv1.DeleteFloatingIPOptions{ID: pointer.String("capi-fip-id")}
-		t.Run("Should fail deleting the floating IP", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			mockvpc.EXPECT().ListInstances(listVSIOpts).Return(instancelist, response, nil)
-			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnet, response, nil)
-			mockvpc.EXPECT().GetSubnetPublicGateway(getPGWOptions).Return(pgw, response, nil)
-			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
-			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
-			mockvpc.EXPECT().DeleteSubnet(deleteSubnetOptions).Return(response, nil)
-			mockvpc.EXPECT().DeleteFloatingIP(deleteFIPOptions).Return(response, errors.New("failed to  delete floating IP"))
-			_, err := reconciler.reconcileDelete(clusterScope)
-			g.Expect(err).To(Not(BeNil()))
-			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
-		})
 		deleteVpcOptions := &vpcv1.DeleteVPCOptions{ID: pointer.String("capi-vpc-id")}
 		t.Run("Should fail deleting the VPC", func(t *testing.T) {
 			g := NewWithT(t)
@@ -530,7 +529,6 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeleteSubnet(deleteSubnetOptions).Return(response, nil)
-			mockvpc.EXPECT().DeleteFloatingIP(deleteFIPOptions).Return(response, nil)
 			mockvpc.EXPECT().DeleteVPC(deleteVpcOptions).Return(response, errors.New("failed to delete VPC"))
 			_, err := reconciler.reconcileDelete(clusterScope)
 			g.Expect(err).To(Not(BeNil()))
@@ -546,7 +544,6 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			mockvpc.EXPECT().UnsetSubnetPublicGateway(unsetPGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeletePublicGateway(deletePGWOptions).Return(response, nil)
 			mockvpc.EXPECT().DeleteSubnet(deleteSubnetOptions).Return(response, nil)
-			mockvpc.EXPECT().DeleteFloatingIP(deleteFIPOptions).Return(response, nil)
 			mockvpc.EXPECT().DeleteVPC(deleteVpcOptions).Return(response, nil)
 			_, err := reconciler.reconcileDelete(clusterScope)
 			g.Expect(err).To(BeNil())
@@ -573,6 +570,9 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 				Spec: infrav1beta2.IBMVPCClusterSpec{
 					ControlPlaneLoadBalancer: &infrav1beta2.VPCLoadBalancerSpec{
 						Name: "vpc-load-balancer",
+					},
+					ControlPlaneEndpoint: capiv1beta1.APIEndpoint{
+						Host: "vpc-load-balancer-hostname",
 					},
 				},
 				Status: infrav1beta2.IBMVPCClusterStatus{
@@ -615,29 +615,23 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 						Name:               core.StringPtr("vpc-load-balancer"),
 						ID:                 core.StringPtr("vpc-load-balancer-id"),
 						ProvisioningStatus: core.StringPtr("delete_pending"),
+						Hostname:           core.StringPtr("vpc-load-balancer-hostname"),
 					},
 				},
 			}
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(customloadBalancerCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(customloadBalancerCollection, &core.DetailedResponse{}, nil)
 			_, err := reconciler.reconcileDelete(clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 		})
-		t.Run("Should successfully delete IBMVPCCluster and remove the finalizer", func(t *testing.T) {
-			subnet := &vpcv1.SubnetCollection{Subnets: []vpcv1.Subnet{{ID: core.StringPtr("capi-subnet-id")}}}
+		t.Run("Should successfully delete IBMVPCCluster and remove the finalizer when ControlPlaneEndpoint Host is set", func(t *testing.T) {
 			g := NewWithT(t)
 			mockController, mockvpc, clusterScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
-			pgw := &vpcv1.PublicGateway{ID: pointer.String("capi-pgw-id")}
+			clusterScope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer = nil
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().ListLoadBalancers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancersOptions{})).Return(&vpcv1.LoadBalancerCollection{}, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().ListSubnets(gomock.AssignableToTypeOf(&vpcv1.ListSubnetsOptions{})).Return(subnet, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().GetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.GetSubnetPublicGatewayOptions{})).Return(pgw, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().UnsetSubnetPublicGateway(gomock.AssignableToTypeOf(&vpcv1.UnsetSubnetPublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().DeletePublicGateway(gomock.AssignableToTypeOf(&vpcv1.DeletePublicGatewayOptions{})).Return(&core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().DeleteSubnet(gomock.AssignableToTypeOf(&vpcv1.DeleteSubnetOptions{})).Return(&core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().DeleteVPC(gomock.AssignableToTypeOf(&vpcv1.DeleteVPCOptions{})).Return(&core.DetailedResponse{}, nil)
 			_, err := reconciler.reconcileDelete(clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(Not(ContainElement(infrav1beta2.ClusterFinalizer)))
