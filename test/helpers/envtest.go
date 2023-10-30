@@ -46,6 +46,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	utilyaml "sigs.k8s.io/cluster-api/util/yaml"
@@ -164,10 +166,14 @@ func (t *TestEnvironmentConfiguration) Build() (*TestEnvironment, error) {
 	}
 
 	options := manager.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: "0",
-		CertDir:            t.env.WebhookInstallOptions.LocalServingCertDir,
-		Port:               t.env.WebhookInstallOptions.LocalServingPort,
+		Scheme: scheme.Scheme,
+		Metrics: server.Options{
+			BindAddress: "0",
+		},
+		WebhookServer: webhook.NewServer(webhook.Options{
+			CertDir: t.env.WebhookInstallOptions.LocalServingCertDir,
+			Port:    t.env.WebhookInstallOptions.LocalServingPort,
+		}),
 	}
 
 	mgr, err := ctrl.NewManager(t.env.Config, options)
