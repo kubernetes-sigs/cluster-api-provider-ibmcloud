@@ -63,21 +63,6 @@ func (s *Service) ListVpcs(options *vpcv1.ListVpcsOptions) (*vpcv1.VPCCollection
 	return s.vpcService.ListVpcs(options)
 }
 
-// CreateFloatingIP reserves a floating IP.
-func (s *Service) CreateFloatingIP(options *vpcv1.CreateFloatingIPOptions) (*vpcv1.FloatingIP, *core.DetailedResponse, error) {
-	return s.vpcService.CreateFloatingIP(options)
-}
-
-// DeleteFloatingIP releases a floating IP.
-func (s *Service) DeleteFloatingIP(options *vpcv1.DeleteFloatingIPOptions) (*core.DetailedResponse, error) {
-	return s.vpcService.DeleteFloatingIP(options)
-}
-
-// ListFloatingIps returns list of the floating IPs in a region.
-func (s *Service) ListFloatingIps(options *vpcv1.ListFloatingIpsOptions) (*vpcv1.FloatingIPCollection, *core.DetailedResponse, error) {
-	return s.vpcService.ListFloatingIps(options)
-}
-
 // CreateSubnet creates a subnet.
 func (s *Service) CreateSubnet(options *vpcv1.CreateSubnetOptions) (*vpcv1.Subnet, *core.DetailedResponse, error) {
 	return s.vpcService.CreateSubnet(options)
@@ -126,11 +111,6 @@ func (s *Service) ListVPCAddressPrefixes(options *vpcv1.ListVPCAddressPrefixesOp
 // CreateSecurityGroupRule creates a rule for a security group.
 func (s *Service) CreateSecurityGroupRule(options *vpcv1.CreateSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error) {
 	return s.vpcService.CreateSecurityGroupRule(options)
-}
-
-// AddInstanceNetworkInterfaceFloatingIP associates a floating IP with a network interface.
-func (s *Service) AddInstanceNetworkInterfaceFloatingIP(options *vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions) (*vpcv1.FloatingIP, *core.DetailedResponse, error) {
-	return s.vpcService.AddInstanceNetworkInterfaceFloatingIP(options)
 }
 
 // CreateLoadBalancer creates a new load balancer.

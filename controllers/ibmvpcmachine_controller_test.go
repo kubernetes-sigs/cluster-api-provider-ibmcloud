@@ -271,47 +271,6 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
-		instancelist.Instances = []vpcv1.Instance{
-			{
-				Name: pointer.String("capi-machine"),
-				ID:   pointer.String("capi-machine-id"),
-				PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
-					PrimaryIP: &vpcv1.ReservedIPReference{
-						Address: pointer.String("192.129.11.50"),
-					},
-					ID: pointer.String("capi-net"),
-				},
-			}}
-		fipoptions := &vpcv1.AddInstanceNetworkInterfaceFloatingIPOptions{}
-		fip := &vpcv1.FloatingIP{}
-		t.Run("Should fail to bind floating IP to control plane", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String("capi-machine")
-			machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
-			machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID = pointer.String("capi-fip-id")
-			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, nil)
-			mockvpc.EXPECT().AddInstanceNetworkInterfaceFloatingIP(gomock.AssignableToTypeOf(fipoptions)).Return(fip, response, errors.New("Failed to bind floating IP to control plane"))
-			_, err := reconciler.reconcileNormal(machineScope)
-			g.Expect(err).To(Not(BeNil()))
-			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
-		})
-		t.Run("Should successfully reconcile IBMVPCMachine", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String("capi-machine")
-			machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
-			machineScope.IBMVPCCluster.Status.VPCEndpoint.FIPID = pointer.String("capi-fip-id")
-			fip.Address = pointer.String("192.129.11.52")
-			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, nil)
-			mockvpc.EXPECT().AddInstanceNetworkInterfaceFloatingIP(gomock.AssignableToTypeOf(fipoptions)).Return(fip, response, nil)
-			_, err := reconciler.reconcileNormal(machineScope)
-			g.Expect(err).To(BeNil())
-			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
-			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
-		})
 	})
 }
 

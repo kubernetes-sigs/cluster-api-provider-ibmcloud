@@ -184,12 +184,13 @@ generate-templates: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs.yaml
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider.yaml
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-clusterclass --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-clusterclass.yaml
-	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-vpc-load-balancer --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-vpc-load-balancer.yaml
 	
 .PHONY: generate-e2e-templates
 generate-e2e-templates: $(KUSTOMIZE)
 ifeq ($(E2E_FLAVOR), powervs-md-remediation)
 	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation.yaml
+else
+	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-vpc --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-vpc.yaml
 endif
 
 .PHONY: generate-modules
