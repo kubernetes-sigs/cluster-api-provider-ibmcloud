@@ -6,11 +6,11 @@ go 1.20
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.27.8
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.1
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.3
 )
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.5.1
+	github.com/IBM-Cloud/power-go-client v1.5.3
 	github.com/IBM/go-sdk-core/v5 v5.14.1
 	github.com/IBM/platform-services-go-sdk v0.52.0
 	github.com/IBM/vpc-go-sdk v0.43.0
@@ -27,16 +27,16 @@ require (
 	golang.org/x/crypto v0.14.0
 	golang.org/x/text v0.13.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.27.6
-	k8s.io/apiextensions-apiserver v0.27.6
-	k8s.io/apimachinery v0.27.6
-	k8s.io/cli-runtime v0.27.6
-	k8s.io/client-go v0.27.6
+	k8s.io/api v0.27.7
+	k8s.io/apiextensions-apiserver v0.27.7
+	k8s.io/apimachinery v0.27.7
+	k8s.io/cli-runtime v0.27.7
+	k8s.io/client-go v0.27.7
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491
-	sigs.k8s.io/cluster-api v1.5.1
-	sigs.k8s.io/cluster-api/test v1.5.1
-	sigs.k8s.io/controller-runtime v0.15.1
+	sigs.k8s.io/cluster-api v1.5.3
+	sigs.k8s.io/cluster-api/test v1.5.3
+	sigs.k8s.io/controller-runtime v0.15.3
 )
 
 require (
@@ -133,8 +133,9 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
-	go.opentelemetry.io/otel v1.14.0 // indirect
-	go.opentelemetry.io/otel/trace v1.14.0 // indirect
+	go.opentelemetry.io/otel v1.19.0 // indirect
+	go.opentelemetry.io/otel/metric v1.19.0 // indirect
+	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
@@ -143,14 +144,15 @@ require (
 	golang.org/x/tools v0.9.3 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.27.6 // indirect
+	k8s.io/apiserver v0.27.7 // indirect
 	k8s.io/cluster-bootstrap v0.27.2 // indirect
-	k8s.io/component-base v0.27.6 // indirect
+	k8s.io/component-base v0.27.7 // indirect
 	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kind v0.20.0 // indirect
