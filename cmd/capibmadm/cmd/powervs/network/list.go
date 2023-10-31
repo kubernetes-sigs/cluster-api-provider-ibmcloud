@@ -85,7 +85,7 @@ func listNetwork(ctx context.Context) error {
 			Name:        *network.Name,
 			Type:        *network.Type,
 			VlanID:      *network.VlanID,
-			Jumbo:       *network.Jumbo,
+			Jumbo:       network.Jumbo,
 			DhcpManaged: network.DhcpManaged,
 		})
 	}
