@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.20
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.3
 
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
@@ -12,8 +12,8 @@ require (
 	github.com/joelanford/go-apidiff v0.7.0
 	github.com/onsi/ginkgo/v2 v2.11.0
 	gotest.tools/gotestsum v1.10.1
-	k8s.io/code-generator v0.27.2
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20230829135722-db17cb237642
+	k8s.io/code-generator v0.27.7
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231026175449-6fe0f51ae48a
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.12.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.1.1
@@ -223,15 +223,15 @@ require (
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
 	golang.org/x/tools/go/vcs v0.1.0-deprecated // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
@@ -241,9 +241,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.4.5 // indirect
-	k8s.io/api v0.27.2 // indirect
-	k8s.io/apiextensions-apiserver v0.27.2 // indirect
-	k8s.io/apimachinery v0.27.2 // indirect
+	k8s.io/api v0.27.7 // indirect
+	k8s.io/apiextensions-apiserver v0.27.7 // indirect
+	k8s.io/apimachinery v0.27.7 // indirect
 	k8s.io/gengo v0.0.0-20220902162205-c0856e24416d // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230601164746-7562a1006961 // indirect
