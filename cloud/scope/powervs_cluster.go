@@ -18,10 +18,10 @@ package scope
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM/go-sdk-core/v5/core"
@@ -95,7 +95,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 
 	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)
 	if err != nil {
-		err = errors.Wrap(err, "failed to init patch helper")
+		err = fmt.Errorf("failed to init patch helper: %w", err)
 		return nil, err
 	}
 	scope.patchHelper = helper
@@ -110,7 +110,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 	// Fetch the resource controller endpoint.
 	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
 		if err := rc.SetServiceURL(rcEndpoint); err != nil {
-			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
+			return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
 		}
 		scope.Logger.V(3).Info("Overriding the default resource controller endpoint")
 	}
@@ -120,7 +120,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (scope *PowerVSClu
 			ID: core.StringPtr(spec.ServiceInstanceID),
 		})
 	if err != nil {
-		err = errors.Wrap(err, "failed to get resource instance")
+		err = fmt.Errorf("failed to get resource instance: %w", err)
 		return nil, err
 	}
 

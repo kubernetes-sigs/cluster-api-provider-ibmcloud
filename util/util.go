@@ -18,8 +18,7 @@ package util
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -35,7 +34,7 @@ func GetClusterByName(ctx context.Context, c client.Client, namespace, name stri
 	}
 
 	if err := c.Get(ctx, key, cluster); err != nil {
-		return nil, errors.Wrapf(err, "failed to get Cluster/%s", name)
+		return nil, fmt.Errorf("failed to get Cluster/%s: %w", name, err)
 	}
 
 	return cluster, nil

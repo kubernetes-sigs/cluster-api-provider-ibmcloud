@@ -73,13 +73,13 @@ Using file-path to SSH key : capibmadm vpc key create --name <key-name> --region
 		if filePath != "" {
 			sshKey, err := os.ReadFile(filePath) // #nosec
 			if err != nil {
-				return fmt.Errorf("error while reading the SSH key from path. %w", err)
+				return fmt.Errorf("error while reading the SSH key from path: %w", err)
 			}
 			keyCreateOption.publicKey = string(sshKey)
 		}
 
 		if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(keyCreateOption.publicKey)); err != nil {
-			return fmt.Errorf("the provided SSH key is invalid. %w ", err)
+			return fmt.Errorf("the provided SSH key is invalid: %w ", err)
 		}
 		return createKey(cmd.Context(), keyCreateOption)
 	}

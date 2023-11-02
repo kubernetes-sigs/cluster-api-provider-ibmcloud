@@ -18,10 +18,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
@@ -104,7 +104,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if err != nil {
-		return reconcile.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return reconcile.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
 	return r.reconcile(clusterScope)
 }
@@ -118,18 +118,18 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 	if clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host != "" {
 		loadBalancerEndpoint, err := clusterScope.GetLoadBalancerByHostname(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
 		if err != nil {
-			return ctrl.Result{}, errors.Wrap(err, "Error when retrieving load balancer with specified hostname")
+			return ctrl.Result{}, fmt.Errorf("Error when retrieving load balancer with specified hostname: %w", err)
 		}
 
 		if loadBalancerEndpoint == nil {
-			return ctrl.Result{}, errors.Errorf("No loadBalancer found with hostname - %s", clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
+			return ctrl.Result{}, fmt.Errorf("No loadBalancer found with hostname - %s", clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
 		}
 		r.reconcileLBState(clusterScope, loadBalancerEndpoint)
 	}
 
 	vpc, err := clusterScope.CreateVPC()
 	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VPC for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile VPC for IBMVPCCluster %s/%s: %w", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name, err)
 	}
 	if vpc != nil {
 		clusterScope.IBMVPCCluster.Status.VPC = infrav1beta2.VPC{
@@ -141,7 +141,7 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 	if clusterScope.IBMVPCCluster.Status.Subnet.ID == nil {
 		subnet, err := clusterScope.CreateSubnet()
 		if err != nil {
-			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Subnet for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
+			return ctrl.Result{}, fmt.Errorf("failed to reconcile Subnet for IBMVPCCluster %s/%s: %w", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name, err)
 		}
 		if subnet != nil {
 			clusterScope.IBMVPCCluster.Status.Subnet = infrav1beta2.Subnet{
@@ -156,7 +156,7 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 	if clusterScope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer != nil && clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host == "" {
 		loadBalancer, err := r.getOrCreate(clusterScope)
 		if err != nil {
-			return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Control Plane LoadBalancer for IBMVPCCluster %s/%s", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name)
+			return ctrl.Result{}, fmt.Errorf("failed to reconcile Control Plane LoadBalancer for IBMVPCCluster %s/%s: %w", clusterScope.IBMVPCCluster.Namespace, clusterScope.IBMVPCCluster.Name, err)
 		}
 
 		if loadBalancer != nil {
@@ -180,7 +180,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	}
 	vsis, _, err := clusterScope.IBMVPCClient.ListInstances(listVSIOpts)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "Error when listing VSIs when tried to delete subnet ")
+		return ctrl.Result{}, fmt.Errorf("Error when listing VSIs when tried to delete subnet: %w", err)
 	}
 	// skip deleting other resources if still have vsis running.
 	if *vsis.TotalCount != int64(0) {
@@ -195,7 +195,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	if clusterScope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer != nil {
 		loadBalancer, err := clusterScope.GetLoadBalancerByHostname(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
 		if err != nil {
-			return ctrl.Result{}, errors.Wrap(err, "Error when retrieving load balancer with specified hostname")
+			return ctrl.Result{}, fmt.Errorf("Error when retrieving load balancer with specified hostname: %w", err)
 		}
 
 		if loadBalancer == nil && (string(clusterScope.GetLoadBalancerState()) != string(infrav1beta2.VPCLoadBalancerStateDeletePending)) {
@@ -208,7 +208,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 			}
 			deleted, err := clusterScope.DeleteLoadBalancer()
 			if err != nil {
-				return ctrl.Result{}, errors.Wrap(err, "failed to delete loadBalancer")
+				return ctrl.Result{}, fmt.Errorf("failed to delete loadBalancer: %w", err)
 			}
 			// Skip deleting other resources if still have loadBalancers running.
 			if deleted {
@@ -218,11 +218,11 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	}
 
 	if err := clusterScope.DeleteSubnet(); err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "failed to delete subnet")
+		return ctrl.Result{}, fmt.Errorf("failed to delete subnet: %w", err)
 	}
 
 	if err := clusterScope.DeleteVPC(); err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "failed to delete VPC")
+		return ctrl.Result{}, fmt.Errorf("failed to delete VPC: %w", err)
 	}
 	return handleFinalizerRemoval(clusterScope)
 }
