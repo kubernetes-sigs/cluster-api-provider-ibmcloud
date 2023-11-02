@@ -2,7 +2,7 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/kubernetes-sigs/cluster-api-provider-ibmcloud?label=version)
 [![Go Report Card](https://goreportcard.com/badge/sigs.k8s.io/cluster-api-provider-ibmcloud)](https://goreportcard.com/report/sigs.k8s.io/cluster-api-provider-ibmcloud)
 
-# Kubernetes Cluster API Provider IBM Cloud
+# Kubernetes Cluster API Provider IBM Cloud (CAPIBM)
 
 <a href="https://github.com/kubernetes-sigs/cluster-api"><img src="https://github.com/kubernetes/kubernetes/raw/master/logo/logo.png"  width="100"></a><a href="https://www.ibm.com/cloud/"><img hspace="90px" src="./docs/images/ibm-cloud.svg" alt="Powered by IBM Cloud" height="100"></a>
 
@@ -27,11 +27,11 @@ cluster on IBM Cloud.
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-|                                            | v1alpha4 (v0.4) | v1beta1 (v1.x) |
-|--------------------------------------------|-----------------|----------------|
-| IBMCloud Provider v1alpha4 (v0.1.x)        | ✓               |                |
-| IBMCloud Provider v1beta1 (v0.2.x, v0.3.x) |                 | ✓              |
-| IBMCloud Provider v1beta2 (v0.4.x, v0.5.x, v0.6.x, main) |                 | ✓              |
+|                                         |Cluster API v1alpha4 (v0.4) |Cluster API v1beta1 (v1.x) |
+|:----------------------------------------|:---------------:|:--------------:|
+| CAPIBM v1alpha4 (v0.1.x)                  | ✓               |                |
+| CAPIBM v1beta1 (v0.2.x, v0.3.x)           |                 | ✓              |
+| CAPIBM v1beta2 (v0.[4-6].x, main)         |                 | ✓              |
 
 
 (See [Kubernetes support matrix][cluster-api-supported-v] of Cluster API versions).
