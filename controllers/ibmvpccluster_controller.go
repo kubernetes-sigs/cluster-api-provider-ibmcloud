@@ -118,11 +118,11 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 	if clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host != "" {
 		loadBalancerEndpoint, err := clusterScope.GetLoadBalancerByHostname(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
 		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("Error when retrieving load balancer with specified hostname: %w", err)
+			return ctrl.Result{}, fmt.Errorf("error when retrieving load balancer with specified hostname: %w", err)
 		}
 
 		if loadBalancerEndpoint == nil {
-			return ctrl.Result{}, fmt.Errorf("No loadBalancer found with hostname - %s", clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
+			return ctrl.Result{}, fmt.Errorf("no loadBalancer found with hostname - %s", clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
 		}
 		r.reconcileLBState(clusterScope, loadBalancerEndpoint)
 	}
@@ -180,7 +180,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	}
 	vsis, _, err := clusterScope.IBMVPCClient.ListInstances(listVSIOpts)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("Error when listing VSIs when tried to delete subnet: %w", err)
+		return ctrl.Result{}, fmt.Errorf("error when listing VSIs when tried to delete subnet: %w", err)
 	}
 	// skip deleting other resources if still have vsis running.
 	if *vsis.TotalCount != int64(0) {
@@ -195,7 +195,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	if clusterScope.IBMVPCCluster.Spec.ControlPlaneLoadBalancer != nil {
 		loadBalancer, err := clusterScope.GetLoadBalancerByHostname(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Host)
 		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("Error when retrieving load balancer with specified hostname: %w", err)
+			return ctrl.Result{}, fmt.Errorf("error when retrieving load balancer with specified hostname: %w", err)
 		}
 
 		if loadBalancer == nil && (string(clusterScope.GetLoadBalancerState()) != string(infrav1beta2.VPCLoadBalancerStateDeletePending)) {

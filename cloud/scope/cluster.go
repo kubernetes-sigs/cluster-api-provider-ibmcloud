@@ -392,7 +392,7 @@ func (s *ClusterScope) DeleteSubnet() error {
 		// Unset the public gateway for subnet first
 		err = s.detachPublicGateway(subnetID, *pgw.ID)
 		if err != nil {
-			return fmt.Errorf("Error when detaching publicgateway for subnet %s: %w", subnetID, err)
+			return fmt.Errorf("error when detaching publicgateway for subnet %s: %w", subnetID, err)
 		}
 	}
 
@@ -402,7 +402,7 @@ func (s *ClusterScope) DeleteSubnet() error {
 	_, err = s.IBMVPCClient.DeleteSubnet(deleteSubnetOption)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDeleteSubnet", "Failed subnet deletion - %v", err)
-		return fmt.Errorf("Error when deleting subnet: %w", err)
+		return fmt.Errorf("error when deleting subnet: %w", err)
 	}
 	return err
 }
@@ -445,7 +445,7 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	_, err := s.IBMVPCClient.UnsetSubnetPublicGateway(unsetPGWOption)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDetachPublicGateway", "Failed publicgateway detachment - %v", err)
-		return fmt.Errorf("Error when unsetting publicgateway for subnet %s: %w", subnetID, err)
+		return fmt.Errorf("error when unsetting publicgateway for subnet %s: %w", subnetID, err)
 	}
 
 	// Delete the public gateway
@@ -454,7 +454,7 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	_, err = s.IBMVPCClient.DeletePublicGateway(deletePGWOption)
 	if err != nil {
 		record.Warnf(s.IBMVPCCluster, "FailedDeletePublicGateway", "Failed publicgateway deletion - %v", err)
-		return fmt.Errorf("Error when deleting publicgateway for subnet %s: %w", subnetID, err)
+		return fmt.Errorf("error when deleting publicgateway for subnet %s: %w", subnetID, err)
 	}
 	return err
 }
