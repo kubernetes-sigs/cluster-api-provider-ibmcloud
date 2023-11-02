@@ -22,8 +22,8 @@ import (
 
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2/klogr"

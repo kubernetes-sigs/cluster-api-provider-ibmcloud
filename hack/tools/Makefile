@@ -108,7 +108,7 @@ $(ENVSUBST): $(BIN_DIR) go.mod go.sum ## Build a local copy of envsubst.
 
 MOCKGEN := $(BIN_DIR)/mockgen
 $(MOCKGEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of mockgen.
-	go build -tags=capibmtools -o $@ github.com/golang/mock/mockgen
+	go build -tags=capibmtools -o $@ go.uber.org/mock/mockgen
 
 CONTROLLER_GEN := $(BIN_DIR)/controller-gen
 $(CONTROLLER_GEN): $(BIN_DIR) go.mod go.sum ## Build a local copy of controller-gen.
