@@ -27,8 +27,8 @@ spec:
         - /manager
         args:
         - "--leader-elect"
-        - "--metrics-bind-addr=127.0.0.1:8080"
         - "--provider-id-fmt=${PROVIDER_ID_FORMAT:=v1}"
+        - "--metrics-bind-addr=127.0.0.1:8080"
         - "--service-endpoint=${SERVICE_ENDPOINT:=none}"
         - "--v=${LOGLEVEL:=0}"
         image: controller:latest

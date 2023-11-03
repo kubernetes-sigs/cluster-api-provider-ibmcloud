@@ -33,8 +33,10 @@ import (
 	"k8s.io/klog/v2/klogr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util/flags"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -48,10 +50,10 @@ import (
 
 var (
 	watchNamespace       string
-	metricsAddr          string
 	enableLeaderElection bool
 	healthAddr           string
 	syncPeriod           time.Duration
+	diagnosticsOptions   = flags.DiagnosticsOptions{}
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -65,6 +67,10 @@ func init() {
 	_ = capiv1beta1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
+
+// Add RBAC for the authorized diagnostics endpoint.
+// +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
+// +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
 
 func main() {
 	klog.InitFlags(nil)
@@ -97,14 +103,24 @@ func main() {
 		BurstSize: 100,
 	})
 
+	diagnosticsOpts := flags.GetDiagnosticsOptions(diagnosticsOptions)
+
+	var watchNamespaces map[string]cache.Config
+	if watchNamespace != "" {
+		watchNamespaces = map[string]cache.Config{
+			watchNamespace: {},
+		}
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "effcf9b8.cluster.x-k8s.io",
-		SyncPeriod:             &syncPeriod,
-		Namespace:              watchNamespace,
+		Scheme:           scheme,
+		LeaderElection:   enableLeaderElection,
+		Metrics:          diagnosticsOpts,
+		LeaderElectionID: "effcf9b8.cluster.x-k8s.io",
+		Cache: cache.Options{
+			DefaultNamespaces: watchNamespaces,
+			SyncPeriod:        &syncPeriod,
+		},
 		EventBroadcaster:       broadcaster,
 		HealthProbeBindAddress: healthAddr,
 	})
@@ -129,13 +145,6 @@ func main() {
 }
 
 func initFlags(fs *pflag.FlagSet) {
-	fs.StringVar(
-		&metricsAddr,
-		"metrics-bind-addr",
-		":8080",
-		"The address the metric endpoint binds to.",
-	)
-
 	fs.BoolVar(
 		&enableLeaderElection,
 		"leader-elect",
@@ -178,6 +187,8 @@ func initFlags(fs *pflag.FlagSet) {
 		"",
 		"Set custom service endpoint in semi-colon separated format: ${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1}",
 	)
+
+	flags.AddDiagnosticsOptions(fs, &diagnosticsOptions)
 }
 
 func validateFlags() error {
