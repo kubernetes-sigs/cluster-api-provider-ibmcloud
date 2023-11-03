@@ -28,8 +28,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
-
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -201,11 +199,11 @@ func buildModifiedWebhook(tag string, relativeFilePath string) (admissionv1.Muta
 	var validatingWebhook admissionv1.ValidatingWebhookConfiguration
 	data, err := os.ReadFile(filepath.Clean(filepath.Join(root, relativeFilePath)))
 	if err != nil {
-		return mutatingWebhook, validatingWebhook, errors.Wrap(err, "failed to read webhook configuration file")
+		return mutatingWebhook, validatingWebhook, fmt.Errorf("failed to read webhook configuration file: %w", err)
 	}
 	objs, err := utilyaml.ToUnstructured(data)
 	if err != nil {
-		return mutatingWebhook, validatingWebhook, errors.Wrap(err, "failed to parse yaml")
+		return mutatingWebhook, validatingWebhook, fmt.Errorf("failed to parse yaml: %w", err)
 	}
 	for i := range objs {
 		o := objs[i]

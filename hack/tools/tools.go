@@ -23,11 +23,11 @@ package tools
 import (
 	_ "github.com/aquasecurity/trivy/cmd/trivy"
 	_ "github.com/drone/envsubst/v2/cmd/envsubst"
-	_ "github.com/golang/mock/mockgen"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/itchyny/gojq/cmd/gojq"
 	_ "github.com/joelanford/go-apidiff"
 	_ "github.com/onsi/ginkgo/v2/ginkgo"
+	_ "go.uber.org/mock/mockgen"
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "gotest.tools/gotestsum"
 	_ "k8s.io/code-generator/cmd/conversion-gen"

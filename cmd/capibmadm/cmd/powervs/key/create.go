@@ -72,13 +72,13 @@ Using file-path to SSH key : capibmadm powervs key create --name <key-name> --ke
 		if filePath != "" {
 			sshKey, err := os.ReadFile(filePath) // #nosec
 			if err != nil {
-				return fmt.Errorf("error while reading the SSH key from path. %w", err)
+				return fmt.Errorf("error while reading the SSH key from path: %w", err)
 			}
 			keyCreateOption.key = string(sshKey)
 		}
 
 		if _, _, _, _, err := ssh.ParseAuthorizedKey([]byte(keyCreateOption.key)); err != nil {
-			return fmt.Errorf("the provided SSH key is invalid. %w", err)
+			return fmt.Errorf("the provided SSH key is invalid: %w", err)
 		}
 		return createSSHKey(cmd.Context(), keyCreateOption)
 	}

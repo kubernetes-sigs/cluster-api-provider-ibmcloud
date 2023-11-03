@@ -7,11 +7,11 @@ replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.0-beta.1
 require (
 	github.com/aquasecurity/trivy v0.46.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
-	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.55.1
 	github.com/itchyny/gojq v0.12.13
 	github.com/joelanford/go-apidiff v0.7.0
 	github.com/onsi/ginkgo/v2 v2.13.0
+	go.uber.org/mock v0.3.0
 	golang.org/x/vuln v1.0.1
 	gotest.tools/gotestsum v1.11.0
 	k8s.io/code-generator v0.28.3

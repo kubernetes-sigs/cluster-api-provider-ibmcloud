@@ -18,10 +18,10 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
@@ -135,7 +135,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		DHCPIPCacheStore:  dhcpCacheStore,
 	})
 	if err != nil {
-		return ctrl.Result{}, errors.Errorf("failed to create scope: %v", err)
+		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
 
 	// Always close the scope when exiting this function so we can persist any IBMPowerVSMachine changes.
@@ -179,7 +179,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachin
 	}
 	if err := scope.DeleteMachine(); err != nil {
 		scope.Info("error deleting IBMPowerVSMachine")
-		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSMachine %v", klog.KObj(scope.IBMPowerVSMachine))
+		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
 	}
 	// Remove the cached VM IP
 	err := scope.DHCPIPCacheStore.Delete(powervs.VMip{Name: scope.IBMPowerVSMachine.Name})
@@ -224,7 +224,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 	if err != nil {
 		machineScope.Error(err, "Unable to create instance")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceProvisionFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
-		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VSI for IBMPowerVSMachine %s/%s", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name)
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile VSI for IBMPowerVSMachine %s/%s: %w", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name, err)
 	}
 
 	if ins != nil {

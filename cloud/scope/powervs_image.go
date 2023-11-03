@@ -18,10 +18,10 @@ package scope
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
@@ -86,7 +86,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	helper, err := patch.NewHelper(params.IBMPowerVSImage, params.Client)
 	if err != nil {
-		err = errors.Wrap(err, "failed to init patch helper")
+		err = fmt.Errorf("failed to init patch helper: %w", err)
 		return nil, err
 	}
 	scope.patchHelper = helper
@@ -101,7 +101,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	// Fetch the resource controller endpoint.
 	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
 		if err := rc.SetServiceURL(rcEndpoint); err != nil {
-			return nil, errors.Wrap(err, "failed to set resource controller endpoint")
+			return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
 		}
 		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
 	}
@@ -111,7 +111,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 			ID: core.StringPtr(spec.ServiceInstanceID),
 		})
 	if err != nil {
-		err = errors.Wrap(err, "failed to get resource instance")
+		err = fmt.Errorf("failed to get resource instance: %w", err)
 		return nil, err
 	}
 

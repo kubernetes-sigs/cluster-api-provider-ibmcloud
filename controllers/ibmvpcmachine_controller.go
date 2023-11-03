@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
@@ -112,7 +111,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		ServiceEndpoint: r.ServiceEndpoint,
 	})
 	if err != nil {
-		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
 
 	// Always close the scope when exiting this function, so we can persist any IBMVPCMachine changes.
@@ -157,7 +156,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 
 	instance, err := r.getOrCreate(machineScope)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile VSI for IBMVPCMachine %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile VSI for IBMVPCMachine %s/%s: %w", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 	}
 
 	if instance != nil {
@@ -170,7 +169,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		}
 		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]
 		if err = machineScope.SetProviderID(instance.ID); err != nil {
-			return ctrl.Result{}, errors.Wrapf(err, "failed to set provider id IBMVPCMachine %s/%s", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
+			return ctrl.Result{}, fmt.Errorf("failed to set provider id IBMVPCMachine %s/%s: %w", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 		}
 		if ok {
 			if instance.PrimaryNetworkInterface.PrimaryIP.Address == nil || *instance.PrimaryNetworkInterface.PrimaryIP.Address == "0.0.0.0" {
@@ -180,7 +179,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			port := int64(machineScope.APIServerPort())
 			poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(internalIP, port)
 			if err != nil {
-				return ctrl.Result{}, errors.Wrapf(err, "failed to bind port %d to control plane %s/%s", port, machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name)
+				return ctrl.Result{}, fmt.Errorf("failed to bind port %d to control plane %s/%s: %w", port, machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 			}
 			if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
 				return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
@@ -202,13 +201,13 @@ func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ 
 
 	if _, ok := scope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]; ok {
 		if err := scope.DeleteVPCLoadBalancerPoolMember(); err != nil {
-			return ctrl.Result{}, errors.Wrap(err, "failed to delete loadBalancer pool member")
+			return ctrl.Result{}, fmt.Errorf("failed to delete loadBalancer pool member: %w", err)
 		}
 	}
 
 	if err := scope.DeleteMachine(); err != nil {
 		scope.Info("error deleting IBMVPCMachine")
-		return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMVPCMachine %s/%s", scope.IBMVPCMachine.Namespace, scope.IBMVPCMachine.Spec.Name)
+		return ctrl.Result{}, fmt.Errorf("error deleting IBMVPCMachine %s/%s: %w", scope.IBMVPCMachine.Namespace, scope.IBMVPCMachine.Spec.Name, err)
 	}
 
 	defer func() {

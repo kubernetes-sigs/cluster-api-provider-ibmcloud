@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -77,7 +75,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		ServiceEndpoint: r.ServiceEndpoint,
 	})
 	if err != nil {
-		return ctrl.Result{}, errors.Errorf("failed to create scope: %+v", err)
+		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
 
 	// Always close the scope when exiting this function so we can persist any IBMPowerVSImage changes.
@@ -154,7 +152,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(cluster *infrav1beta2.IBMPowerVSCl
 	img, jobRef, err := r.getOrCreate(imageScope)
 	if err != nil {
 		imageScope.Error(err, "Unable to import image")
-		return ctrl.Result{}, errors.Wrapf(err, "failed to reconcile Image for IBMPowerVSImage %s/%s", imageScope.IBMPowerVSImage.Namespace, imageScope.IBMPowerVSImage.Name)
+		return ctrl.Result{}, fmt.Errorf("failed to reconcile Image for IBMPowerVSImage %s/%s: %w", imageScope.IBMPowerVSImage.Namespace, imageScope.IBMPowerVSImage.Name, err)
 	}
 
 	if jobRef != nil {
@@ -220,7 +218,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 		}
 		if err := scope.DeleteImportJob(); err != nil {
 			scope.Error(err, "Error deleting IBMPowerVSImage Import Job")
-			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage Import Job")
+			return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSImage Import Job: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
@@ -228,7 +226,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(scope *scope.PowerVSImageSco
 	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1beta2.DeletePolicyRetain) {
 		if err := scope.DeleteImage(); err != nil {
 			scope.Error(err, "Error deleting IBMPowerVSImage")
-			return ctrl.Result{}, errors.Wrapf(err, "error deleting IBMPowerVSImage %v", klog.KObj(scope.IBMPowerVSImage))
+			return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSImage %v: %w", klog.KObj(scope.IBMPowerVSImage), err)
 		}
 	}
 	return ctrl.Result{}, nil
