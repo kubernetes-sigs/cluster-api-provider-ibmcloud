@@ -99,9 +99,9 @@ it into a management cluster using `clusterctl`.
       export EXP_CLUSTER_RESOURCE_SET=true
       ```
 
-   2. To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `POWERVS_PROVIDER_ID_FORMAT` environmental variable.
+   2. To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `PROVIDER_ID_FORMAT` environmental variable.
       ```console
-      export POWERVS_PROVIDER_ID_FORMAT=v2
+      export PROVIDER_ID_FORMAT=v2
       export EXP_CLUSTER_RESOURCE_SET=true
       ```
    > Note: `EXP_CLUSTER_RESOURCE_SET` should be set for deploying workload cluster with Cloud Controller manager.
@@ -111,7 +111,7 @@ it into a management cluster using `clusterctl`.
    To deploy workload cluster with [PowerVS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the following environmental variables.
 
    ```console
-   export POWERVS_PROVIDER_ID_FORMAT=v2
+   export PROVIDER_ID_FORMAT=v2
    export EXP_CLUSTER_RESOURCE_SET=true
    export CLUSTER_TOPOLOGY=true
    ```
