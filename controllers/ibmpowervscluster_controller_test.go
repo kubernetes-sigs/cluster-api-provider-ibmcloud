@@ -159,7 +159,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			reconciler := &IBMPowerVSClusterReconciler{
 				Client: testEnv.Client,
 			}
-			_ = reconciler.reconcile(tc.powervsClusterScope)
+			_, _ = reconciler.reconcile(tc.powervsClusterScope)
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSClusterFinalizer))
 		})
@@ -261,6 +261,11 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			defer cleanupObject(g, powervsImage2)
 
 			result, err := reconciler.reconcileDelete(ctx, clusterScope)
+			fmt.Println("##############################")
+			fmt.Println("##############################")
+			fmt.Println(result.RequeueAfter)
+			fmt.Println("##############################")
+			fmt.Println("##############################")
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			// Updating the object should fail as it doesn't exist

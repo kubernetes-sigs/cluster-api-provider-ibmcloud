@@ -17,8 +17,6 @@ limitations under the License.
 package authenticator
 
 import (
-	"fmt"
-
 	"github.com/IBM/go-sdk-core/v5/core"
 )
 
@@ -39,12 +37,17 @@ const (
 
 // GetAuthenticator will get the authenticator for ibmcloud.
 func GetAuthenticator() (core.Authenticator, error) {
-	auth, err := core.GetAuthenticatorFromEnvironment(serviceIBMCloud)
-	if err != nil {
-		return nil, err
-	}
-	if auth == nil {
-		return nil, fmt.Errorf("authenticator can't be nil, please set proper authentication")
-	}
-	return auth, nil
+	//auth, err := core.GetAuthenticatorFromEnvironment(serviceIBMCloud)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if auth == nil {
+	//	return nil, fmt.Errorf("authenticator can't be nil, please set proper authentication")
+	//}
+	//return auth, nil
+
+	return &core.IamAuthenticator{
+		ApiKey: "",
+	}, nil
+
 }

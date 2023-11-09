@@ -270,11 +270,29 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		machineScope.SetNotReady()
 		conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStateUnknownReason, "")
 	}
-
 	// Requeue after 2 minute if machine is not ready to update status of the machine properly.
 	if !machineScope.IsReady() {
 		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 	}
 
+	//if !feature.Gates.Enabled(feature.PowerVSCreateInfra) {
+	//	return ctrl.Result{}, nil
+	//}
+
+	// Register instance with load balancer
+	machineScope.Info("updating loadbalancer for machine", "name", machineScope.IBMPowerVSMachine.Name)
+	internalIP := machineScope.GetMachineInternalIP()
+	if internalIP != "" {
+		poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember()
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed CreateVPCLoadBalancerPoolMember %s: %w", machineScope.IBMPowerVSMachine.Name, err)
+		}
+		if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+		}
+
+	} else {
+		machineScope.Info("Not able to update the LoadBalancer, Machine %s internal IP not yet set", machineScope.IBMPowerVSMachine.Name)
+	}
 	return ctrl.Result{}, nil
 }

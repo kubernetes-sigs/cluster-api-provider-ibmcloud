@@ -36,7 +36,6 @@ type IBMPowerVSClusterSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
-	// +kubebuilder:validation:MinLength=1
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// Network is the reference to the Network to use for this cluster.

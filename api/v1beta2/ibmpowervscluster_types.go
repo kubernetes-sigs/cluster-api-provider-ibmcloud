@@ -32,26 +32,96 @@ const (
 
 // IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster.
 type IBMPowerVSClusterSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
-	// +kubebuilder:validation:MinLength=1
+	// Deprecated: use ServiceInstance instead
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// Network is the reference to the Network to use for this cluster.
+	// when the field is omitted, A DHCP service will be created in the service instance and its private network will be used.
 	Network IBMPowerVSResourceReference `json:"network"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint capiv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
+
+	// serviceInstance is the reference to the Power VS service on which the server instance(VM) will be created.
+	// Power VS service is a container for all Power VS instances at a specific geographic region.
+	// serviceInstance can be created via IBM Cloud catalog or CLI.
+	// supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+	// More detail about Power VS service instance.
+	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+	// when omitted system will dynamically create the service instance
+	// +optional
+	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
+
+	// zone is the name of Power VS zone where the cluster will be created
+	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
+	// when value for serviceInstance is omitted its required to set the value for zone.
+	// +optional
+	Zone *string `json:"zone,omitempty"`
+
+	// resourceGroup name under which the resources will be created.
+	// when omitted Default resource group will be used.
+	// +optional
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+
+	// vpc contains information about IBM Cloud VPC resources
+	// +optional
+	VPC *VPCResourceReference `json:"vpc,omitempty"`
+
+	// vpcSubnet contains information about IBM Cloud VPC Subnet resources
+	// +optional
+	VPCSubnet *Subnet `json:"vpcSubnet,omitempty"`
+
+	// transitGateway contains information about IBM Cloud TransitGateway.
+	// +optional
+	TransitGateway *TransitGateway `json:"transitGateway,omitempty"`
+
+	// controlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
+	// Its name reference to IBM Cloud VPC LoadBalancer service.
+	// +optional
+	ControlPlaneLoadBalancer *VPCLoadBalancerSpec `json:"controlPlaneLoadBalancer,omitempty"`
+
+	// cosBucket contains options to configure a supporting IBM Cloud COS bucket for this
+	// cluster - currently used for nodes requiring Ignition
+	// (https://coreos.github.io/ignition/) for bootstrapping (requires
+	// BootstrapFormatIgnition feature flag to be enabled).
+	// +optional
+	CosBucket *CosBucket `json:"cosBucket,omitempty"`
 }
 
 // IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
 type IBMPowerVSClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// ready is true when the provider resource is ready.
+	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
+
+	// serviceInstanceID is the reference to the Power VS service on which the server instance(VM) will be created.
+	ServiceInstanceID *string `json:"serviceInstanceID,omitempty"`
+
+	// networkID is the reference to the Power VS network to use for this cluster.
+	NetworkID *string `json:"networkID,omitempty"`
+
+	// dhcpServerID is the reference to the Power VS DHCP server.
+	DHCPServerID *string `json:"dhcpServerID,omitempty"`
+
+	// vpcID is reference to IBM Cloud VPC resources.
+	VPCID *string `json:"vpcID,omitempty"`
+
+	// vpcSubnetID is reference to IBM Cloud VPC subnet.
+	VPCSubnetID *string `json:"vpcSubnetID,omitempty"`
+
+	// transitGatewayID is reference to IBM Cloud TransitGateway.
+	TransitGatewayID *string `json:"transitGatewayID,omitempty"`
+
+	// cosBucketID is reference to IBM Cloud COS Bucket resource.
+	COSBucketID *string `json:"cosBucketID,omitempty"`
+
+	// ControlPlaneLoadBalancer reference to IBM Cloud VPC Loadbalancer.
+	ControlPlaneLoadBalancer *VPCLoadBalancerStatus `json:"controlPlaneLoadBalancer,omitempty"`
+
+	// Conditions defines current service state of the IBMPowerVSCluster.
+	Conditions capiv1beta1.Conditions `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -79,6 +149,57 @@ type IBMPowerVSClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []IBMPowerVSCluster `json:"items"`
+}
+
+// TransitGateway holds the TransitGateway information.
+type TransitGateway struct {
+	Name *string `json:"name,omitempty"`
+	ID   *string `json:"id,omitempty"`
+}
+
+// VPCResourceReference is a reference to a specific VPC resource by ID or Name
+// Only one of ID or Name may be specified. Specifying more than one will result in
+// a validation error.
+type VPCResourceReference struct {
+	// ID of resource
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// Name of resource
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// IBM Cloud VPC zone
+	Zone *string `json:"zone,omitempty"`
+}
+
+type CosBucket struct {
+	// PresignedURLDuration defines the duration for which presigned URLs are valid.
+	//
+	// This is used to generate presigned URLs for S3 Bucket objects, which are used by
+	// control-plane and worker nodes to fetch bootstrap data.
+	//
+	// When enabled, the IAM instance profiles specified are not used.
+	// +optional
+	PresignedURLDuration *metav1.Duration `json:"presignedURLDuration,omitempty"`
+
+	// Name defines name of S3 Bucket to be created.
+	// +kubebuilder:validation:MinLength:=3
+	// +kubebuilder:validation:MaxLength:=63
+	// +kubebuilder:validation:Pattern=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
+	Name string `json:"name,omitempty"`
+}
+
+// GetConditions returns the observations of the operational state of the IBMPowerVSCluster resource.
+func (r *IBMPowerVSCluster) GetConditions() capiv1beta1.Conditions {
+	return r.Status.Conditions
+}
+
+// SetConditions sets the underlying service state of the IBMPowerVSCluster to the predescribed clusterv1.Conditions.
+func (r *IBMPowerVSCluster) SetConditions(conditions capiv1beta1.Conditions) {
+	r.Status.Conditions = conditions
 }
 
 func init() {

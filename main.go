@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"time"
 
 	// +kubebuilder:scaffold:imports
@@ -55,8 +56,10 @@ var (
 	syncPeriod           time.Duration
 	diagnosticsOptions   = flags.DiagnosticsOptions{}
 
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme         = runtime.NewScheme()
+	setupLog       = ctrl.Log.WithName("setup")
+	webhookPort    int
+	webhookCertDir string
 )
 
 func init() {
@@ -123,6 +126,10 @@ func main() {
 		},
 		EventBroadcaster:       broadcaster,
 		HealthProbeBindAddress: healthAddr,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port:    webhookPort,
+			CertDir: webhookCertDir,
+		}),
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -187,6 +194,15 @@ func initFlags(fs *pflag.FlagSet) {
 		"",
 		"Set custom service endpoint in semi-colon separated format: ${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1}",
 	)
+
+	fs.IntVar(&webhookPort,
+		"webhook-port",
+		9443,
+		"The webhook server port the manager will listen on.",
+	)
+
+	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
+		"The webhook certificate directory, where the server should find the TLS certificate and key.")
 
 	flags.AddDiagnosticsOptions(fs, &diagnosticsOptions)
 }

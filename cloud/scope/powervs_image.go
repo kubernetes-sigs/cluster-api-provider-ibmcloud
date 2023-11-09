@@ -20,14 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 
 	"github.com/go-logr/logr"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
-	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
-
 	"k8s.io/klog/v2/klogr"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,7 +36,6 @@ import (
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
@@ -93,47 +92,69 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	spec := params.IBMPowerVSImage.Spec
 
-	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
-	if err != nil {
-		return nil, err
-	}
+	//rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
+	//if err != nil {
+	//	return nil, err
+	//}
 
-	// Fetch the resource controller endpoint.
-	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
-		if err := rc.SetServiceURL(rcEndpoint); err != nil {
-			return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
-		}
-		scope.Logger.V(3).Info("overriding the default resource controller endpoint")
-	}
+	//// Fetch the resource controller endpoint.
+	//if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
+	//	if err := rc.SetServiceURL(rcEndpoint); err != nil {
+	//		return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
+	//	}
+	//	scope.Logger.V(3).Info("overriding the default resource controller endpoint")
+	//}
+	//
+	//res, _, err := rc.GetResourceInstance(
+	//	&resourcecontrollerv2.GetResourceInstanceOptions{
+	//		ID: core.StringPtr(spec.ServiceInstanceID),
+	//	})
+	//if err != nil {
+	//	err = fmt.Errorf("failed to get resource instance: %w", err)
+	//	return nil, err
+	//}
 
-	res, _, err := rc.GetResourceInstance(
-		&resourcecontrollerv2.GetResourceInstanceOptions{
-			ID: core.StringPtr(spec.ServiceInstanceID),
-		})
-	if err != nil {
-		err = fmt.Errorf("failed to get resource instance: %w", err)
-		return nil, err
-	}
-
+	//TODO(karthik-k-n): Fix me
 	options := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
-			Zone:  *res.RegionID,
+			Zone:  util.PowerVSZone,
 		},
-		CloudInstanceID: spec.ServiceInstanceID,
 	}
 
 	// Fetch the service endpoint.
-	if svcEndpoint := endpoints.FetchPVSEndpoint(endpoints.CostructRegionFromZone(*res.RegionID), params.ServiceEndpoint); svcEndpoint != "" {
+	if svcEndpoint := endpoints.FetchPVSEndpoint(endpoints.CostructRegionFromZone(util.PowerVSZone), params.ServiceEndpoint); svcEndpoint != "" {
 		options.IBMPIOptions.URL = svcEndpoint
 		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
 	}
 
 	c, err := powervs.NewService(options)
 	if err != nil {
-		err = fmt.Errorf("failed to create NewIBMPowerVSClient")
+		err = fmt.Errorf("failed to create NewIBMPowerVSClient error %w", err)
 		return nil, err
 	}
+	instanceID := spec.ServiceInstanceID
+	if instanceID == "" {
+		resourceClient, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("error failed to create resource client: %w", err)
+		}
+
+		serviceInstanceName := fmt.Sprintf("%s-%s", params.IBMPowerVSImage.Spec.ClusterName, "serviceInstance")
+		serviceInstance, err := resourceClient.GetServiceInstanceByName(serviceInstanceName)
+		if err != nil {
+			return nil, fmt.Errorf("error failed to get service instance id %w", err)
+		}
+		if serviceInstance == nil {
+			return nil, fmt.Errorf("error service instance is nil")
+		}
+		if *serviceInstance.State != "active" {
+			return nil, fmt.Errorf("service instance not in active state, current state: %s", *serviceInstance.State)
+		}
+		instanceID = *serviceInstance.GUID
+	}
+	options.CloudInstanceID = instanceID
+	c.WithClients(options)
 	scope.IBMPowerVSClient = c
 
 	return scope, nil

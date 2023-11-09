@@ -19,10 +19,21 @@ package util
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+)
+
+const (
+	//PowerVSZone = "dal10"
+	//VPCZone     = "us-south-1"
+
+	PowerVSZone = "dal10"
+	VPCZone     = "us-south-1"
+	VPCRegion   = "us-south"
 )
 
 // GetClusterByName finds and return a Cluster object using the specified params.
@@ -38,4 +49,19 @@ func GetClusterByName(ctx context.Context, c client.Client, namespace, name stri
 	}
 
 	return cluster, nil
+}
+
+// ConstructVPCRegionFromZone returns region based on location/zone.
+func ConstructVPCRegionFromZone(zone string) string {
+	var regex string
+	if strings.Contains(zone, "-") {
+		// it's a region or AZ
+		regex = "-[0-9]+$"
+	} else {
+		// it's a datacenter
+		regex = "[0-9]+$"
+	}
+
+	reg, _ := regexp.Compile(regex)
+	return reg.ReplaceAllString(zone, "")
 }
