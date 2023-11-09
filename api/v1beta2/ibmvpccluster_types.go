@@ -63,6 +63,40 @@ type VPCLoadBalancerSpec struct {
 	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
 	// +optional
 	Name string `json:"name,omitempty"`
+
+	// public indicates that load balancer is public or private
+	// +kubebuilder:default=true
+	// +optional
+	Public bool `json:"public,omitempty"`
+
+	// AdditionalListeners sets the additional listeners for the control plane load balancer. .
+	// +listType=map
+	// +listMapKey=port
+	// +optional
+	AdditionalListeners []AdditionalListenerSpec `json:"additionalListeners,omitempty"`
+}
+
+// AdditionalListenerSpec defines the desired state of an
+// additional listener on an VPC load balancer.
+type AdditionalListenerSpec struct {
+	// Port sets the port for the additional listener.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int64 `json:"port"`
+}
+
+// VPCLoadBalancerStatus defines the status VPC load balancer.
+type VPCLoadBalancerStatus struct {
+	// id of VPC load balancer.
+	// +optional
+	ID *string `json:"id,omitempty"`
+	// +optional
+	Name *string `json:"name,omitempty"`
+	// State is the status of the load balancer.
+	State VPCLoadBalancerState `json:"state,omitempty"`
+	// hostname is the hostname of load balancer.
+	// +optional
+	Hostname *string `json:"hostname,omitempty"`
 }
 
 // IBMVPCClusterStatus defines the observed state of IBMVPCCluster.

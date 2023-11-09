@@ -48,8 +48,18 @@ type IBMPowerVSMachineSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
-	// +kubebuilder:validation:MinLength=1
+	// Deprecated: use ServiceInstance instead
 	ServiceInstanceID string `json:"serviceInstanceID"`
+
+	// serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
+	// Power VS workspace is a container for all Power VS instances at a specific geographic region.
+	// serviceInstance can be created via IBM Cloud catalog or CLI.
+	// supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+	// More detail about Power VS service instance.
+	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+	// when omitted system will dynamically create the service instance
+	// +optional
+	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
 	// SSHKey is the name of the SSH key pair provided to the vsi for authenticating users.
 	SSHKey string `json:"sshKey,omitempty"`
@@ -121,6 +131,20 @@ type IBMPowerVSMachineSpec struct {
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
+
+	// Ignition defined options related to the bootstrapping systems where Ignition is used.
+	// +optional
+	Ignition *Ignition `json:"ignition,omitempty"`
+}
+
+// Ignition defines options related to the bootstrapping systems where Ignition is used.
+type Ignition struct {
+	// Version defines which version of Ignition will be used to generate bootstrap data.
+	//
+	// +optional
+	// +kubebuilder:default="2.3"
+	// +kubebuilder:validation:Enum="2.3";"3.0";"3.1";"3.2";"3.3";"3.4"
+	Version string `json:"version,omitempty"`
 }
 
 // IBMPowerVSResourceReference is a reference to a specific PowerVS resource by ID, Name or RegEx
