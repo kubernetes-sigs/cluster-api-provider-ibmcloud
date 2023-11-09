@@ -65,6 +65,15 @@ type VPCLoadBalancerSpec struct {
 	Name string `json:"name,omitempty"`
 }
 
+// VPCLoadBalancerStatus defines the status VPC load balancer.
+type VPCLoadBalancerStatus struct {
+	// ID of VPC load balancer.
+	// +optional
+	ID *string `json:"id,omitempty"`
+	// State is the status of the load balancer.
+	State VPCLoadBalancerState `json:"state,omitempty"`
+}
+
 // IBMVPCClusterStatus defines the observed state of IBMVPCCluster.
 type IBMVPCClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster

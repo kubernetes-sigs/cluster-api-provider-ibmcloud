@@ -83,10 +83,10 @@ type NetworkInterface struct {
 
 // Subnet describes a subnet.
 type Subnet struct {
-	Ipv4CidrBlock *string `json:"cidr"`
-	Name          *string `json:"name"`
-	ID            *string `json:"id"`
-	Zone          *string `json:"zone"`
+	Ipv4CidrBlock *string `json:"cidr,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	ID            *string `json:"id,omitempty"`
+	Zone          *string `json:"zone,omitempty"`
 }
 
 // VPCEndpoint describes a VPCEndpoint.

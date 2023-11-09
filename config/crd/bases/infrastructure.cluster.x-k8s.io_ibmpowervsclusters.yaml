@@ -174,9 +174,49 @@ spec:
                 - host
                 - port
                 type: object
+              controlPlaneLoadBalancer:
+                description: controlPlaneLoadBalancer is optional configuration for
+                  customizing control plane behavior.
+                properties:
+                  name:
+                    description: Name sets the name of the VPC load balancer.
+                    maxLength: 63
+                    pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                    type: string
+                type: object
               network:
                 description: Network is the reference to the Network to use for this
-                  cluster.
+                  cluster. Whenf the field is omitted, A DHCP service will be created
+                  in the service instance and its private network will be used.
+                properties:
+                  id:
+                    description: ID of resource
+                    minLength: 1
+                    type: string
+                  name:
+                    description: Name of resource
+                    minLength: 1
+                    type: string
+                  regex:
+                    description: Regular expression to match resource, In case of
+                      multiple resources matches the provided regular expression the
+                      first matched resource will be selected
+                    minLength: 1
+                    type: string
+                type: object
+              resourceGroup:
+                description: resourceGroup name under which the resources will be
+                  created.
+                type: string
+              serviceInstance:
+                description: serviceInstance is the reference to the Power VS service
+                  on which the server instance(VM) will be created. Power VS service
+                  is a container for all Power VS instances at a specific geographic
+                  region. serviceInstance can be created via IBM Cloud catalog or
+                  CLI. supported serviceInstance identifier in PowerVSResource are
+                  Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud
+                  cli. More detail about Power VS service instance. https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+                  when omitted system will dynamically create the service instance
                 properties:
                   id:
                     description: ID of resource
@@ -194,22 +234,125 @@ spec:
                     type: string
                 type: object
               serviceInstanceID:
-                description: ServiceInstanceID is the id of the power cloud instance
-                  where the vsi instance will get deployed.
+                description: 'ServiceInstanceID is the id of the power cloud instance
+                  where the vsi instance will get deployed. Deprecated: use ServiceInstance
+                  instead'
                 minLength: 1
+                type: string
+              transitGateway:
+                description: transitGateway contains information about IBM Cloud TransitGateway.
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                type: object
+              vpc:
+                description: vpc contains information about IBM Cloud VPC resources
+                properties:
+                  id:
+                    description: ID of resource
+                    minLength: 1
+                    type: string
+                  name:
+                    description: Name of resource
+                    minLength: 1
+                    type: string
+                  vpcZone:
+                    description: IBM Cloud VPC zone
+                    type: string
+                type: object
+              zone:
+                description: zone is the name of Power VS zone where the cluster will
+                  be created
                 type: string
             required:
             - network
+            - resourceGroup
             - serviceInstanceID
+            - zone
             type: object
           status:
             description: IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
             properties:
+              conditions:
+                description: Conditions defines current service state of the IBMPowerVSCluster.
+                items:
+                  description: Condition defines an observation of a Cluster API resource
+                    operational state.
+                  properties:
+                    lastTransitionTime:
+                      description: Last time the condition transitioned from one status
+                        to another. This should be when the underlying condition changed.
+                        If that is not known, then using the time when the API field
+                        changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: A human readable message indicating details about
+                        the transition. This field may be empty.
+                      type: string
+                    reason:
+                      description: The reason for the condition's last transition
+                        in CamelCase. The specific API may choose whether or not this
+                        field is considered a guaranteed API. This field may not be
+                        empty.
+                      type: string
+                    severity:
+                      description: Severity provides an explicit classification of
+                        Reason code, so the users or machines can immediately understand
+                        the current situation and act accordingly. The Severity field
+                        MUST be set only when Status=False.
+                      type: string
+                    status:
+                      description: Status of the condition, one of True, False, Unknown.
+                      type: string
+                    type:
+                      description: Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources
+                        like Available, but because arbitrary conditions can be useful
+                        (see .node.status.conditions), the ability to deconflict is
+                        important.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - status
+                  - type
+                  type: object
+                type: array
+              controlPlaneLoadBalancer:
+                description: ControlPlaneLoadBalancer reference to IBM Cloud VPC Loadbalancer.
+                properties:
+                  id:
+                    description: ID of VPC load balancer.
+                    type: string
+                  state:
+                    description: State is the status of the load balancer.
+                    type: string
+                type: object
+              dhcpServerID:
+                description: dhcpServerID is the reference to the Power VS DHCP server.
+                type: string
+              networkID:
+                description: networkID is the reference to the Power VS network to
+                  use for this cluster.
+                type: string
               ready:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
+                description: ready is true when the provider resource is ready.
                 type: boolean
+              serviceInstanceID:
+                description: serviceInstanceID is the reference to the Power VS service
+                  on which the server instance(VM) will be created.
+                type: string
+              transitGatewayID:
+                description: transitGatewayID is reference to IBM Cloud TransitGateway.
+                type: string
+              vpcID:
+                description: vpcID is reference to IBM Cloud VPC resources.
+                type: string
+              vpcSubnetID:
+                description: vpcSubnetID is reference to IBM Cloud VPC subnet.
+                type: string
             required:
             - ready
             type: object

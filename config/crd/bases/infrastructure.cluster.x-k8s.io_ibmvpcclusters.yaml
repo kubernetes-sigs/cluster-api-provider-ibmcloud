@@ -331,11 +331,6 @@ spec:
                     type: string
                   zone:
                     type: string
-                required:
-                - cidr
-                - id
-                - name
-                - zone
                 type: object
               vpc:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state

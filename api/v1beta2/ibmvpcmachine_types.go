@@ -78,6 +78,9 @@ type IBMVPCResourceReference struct {
 	// +kubebuilder:validation:MinLength=1
 	// +optional
 	Name *string `json:"name,omitempty"`
+
+	// IBM Cloud VPC zone
+	Zone *string `json:"vpcZone,omitempty"`
 }
 
 // VPCVolume defines the volume information for the instance.

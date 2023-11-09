@@ -198,9 +198,52 @@ spec:
                         - host
                         - port
                         type: object
+                      controlPlaneLoadBalancer:
+                        description: controlPlaneLoadBalancer is optional configuration
+                          for customizing control plane behavior.
+                        properties:
+                          name:
+                            description: Name sets the name of the VPC load balancer.
+                            maxLength: 63
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                            type: string
+                        type: object
                       network:
                         description: Network is the reference to the Network to use
-                          for this cluster.
+                          for this cluster. Whenf the field is omitted, A DHCP service
+                          will be created in the service instance and its private
+                          network will be used.
+                        properties:
+                          id:
+                            description: ID of resource
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name of resource
+                            minLength: 1
+                            type: string
+                          regex:
+                            description: Regular expression to match resource, In
+                              case of multiple resources matches the provided regular
+                              expression the first matched resource will be selected
+                            minLength: 1
+                            type: string
+                        type: object
+                      resourceGroup:
+                        description: resourceGroup name under which the resources
+                          will be created.
+                        type: string
+                      serviceInstance:
+                        description: serviceInstance is the reference to the Power
+                          VS service on which the server instance(VM) will be created.
+                          Power VS service is a container for all Power VS instances
+                          at a specific geographic region. serviceInstance can be
+                          created via IBM Cloud catalog or CLI. supported serviceInstance
+                          identifier in PowerVSResource are Name and ID and that can
+                          be obtained from IBM Cloud UI or IBM Cloud cli. More detail
+                          about Power VS service instance. https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+                          when omitted system will dynamically create the service
+                          instance
                         properties:
                           id:
                             description: ID of resource
@@ -218,13 +261,45 @@ spec:
                             type: string
                         type: object
                       serviceInstanceID:
-                        description: ServiceInstanceID is the id of the power cloud
-                          instance where the vsi instance will get deployed.
+                        description: 'ServiceInstanceID is the id of the power cloud
+                          instance where the vsi instance will get deployed. Deprecated:
+                          use ServiceInstance instead'
                         minLength: 1
+                        type: string
+                      transitGateway:
+                        description: transitGateway contains information about IBM
+                          Cloud TransitGateway.
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        type: object
+                      vpc:
+                        description: vpc contains information about IBM Cloud VPC
+                          resources
+                        properties:
+                          id:
+                            description: ID of resource
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name of resource
+                            minLength: 1
+                            type: string
+                          vpcZone:
+                            description: IBM Cloud VPC zone
+                            type: string
+                        type: object
+                      zone:
+                        description: zone is the name of Power VS zone where the cluster
+                          will be created
                         type: string
                     required:
                     - network
+                    - resourceGroup
                     - serviceInstanceID
+                    - zone
                     type: object
                 required:
                 - spec
