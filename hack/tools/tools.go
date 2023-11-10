@@ -21,12 +21,14 @@ limitations under the License.
 package tools
 
 import (
+	_ "github.com/aquasecurity/trivy/cmd/trivy"
 	_ "github.com/drone/envsubst/v2/cmd/envsubst"
 	_ "github.com/golang/mock/mockgen"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/itchyny/gojq/cmd/gojq"
 	_ "github.com/joelanford/go-apidiff"
 	_ "github.com/onsi/ginkgo/v2/ginkgo"
+	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "gotest.tools/gotestsum"
 	_ "k8s.io/code-generator/cmd/conversion-gen"
 	_ "sigs.k8s.io/cluster-api/hack/tools/conversion-verifier"
@@ -34,5 +36,5 @@ import (
 	_ "sigs.k8s.io/cluster-api/hack/tools/mdbook/releaselink"
 	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
 	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
-	_ "sigs.k8s.io/kustomize/kustomize/v4"
+	_ "sigs.k8s.io/kustomize/kustomize/v5"
 )
