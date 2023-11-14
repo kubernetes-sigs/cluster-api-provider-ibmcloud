@@ -38,7 +38,7 @@ type IBMPowerVSClusterSpec struct {
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// Network is the reference to the Network to use for this cluster.
-	// When the field is omitted, A DHCP service will be created in the service instance and its private network will be used.
+	// when the field is omitted, A DHCP service will be created in the service instance and its private network will be used.
 	Network IBMPowerVSResourceReference `json:"network"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
@@ -53,21 +53,26 @@ type IBMPowerVSClusterSpec struct {
 	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
 	// when omitted system will dynamically create the service instance
 	// +optional
-	ServiceInstance IBMPowerVSResourceReference `json:"serviceInstance"`
+	ServiceInstance IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
 	// zone is the name of Power VS zone where the cluster will be created
-	Zone string `json:"zone"`
+	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
+	// when value for serviceInstance is omitted its required to set the value for zone.
+	// +optional
+	Zone string `json:"zone,omitempty"`
 
 	// resourceGroup name under which the resources will be created.
-	ResourceGroup string `json:"resourceGroup"`
+	// when omitted Default resource group will be used.
+	// +optional
+	ResourceGroup string `json:"resourceGroup,omitempty"`
 
 	// vpc contains information about IBM Cloud VPC resources
 	// +optional
-	VPC IBMVPCResourceReference `json:"vpc,omitempty"`
+	VPC VPCResourceReference `json:"vpc,omitempty"`
 
 	// transitGateway contains information about IBM Cloud TransitGateway.
 	// +optional
-	TransitGateway IBMTransitGatewayResource `json:"transitGateway,omitempty"`
+	TransitGateway TransitGateway `json:"transitGateway,omitempty"`
 
 	// controlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
 	// Its name reference to IBM Cloud VPC LoadBalancer service.
@@ -132,10 +137,28 @@ type IBMPowerVSClusterList struct {
 	Items           []IBMPowerVSCluster `json:"items"`
 }
 
-// IBMTransitGatewayResource holds the TransitGateway information.
-type IBMTransitGatewayResource struct {
+// TransitGateway holds the TransitGateway information.
+type TransitGateway struct {
 	Name *string `json:"name,omitempty"`
 	ID   *string `json:"id,omitempty"`
+}
+
+// VPCResourceReference is a reference to a specific VPC resource by ID or Name
+// Only one of ID or Name may be specified. Specifying more than one will result in
+// a validation error.
+type VPCResourceReference struct {
+	// ID of resource
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// Name of resource
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// IBM Cloud VPC zone
+	Zone *string `json:"zone,omitempty"`
 }
 
 func init() {

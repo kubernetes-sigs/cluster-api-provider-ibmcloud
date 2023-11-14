@@ -239,9 +239,6 @@ spec:
                             description: Name of resource
                             minLength: 1
                             type: string
-                          vpcZone:
-                            description: IBM Cloud VPC zone
-                            type: string
                         type: object
                       name:
                         description: Name of the instance.
@@ -280,9 +277,6 @@ spec:
                             name:
                               description: Name of resource
                               minLength: 1
-                              type: string
-                            vpcZone:
-                              description: IBM Cloud VPC zone
                               type: string
                           type: object
                         type: array

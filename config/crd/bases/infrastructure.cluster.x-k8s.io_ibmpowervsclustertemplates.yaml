@@ -211,7 +211,7 @@ spec:
                         type: object
                       network:
                         description: Network is the reference to the Network to use
-                          for this cluster. When the field is omitted, A DHCP service
+                          for this cluster. when the field is omitted, A DHCP service
                           will be created in the service instance and its private
                           network will be used.
                         properties:
@@ -232,7 +232,8 @@ spec:
                         type: object
                       resourceGroup:
                         description: resourceGroup name under which the resources
-                          will be created.
+                          will be created. when omitted Default resource group will
+                          be used.
                         type: string
                       serviceInstance:
                         description: serviceInstance is the reference to the Power
@@ -288,19 +289,19 @@ spec:
                             description: Name of resource
                             minLength: 1
                             type: string
-                          vpcZone:
+                          zone:
                             description: IBM Cloud VPC zone
                             type: string
                         type: object
                       zone:
                         description: zone is the name of Power VS zone where the cluster
-                          will be created
+                          will be created possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
+                          when value for serviceInstance is omitted its required to
+                          set the value for zone.
                         type: string
                     required:
                     - network
-                    - resourceGroup
                     - serviceInstanceID
-                    - zone
                     type: object
                 required:
                 - spec
