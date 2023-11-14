@@ -200,7 +200,8 @@ spec:
                         type: object
                       controlPlaneLoadBalancer:
                         description: controlPlaneLoadBalancer is optional configuration
-                          for customizing control plane behavior.
+                          for customizing control plane behavior. Its name reference
+                          to IBM Cloud VPC LoadBalancer service.
                         properties:
                           name:
                             description: Name sets the name of the VPC load balancer.
@@ -210,7 +211,7 @@ spec:
                         type: object
                       network:
                         description: Network is the reference to the Network to use
-                          for this cluster. Whenf the field is omitted, A DHCP service
+                          for this cluster. When the field is omitted, A DHCP service
                           will be created in the service instance and its private
                           network will be used.
                         properties:

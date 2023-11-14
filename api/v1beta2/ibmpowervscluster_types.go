@@ -38,7 +38,7 @@ type IBMPowerVSClusterSpec struct {
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// Network is the reference to the Network to use for this cluster.
-	// Whenf the field is omitted, A DHCP service will be created in the service instance and its private network will be used.
+	// When the field is omitted, A DHCP service will be created in the service instance and its private network will be used.
 	Network IBMPowerVSResourceReference `json:"network"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
@@ -70,6 +70,7 @@ type IBMPowerVSClusterSpec struct {
 	TransitGateway IBMTransitGatewayResource `json:"transitGateway,omitempty"`
 
 	// controlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
+	// Its name reference to IBM Cloud VPC LoadBalancer service.
 	// +optional
 	ControlPlaneLoadBalancer *VPCLoadBalancerSpec `json:"controlPlaneLoadBalancer,omitempty"`
 }
