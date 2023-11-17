@@ -188,6 +188,7 @@ generate-templates: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs.yaml
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider.yaml
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-clusterclass --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-clusterclass.yaml
+	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-vpc-clusterclass --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-vpc-clusterclass.yaml
 	
 .PHONY: generate-e2e-templates
 generate-e2e-templates: $(KUSTOMIZE)

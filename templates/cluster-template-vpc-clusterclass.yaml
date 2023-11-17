@@ -22,9 +22,9 @@ spec:
     version: ${KUBERNETES_VERSION}
     workers:
       machineDeployments:
-        - class: default-worker
-          name: md-0
-          replicas: 2
+      - class: default-worker
+        name: md-0
+        replicas: ${WORKER_MACHINE_COUNT}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: ClusterClass
@@ -51,18 +51,18 @@ spec:
       namespace: ${NAMESPACE}
   workers:
     machineDeployments:
-      - class: default-worker
-        template:
-          bootstrap:
-            ref:
-              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
-              kind: KubeadmConfigTemplate
-              name: ${IBMVPC_CLUSTER_CLASS_NAME}-md-0
-          infrastructure:
-            ref:
-              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
-              kind: IBMVPCMachineTemplate
-              name: ${IBMVPC_CLUSTER_CLASS_NAME}-worker-machinetemplate
+    - class: default-worker
+      template:
+        bootstrap:
+          ref:
+            apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+            kind: KubeadmConfigTemplate
+            name: ${IBMVPC_CLUSTER_CLASS_NAME}-md-0
+        infrastructure:
+          ref:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+            kind: IBMVPCMachineTemplate
+            name: ${IBMVPC_CLUSTER_CLASS_NAME}-worker-machinetemplate
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMVPCClusterTemplate
@@ -88,41 +88,39 @@ spec:
     spec:
       kubeadmConfigSpec:
         clusterConfiguration:
-          kubernetesVersion: ${KUBERNETES_VERSION}
           apiServer:
-            certSANs: [localhost, 127.0.0.1]
+            certSANs:
+            - localhost
+            - 127.0.0.1
             extraArgs:
               cloud-provider: external
           controllerManager:
             extraArgs:
-              enable-hostpath-provisioner: 'true'
               cloud-provider: external
-          apiServer:
-            certSANs: [localhost, 127.0.0.1]
-            extraArgs:
-              cloud-provider: external
+              enable-hostpath-provisioner: "true"
           dns: {}
           etcd: {}
+          kubernetesVersion: ${KUBERNETES_VERSION}
           networking: {}
           scheduler: {}
         initConfiguration:
           nodeRegistration:
             criSocket: /var/run/containerd/containerd.sock
-            kubeletExtraArgs: 
+            kubeletExtraArgs:
               cloud-provider: external
-              eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+              eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
         joinConfiguration:
           discovery: {}
           nodeRegistration:
             criSocket: /var/run/containerd/containerd.sock
-            kubeletExtraArgs: 
+            kubeletExtraArgs:
               cloud-provider: external
-              eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+              eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
 metadata:
-  name: "${IBMVPC_CLUSTER_CLASS_NAME}-md-0"
+  name: ${IBMVPC_CLUSTER_CLASS_NAME}-md-0
 spec:
   template:
     spec:
@@ -151,18 +149,18 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMVPCMachineTemplate
 metadata:
-  name: "${IBMVPC_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+  name: ${IBMVPC_CLUSTER_CLASS_NAME}-worker-machinetemplate
 spec:
   template:
     spec:
-      image:
-        name: "${IBMVPC_IMAGE_NAME}"
-      zone: "${IBMVPC_ZONE}"
-      profile: "${IBMVPC_PROFILE}"
-      sshKeys:
-        - name: "${IBMVPC_SSHKEY_NAME}"
       bootVolume:
         sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
+      image:
+        name: ${IBMVPC_IMAGE_NAME}
+      profile: ${IBMVPC_PROFILE}
+      sshKeys:
+      - name: ${IBMVPC_SSHKEY_NAME}
+      zone: ${IBMVPC_ZONE}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta1
 kind: ClusterResourceSet
@@ -173,18 +171,15 @@ spec:
     matchLabels:
       ccm: external
   resources:
-    - kind: Secret
-      name: ibm-credential
-    - kind: ConfigMap
-      name: ibm-cfg
-    - kind: ConfigMap
-      name: cloud-controller-manager-addon
+  - kind: Secret
+    name: ibm-credential
+  - kind: ConfigMap
+    name: ibm-cfg
+  - kind: ConfigMap
+    name: cloud-controller-manager-addon
   strategy: ApplyOnce
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ibm-cfg
 data:
   ibm-cloud-conf.yaml: |-
     apiVersion: v1
@@ -208,12 +203,14 @@ data:
         g2VpcSubnetNames = "${CLUSTER_NAME}-subnet"
         g2VpcName = ${IBMVPC_NAME:=""}
         region =  ${IBMVPC_REGION:=""}
+kind: ConfigMap
+metadata:
+  name: ibm-cfg
 ---
 apiVersion: v1
 kind: Secret
 metadata:
   name: ibm-credential
-type: addons.cluster.x-k8s.io/resource-set
 stringData:
   ibm-credential.yaml: |-
     apiVersion: v1
@@ -223,11 +220,9 @@ stringData:
       namespace: kube-system
     data:
       ibmcloud_api_key: ${BASE64_API_KEY}
+type: addons.cluster.x-k8s.io/resource-set
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloud-controller-manager-addon
 data:
   ibm-ccm-external.yaml: |-
     apiVersion: v1
@@ -420,3 +415,6 @@ data:
             - name: ibm-secret
               secret:
                 secretName: ibm-cloud-credential
+kind: ConfigMap
+metadata:
+  name: cloud-controller-manager-addon
