@@ -25,8 +25,7 @@
   clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.26.2 \
   --target-namespace default \
   --control-plane-machine-count=1 \
-  --worker-machine-count=2 \
-  --flavor=vpc-load-balancer | kubectl apply -f -
+  --worker-machine-count=2 | kubectl apply -f -
 ```
 
 **Change disk size for the boot volume**
