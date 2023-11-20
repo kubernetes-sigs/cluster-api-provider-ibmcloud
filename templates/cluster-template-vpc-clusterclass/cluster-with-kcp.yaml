@@ -1,0 +1,116 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    ccm: external
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - ${POD_CIDR:="192.168.0.0/16"}
+    serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
+    services:
+      cidrBlocks:
+      - ${SERVICE_CIDR:="10.128.0.0/12"}
+  topology:
+    class: ${IBMVPC_CLUSTER_CLASS_NAME}
+    controlPlane:
+      replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+    version: ${KUBERNETES_VERSION}
+    workers:
+      machineDeployments:
+        - class: default-worker
+          name: md-0
+          replicas: ${WORKER_MACHINE_COUNT}
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: ClusterClass
+metadata:
+  name: ${IBMVPC_CLUSTER_CLASS_NAME:="vpc-cc"}
+spec:
+  controlPlane:
+    machineInfrastructure:
+      ref:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: IBMVPCMachineTemplate
+        name: ${IBMVPC_CLUSTER_CLASS_NAME}-control-plane-machinetemplate
+        namespace: ${NAMESPACE}
+    ref:
+      apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+      kind: KubeadmControlPlaneTemplate
+      name: ${IBMVPC_CLUSTER_CLASS_NAME}-control-plane
+      namespace: ${NAMESPACE}
+  infrastructure:
+    ref:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: IBMVPCClusterTemplate
+      name: ${IBMVPC_CLUSTER_CLASS_NAME}-cluster-template
+      namespace: ${NAMESPACE}
+  workers:
+    machineDeployments:
+      - class: default-worker
+        template:
+          bootstrap:
+            ref:
+              apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+              kind: KubeadmConfigTemplate
+              name: ${IBMVPC_CLUSTER_CLASS_NAME}-md-0
+          infrastructure:
+            ref:
+              apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+              kind: IBMVPCMachineTemplate
+              name: ${IBMVPC_CLUSTER_CLASS_NAME}-worker-machinetemplate
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCClusterTemplate
+metadata:
+  name: ${IBMVPC_CLUSTER_CLASS_NAME}-cluster-template
+spec:
+  template:
+    spec:
+      controlPlaneLoadBalancer:
+        name: ${CLUSTER_NAME}-load-balancer
+      region: ${IBMVPC_REGION}
+      resourceGroup: ${IBMVPC_RESOURCEGROUP}
+      vpc: ${IBMVPC_NAME}
+      zone: ${IBMVPC_ZONE}
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlaneTemplate
+metadata:
+  name: ${IBMVPC_CLUSTER_CLASS_NAME}-control-plane
+  namespace: ${NAMESPACE}
+spec:
+  template:
+    spec:
+      kubeadmConfigSpec:
+        clusterConfiguration:
+          kubernetesVersion: ${KUBERNETES_VERSION}
+          apiServer:
+            certSANs: [localhost, 127.0.0.1]
+            extraArgs:
+              cloud-provider: external
+          controllerManager:
+            extraArgs:
+              enable-hostpath-provisioner: 'true'
+              cloud-provider: external
+          dns: {}
+          etcd: {}
+          networking: {}
+          scheduler: {}
+        initConfiguration:
+          nodeRegistration:
+            criSocket: /var/run/containerd/containerd.sock
+            kubeletExtraArgs: 
+              cloud-provider: external
+              eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+        joinConfiguration:
+          discovery: {}
+          nodeRegistration:
+            criSocket: /var/run/containerd/containerd.sock
+            kubeletExtraArgs: 
+              cloud-provider: external
+              eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'

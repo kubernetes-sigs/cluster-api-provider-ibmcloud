@@ -1,0 +1,44 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  name: "${IBMVPC_CLUSTER_CLASS_NAME}-md-0"
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+            cloud-provider: external
+            eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCMachineTemplate
+metadata:
+  name: ${IBMVPC_CLUSTER_CLASS_NAME}-control-plane-machinetemplate
+spec:
+  template:
+    spec:
+      bootVolume:
+        sizeGiB: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_SIZEGIB:=20}
+      image:
+        name: ${IBMVPC_IMAGE_NAME}
+      profile: ${IBMVPC_PROFILE}
+      sshKeys:
+      - name: ${IBMVPC_SSHKEY_NAME}
+      zone: ${IBMVPC_ZONE}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCMachineTemplate
+metadata:
+  name: "${IBMVPC_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+spec:
+  template:
+    spec:
+      image:
+        name: "${IBMVPC_IMAGE_NAME}"
+      zone: "${IBMVPC_ZONE}"
+      profile: "${IBMVPC_PROFILE}"
+      sshKeys:
+        - name: "${IBMVPC_SSHKEY_NAME}"
+      bootVolume:
+        sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}

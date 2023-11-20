@@ -106,14 +106,14 @@ it into a management cluster using `clusterctl`.
       ```
    > Note: `EXP_CLUSTER_RESOURCE_SET` should be set for deploying workload cluster with Cloud Controller manager.
 
-### Deploy PowerVS cluster with ClusterClass template
+### Deploy PowerVS cluster or VPC cluster with ClusterClass template
 
-   To deploy workload cluster with [PowerVS clusterclass-template](/topics/powervs/clusterclass-cluster.html). Set the following environmental variables.
+   To deploy workload cluster with [PowerVS clusterclass-template](/topics/powervs/clusterclass-cluster.html) or [VPC clusterclass-template](/topics/VPC/clusterclass-cluster.html). Set the following environmental variables.
 
    ```console
    export PROVIDER_ID_FORMAT=v2
    export EXP_CLUSTER_RESOURCE_SET=true
    export CLUSTER_TOPOLOGY=true
    ```
-      
-   > Note: Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
+
+   > Note: Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceSet](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental feature so we need to enable the feature gate by setting `EXP_CLUSTER_RESOURCE_SET`, `CLUSTER_TOPOLOGY` environmental variables.
