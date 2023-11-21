@@ -5,3 +5,6 @@ CAPIBM requires a “machine image” containing pre-installed, matching version
 Pre-built public Images are published by the maintainers regularly for each new Kubernetes version.
 
 >Note: These images are only for the test purpose
+
+- [IBM Cloud VPC Images](/machine-images/vpc.html)
+- [IBM Cloud PowerVS Images](/machine-images/powervs.html)
