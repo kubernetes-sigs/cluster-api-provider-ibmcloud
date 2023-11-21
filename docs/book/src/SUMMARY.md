@@ -34,6 +34,7 @@
   - [Release Process](./developer/release.md)
   - [How to build the machine boot images](./developer/build-images.md)
   - [Modules and tools dependencies](./developer/dependencies.md)
+  - [E2E testing](./developer/e2e.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
   - [API References](./reference/api-references.md)
