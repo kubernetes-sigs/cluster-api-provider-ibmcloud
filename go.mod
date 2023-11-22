@@ -4,9 +4,9 @@ go 1.20
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
-	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega => github.com/onsi/gomega v1.28.1
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.0-beta.1
+	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.13.1
+	github.com/onsi/gomega => github.com/onsi/gomega v1.30.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.0-rc.0
 )
 
 require (
@@ -17,23 +17,23 @@ require (
 	github.com/go-logr/logr v1.3.0
 	github.com/go-openapi/strfmt v0.21.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/ginkgo/v2 v2.13.1
+	github.com/onsi/gomega v1.30.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/mock v0.3.0
 	golang.org/x/crypto v0.15.0
 	golang.org/x/text v0.14.0
-	k8s.io/api v0.28.3
-	k8s.io/apiextensions-apiserver v0.28.3
-	k8s.io/apimachinery v0.28.3
-	k8s.io/cli-runtime v0.28.3
-	k8s.io/client-go v0.28.3
+	k8s.io/api v0.28.4
+	k8s.io/apiextensions-apiserver v0.28.4
+	k8s.io/apimachinery v0.28.4
+	k8s.io/cli-runtime v0.28.4
+	k8s.io/client-go v0.28.4
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
-	sigs.k8s.io/cluster-api v1.6.0-beta.1
-	sigs.k8s.io/cluster-api/test v1.6.0-beta.1
+	sigs.k8s.io/cluster-api v1.6.0-rc.0
+	sigs.k8s.io/cluster-api/test v1.6.0-rc.0
 	sigs.k8s.io/controller-runtime v0.16.3
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -111,7 +111,7 @@ require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -157,13 +157,13 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/oauth2 v0.13.0 // indirect
-	golang.org/x/sync v0.3.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/oauth2 v0.14.0 // indirect
+	golang.org/x/sync v0.4.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.13.0 // indirect
+	golang.org/x/tools v0.14.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230913181813-007df8e322eb // indirect
@@ -176,10 +176,10 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.28.3 // indirect
-	k8s.io/cluster-bootstrap v0.28.3 // indirect
-	k8s.io/component-base v0.28.3 // indirect
-	k8s.io/kms v0.28.3 // indirect
+	k8s.io/apiserver v0.28.4 // indirect
+	k8s.io/cluster-bootstrap v0.28.4 // indirect
+	k8s.io/component-base v0.28.4 // indirect
+	k8s.io/kms v0.28.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.1.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
