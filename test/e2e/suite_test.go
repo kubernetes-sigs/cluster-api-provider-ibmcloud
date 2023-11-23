@@ -28,6 +28,7 @@ import (
 	"strings"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
@@ -220,8 +221,26 @@ func initBootstrapCluster(bootstrapClusterProxy framework.ClusterProxy, config *
 }
 
 var _ = Describe("Run Sanity tests", func() {
-	// TO DO- Add additional testcases for sanity checks
+
+	Context("CAPI controllers deployment", func() {
+		It("Should check if required controllers are deployed successfully", func() {
+			By("Verifying if status of pods is Running")
+
+			// Check the four required controllers in the following namespaces
+			var namespaces = []string{"capi-system", "capi-kubeadm-control-plane-system", "capi-kubeadm-bootstrap-system", "capi-ibmcloud-system"}
+			for _, ns := range namespaces {
+				checkDeployment(ns)
+			}
+		})
+	})
 })
+
+func checkDeployment(namespace string) {
+	list, err := bootstrapClusterProxy.GetClientSet().CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
+	Expect(err).To(BeNil())
+	Expect(len(list.Items)).To(BeEquivalentTo(1))
+	Expect(list.Items[0].Status.Phase).To(BeEquivalentTo("Running"))
+}
 
 func tearDown(bootstrapClusterProvider bootstrap.ClusterProvider, bootstrapClusterProxy framework.ClusterProxy) {
 	if bootstrapClusterProxy != nil {
