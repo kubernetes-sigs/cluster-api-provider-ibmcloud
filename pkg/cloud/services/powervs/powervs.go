@@ -39,4 +39,7 @@ type PowerVS interface {
 	DeleteJob(id string) error
 	GetAllDHCPServers() (models.DHCPServers, error)
 	GetDHCPServer(id string) (*models.DHCPServerDetail, error)
+	CreateDHCPServer(*models.DHCPServerCreate) (*models.DHCPServer, error)
+	WithClients(options ServiceOptions) *Service
+	GetNetworkByName(networkName string) (*string, error)
 }

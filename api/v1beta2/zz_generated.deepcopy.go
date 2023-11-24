@@ -91,9 +91,36 @@ func (in *IBMPowerVSClusterSpec) DeepCopyInto(out *IBMPowerVSClusterSpec) {
 	*out = *in
 	in.Network.DeepCopyInto(&out.Network)
 	out.ControlPlaneEndpoint = in.ControlPlaneEndpoint
-	in.ServiceInstance.DeepCopyInto(&out.ServiceInstance)
-	in.VPC.DeepCopyInto(&out.VPC)
-	in.TransitGateway.DeepCopyInto(&out.TransitGateway)
+	if in.ServiceInstance != nil {
+		in, out := &in.ServiceInstance, &out.ServiceInstance
+		*out = new(IBMPowerVSResourceReference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Zone != nil {
+		in, out := &in.Zone, &out.Zone
+		*out = new(string)
+		**out = **in
+	}
+	if in.ResourceGroup != nil {
+		in, out := &in.ResourceGroup, &out.ResourceGroup
+		*out = new(string)
+		**out = **in
+	}
+	if in.VPC != nil {
+		in, out := &in.VPC, &out.VPC
+		*out = new(VPCResourceReference)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.VPCSubnet != nil {
+		in, out := &in.VPCSubnet, &out.VPCSubnet
+		*out = new(Subnet)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.TransitGateway != nil {
+		in, out := &in.TransitGateway, &out.TransitGateway
+		*out = new(TransitGateway)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.ControlPlaneLoadBalancer != nil {
 		in, out := &in.ControlPlaneLoadBalancer, &out.ControlPlaneLoadBalancer
 		*out = new(VPCLoadBalancerSpec)
@@ -1223,6 +1250,16 @@ func (in *VPCLoadBalancerStatus) DeepCopyInto(out *VPCLoadBalancerStatus) {
 	*out = *in
 	if in.ID != nil {
 		in, out := &in.ID, &out.ID
+		*out = new(string)
+		**out = **in
+	}
+	if in.State != nil {
+		in, out := &in.State, &out.State
+		*out = new(VPCLoadBalancerState)
+		**out = **in
+	}
+	if in.Hostname != nil {
+		in, out := &in.Hostname, &out.Hostname
 		*out = new(string)
 		**out = **in
 	}

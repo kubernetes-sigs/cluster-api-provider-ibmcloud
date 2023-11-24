@@ -293,6 +293,19 @@ spec:
                             description: IBM Cloud VPC zone
                             type: string
                         type: object
+                      vpcSubnet:
+                        description: vpcSubnet contains information about IBM Cloud
+                          VPC Subnet resources
+                        properties:
+                          cidr:
+                            type: string
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          zone:
+                            type: string
+                        type: object
                       zone:
                         description: zone is the name of Power VS zone where the cluster
                           will be created possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.

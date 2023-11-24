@@ -550,6 +550,7 @@ func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(
 	// WARNING: in.Zone requires manual conversion: does not exist in peer-type
 	// WARNING: in.ResourceGroup requires manual conversion: does not exist in peer-type
 	// WARNING: in.VPC requires manual conversion: does not exist in peer-type
+	// WARNING: in.VPCSubnet requires manual conversion: does not exist in peer-type
 	// WARNING: in.TransitGateway requires manual conversion: does not exist in peer-type
 	// WARNING: in.ControlPlaneLoadBalancer requires manual conversion: does not exist in peer-type
 	return nil

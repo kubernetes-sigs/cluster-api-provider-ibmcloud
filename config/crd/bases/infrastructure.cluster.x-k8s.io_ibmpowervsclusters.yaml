@@ -263,6 +263,19 @@ spec:
                     description: IBM Cloud VPC zone
                     type: string
                 type: object
+              vpcSubnet:
+                description: vpcSubnet contains information about IBM Cloud VPC Subnet
+                  resources
+                properties:
+                  cidr:
+                    type: string
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  zone:
+                    type: string
+                type: object
               zone:
                 description: zone is the name of Power VS zone where the cluster will
                   be created possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
@@ -324,11 +337,14 @@ spec:
               controlPlaneLoadBalancer:
                 description: ControlPlaneLoadBalancer reference to IBM Cloud VPC Loadbalancer.
                 properties:
+                  hostname:
+                    description: hostname is the hostname of load balancer.
+                    type: string
                   id:
-                    description: ID of VPC load balancer.
+                    description: id VPC load balancer.
                     type: string
                   state:
-                    description: State is the status of the load balancer.
+                    description: state is the status of the load balancer.
                     type: string
                 type: object
               dhcpServerID:

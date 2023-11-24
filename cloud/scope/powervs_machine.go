@@ -173,6 +173,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 		err = fmt.Errorf("failed to create PowerVS service")
 		return nil, err
 	}
+	c.WithClients(serviceOptions)
 	scope.IBMPowerVSClient = c
 	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
 	return scope, nil

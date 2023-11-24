@@ -288,6 +288,52 @@ func (mr *MockVpcMockRecorder) GetLoadBalancer(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancer", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancer), options)
 }
 
+// GetLoadBalancerByName mocks base method.
+func (m *MockVpc) GetLoadBalancerByName(loadBalancerName string) (*vpcv1.LoadBalancer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLoadBalancerByName", loadBalancerName)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLoadBalancerByName indicates an expected call of GetLoadBalancerByName.
+func (mr *MockVpcMockRecorder) GetLoadBalancerByName(loadBalancerName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerByName", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerByName), loadBalancerName)
+}
+
+// GetSubnet mocks base method.
+func (m *MockVpc) GetSubnet(arg0 *vpcv1.GetSubnetOptions) (*vpcv1.Subnet, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubnet", arg0)
+	ret0, _ := ret[0].(*vpcv1.Subnet)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetSubnet indicates an expected call of GetSubnet.
+func (mr *MockVpcMockRecorder) GetSubnet(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnet", reflect.TypeOf((*MockVpc)(nil).GetSubnet), arg0)
+}
+
+// GetSubnetAddrPrefix mocks base method.
+func (m *MockVpc) GetSubnetAddrPrefix(vpcID, zone string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubnetAddrPrefix", vpcID, zone)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubnetAddrPrefix indicates an expected call of GetSubnetAddrPrefix.
+func (mr *MockVpcMockRecorder) GetSubnetAddrPrefix(vpcID, zone any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetAddrPrefix", reflect.TypeOf((*MockVpc)(nil).GetSubnetAddrPrefix), vpcID, zone)
+}
+
 // GetSubnetPublicGateway mocks base method.
 func (m *MockVpc) GetSubnetPublicGateway(options *vpcv1.GetSubnetPublicGatewayOptions) (*vpcv1.PublicGateway, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -302,6 +348,52 @@ func (m *MockVpc) GetSubnetPublicGateway(options *vpcv1.GetSubnetPublicGatewayOp
 func (mr *MockVpcMockRecorder) GetSubnetPublicGateway(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetPublicGateway", reflect.TypeOf((*MockVpc)(nil).GetSubnetPublicGateway), options)
+}
+
+// GetVPC mocks base method.
+func (m *MockVpc) GetVPC(arg0 *vpcv1.GetVPCOptions) (*vpcv1.VPC, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPC", arg0)
+	ret0, _ := ret[0].(*vpcv1.VPC)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetVPC indicates an expected call of GetVPC.
+func (mr *MockVpcMockRecorder) GetVPC(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPC", reflect.TypeOf((*MockVpc)(nil).GetVPC), arg0)
+}
+
+// GetVPCByName mocks base method.
+func (m *MockVpc) GetVPCByName(vpcName string) (*vpcv1.VPC, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPCByName", vpcName)
+	ret0, _ := ret[0].(*vpcv1.VPC)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVPCByName indicates an expected call of GetVPCByName.
+func (mr *MockVpcMockRecorder) GetVPCByName(vpcName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCByName", reflect.TypeOf((*MockVpc)(nil).GetVPCByName), vpcName)
+}
+
+// GetVPCSubnetByName mocks base method.
+func (m *MockVpc) GetVPCSubnetByName(subnetName string) (*vpcv1.Subnet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPCSubnetByName", subnetName)
+	ret0, _ := ret[0].(*vpcv1.Subnet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVPCSubnetByName indicates an expected call of GetVPCSubnetByName.
+func (mr *MockVpcMockRecorder) GetVPCSubnetByName(subnetName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCSubnetByName", reflect.TypeOf((*MockVpc)(nil).GetVPCSubnetByName), subnetName)
 }
 
 // ListImages mocks base method.

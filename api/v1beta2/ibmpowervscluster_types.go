@@ -53,26 +53,30 @@ type IBMPowerVSClusterSpec struct {
 	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
 	// when omitted system will dynamically create the service instance
 	// +optional
-	ServiceInstance IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
+	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
 	// zone is the name of Power VS zone where the cluster will be created
 	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
 	// when value for serviceInstance is omitted its required to set the value for zone.
 	// +optional
-	Zone string `json:"zone,omitempty"`
+	Zone *string `json:"zone,omitempty"`
 
 	// resourceGroup name under which the resources will be created.
 	// when omitted Default resource group will be used.
 	// +optional
-	ResourceGroup string `json:"resourceGroup,omitempty"`
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
 
 	// vpc contains information about IBM Cloud VPC resources
 	// +optional
-	VPC VPCResourceReference `json:"vpc,omitempty"`
+	VPC *VPCResourceReference `json:"vpc,omitempty"`
+
+	// vpcSubnet contains information about IBM Cloud VPC Subnet resources
+	// +optional
+	VPCSubnet *Subnet `json:"vpcSubnet,omitempty"`
 
 	// transitGateway contains information about IBM Cloud TransitGateway.
 	// +optional
-	TransitGateway TransitGateway `json:"transitGateway,omitempty"`
+	TransitGateway *TransitGateway `json:"transitGateway,omitempty"`
 
 	// controlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
 	// Its name reference to IBM Cloud VPC LoadBalancer service.
@@ -159,6 +163,16 @@ type VPCResourceReference struct {
 
 	// IBM Cloud VPC zone
 	Zone *string `json:"zone,omitempty"`
+}
+
+// GetConditions returns the observations of the operational state of the IBMPowerVSCluster resource.
+func (r *IBMPowerVSCluster) GetConditions() capiv1beta1.Conditions {
+	return r.Status.Conditions
+}
+
+// SetConditions sets the underlying service state of the IBMPowerVSCluster to the predescribed clusterv1.Conditions.
+func (r *IBMPowerVSCluster) SetConditions(conditions capiv1beta1.Conditions) {
+	r.Status.Conditions = conditions
 }
 
 func init() {

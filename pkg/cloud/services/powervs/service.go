@@ -18,14 +18,29 @@ package powervs
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_images"
 	"github.com/IBM-Cloud/power-go-client/power/models"
-
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+)
+
+const (
+	// PowerVS service and plan name
+	powerVSService     = "power-iaas"
+	powerVSServicePlan = "power-virtual-server-group"
+
+	// Resource desired states
+	cloudInstanceActiveState = "active"
+	cloudInstanceFailedState = "failed"
+
+	// Time duration for monitoring the resource readiness
+	pollingInterval              = time.Second * 5
+	cloudInstanceCreationTimeout = time.Minute * 5
 )
 
 var _ PowerVS = &Service{}
@@ -45,6 +60,39 @@ type ServiceOptions struct {
 	*ibmpisession.IBMPIOptions
 
 	CloudInstanceID string
+}
+
+// NewService returns a new service for the Power VS api client.
+func NewService(options ServiceOptions) (PowerVS, error) {
+	auth, err := authenticator.GetAuthenticator()
+	if err != nil {
+		return nil, err
+	}
+	options.Authenticator = auth
+	account, err := utils.GetAccount(auth)
+	if err != nil {
+		return nil, err
+	}
+	options.IBMPIOptions.UserAccount = account
+	session, err := ibmpisession.NewIBMPISession(options.IBMPIOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Service{
+		session: session,
+	}, nil
+}
+
+// WithClients attach the clients to service.
+func (s *Service) WithClients(options ServiceOptions) *Service {
+	ctx := context.Background()
+	s.instanceClient = instance.NewIBMPIInstanceClient(ctx, s.session, options.CloudInstanceID)
+	s.networkClient = instance.NewIBMPINetworkClient(ctx, s.session, options.CloudInstanceID)
+	s.imageClient = instance.NewIBMPIImageClient(ctx, s.session, options.CloudInstanceID)
+	s.jobClient = instance.NewIBMPIJobClient(ctx, s.session, options.CloudInstanceID)
+	s.dhcpClient = instance.NewIBMPIDhcpClient(ctx, s.session, options.CloudInstanceID)
+	return s
 }
 
 // CreateInstance creates the virtual machine in the Power VS service instance.
@@ -122,31 +170,21 @@ func (s *Service) GetDHCPServer(id string) (*models.DHCPServerDetail, error) {
 	return s.dhcpClient.Get(id)
 }
 
-// NewService returns a new service for the Power VS api client.
-func NewService(options ServiceOptions) (PowerVS, error) {
-	auth, err := authenticator.GetAuthenticator()
-	if err != nil {
-		return nil, err
-	}
-	options.Authenticator = auth
-	account, err := utils.GetAccount(auth)
-	if err != nil {
-		return nil, err
-	}
-	options.IBMPIOptions.UserAccount = account
-	session, err := ibmpisession.NewIBMPISession(options.IBMPIOptions)
-	if err != nil {
-		return nil, err
-	}
+// CreateDHCPServer creates a new DHCP server.
+func (s *Service) CreateDHCPServer(options *models.DHCPServerCreate) (*models.DHCPServer, error) {
+	return s.dhcpClient.Create(options)
+}
 
-	ctx := context.Background()
-
-	return &Service{
-		session:        session,
-		instanceClient: instance.NewIBMPIInstanceClient(ctx, session, options.CloudInstanceID),
-		networkClient:  instance.NewIBMPINetworkClient(ctx, session, options.CloudInstanceID),
-		imageClient:    instance.NewIBMPIImageClient(ctx, session, options.CloudInstanceID),
-		jobClient:      instance.NewIBMPIJobClient(ctx, session, options.CloudInstanceID),
-		dhcpClient:     instance.NewIBMPIDhcpClient(ctx, session, options.CloudInstanceID),
-	}, nil
+// GetNetworkByName fetches the network with name.
+func (s *Service) GetNetworkByName(networkName string) (*string, error) {
+	networks, err := s.GetAllNetwork()
+	if err != nil {
+		return nil, err
+	}
+	for _, nw := range networks.Networks {
+		if *nw.Name == networkName {
+			return nw.NetworkID, nil
+		}
+	}
+	return nil, fmt.Errorf("no network found with name %s", networkName)
 }

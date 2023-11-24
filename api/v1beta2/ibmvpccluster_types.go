@@ -67,11 +67,15 @@ type VPCLoadBalancerSpec struct {
 
 // VPCLoadBalancerStatus defines the status VPC load balancer.
 type VPCLoadBalancerStatus struct {
-	// ID of VPC load balancer.
+	// id VPC load balancer.
 	// +optional
 	ID *string `json:"id,omitempty"`
-	// State is the status of the load balancer.
-	State VPCLoadBalancerState `json:"state,omitempty"`
+	// state is the status of the load balancer.
+	// +optional
+	State *VPCLoadBalancerState `json:"state,omitempty"`
+	// hostname is the hostname of load balancer.
+	// +optional
+	Hostname *string `json:"hostname,omitempty"`
 }
 
 // IBMVPCClusterStatus defines the observed state of IBMVPCCluster.

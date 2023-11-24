@@ -25,6 +25,10 @@ import (
 // use the resourcecontrollerv2 package for listing resource instances.
 type ResourceController interface {
 	ListResourceInstances(listResourceInstancesOptions *resourcecontrollerv2.ListResourceInstancesOptions) (result *resourcecontrollerv2.ResourceInstancesList, response *core.DetailedResponse, err error)
+	GetResourceInstance(*resourcecontrollerv2.GetResourceInstanceOptions) (*resourcecontrollerv2.ResourceInstance, *core.DetailedResponse, error)
+	CreateResourceInstance(*resourcecontrollerv2.CreateResourceInstanceOptions) (*resourcecontrollerv2.ResourceInstance, *core.DetailedResponse, error)
+	GetServiceInstanceByName(name string) (*resourcecontrollerv2.ResourceInstance, error)
+
 	SetServiceURL(url string) error
 	GetServiceURL() string
 }

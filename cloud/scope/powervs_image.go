@@ -134,6 +134,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 		err = fmt.Errorf("failed to create NewIBMPowerVSClient")
 		return nil, err
 	}
+	c.WithClients(options)
 	scope.IBMPowerVSClient = c
 
 	return scope, nil

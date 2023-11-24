@@ -52,4 +52,11 @@ type Vpc interface {
 	ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoolMembersOptions) (*vpcv1.LoadBalancerPoolMemberCollection, *core.DetailedResponse, error)
 	ListKeys(options *vpcv1.ListKeysOptions) (*vpcv1.KeyCollection, *core.DetailedResponse, error)
 	ListImages(options *vpcv1.ListImagesOptions) (*vpcv1.ImageCollection, *core.DetailedResponse, error)
+
+	GetVPC(*vpcv1.GetVPCOptions) (*vpcv1.VPC, *core.DetailedResponse, error)
+	GetVPCByName(vpcName string) (*vpcv1.VPC, error)
+	GetSubnet(*vpcv1.GetSubnetOptions) (*vpcv1.Subnet, *core.DetailedResponse, error)
+	GetVPCSubnetByName(subnetName string) (*vpcv1.Subnet, error)
+	GetLoadBalancerByName(loadBalancerName string) (*vpcv1.LoadBalancer, error)
+	GetSubnetAddrPrefix(vpcID, zone string) (string, error)
 }

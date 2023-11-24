@@ -19,6 +19,8 @@ package util
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -38,4 +40,19 @@ func GetClusterByName(ctx context.Context, c client.Client, namespace, name stri
 	}
 
 	return cluster, nil
+}
+
+// ConstructVPCRegionFromZone returns region based on location/zone.
+func ConstructVPCRegionFromZone(zone string) string {
+	var regex string
+	if strings.Contains(zone, "-") {
+		// it's a region or AZ
+		regex = "-[0-9]+$"
+	} else {
+		// it's a datacenter
+		regex = "[0-9]+$"
+	}
+
+	reg, _ := regexp.Compile(regex)
+	return reg.ReplaceAllString(zone, "")
 }
