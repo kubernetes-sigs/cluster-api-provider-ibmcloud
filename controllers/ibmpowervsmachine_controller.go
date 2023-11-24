@@ -218,7 +218,9 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
-	controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, infrav1beta2.IBMPowerVSMachineFinalizer)
+	if controllerutil.AddFinalizer(machineScope.IBMPowerVSMachine, infrav1beta2.IBMPowerVSMachineFinalizer) {
+		return ctrl.Result{}, nil
+	}
 
 	ins, err := r.getOrCreate(machineScope)
 	if err != nil {

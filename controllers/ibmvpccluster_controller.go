@@ -110,8 +110,8 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (ctrl.Result, error) {
-	if !controllerutil.ContainsFinalizer(clusterScope.IBMVPCCluster, infrav1beta2.ClusterFinalizer) {
-		controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrav1beta2.ClusterFinalizer)
+	// If the IBMVPCCluster doesn't have our finalizer, add it.
+	if controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrav1beta2.ClusterFinalizer) {
 		return ctrl.Result{}, nil
 	}
 
