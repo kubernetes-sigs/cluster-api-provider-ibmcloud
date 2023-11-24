@@ -233,6 +233,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 					Labels: map[string]string{
 						capiv1beta1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
 					},
+					Finalizers: []string{infrav1beta2.MachineFinalizer},
 				},
 			},
 			Machine: &capiv1beta1.Machine{
@@ -290,6 +291,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 					Labels: map[string]string{
 						capiv1beta1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
 					},
+					Finalizers: []string{infrav1beta2.MachineFinalizer},
 				},
 			},
 			Machine: &capiv1beta1.Machine{

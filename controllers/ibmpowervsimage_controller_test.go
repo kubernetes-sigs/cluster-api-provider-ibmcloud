@@ -192,6 +192,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 							UID:        "1",
 						},
 					},
+					Finalizers: []string{infrav1beta2.IBMPowerVSImageFinalizer},
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
