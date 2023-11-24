@@ -140,7 +140,9 @@ func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (ctrl.Result, error) {
-	controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1beta2.MachineFinalizer)
+	if controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1beta2.MachineFinalizer) {
+		return ctrl.Result{}, nil
+	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {

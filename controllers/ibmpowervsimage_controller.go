@@ -100,7 +100,9 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 }
 
 func (r *IBMPowerVSImageReconciler) reconcile(cluster *infrav1beta2.IBMPowerVSCluster, imageScope *scope.PowerVSImageScope) (ctrl.Result, error) {
-	controllerutil.AddFinalizer(imageScope.IBMPowerVSImage, infrav1beta2.IBMPowerVSImageFinalizer)
+	if controllerutil.AddFinalizer(imageScope.IBMPowerVSImage, infrav1beta2.IBMPowerVSImageFinalizer) {
+		return ctrl.Result{}, nil
+	}
 
 	// Create new labels section for IBMPowerVSImage metadata if nil.
 	if imageScope.IBMPowerVSImage.Labels == nil {
