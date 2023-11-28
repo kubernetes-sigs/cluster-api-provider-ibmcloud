@@ -88,22 +88,18 @@ it into a management cluster using `clusterctl`.
 
 6. Once the management cluster is ready with the required providers up and running, proceed to provisioning the workload cluster. Check the respective sections for [VPC](/topics/vpc/creating-a-cluster.html) and [PowerVS](/topics/powervs/creating-a-cluster.html) to deploy the cluster. 
 
-7. For deploying with your workload cluster with Cloud Controller manager or Cluster Class template, refer to [deploy with cloud controller manager](#deploy-with-cloud-contoller-manager) and [deploy PowerVS cluster with cluster class template](#deploy-powervs-cluster-with-clusterclass-template) sections respectively.
+7. For deploying with your workload cluster with Cloud Controller manager or Cluster Class template, refer to [deploy with cloud controller manager](#deploy-with-cloud-controller-manager) and [deploy PowerVS cluster with cluster class template](#deploy-powervs-cluster-with-clusterclass-template) sections respectively.
 
 
-### Deploy with Cloud Contoller manager
+### Deploy with Cloud Controller manager
 
-   1. To deploy VPC workload cluster with [IBM cloud controller manager](/topics/vpc/load-balancer.html), set the `PROVIDER_ID_FORMAT` environmental variable.
-      ```console
+   To deploy VPC workload cluster with [IBM cloud controller manager](/topics/vpc/load-balancer.html), or with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `PROVIDER_ID_FORMAT` environmental variable to `v2`.
+
+   ```console
       export PROVIDER_ID_FORMAT=v2
       export EXP_CLUSTER_RESOURCE_SET=true
-      ```
+   ```
 
-   2. To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `PROVIDER_ID_FORMAT` environmental variable.
-      ```console
-      export PROVIDER_ID_FORMAT=v2
-      export EXP_CLUSTER_RESOURCE_SET=true
-      ```
    > Note: `EXP_CLUSTER_RESOURCE_SET` should be set for deploying workload cluster with Cloud Controller manager.
 
 ### Deploy PowerVS cluster or VPC cluster with ClusterClass template
