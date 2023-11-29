@@ -18,12 +18,12 @@ ROOT_DIR_RELATIVE := .
 
 include $(ROOT_DIR_RELATIVE)/common.mk
 
-GO_VERSION ?= 1.20.12
-
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:crdVersions=v1"
+
+SHELL=/bin/bash
 
 # Directories.
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
@@ -61,6 +61,10 @@ PULL_BASE_REF ?= $(RELEASE_TAG) # PULL_BASE_REF will be provided by Prow
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 RELEASE_DIR := out
 OUTPUT_TYPE ?= type=registry
+
+# Go
+GO_VERSION ?=1.20.12
+GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # kind
 CAPI_KIND_CLUSTER_NAME ?= capi-test
@@ -281,7 +285,7 @@ $(ARTIFACTS):
 
 .PHONY: build-toolchain
 build-toolchain: ## Build the toolchain
-	docker build --target toolchain -t $(TOOLCHAIN_IMAGE) .
+	docker build --target toolchain --build-arg golang_image=$(GO_CONTAINER_IMAGE) -t $(TOOLCHAIN_IMAGE) .
 
 .PHONY: list-staging-releases
 list-staging-releases: ## List staging images for image promotion
@@ -416,7 +420,7 @@ ensure-buildx:
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ensure-buildx ## Build the docker image for controller-manager
-	docker buildx build --platform linux/$(ARCH) --output=$(OUTPUT_TYPE) --pull --build-arg LDFLAGS="$(LDFLAGS)" -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG) .
+	docker buildx build --platform linux/$(ARCH) --output=$(OUTPUT_TYPE) --pull --build-arg golang_image=$(GO_CONTAINER_IMAGE) --build-arg LDFLAGS="$(LDFLAGS)" -t $(CORE_CONTROLLER_IMG)-$(ARCH):$(TAG) .
 
 .PHONY: docker-pull-prerequisites
 docker-pull-prerequisites:
@@ -425,7 +429,7 @@ docker-pull-prerequisites:
 
 .PHONY: e2e-image
 e2e-image: docker-pull-prerequisites ensure-buildx
-	docker buildx build --platform linux/$(ARCH) --load --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
+	docker buildx build --platform linux/$(ARCH) --load --build-arg golang_image=$(GO_CONTAINER_IMAGE) --tag=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e .
 	$(MAKE) set-manifest-image MANIFEST_IMG=$(CORE_CONTROLLER_ORIGINAL_IMG):e2e TARGET_RESOURCE="./config/default/manager_image_patch.yaml"
 	$(MAKE) set-manifest-pull-policy PULL_POLICY=Never TARGET_RESOURCE="./config/default/manager_pull_policy.yaml"
 
@@ -451,8 +455,8 @@ docker-build-%:
 
 .PHONY: docker-build-core-image
 docker-build-core-image: ensure-buildx ## Build the multiarch core docker image
-	docker buildx build --builder capibm --platform $(BUILDX_PLATFORMS) --output=$(OUTPUT_TYPE) \
-		--pull --build-arg ldflags="$(LDFLAGS)" \
+	docker buildx build --builder capibm --platform $(BUILDX_PLATFORMS)  --output=$(OUTPUT_TYPE) \
+		--pull --build-arg golang_image=$(GO_CONTAINER_IMAGE) --build-arg ldflags="$(LDFLAGS)" \
 		-t $(CORE_CONTROLLER_IMG):$(TAG) .
 
 ## --------------------------------------
@@ -483,7 +487,7 @@ define checkdiff
 	git --no-pager diff --name-only FETCH_HEAD
 endef
 
-ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions
+ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions go-version
 
 .PHONY: verify
 verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
@@ -538,6 +542,17 @@ verify-security: ## Verify code and images for vulnerabilities
 	  echo "Check for vulnerabilities failed! There are vulnerabilities to be fixed"; \
 		exit 1; \
 	fi
+
+
+SUBMAKEFILE_GO_VERSION=$(shell grep "GO_VERSION" -m1 hack/ccm/Makefile | cut -d '=' -f2 )
+.SILENT:
+.PHONY: verify-go-version
+verify-go-version: ## Confirms the version of go used in Makefiles are uniform
+ifeq ($(strip $(SUBMAKEFILE_GO_VERSION)), $(strip $(GO_VERSION)))
+	echo "Versions are uniform across Makefile, the go-version used is $(GO_VERSION)"
+else
+	echo "Versions are different across Makefiles. Please ensure to keep them uniform."
+endif
 
 ## --------------------------------------
 ## Cleanup / Verification
@@ -600,3 +615,23 @@ kind-cluster: ## Create a new kind cluster designed for development with Tilt
 
 go-version: ## Print the go version we use to compile our binaries and images
 	@echo $(GO_VERSION)
+
+## --------------------------------------
+## Documentation and Publishing
+## --------------------------------------
+
+.PHONY: serve
+serve: ## Build the CAPIBM book and serve it locally to validate changes in documentation.
+	$(MAKE) -C docs/book/ serve
+
+## --------------------------------------
+## Update Go Version
+## --------------------------------------
+.PHONY: update-go
+update-go: ## Update Go version across files: Usage make update-go VERSION=X.YY.ZZ- Use only if you know what you're doing.
+ifndef VERSION
+	echo "VERSION not set. Usage: make update-go VERSION=X.YY.ZZ"
+else
+	sed -i '' "s/GO_VERSION ?=[[:digit:]].[[:digit:]]\{1,\}.[[:digit:]]\{1,\}/GO_VERSION ?=$(VERSION)/" hack/ccm/Makefile
+	echo "Updated go version to $(VERSION) in Makefile"
+endif
