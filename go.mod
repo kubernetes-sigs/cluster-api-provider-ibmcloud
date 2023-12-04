@@ -15,7 +15,7 @@ require (
 	github.com/IBM/platform-services-go-sdk v0.54.1
 	github.com/IBM/vpc-go-sdk v0.44.0
 	github.com/go-logr/logr v1.3.0
-	github.com/go-openapi/strfmt v0.21.7
+	github.com/go-openapi/strfmt v0.21.8
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/onsi/ginkgo/v2 v2.13.1
 	github.com/onsi/gomega v1.30.0
