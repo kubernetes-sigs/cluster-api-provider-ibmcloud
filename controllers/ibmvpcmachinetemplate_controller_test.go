@@ -173,7 +173,7 @@ func TestGetIBMVPCMachineCapacity(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Fatalf("getIBMPowerVSMachineCapacity is not expected to return an error, error: %v", err)
+					t.Fatalf("getIBMVPCMachineCapacity is not expected to return an error, error: %v", err)
 				}
 				g.Expect(capacity).To(Equal(tc.expectedCapacity))
 			}
