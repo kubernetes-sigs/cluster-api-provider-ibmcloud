@@ -449,13 +449,13 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1beta2.VPCLoadBalancerSpec)(nil), (*VPCLoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_VPCLoadBalancerSpec_To_v1beta1_VPCLoadBalancerSpec(a.(*v1beta2.VPCLoadBalancerSpec), b.(*VPCLoadBalancerSpec), scope)
+	if err := s.AddConversionFunc((*v1beta2.IBMVPCMachineTemplateStatus)(nil), (*IBMVPCMachineTemplateStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMVPCMachineTemplateStatus_To_v1beta1_IBMVPCMachineTemplateStatus(a.(*v1beta2.IBMVPCMachineTemplateStatus), b.(*IBMVPCMachineTemplateStatus), scope)
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*v1beta2.IBMVPCMachineTemplateStatus)(nil), (*IBMVPCMachineTemplateStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMVPCMachineTemplateStatus_To_v1beta1_IBMVPCMachineTemplateStatus(a.(*v1beta2.IBMVPCMachineTemplateStatus), b.(*IBMVPCMachineTemplateStatus), scope)
+	if err := s.AddConversionFunc((*v1beta2.VPCLoadBalancerSpec)(nil), (*VPCLoadBalancerSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_VPCLoadBalancerSpec_To_v1beta1_VPCLoadBalancerSpec(a.(*v1beta2.VPCLoadBalancerSpec), b.(*VPCLoadBalancerSpec), scope)
 	}); err != nil {
 		return err
 	}

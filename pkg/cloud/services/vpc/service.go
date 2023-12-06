@@ -158,6 +158,11 @@ func (s *Service) ListImages(options *vpcv1.ListImagesOptions) (*vpcv1.ImageColl
 	return s.vpcService.ListImages(options)
 }
 
+// GetInstanceProfile returns instance profile.
+func (s *Service) GetInstanceProfile(options *vpcv1.GetInstanceProfileOptions) (*vpcv1.InstanceProfile, *core.DetailedResponse, error) {
+	return s.vpcService.GetInstanceProfile(options)
+}
+
 // NewService returns a new VPC Service.
 func NewService(svcEndpoint string) (Vpc, error) {
 	service := &Service{}

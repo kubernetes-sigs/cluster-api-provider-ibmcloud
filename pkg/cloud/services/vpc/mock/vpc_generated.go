@@ -273,6 +273,22 @@ func (mr *MockVpcMockRecorder) GetInstance(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockVpc)(nil).GetInstance), options)
 }
 
+// GetInstanceProfile mocks base method.
+func (m *MockVpc) GetInstanceProfile(options *vpcv1.GetInstanceProfileOptions) (*vpcv1.InstanceProfile, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInstanceProfile", options)
+	ret0, _ := ret[0].(*vpcv1.InstanceProfile)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetInstanceProfile indicates an expected call of GetInstanceProfile.
+func (mr *MockVpcMockRecorder) GetInstanceProfile(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstanceProfile", reflect.TypeOf((*MockVpc)(nil).GetInstanceProfile), options)
+}
+
 // GetLoadBalancer mocks base method.
 func (m *MockVpc) GetLoadBalancer(options *vpcv1.GetLoadBalancerOptions) (*vpcv1.LoadBalancer, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()

@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/mock/gomock"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,7 +32,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
+	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/vpc-go-sdk/vpcv1"
 	. "github.com/onsi/gomega"
 )
 
@@ -40,37 +44,25 @@ func TestIBMVPCMachineTemplateReconciler_Reconcile(t *testing.T) {
 		name               string
 		expectError        bool
 		VPCMachineTemplate *infrav1beta2.IBMVPCMachineTemplate
-		expectedCapacity   corev1.ResourceList
 	}{
 		{
 			name:        "Should Reconcile successfully if no IBMVPCMachineTemplate found",
 			expectError: false,
 		},
-		{
-			name:               "Should Reconcile with valid profile value",
-			VPCMachineTemplate: stubVPCMachineTemplate("bx2-2x8"),
-			expectedCapacity: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("2"),
-				corev1.ResourceMemory: resource.MustParse("8G"),
-			},
-			expectError: false,
-		},
-		{
-			name:               "Should Reconcile with high memory profile value",
-			VPCMachineTemplate: stubVPCMachineTemplate("vx2d-8x112"),
-			expectedCapacity: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("8"),
-				corev1.ResourceMemory: resource.MustParse("112G"),
-			},
-			expectError: false,
-		},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
+		setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *IBMVPCMachineTemplateReconciler) {
+			t.Helper()
+			mockvpc := mock.NewMockVpc(gomock.NewController(t))
 			reconciler := &IBMVPCMachineTemplateReconciler{
 				Client: testEnv.Client,
 			}
+			return gomock.NewController(t), mockvpc, reconciler
+		}
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, _, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 			g.Expect(err).To(BeNil())
 			defer func() {
@@ -90,7 +82,6 @@ func TestIBMVPCMachineTemplateReconciler_Reconcile(t *testing.T) {
 					err = testEnv.Get(ctx, key, machineTemplate)
 					return err == nil
 				}, 10*time.Second).Should(Equal(true))
-
 				_, err := reconciler.Reconcile(ctx, ctrl.Request{
 					NamespacedName: client.ObjectKey{
 						Namespace: ns.Name,
@@ -101,16 +92,6 @@ func TestIBMVPCMachineTemplateReconciler_Reconcile(t *testing.T) {
 					g.Expect(err).ToNot(BeNil())
 				} else {
 					g.Expect(err).To(BeNil())
-					g.Eventually(func() bool {
-						machineTemplate := &infrav1beta2.IBMVPCMachineTemplate{}
-						key := client.ObjectKey{
-							Name:      tc.VPCMachineTemplate.Name,
-							Namespace: ns.Name,
-						}
-						err = testEnv.Get(ctx, key, machineTemplate)
-						g.Expect(err).To(BeNil())
-						return reflect.DeepEqual(machineTemplate.Status.Capacity, tc.expectedCapacity)
-					}, 10*time.Second).Should(Equal(true))
 				}
 			} else {
 				_, err = reconciler.Reconcile(ctx, ctrl.Request{
@@ -125,64 +106,116 @@ func TestIBMVPCMachineTemplateReconciler_Reconcile(t *testing.T) {
 	}
 }
 
-func TestGetIBMVPCMachineCapacity(t *testing.T) {
-	testCases := []struct {
-		name               string
-		VPCMachineTemplate infrav1beta2.IBMVPCMachineTemplate
-		expectedCapacity   corev1.ResourceList
-		expectErr          bool
-	}{
-		{
-			name:               "with instance storage profile ",
-			VPCMachineTemplate: *stubVPCMachineTemplate("bx2d-128x512"),
-			expectedCapacity: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("128"),
-				corev1.ResourceMemory: resource.MustParse("512G"),
-			},
-		},
-		{
-			name:               "with compute profile",
-			VPCMachineTemplate: *stubVPCMachineTemplate("cx2d-16x32"),
-			expectedCapacity: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("16"),
-				corev1.ResourceMemory: resource.MustParse("32G"),
-			},
-		},
-		{
-			name:               "with GPU profile",
-			VPCMachineTemplate: *stubVPCMachineTemplate("gx2-32x256x2v100"),
-			expectedCapacity: map[corev1.ResourceName]resource.Quantity{
-				corev1.ResourceCPU:    resource.MustParse("32"),
-				corev1.ResourceMemory: resource.MustParse("256G"),
-			},
-		},
-		{
-			name:               "with invalid profile",
-			VPCMachineTemplate: *stubVPCMachineTemplate("gx2-"),
-			expectErr:          true,
-		},
+func TestIBMVPCMachineTemplateReconciler_reconcileNormal(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *IBMVPCMachineTemplateReconciler) {
+		t.Helper()
+		mockvpc := mock.NewMockVpc(gomock.NewController(t))
+		reconciler := &IBMVPCMachineTemplateReconciler{
+			Client: testEnv.Client,
+		}
+		return gomock.NewController(t), mockvpc, reconciler
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(tt *testing.T) {
-			g := NewWithT(tt)
-			capacity, err := getIBMVPCMachineCapacity(tc.VPCMachineTemplate)
-			if tc.expectErr {
-				if err == nil {
-					t.Fatal("getIBMPowerVSMachineCapacity expected to return an error")
-				}
-			} else {
-				if err != nil {
-					t.Fatalf("getIBMVPCMachineCapacity is not expected to return an error, error: %v", err)
-				}
-				g.Expect(capacity).To(Equal(tc.expectedCapacity))
+	t.Run("with valid profile ", func(tt *testing.T) {
+		g := NewWithT(tt)
+		var expectedCapacity corev1.ResourceList
+		profileDetails := vpcv1.InstanceProfile{
+			Name: pointer.String("bx2-4x16"),
+			VcpuCount: &vpcv1.InstanceProfileVcpu{
+				Type:  pointer.String("fixed"),
+				Value: pointer.Int64(4),
+			},
+			Memory: &vpcv1.InstanceProfileMemory{
+				Type:  pointer.String("fixed"),
+				Value: pointer.Int64(16),
+			},
+		}
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		vPCMachineTemplate := stubVPCMachineTemplate("bx2-4x16")
+
+		expectedCapacity = map[corev1.ResourceName]resource.Quantity{
+			corev1.ResourceCPU:    resource.MustParse("4"),
+			corev1.ResourceMemory: resource.MustParse("16G"),
+		}
+		createObject(g, &vPCMachineTemplate, ns.Name)
+		defer cleanupObject(g, &vPCMachineTemplate)
+
+		mockController, mockvpc, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		g.Expect(err).To(BeNil())
+		defer func() {
+			g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		}()
+		mockvpc.EXPECT().GetInstanceProfile(gomock.AssignableToTypeOf(&vpcv1.GetInstanceProfileOptions{})).Return(&profileDetails, &core.DetailedResponse{}, nil)
+		_, err = reconciler.reconcileNormal(ctx, mockvpc, vPCMachineTemplate)
+		if err != nil {
+			t.Fatalf("ReconcileNormal is not expected to return an error, error: %v", err)
+		}
+		g.Expect(err).To(BeNil())
+		g.Eventually(func() bool {
+			machineTemplate := &infrav1beta2.IBMVPCMachineTemplate{}
+			key := client.ObjectKey{
+				Name:      vPCMachineTemplate.Name,
+				Namespace: ns.Name,
 			}
-		})
-	}
+			err = testEnv.Get(ctx, key, machineTemplate)
+			g.Expect(err).To(BeNil())
+			return reflect.DeepEqual(machineTemplate.Status.Capacity, expectedCapacity)
+		}, 10*time.Second).Should(Equal(true))
+	},
+	)
+
+	t.Run("with invalid profile ", func(tt *testing.T) {
+		g := NewWithT(tt)
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+
+		vPCMachineTemplate := stubVPCMachineTemplate("")
+		createObject(g, &vPCMachineTemplate, ns.Name)
+		defer cleanupObject(g, &vPCMachineTemplate)
+
+		mockController, mockvpc, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		g.Expect(err).To(BeNil())
+		defer func() {
+			g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		}()
+		mockvpc.EXPECT().GetInstanceProfile(gomock.AssignableToTypeOf(&vpcv1.GetInstanceProfileOptions{})).Return(nil, &core.DetailedResponse{}, nil)
+		_, err = reconciler.reconcileNormal(ctx, mockvpc, vPCMachineTemplate)
+		if err == nil {
+			t.Fatalf("ReconcileNormal is  expected to return an error")
+		} else {
+			g.Expect(err).NotTo(BeNil())
+		}
+	},
+	)
+
+	t.Run("Error while fetching profile details ", func(tt *testing.T) {
+		g := NewWithT(tt)
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+
+		vPCMachineTemplate := stubVPCMachineTemplate("")
+		createObject(g, &vPCMachineTemplate, ns.Name)
+		defer cleanupObject(g, &vPCMachineTemplate)
+
+		mockController, mockvpc, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		g.Expect(err).To(BeNil())
+		defer func() {
+			g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		}()
+		mockvpc.EXPECT().GetInstanceProfile(gomock.AssignableToTypeOf(&vpcv1.GetInstanceProfileOptions{})).Return(nil, nil, fmt.Errorf("intentional error"))
+		_, err = reconciler.reconcileNormal(ctx, mockvpc, vPCMachineTemplate)
+		if err == nil {
+			t.Fatalf("ReconcileNormal is  expected to return an error")
+		} else {
+			g.Expect(err).NotTo(BeNil())
+		}
+	},
+	)
 }
 
-func stubVPCMachineTemplate(profile string) *infrav1beta2.IBMVPCMachineTemplate {
-	return &infrav1beta2.IBMVPCMachineTemplate{
+func stubVPCMachineTemplate(profile string) infrav1beta2.IBMVPCMachineTemplate {
+	return infrav1beta2.IBMVPCMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vpc-test-1",
 		},

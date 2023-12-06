@@ -1160,7 +1160,7 @@ func (in *IBMVPCMachineTemplateStatus) DeepCopyInto(out *IBMVPCMachineTemplateSt
 	*out = *in
 	if in.Capacity != nil {
 		in, out := &in.Capacity, &out.Capacity
-		*out = make(v1.ResourceList, len(*in))
+		*out = make(corev1.ResourceList, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()
 		}

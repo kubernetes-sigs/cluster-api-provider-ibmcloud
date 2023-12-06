@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"regexp"
-	"strings"
+
+	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -34,12 +34,15 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
 // IBMVPCMachineTemplateReconciler reconciles a IBMVPCMachineTemplate object.
 type IBMVPCMachineTemplateReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme          *runtime.Scheme
+	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
 func (r *IBMVPCMachineTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -53,7 +56,7 @@ func (r *IBMVPCMachineTemplateReconciler) SetupWithManager(mgr ctrl.Manager) err
 
 func (r *IBMVPCMachineTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.V(1).Info("Reconciling IBMVPCMachineTemplate")
+	log.Info("Reconciling IBMVPCMachineTemplate")
 
 	var machineTemplate infrav1beta2.IBMVPCMachineTemplate
 	if err := r.Get(ctx, req.NamespacedName, &machineTemplate); err != nil {
@@ -61,16 +64,44 @@ func (r *IBMVPCMachineTemplateReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	region := endpoints.CostructRegionFromZone(machineTemplate.Spec.Template.Spec.Zone)
+
+	// Fetch the service endpoint.
+	svcEndpoint := endpoints.FetchVPCEndpoint(region, r.ServiceEndpoint)
+
+	vpcClient, err := vpc.NewService(svcEndpoint)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to create IBM VPC client: %w", err)
+	}
+
+	return r.reconcileNormal(ctx, vpcClient, machineTemplate)
+}
+
+func (r *IBMVPCMachineTemplateReconciler) reconcileNormal(ctx context.Context, vpcClient vpc.Vpc, machineTemplate infrav1beta2.IBMVPCMachineTemplate) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
 	helper, err := patch.NewHelper(&machineTemplate, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to init patch helper: %w", err)
 	}
 
-	capacity, err := getIBMVPCMachineCapacity(machineTemplate)
+	options := &vpcv1.GetInstanceProfileOptions{}
+	options.SetName(machineTemplate.Spec.Template.Spec.Profile)
+	profileDetails, _, err := vpcClient.GetInstanceProfile(options)
 	if err != nil {
-		log.Error(err, "Failed to get capacity from the ibmvpcmachine template")
-		return ctrl.Result{}, fmt.Errorf("failed to get capcity for machine template: %w", err)
+		return ctrl.Result{}, fmt.Errorf("failed to fetch profile Details: %w", err)
 	}
+
+	if profileDetails == nil {
+		return ctrl.Result{}, fmt.Errorf("failed to find profileDetails")
+	}
+
+	log.V(3).Info("Profile Details:", "profileDetails", profileDetails)
+
+	capacity := make(corev1.ResourceList)
+	memory := fmt.Sprintf("%vG", *profileDetails.Memory.(*vpcv1.InstanceProfileMemory).Value)
+	cpu := fmt.Sprintf("%v", *profileDetails.VcpuCount.(*vpcv1.InstanceProfileVcpu).Value)
+	capacity[corev1.ResourceCPU] = resource.MustParse(cpu)
+	capacity[corev1.ResourceMemory] = resource.MustParse(memory)
 
 	log.V(3).Info("Calculated capacity for machine template", "capacity", capacity)
 	if !reflect.DeepEqual(machineTemplate.Status.Capacity, capacity) {
@@ -84,21 +115,4 @@ func (r *IBMVPCMachineTemplateReconciler) Reconcile(ctx context.Context, req ctr
 	}
 	log.V(3).Info("Machine template status", "status", machineTemplate.Status)
 	return ctrl.Result{}, nil
-}
-
-func getIBMVPCMachineCapacity(machineTemplate infrav1beta2.IBMVPCMachineTemplate) (corev1.ResourceList, error) {
-	capacity := make(corev1.ResourceList)
-	regex := "\\S+[-]\\d+[x]\\d+\\S*$"
-	re, err := regexp.Compile(regex)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile regular expression %s", regex)
-	}
-	if match := re.Match([]byte(machineTemplate.Spec.Template.Spec.Profile)); match {
-		Profile := strings.Split(strings.Split(machineTemplate.Spec.Template.Spec.Profile, "-")[1], "x")
-		capacity[corev1.ResourceCPU] = resource.MustParse(Profile[0])
-		capacity[corev1.ResourceMemory] = resource.MustParse(fmt.Sprintf("%sG", Profile[1]))
-		fmt.Printf("capacity : %+v", capacity)
-		return capacity, nil
-	}
-	return nil, fmt.Errorf("invalid Profile")
 }
