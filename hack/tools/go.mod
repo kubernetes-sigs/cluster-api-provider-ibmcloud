@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.20
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.3
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.4
 
 require (
 	github.com/aquasecurity/trivy v0.47.0
@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v1.0.1
 	gotest.tools/gotestsum v1.10.1
 	k8s.io/code-generator v0.27.7
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231026175449-6fe0f51ae48a
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231128132126-1eb9be94160f
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.12.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.1.1
@@ -210,7 +210,7 @@ require (
 	github.com/go-git/go-billy/v5 v5.4.1 // indirect
 	github.com/go-git/go-git/v5 v5.8.1 // indirect
 	github.com/go-gorp/gorp/v3 v3.0.5 // indirect
-	github.com/go-logr/logr v1.2.4 // indirect
+	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.2.4 // indirect
 	github.com/go-openapi/analysis v0.21.4 // indirect
@@ -252,7 +252,7 @@ require (
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-containerregistry v0.16.1 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/licenseclassifier/v2 v2.0.0 // indirect
@@ -475,7 +475,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect

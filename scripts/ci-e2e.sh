@@ -39,7 +39,7 @@ mkdir -p "${ARTIFACTS}/logs/"
 
 ARCH=$(uname -m)
 OS=$(uname -s)
-IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.16.0"}
+IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.21.0"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 capibmadm=$(pwd)/bin/capibmadm
 
