@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.20
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.0-rc.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.0
 
 require (
 	github.com/aquasecurity/trivy v0.47.0
@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v1.0.1
 	gotest.tools/gotestsum v1.11.0
 	k8s.io/code-generator v0.28.4
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231128131258-cb515e4bfa8a
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231205193824-b15a157143a5
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.13.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.2.1
