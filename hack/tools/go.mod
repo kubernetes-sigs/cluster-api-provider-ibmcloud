@@ -3,8 +3,9 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 go 1.19
 
 replace (
+	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.9.2
 	k8s.io/code-generator => k8s.io/code-generator v0.26.10
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.8
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.4.9
 )
 
 require (
@@ -18,7 +19,7 @@ require (
 	golang.org/x/vuln v1.0.1
 	gotest.tools/gotestsum v1.10.0
 	k8s.io/code-generator v0.27.3
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231026175444-4ad3af14b736
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20231205094514-3e6699b894b3
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.11.4
 	sigs.k8s.io/kustomize/kustomize/v5 v5.0.4-0.20230601165947-6ce0bf390ce3
