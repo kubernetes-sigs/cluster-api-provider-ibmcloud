@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.20.11 as toolchain
+FROM golang:1.20.12 as toolchain
 
 # Run this with docker build --build_arg $(go env GOPROXY) to override the goproxy
 ARG goproxy=https://proxy.golang.org,direct
