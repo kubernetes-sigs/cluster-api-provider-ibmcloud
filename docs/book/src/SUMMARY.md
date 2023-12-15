@@ -31,6 +31,7 @@
   - [Rapid iterative development with Tilt](./developer/tilt.md)
   - [Guide for API conversions](./developer/conversion.md)
   - [Release Process](./developer/release.md)
+  - [Release Support Guidelines](./developer/release-support-guidelines.md)
   - [How to build the machine boot images](./developer/build-images.md)
   - [Modules and tools dependencies](./developer/dependencies.md)
   - [E2E testing](./developer/e2e.md)
