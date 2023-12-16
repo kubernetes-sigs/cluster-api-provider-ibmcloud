@@ -44,8 +44,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/toml v1.0.0 h1:dtDWrepsVPfW9H/4y7dDgFc2MBUSeJhlaDtK13CxFlU=
 github.com/BurntSushi/toml v1.0.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/IBM-Cloud/power-go-client v1.5.6 h1:vQfhQifxFh5K1OzpJKR3si1NSegGMLk8sELVuJlXIRo=
-github.com/IBM-Cloud/power-go-client v1.5.6/go.mod h1:3JFnuRl5+f3gKrjCC8RhGUYKJXqMW5DiI6J9KWDQdT8=
+github.com/IBM-Cloud/power-go-client v1.5.7 h1:B1EOApEtlOb7tjZkAg9g8GTZthFKmjNU8XqONocBw7c=
+github.com/IBM-Cloud/power-go-client v1.5.7/go.mod h1:jsa4ujstGjKWbfu3SQML8KLJDvpGZLErWnlmfKKCQrs=
 github.com/IBM/go-sdk-core/v5 v5.15.0 h1:AhFoWVk3i58f9vnDoEoZumI/zbtRoP5moWIz5YQOmZg=
 github.com/IBM/go-sdk-core/v5 v5.15.0/go.mod h1:5Obavm/s1Tc2PxivEIfgCvj/HJ5h3QIOjLHS5y8QJf0=
 github.com/IBM/platform-services-go-sdk v0.55.0 h1:W598xZanL61bwd8O2DQexr4qjIr+/tP0Y845zoms5yA=
