@@ -150,6 +150,11 @@ vet:
 help:  # Display this help
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[0-9A-Za-z_-]+:.*?##/ { printf "  \033[36m%-45s\033[0m %s\n", $$1, $$2 } /^\$$\([0-9A-Za-z_-]+\):.*?##/ { gsub("_","-", $$1); printf "  \033[36m%-45s\033[0m %s\n", tolower(substr($$1, 3, length($$1)-7)), $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
+# Install yamllint if not present
+.PHONY: install-yamllint
+install-yamllint:
+	@which yamllint > /dev/null || (echo "Installing yamllint..." && pip install yamllint)
+
 ## --------------------------------------
 ## Generate / Manifests
 ## --------------------------------------
