@@ -20,6 +20,7 @@ limitations under the License.
 //
 //	mockgen -source=./vpc.go -destination=./mock/vpc_generated.go -package=mock
 //
+
 // Package mock is a generated GoMock package.
 package mock
 
