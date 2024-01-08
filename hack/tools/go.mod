@@ -5,7 +5,7 @@ go 1.20
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.0
 
 require (
-	github.com/aquasecurity/trivy v0.48.1
+	github.com/aquasecurity/trivy v0.48.2
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/itchyny/gojq v0.12.14
@@ -119,7 +119,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/docdb v1.23.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ebs v1.18.1 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.116.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.134.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.24.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ecs v1.30.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/efs v1.21.6 // indirect
