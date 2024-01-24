@@ -241,11 +241,36 @@ spec:
                 description: ControlPlaneLoadBalancer is optional configuration for
                   customizing control plane behavior.
                 properties:
+                  additionalListeners:
+                    description: AdditionalListeners sets the additional listeners
+                      for the control plane load balancer. .
+                    items:
+                      description: AdditionalListenerSpec defines the desired state
+                        of an additional listener on an VPC load balancer.
+                      properties:
+                        port:
+                          description: Port sets the port for the additional listener.
+                          format: int64
+                          maximum: 65535
+                          minimum: 1
+                          type: integer
+                      required:
+                      - port
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - port
+                    x-kubernetes-list-type: map
                   name:
                     description: Name sets the name of the VPC load balancer.
                     maxLength: 63
                     pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                     type: string
+                  public:
+                    default: true
+                    description: public indicates that load balancer is public or
+                      private
+                    type: boolean
                 type: object
               region:
                 description: The IBM Cloud Region the cluster lives in.
@@ -331,11 +356,6 @@ spec:
                     type: string
                   zone:
                     type: string
-                required:
-                - cidr
-                - id
-                - name
-                - zone
                 type: object
               vpc:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state

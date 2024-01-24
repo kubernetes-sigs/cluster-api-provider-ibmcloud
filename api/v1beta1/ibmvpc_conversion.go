@@ -215,3 +215,7 @@ func Convert_Slice_Pointer_v1beta2_IBMVPCResourceReference_To_Slice_Pointer_stri
 	}
 	return nil
 }
+
+func Convert_v1beta2_VPCLoadBalancerSpec_To_v1beta1_VPCLoadBalancerSpec(in *infrav1beta2.VPCLoadBalancerSpec, out *VPCLoadBalancerSpec, s apiconversion.Scope) error {
+	return autoConvert_v1beta2_VPCLoadBalancerSpec_To_v1beta1_VPCLoadBalancerSpec(in, out, s)
+}

@@ -327,6 +327,23 @@ spec:
           spec:
             description: IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
             properties:
+              ignition:
+                description: Ignition defined options related to the bootstrapping
+                  systems where Ignition is used.
+                properties:
+                  version:
+                    default: "2.3"
+                    description: Version defines which version of Ignition will be
+                      used to generate bootstrap data.
+                    enum:
+                    - "2.3"
+                    - "3.0"
+                    - "3.1"
+                    - "3.2"
+                    - "3.3"
+                    - "3.4"
+                    type: string
+                type: object
               image:
                 description: Image the reference to the image which is used to create
                   the instance. supported image identifier in IBMPowerVSResourceReference
@@ -434,10 +451,35 @@ spec:
                 description: ProviderID is the unique identifier as specified by the
                   cloud provider.
                 type: string
+              serviceInstance:
+                description: serviceInstance is the reference to the Power VS workspace
+                  on which the server instance(VM) will be created. Power VS workspace
+                  is a container for all Power VS instances at a specific geographic
+                  region. serviceInstance can be created via IBM Cloud catalog or
+                  CLI. supported serviceInstance identifier in PowerVSResource are
+                  Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud
+                  cli. More detail about Power VS service instance. https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+                  when omitted system will dynamically create the service instance
+                properties:
+                  id:
+                    description: ID of resource
+                    minLength: 1
+                    type: string
+                  name:
+                    description: Name of resource
+                    minLength: 1
+                    type: string
+                  regex:
+                    description: Regular expression to match resource, In case of
+                      multiple resources matches the provided regular expression the
+                      first matched resource will be selected
+                    minLength: 1
+                    type: string
+                type: object
               serviceInstanceID:
-                description: ServiceInstanceID is the id of the power cloud instance
-                  where the vsi instance will get deployed.
-                minLength: 1
+                description: 'ServiceInstanceID is the id of the power cloud instance
+                  where the vsi instance will get deployed. Deprecated: use ServiceInstance
+                  instead'
                 type: string
               sshKey:
                 description: SSHKey is the name of the SSH key pair provided to the
