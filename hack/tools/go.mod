@@ -12,7 +12,7 @@ require (
 	github.com/joelanford/go-apidiff v0.8.1
 	github.com/onsi/ginkgo/v2 v2.13.1
 	go.uber.org/mock v0.4.0
-	golang.org/x/vuln v1.0.1
+	golang.org/x/vuln v1.0.2
 	gotest.tools/gotestsum v1.11.0
 	k8s.io/code-generator v0.28.4
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240116152609-a150f715f5a6
