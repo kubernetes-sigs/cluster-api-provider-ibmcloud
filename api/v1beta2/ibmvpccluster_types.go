@@ -90,13 +90,14 @@ type VPCLoadBalancerStatus struct {
 	// id of VPC load balancer.
 	// +optional
 	ID *string `json:"id,omitempty"`
-	// +optional
-	Name *string `json:"name,omitempty"`
 	// State is the status of the load balancer.
 	State VPCLoadBalancerState `json:"state,omitempty"`
 	// hostname is the hostname of load balancer.
 	// +optional
 	Hostname *string `json:"hostname,omitempty"`
+	// +kubebuilder:default=false
+	// controllerCreated indicates whether the resource is created by the controller.
+	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }
 
 // IBMVPCClusterStatus defines the observed state of IBMVPCCluster.

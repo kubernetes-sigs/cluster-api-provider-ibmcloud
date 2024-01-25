@@ -400,8 +400,8 @@ spec:
                   - type
                   type: object
                 type: array
-              cosBucket:
-                description: cosBucket is reference to IBM Cloud COS Bucket resource.
+              cosInstance:
+                description: cosInstance is reference to IBM Cloud COS Instance resource.
                 properties:
                   controllerCreated:
                     default: false
@@ -428,13 +428,16 @@ spec:
                 additionalProperties:
                   description: VPCLoadBalancerStatus defines the status VPC load balancer.
                   properties:
+                    controllerCreated:
+                      default: false
+                      description: controllerCreated indicates whether the resource
+                        is created by the controller.
+                      type: boolean
                     hostname:
                       description: hostname is the hostname of load balancer.
                       type: string
                     id:
                       description: id of VPC load balancer.
-                      type: string
-                    name:
                       type: string
                     state:
                       description: State is the status of the load balancer.

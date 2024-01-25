@@ -575,7 +575,7 @@ func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta1_IBMPowerVSClusterSta
 	// WARNING: in.VPC requires manual conversion: does not exist in peer-type
 	// WARNING: in.VPCSubnet requires manual conversion: does not exist in peer-type
 	// WARNING: in.TransitGateway requires manual conversion: does not exist in peer-type
-	// WARNING: in.COSBucket requires manual conversion: does not exist in peer-type
+	// WARNING: in.COSInstance requires manual conversion: does not exist in peer-type
 	// WARNING: in.LoadBalancers requires manual conversion: does not exist in peer-type
 	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
 	return nil
