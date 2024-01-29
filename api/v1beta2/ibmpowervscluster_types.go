@@ -127,8 +127,8 @@ type IBMPowerVSClusterStatus struct {
 	// transitGateway is reference to IBM Cloud TransitGateway.
 	TransitGateway *ResourceReference `json:"transitGateway,omitempty"`
 
-	// cosBucket is reference to IBM Cloud COS Bucket resource.
-	COSBucket *ResourceReference `json:"cosBucket,omitempty"`
+	// cosInstance is reference to IBM Cloud COS Instance resource.
+	COSInstance *ResourceReference `json:"cosInstance,omitempty"`
 
 	// loadBalancers reference to IBM Cloud VPC Loadbalancer.
 	LoadBalancers map[string]VPCLoadBalancerStatus `json:"loadBalancers,omitempty"`

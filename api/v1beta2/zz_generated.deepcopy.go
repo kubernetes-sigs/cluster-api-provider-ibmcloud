@@ -218,8 +218,8 @@ func (in *IBMPowerVSClusterStatus) DeepCopyInto(out *IBMPowerVSClusterStatus) {
 		*out = new(ResourceReference)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.COSBucket != nil {
-		in, out := &in.COSBucket, &out.COSBucket
+	if in.COSInstance != nil {
+		in, out := &in.COSInstance, &out.COSInstance
 		*out = new(ResourceReference)
 		(*in).DeepCopyInto(*out)
 	}
@@ -1367,14 +1367,14 @@ func (in *VPCLoadBalancerStatus) DeepCopyInto(out *VPCLoadBalancerStatus) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Name != nil {
-		in, out := &in.Name, &out.Name
-		*out = new(string)
-		**out = **in
-	}
 	if in.Hostname != nil {
 		in, out := &in.Hostname, &out.Hostname
 		*out = new(string)
+		**out = **in
+	}
+	if in.ControllerCreated != nil {
+		in, out := &in.ControllerCreated, &out.ControllerCreated
+		*out = new(bool)
 		**out = **in
 	}
 }
