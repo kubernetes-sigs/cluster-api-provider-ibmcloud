@@ -9,17 +9,17 @@ If you are unsure you can determine your computers architecture by running `unam
 
 Download for AMD64:
 ```bash
-curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-linux-amd64 -o capibmadm
+curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-linux-amd64 -o capibmadm
 ```
 
 Download for ARM64:
 ```bash
-curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-linux-arm64 -o capibmadm
+curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-linux-arm64 -o capibmadm
 ```
 
 Download for PPC64LE:
 ```bash
-curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-linux-ppc64le -o capibmadm
+curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-linux-ppc64le -o capibmadm
 ```
 
 Make the capibmadm binary executable.
@@ -40,12 +40,12 @@ If you are unsure you can determine your computers architecture by running `unam
 
 Download for AMD64:
 ```bash
-curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-darwin-amd64 -o capibmadm
+curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-darwin-amd64 -o capibmadm
 ```
 
 Download for M1 CPU ("Apple Silicon") / ARM64:
 ```bash
-curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-darwin-arm64 -o capibmadm
+curl -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-darwin-arm64 -o capibmadm
 ```
 
 Make the capibmadm binary executable.
@@ -66,13 +66,13 @@ Go to the working directory where you want capibmadm downloaded.
 
 Download the latest release on AMD64; on Windows, type:
 ```powershell
-curl.exe -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-windows-amd64.exe -o capibmadm.exe
+curl.exe -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-windows-amd64.exe -o capibmadm.exe
 ```
 Append or prepend the path of that directory to the `PATH` environment variable.
 
 Download the latest release on ARM64; on Windows, type:
 ```powershell
-curl.exe -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.5.0-alpha.1/capibmadm-windows-arm64.exe -o capibmadm.exe
+curl.exe -L https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/releases/download/v0.7.0/capibmadm-windows-arm64.exe -o capibmadm.exe
 ```
 Append or prepend the path of that directory to the `PATH` environment variable.
 
