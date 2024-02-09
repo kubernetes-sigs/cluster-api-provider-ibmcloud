@@ -18,7 +18,8 @@ ARG TARGETPLATFORM=linux/amd64
 ARG ARCH=amd64
 
 # Build IBM cloud controller manager binary
-FROM golang:1.20.12 AS ccm-builder
+ARG golang_image
+FROM ${golang_image} AS ccm-builder
 ARG ARCH
 ARG POWERVS_CLOUD_CONTROLLER_COMMIT
 WORKDIR /build
