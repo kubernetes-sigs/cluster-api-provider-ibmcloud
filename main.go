@@ -263,6 +263,15 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
 		os.Exit(1)
 	}
+
+	if err := (&controllers.IBMVPCMachineTemplateReconciler{
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		ServiceEndpoint: serviceEndpoint,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ibmvpcmachinetemplate")
+		os.Exit(1)
+	}
 }
 
 func setupWebhooks(mgr ctrl.Manager) {
