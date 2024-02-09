@@ -40,6 +40,7 @@ mkdir -p "${ARTIFACTS}/logs/"
 ARCH=$(uname -m)
 OS=$(uname -s)
 IBMCLOUD_CLI_VERSION=${IBMCLOUD_CLI_VERSION:-"2.22.1"}
+POWER_PLUGIN_VERSION=${POWER_PLUGIN_VERSION:-"1.0.0"}
 E2E_FLAVOR=${E2E_FLAVOR:-}
 capibmadm=$(pwd)/bin/capibmadm
 
@@ -90,7 +91,7 @@ create_powervs_network_instance(){
     retry "ibmcloud login -a cloud.ibm.com --no-region"
 
     # Install power-iaas command-line plug-in and target the required service instance
-    ibmcloud plugin install power-iaas -f
+    ibmcloud plugin install power-iaas -f -v ${POWER_PLUGIN_VERSION}
     CRN=$(ibmcloud resource service-instance ${IBMPOWERVS_SERVICE_INSTANCE_ID} --output json | jq -r '.[].crn')
     ibmcloud pi workspace target ${CRN}
 
