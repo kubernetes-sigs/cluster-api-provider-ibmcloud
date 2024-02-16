@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud
 
-go 1.20
+go 1.21
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
