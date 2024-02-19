@@ -11,7 +11,7 @@ ubuntu-2004-ibmcloud-kube-v1-23-4.qcow2
 ## Upload VM image:
 
 1) Create an IBM COS instance
-2) Create a bucket in the COS instance.
+2) Create a bucket in the COS instance
 3) Upload the image
    1) Upload via aspera
         * Install the browser extension for Aspera
@@ -54,7 +54,7 @@ target: service Cloud object storage in resource_group <your_resource_group_or_a
 
 Now you can provision a VM with your own VM image.
 Then please continue with
-[creating a cluster](creating-a-cluster.md).
+[creating a cluster](creating-a-cluster.md)
 
 Make sure you take the ImageID from your VM image. The ImageID can be determined using ibmcloud cli. In addition, the Kubernetes version must be set to match the image. In this example:
 ```console
