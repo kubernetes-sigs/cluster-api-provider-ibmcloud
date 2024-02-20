@@ -46,7 +46,7 @@ func ListCommand() *cobra.Command {
 
 	options.AddCommonFlags(cmd)
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return listImages(cmd.Context(), options.GlobalOptions.ResourceGroupName)
 	}
 

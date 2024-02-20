@@ -555,7 +555,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityWarning, infrav1beta2.InstanceNotReadyReason}})
 
-			t.Run("When PVM instance is in SHUTOFF state", func(t *testing.T) {
+			t.Run("When PVM instance is in SHUTOFF state", func(_ *testing.T) {
 				instance.Status = pointer.String("SHUTOFF")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
@@ -566,7 +566,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
 				expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityError, infrav1beta2.InstanceStoppedReason}})
 			})
-			t.Run("When PVM instance is in ACTIVE state", func(t *testing.T) {
+			t.Run("When PVM instance is in ACTIVE state", func(_ *testing.T) {
 				instance.Status = pointer.String("ACTIVE")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
@@ -577,7 +577,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
 				expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{conditionType: infrav1beta2.InstanceReadyCondition, status: corev1.ConditionTrue}})
 			})
-			t.Run("When PVM instance is in ERROR state", func(t *testing.T) {
+			t.Run("When PVM instance is in ERROR state", func(_ *testing.T) {
 				instance.Status = pointer.String("ERROR")
 				instance.Fault = &models.PVMInstanceFault{Details: "Timeout creating instance"}
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
@@ -589,7 +589,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
 				expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityError, infrav1beta2.InstanceErroredReason}})
 			})
-			t.Run("When PVM instance is in unknown state", func(t *testing.T) {
+			t.Run("When PVM instance is in unknown state", func(_ *testing.T) {
 				instance.Status = pointer.String("UNKNOWN")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)

@@ -46,7 +46,7 @@ capibmadm powervs key delete --name <key-name> --service-instance-id <service-in
 	cmd.Flags().StringVar(&keyName, "name", "", "The name of the SSH key.")
 	_ = cmd.MarkFlagRequired("name")
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return deleteSSHKey(cmd.Context(), keyName)
 	}
 	return cmd

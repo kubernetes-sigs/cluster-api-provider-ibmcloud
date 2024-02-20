@@ -51,7 +51,7 @@ func ListCommand() *cobra.Command {
 	cmd.Flags().StringVar(&network, "network", "", "Network ID or Name")
 	_ = cmd.MarkFlagRequired("network")
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return listPorts(cmd.Context(), network)
 	}
 

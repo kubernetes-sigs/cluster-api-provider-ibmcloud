@@ -85,7 +85,7 @@ capibmadm powervs image import --service-instance-id <service-instance-id> -b <b
 	_ = cmd.MarkFlagRequired("bucket-region")
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("object")
-	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+	cmd.PreRunE = func(_ *cobra.Command, _ []string) error {
 		case1 := imageImportOption.AccessKey == "" && imageImportOption.SecretKey != ""
 		case2 := imageImportOption.AccessKey != "" && imageImportOption.SecretKey == ""
 
@@ -95,7 +95,7 @@ capibmadm powervs image import --service-instance-id <service-instance-id> -b <b
 		return nil
 	}
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return importimage(cmd.Context(), imageImportOption)
 	}
 

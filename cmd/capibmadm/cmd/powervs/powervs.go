@@ -34,7 +34,7 @@ func Commands() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "powervs",
 		Short: "Commands for operations on PowerVS resources",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 			apiKey := os.Getenv(options.IBMCloudAPIKeyEnvName)
 			if apiKey == "" {
 				return fmt.Errorf("ibmcloud api key is not provided, set %s environmental variable", options.IBMCloudAPIKeyEnvName)

@@ -74,7 +74,7 @@ Private network with ip address ranges: capibmadm powervs network create --priva
 	// cidr is required for private vlan
 	cmd.MarkFlagsRequiredTogether("private", "cidr")
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return createNetwork(cmd.Context(), netCreateOption)
 	}
 	return cmd

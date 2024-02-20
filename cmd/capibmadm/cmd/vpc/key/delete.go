@@ -48,7 +48,7 @@ capibmadm vpc key delete --name <key-name> --region <region>`,
 	var keyDeleteOption keyDeleteOptions
 	cmd.Flags().StringVar(&keyDeleteOption.name, "name", keyDeleteOption.name, "Key Name")
 	_ = cmd.MarkFlagRequired("name")
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(_ *cobra.Command, _ []string) error {
 		return deleteKey(keyDeleteOption)
 	}
 

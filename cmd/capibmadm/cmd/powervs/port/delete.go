@@ -53,7 +53,7 @@ capibmadm powervs port delete --port-id <port-id> --network <network-name/networ
 	_ = cmd.MarkFlagRequired("port-id")
 	_ = cmd.MarkFlagRequired("network")
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return deletePort(cmd.Context(), portDeleteOption)
 	}
 	return cmd
