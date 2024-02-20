@@ -144,6 +144,43 @@ func TestParseFlags(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			name:        "single region, multiple restricted network required services",
+			flagToParse: "us-east:vpc=https://vpchost:8080,IAM=https://iamhost:8080,ResourceManager=https://rmhost:8080,DNSServices=https://dnsserviceshost:8080,rc=https://rchost:8080,KeyProtect=https://keyprotecthost:8080",
+			expectedOutput: []ServiceEndpoint{
+				{
+					ID:     "vpc",
+					URL:    "https://vpchost:8080",
+					Region: "us-east",
+				},
+				{
+					ID:     "IAM",
+					URL:    "https://iamhost:8080",
+					Region: "us-east",
+				},
+				{
+					ID:     "ResourceManager",
+					URL:    "https://rmhost:8080",
+					Region: "us-east",
+				},
+				{
+					ID:     "DNSServices",
+					URL:    "https://dnsserviceshost:8080",
+					Region: "us-east",
+				},
+				{
+					ID:     "rc",
+					URL:    "https://rchost:8080",
+					Region: "us-east",
+				},
+				{
+					ID:     "KeyProtect",
+					URL:    "https://keyprotecthost:8080",
+					Region: "us-east",
+				},
+			},
+			expectedError: nil,
+		},
+		{
 			name:           "invalid config",
 			flagToParse:    "eu-gb=localhost",
 			expectedOutput: nil,

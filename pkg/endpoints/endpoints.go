@@ -27,17 +27,29 @@ import (
 var ServiceEndpointFormat string
 
 const (
-	// VPC used to identify VPC service.
-	VPC serviceID = "vpc"
+	// CIS used to identify Cloud Internet Services.
+	CIS serviceID = "CIS"
+	// COS used to identify Cloud Object Storage service.
+	COS serviceID = "COS"
+	// DNSServices used to identify DNS Services.
+	DNSServices serviceID = "DNSServices"
+	// IAM used to identify Identity and Management service.
+	IAM serviceID = "IAM"
+	// KeyProtect used to identify Key Protect service.
+	KeyProtect serviceID = "KeyProtect"
 	// PowerVS used to identify PowerVS service.
 	PowerVS serviceID = "powervs"
 	// RC used to identify Resource-Controller service.
 	RC serviceID = "rc"
+	// ResourceManager used to identify Resource Manager service.
+	ResourceManager serviceID = "ResourceManager"
+	// VPC used to identify VPC service.
+	VPC serviceID = "vpc"
 )
 
 type serviceID string
 
-var serviceIDs = []serviceID{VPC, PowerVS, RC}
+var serviceIDs = []serviceID{CIS, COS, DNSServices, IAM, KeyProtect, PowerVS, RC, ResourceManager, VPC}
 
 // ServiceEndpoint holds the Service endpoint specific information.
 type ServiceEndpoint struct {
