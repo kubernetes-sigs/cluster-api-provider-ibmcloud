@@ -45,7 +45,7 @@ capibmadm vpc key list --region <region> --resource-group-name <resource-group-n
 
 	options.AddCommonFlags(cmd)
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return listKeys(cmd.Context())
 	}
 

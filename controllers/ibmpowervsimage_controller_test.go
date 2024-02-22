@@ -211,7 +211,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 			}
 
 			imageScope.IBMPowerVSImage.Status.JobID = jobID
-			t.Run("When failed to get the import job using jobID", func(t *testing.T) {
+			t.Run("When failed to get the import job using jobID", func(_ *testing.T) {
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf(jobID)).Return(nil, errors.New("Error finding the job"))
 				result, err := reconciler.reconcile(powervsCluster, imageScope)
 				g.Expect(err).To(Not(BeNil()))
@@ -224,7 +224,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					State: pointer.String("queued"),
 				},
 			}
-			t.Run("When import job status is queued", func(t *testing.T) {
+			t.Run("When import job status is queued", func(_ *testing.T) {
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf(jobID)).Return(job, nil)
 				result, err := reconciler.reconcile(powervsCluster, imageScope)
 				g.Expect(err).To(BeNil())
@@ -234,7 +234,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, string(infrav1beta2.PowerVSImageStateQue)}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
-			t.Run("When importing image is still in progress", func(t *testing.T) {
+			t.Run("When importing image is still in progress", func(_ *testing.T) {
 				job.Status.State = pointer.String("")
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				result, err := reconciler.reconcile(powervsCluster, imageScope)
@@ -245,7 +245,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, *job.Status.State}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
-			t.Run("When import job status is failed", func(t *testing.T) {
+			t.Run("When import job status is failed", func(_ *testing.T) {
 				job.Status.State = pointer.String("failed")
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				result, err := reconciler.reconcile(powervsCluster, imageScope)
@@ -265,7 +265,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					},
 				},
 			}
-			t.Run("When import job status is completed and fails to get the image details", func(t *testing.T) {
+			t.Run("When import job status is completed and fails to get the image details", func(_ *testing.T) {
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 				mockpowervs.EXPECT().GetImage(gomock.AssignableToTypeOf("capi-image-id")).Return(nil, errors.New("Failed to the image details"))
@@ -280,7 +280,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				ImageID: pointer.String("capi-image-id"),
 				State:   "queued",
 			}
-			t.Run("When import job status is completed and image state is queued", func(t *testing.T) {
+			t.Run("When import job status is completed and image state is queued", func(_ *testing.T) {
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 				mockpowervs.EXPECT().GetImage(gomock.AssignableToTypeOf("capi-image-id")).Return(image, nil)
@@ -291,7 +291,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityWarning, infrav1beta2.ImageNotReadyReason}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
-			t.Run("When import job status is completed and image state is undefined", func(t *testing.T) {
+			t.Run("When import job status is completed and image state is undefined", func(_ *testing.T) {
 				image.State = "unknown"
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				mockpowervs.EXPECT().GetAllImage().Return(images, nil)
@@ -303,7 +303,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
-			t.Run("When import job status is completed and image state is active", func(t *testing.T) {
+			t.Run("When import job status is completed and image state is active", func(_ *testing.T) {
 				image.State = "active"
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				mockpowervs.EXPECT().GetAllImage().Return(images, nil)

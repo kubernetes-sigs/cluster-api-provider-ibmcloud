@@ -46,7 +46,7 @@ capibmadm powervs network delete --network <network-name/network-id> --service-i
 	cmd.Flags().StringVar(&networkID, "network", "", "Network ID or Name")
 	_ = cmd.MarkFlagRequired("network")
 
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return deleteNetwork(cmd.Context(), networkID)
 	}
 	return cmd

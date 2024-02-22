@@ -45,7 +45,7 @@ func ListCommand() *cobra.Command {
 # List PowerVS images
 export IBMCLOUD_API_KEY=<api-key>
 capibmadm powervs image list --service-instance-id <service-instance-id> --zone <zone>`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return listimage(cmd.Context())
 		},
 	}

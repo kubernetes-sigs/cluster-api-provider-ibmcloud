@@ -63,13 +63,13 @@ Using file-path to SSH key : capibmadm vpc key create --name <key-name> --region
 	_ = cmd.MarkFlagRequired("name")
 	// TODO: Flag validation is handled in PreRunE until the support for MarkFlagsMutuallyExclusiveAndRequired is available.
 	// Related issue: https://github.com/spf13/cobra/issues/1216
-	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+	cmd.PreRunE = func(_ *cobra.Command, _ []string) error {
 		if (keyCreateOption.publicKey == "") == (filePath == "") {
 			return fmt.Errorf("the required flags either key-path of SSH key or the public-key within double quotation marks is not found")
 		}
 		return nil
 	}
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		if filePath != "" {
 			sshKey, err := os.ReadFile(filePath) // #nosec
 			if err != nil {

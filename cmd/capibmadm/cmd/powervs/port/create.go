@@ -57,7 +57,7 @@ capibmadm powervs port create --network <netword-id/network-name> --description 
 	cmd.Flags().StringVar(&portCreateOption.network, "network", "", "Network ID or Name on which port is to be created")
 	cmd.Flags().StringVar(&portCreateOption.ipAddress, "ip-address", "", "IP Address to be assigned to the port")
 	cmd.Flags().StringVar(&portCreateOption.description, "description", "", "Description of the port")
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		return createPort(cmd.Context(), portCreateOption)
 	}
 	options.AddCommonFlags(cmd)

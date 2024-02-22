@@ -39,7 +39,7 @@ func Commands(out io.Writer) *cobra.Command {
 		Use:   "version",
 		Short: "Print version of capibmadm",
 		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			return runVersion(out, cmd)
 		},
 	}
