@@ -31,34 +31,37 @@ type IBMPowerVSClusterSpec struct {
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// Network is the reference to the Network to use for this cluster.
-	// when the field is omitted, A DHCP service will be created in the PowerVS server workspace and its private network will be used.
+	// when the field is omitted, A DHCP service will be created in the Power VS server workspace and its private network will be used.
 	Network IBMPowerVSResourceReference `json:"network"`
+
+	// DHCPServer is contains the configuration to be used while creating a new DHCP server in PowerVS workspace.
+	// when the field is omitted, a default name is constructed and DHCP server will be created.
+	// +optional
+	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint capiv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
 
-	// serviceInstance is the reference to the PowerVS server workspace on which the server instance(VM) will be created.
-	// PowerVS server workspace is a container for all PowerVS instances at a specific geographic region.
+	// serviceInstance is the reference to the Power VS server workspace on which the server instance(VM) will be created.
+	// Power VS server workspace is a container for all Power VS instances at a specific geographic region.
 	// serviceInstance can be created via IBM Cloud catalog or CLI.
 	// supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-	// More detail about PowerVS service instance.
+	// More detail about Power VS service instance.
 	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
 	// when omitted system will dynamically create the service instance
 	// +optional
 	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
-	// zone is the name of PowerVS zone where the cluster will be created
+	// zone is the name of Power VS zone where the cluster will be created
 	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
-	// when omitted dal10 will be set as default zone.
-	// +kubebuilder:default=dal10
 	// +optional
 	Zone *string `json:"zone,omitempty"`
 
 	// resourceGroup name under which the resources will be created.
 	// when omitted default resource group of the account will be used.
 	// +optional
-	ResourceGroup *string `json:"resourceGroup,omitempty"`
+	ResourceGroup *IBMPowerVSResourceReference `json:"resourceGroup,omitempty"`
 
 	// vpc contains information about IBM Cloud VPC resources.
 	// +optional
@@ -69,7 +72,7 @@ type IBMPowerVSClusterSpec struct {
 	VPCSubnets []Subnet `json:"vpcSubnets,omitempty"`
 
 	// transitGateway contains information about IBM Cloud TransitGateway
-	// IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud PowerVS and VPC infrastructure
+	// IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud Power VS and VPC infrastructure
 	// more information about TransitGateway can be found here https://www.ibm.com/products/transit-gateway.
 	// +optional
 	TransitGateway *TransitGateway `json:"transitGateway,omitempty"`
@@ -94,13 +97,16 @@ type IBMPowerVSClusterStatus struct {
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
 
-	// serviceInstance is the reference to the PowerVS service on which the server instance(VM) will be created.
+	// ResourceGroup is the reference to the Power VS resource group under which the resources will be created.
+	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
+
+	// serviceInstance is the reference to the Power VS service on which the server instance(VM) will be created.
 	ServiceInstance *ResourceReference `json:"serviceInstance,omitempty"`
 
-	// networkID is the reference to the PowerVS network to use for this cluster.
+	// networkID is the reference to the Power VS network to use for this cluster.
 	Network *ResourceReference `json:"network,omitempty"`
 
-	// dhcpServer is the reference to the PowerVS DHCP server.
+	// dhcpServer is the reference to the Power VS DHCP server.
 	DHCPServer *ResourceReference `json:"dhcpServer,omitempty"`
 
 	// vpc is reference to IBM Cloud VPC resources.
@@ -122,6 +128,26 @@ type IBMPowerVSClusterStatus struct {
 	Conditions capiv1beta1.Conditions `json:"conditions,omitempty"`
 }
 
+// DHCPServer contains the DHCP server configurations.
+type DHCPServer struct {
+	// Optional cidr for DHCP private network
+	Cidr *string `json:"cidr,omitempty"`
+
+	// Optional DNS Server for DHCP service
+	// +kubebuilder:default="1.1.1.1"
+	DNSServer *string `json:"dnsServer,omitempty"`
+
+	// Optional name of DHCP Service. Only alphanumeric characters and dashes are allowed (will be prefixed by DHCP identifier)
+	Name *string `json:"name,omitempty"`
+
+	// Optional id of the existing DHCPServer
+	ID *string `json:"id,omitempty"`
+
+	// Optional indicates if SNAT will be enabled for DHCP service
+	// +kubebuilder:default=true
+	Snat *bool `json:"snat,omitempty"`
+}
+
 // ResourceReference identifies a resource with id.
 type ResourceReference struct {
 	// id represents the id of the resource.
@@ -131,8 +157,7 @@ type ResourceReference struct {
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }
 
-
-/// TransitGateway holds the TransitGateway information.
+// TransitGateway holds the TransitGateway information.
 type TransitGateway struct {
 	Name *string `json:"name,omitempty"`
 	ID   *string `json:"id,omitempty"`
@@ -158,15 +183,6 @@ type VPCResourceReference struct {
 
 // CosInstance represents IBM Cloud COS instance.
 type CosInstance struct {
-	// PresignedURLDuration defines the duration for which presigned URLs are valid.
-	//
-	// This is used to generate presigned URLs for S3 Bucket objects, which are used by
-	// control-plane and worker nodes to fetch bootstrap data.
-	//
-	// When enabled, the IAM instance profiles specified are not used.
-	// +optional
-	PresignedURLDuration *metav1.Duration `json:"presignedURLDuration,omitempty"`
-
 	// Name defines name of IBM cloud COS instance to be created.
 	// +kubebuilder:validation:MinLength:=3
 	// +kubebuilder:validation:MaxLength:=63
@@ -197,6 +213,9 @@ User can specify the existing resources in spec, When specified controller will 
 
 When the resource is not set or provided resource with name does not exist in cloud, the controller will create the resource in cloud.
 
+![powervs-cluster-create-workflow.png](../images/powervs-cluster-create-workflow.png)
+
 ### Cluster Deletion workflow
 The controller will only delete the resources which are created by it.
+
 ![powervs-cluster-delete-workflow.png](../images/powervs-cluster-delete-workflow.png)
