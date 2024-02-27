@@ -6,7 +6,7 @@ go 1.20
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.27.8
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.5
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.5.6
 )
 
 require (
@@ -34,8 +34,8 @@ require (
 	k8s.io/client-go v0.27.7
 	k8s.io/klog/v2 v2.100.1
 	k8s.io/utils v0.0.0-20230209194617-a36077c30491
-	sigs.k8s.io/cluster-api v1.5.5
-	sigs.k8s.io/cluster-api/test v1.5.5
+	sigs.k8s.io/cluster-api v1.5.6
+	sigs.k8s.io/cluster-api/test v1.5.6
 	sigs.k8s.io/controller-runtime v0.15.3
 )
 
