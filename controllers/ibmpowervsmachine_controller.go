@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
+	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object.
@@ -181,6 +182,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachin
 		scope.Info("error deleting IBMPowerVSMachine")
 		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
 	}
+
 	// Remove the cached VM IP
 	err := scope.DHCPIPCacheStore.Delete(powervs.VMip{Name: scope.IBMPowerVSMachine.Name})
 	if err != nil {
@@ -270,11 +272,27 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		machineScope.SetNotReady()
 		conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStateUnknownReason, "")
 	}
-
 	// Requeue after 2 minute if machine is not ready to update status of the machine properly.
 	if !machineScope.IsReady() {
 		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 	}
 
+	if !genUtil.CheckCreateInfraAnnotation(*machineScope.IBMPowerVSCluster) {
+		return ctrl.Result{}, nil
+	}
+	// Register instance with load balancer
+	machineScope.Info("updating loadbalancer for machine", "name", machineScope.IBMPowerVSMachine.Name)
+	internalIP := machineScope.GetMachineInternalIP()
+	if internalIP == "" {
+		machineScope.Info("Not able to update the LoadBalancer, Machine internal IP not yet set", "machine name", machineScope.IBMPowerVSMachine.Name)
+		return ctrl.Result{}, nil
+	}
+	poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed CreateVPCLoadBalancerPoolMember %s: %w", machineScope.IBMPowerVSMachine.Name, err)
+	}
+	if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
 	return ctrl.Result{}, nil
 }
