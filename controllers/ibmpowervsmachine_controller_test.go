@@ -316,7 +316,20 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
+
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bootsecret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"value": []byte("user data"),
+				},
+			}
+
+			mockClient := fake.NewClientBuilder().WithObjects([]client.Object{secret}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
+				Client:           mockClient,
 				Logger:           klogr.New(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
@@ -330,6 +343,16 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				Machine: &capiv1beta1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
+					Spec: capiv1beta1.MachineSpec{
+						Bootstrap: capiv1beta1.Bootstrap{
+							DataSecretName: pointer.String("bootsecret"),
+						},
+					},
+				},
 			}
 			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(nil)
 			_, err := reconciler.reconcileDelete(machineScope)

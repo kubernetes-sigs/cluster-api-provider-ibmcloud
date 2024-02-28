@@ -49,7 +49,6 @@ type IBMPowerVSClusterSpec struct {
 	// dhcpServer is contains the configuration to be used while creating a new DHCP server in PowerVS workspace.
 	// when the field is omitted, CLUSTER_NAME will be used as DHCPServer.Name and DHCP server will be created.
 	// it will automatically create network with name DHCPSERVER<DHCPServer.Name>_Private in PowerVS workspace.
-	// the default name
 	// +optional
 	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
 

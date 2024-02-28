@@ -17,7 +17,6 @@ require (
 	github.com/IBM/platform-services-go-sdk v0.59.0
 	github.com/IBM/vpc-go-sdk v0.48.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/coreos/ignition v0.35.0
 	github.com/coreos/ignition/v2 v2.17.0
 	github.com/go-logr/logr v1.3.0
 	github.com/go-openapi/strfmt v0.22.0
@@ -64,7 +63,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/coreos/vcontext v0.0.0-20230201181013-d72178a18687 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect

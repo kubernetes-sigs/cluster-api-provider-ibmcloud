@@ -182,7 +182,10 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachin
 		scope.Info("error deleting IBMPowerVSMachine")
 		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
 	}
-
+	if err := scope.DeleteMachineIgnition(); err != nil {
+		scope.Info("error deleting IBMPowerVSMachine ignition")
+		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine ignition %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
+	}
 	// Remove the cached VM IP
 	err := scope.DHCPIPCacheStore.Delete(powervs.VMip{Name: scope.IBMPowerVSMachine.Name})
 	if err != nil {
