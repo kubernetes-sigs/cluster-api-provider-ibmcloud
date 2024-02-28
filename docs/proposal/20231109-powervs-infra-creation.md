@@ -158,15 +158,6 @@ type VPCResourceReference struct {
 
 // CosInstance represents IBM Cloud COS instance.
 type CosInstance struct {
-	// PresignedURLDuration defines the duration for which presigned URLs are valid.
-	//
-	// This is used to generate presigned URLs for S3 Bucket objects, which are used by
-	// control-plane and worker nodes to fetch bootstrap data.
-	//
-	// When enabled, the IAM instance profiles specified are not used.
-	// +optional
-	PresignedURLDuration *metav1.Duration `json:"presignedURLDuration,omitempty"`
-
 	// Name defines name of IBM cloud COS instance to be created.
 	// +kubebuilder:validation:MinLength:=3
 	// +kubebuilder:validation:MaxLength:=63

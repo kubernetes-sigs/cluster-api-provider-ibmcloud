@@ -1,0 +1,460 @@
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  labels:
+    ccm: external
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - ${POD_CIDR:="192.168.0.0/16"}
+    serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
+    services:
+      cidrBlocks:
+      - ${SERVICE_CIDR:="10.128.0.0/12"}
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    kind: IBMPowerVSCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSCluster
+metadata:
+  annotations:
+    powervs.cluster.x-k8s.io/create-infra: "true"
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
+  namespace: default
+spec:
+  resourceGroup:
+    name: ${IBM_RESOURCE_GROUP}
+  zone: ${IBMPOWERVS_ZONE}
+  serviceInstance:
+    name: ${CLUSTER_NAME}-serviceInstance
+  vpc:
+    name: ${CLUSTER_NAME}-vpc
+    region: ${IBMVPC_REGION}
+  vpcSubnets:
+  - name: ${CLUSTER_NAME}-vpcsubnet
+  transitGateway:
+    name: ${CLUSTER_NAME}-transitgateway
+  loadBalancers:
+  - name: ${CLUSTER_NAME}-loadbalancer
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+      controllerManager:
+        extraArgs:
+          cloud-provider: external
+          enable-hostpath-provisioner: "true"
+    initConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+          cloud-provider: external
+          eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+        name: '{{ v1.local_hostname }}'
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+          cloud-provider: external
+          eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+        name: '{{ v1.local_hostname }}'
+    preKubeadmCommands:
+    - hostname "{{ v1.local_hostname }}"
+    - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+    - echo "127.0.0.1   localhost" >>/etc/hosts
+    - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+    - echo "{{ v1.local_hostname }}" >/etc/hostname
+    useExperimentalRetryJoin: true
+  machineTemplate:
+    infrastructureRef:
+      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      kind: IBMPowerVSMachineTemplate
+      name: ${CLUSTER_NAME}-control-plane
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: default
+spec:
+  template:
+    spec:
+      imageRef:
+        name: ${CLUSTER_NAME}-image
+      memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
+      processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
+      processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
+      sshKey: ${IBMPOWERVS_SSHKEY_NAME}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      serviceInstance:
+        name: ${CLUSTER_NAME}-serviceInstance
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        kind: IBMPowerVSMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      imageRef:
+        name: ${CLUSTER_NAME}-image
+      memoryGiB: ${IBMPOWERVS_COMPUTE_MEMORY:=4}
+      processorType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="Shared"}
+      processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
+      sshKey: ${IBMPOWERVS_SSHKEY_NAME}
+      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
+      serviceInstance:
+        name: ${CLUSTER_NAME}-serviceInstance
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+kind: KubeadmConfigTemplate
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+    cluster.x-k8s.io/control-plane: ""
+  name: ${CLUSTER_NAME}-md-0
+  namespace: default
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          criSocket: /var/run/containerd/containerd.sock
+          kubeletExtraArgs:
+            cloud-provider: external
+            eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+          name: '{{ v1.local_hostname }}'
+      preKubeadmCommands:
+      - hostname "{{ v1.local_hostname }}"
+      - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+      - echo "127.0.0.1   localhost" >>/etc/hosts
+      - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+      - echo "{{ v1.local_hostname }}" >/etc/hostname
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSImage
+metadata:
+  creationTimestamp: null
+  name: ${CLUSTER_NAME}-image
+spec:
+  bucket: ${COS_BUCKET_NAME}
+  clusterName: ${CLUSTER_NAME}
+  deletePolicy: delete
+  object: ${COS_OBJECT_NAME}
+  region: ${COS_BUCKET_REGION}
+  serviceInstance:
+    name: ${CLUSTER_NAME}-serviceInstance
+status:
+  ready: false
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta1
+kind: ClusterResourceSet
+metadata:
+  name: crs-cloud-conf
+  namespace: default
+spec:
+  clusterSelector:
+    matchLabels:
+      ccm: external
+  resources:
+  - kind: Secret
+    name: ibmpowervs-credential
+  - kind: ConfigMap
+    name: ibmpowervs-cfg
+  - kind: ConfigMap
+    name: cloud-controller-manager-addon
+  strategy: ApplyOnce
+---
+apiVersion: v1
+data:
+  ibmpowervs-cloud-conf.yaml: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: ibmpowervs-cloud-config
+      namespace: kube-system
+    data:
+      ibmpowervs.conf: |
+        [global]
+        version = 1.1.0
+        [kubernetes]
+        config-file = ""
+        [provider]
+        cluster-default-provider = g2
+        accountID = ${IBMACCOUNT_ID}
+        clusterID = ${CLUSTER_NAME}
+        g2workerServiceAccountID = ${IBMACCOUNT_ID}
+        g2Credentials = /etc/ibm-secret/ibmcloud_api_key
+        g2ResourceGroupName = ${IBM_RESOURCE_GROUP:=""}
+        g2VpcSubnetNames = ${CLUSTER_NAME}-vpcsubnet
+        g2VpcName = ${CLUSTER_NAME}-vpc
+        region =  ${IBMVPC_REGION:=""}
+        powerVSRegion = ${IBMPOWERVS_REGION}
+        powerVSZone = ${IBMPOWERVS_ZONE}
+        powerVSCloudInstanceName = ${CLUSTER_NAME}-serviceInstance
+kind: ConfigMap
+metadata:
+  name: ibmpowervs-cfg
+  namespace: default
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ibmpowervs-credential
+  namespace: default
+stringData:
+  ibmpowervs-credential.yaml: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ibmpowervs-cloud-credential
+      namespace: kube-system
+    data:
+      ibmcloud_api_key: ${BASE64_API_KEY}
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: v1
+data:
+  ibmpowervs-ccm-external.yaml: |-
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: cloud-controller-manager
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: cloud-controller-manager:apiserver-authentication-reader
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: extension-apiserver-authentication-reader
+    subjects:
+      - apiGroup: ""
+        kind: ServiceAccount
+        name: cloud-controller-manager
+        namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: system:cloud-controller-manager
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: system:cloud-controller-manager
+    subjects:
+      - kind: ServiceAccount
+        name: cloud-controller-manager
+        namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: system:cloud-controller-manager
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - events
+        verbs:
+          - create
+          - patch
+          - update
+      - apiGroups:
+          - ""
+        resources:
+          - nodes
+        verbs:
+          - "*"
+      - apiGroups:
+          - ""
+        resources:
+          - nodes/status
+        verbs:
+          - patch
+      - apiGroups:
+          - ""
+        resources:
+          - services
+        verbs:
+          - list
+          - patch
+          - update
+          - watch
+      - apiGroups:
+          - ""
+        resources:
+          - services/status
+        verbs:
+          - patch
+      - apiGroups:
+          - ""
+        resources:
+          - serviceaccounts
+        verbs:
+          - create
+          - get
+          - list
+          - watch
+          - update
+      - apiGroups:
+          - ""
+        resources:
+          - persistentvolumes
+        verbs:
+          - get
+          - list
+          - update
+          - watch
+      - apiGroups:
+          - ""
+        resources:
+          - endpoints
+        verbs:
+          - create
+          - get
+          - list
+          - watch
+          - update
+      - apiGroups:
+          - ""
+        resources:
+          - secrets
+        verbs:
+          - get
+          - list
+          - watch
+      - apiGroups:
+          - "coordination.k8s.io"
+        resources:
+          - leases
+        verbs:
+          - create
+          - get
+          - list
+          - watch
+          - update
+      - apiGroups:
+          - ""
+        resourceNames:
+          - node-controller
+          - service-controller
+        resources:
+          - serviceaccounts/token
+        verbs:
+          - create
+    ---
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: ibmpowervs-cloud-controller-manager
+      namespace: kube-system
+      labels:
+        k8s-app: ibmpowervs-cloud-controller-manager
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: ibmpowervs-cloud-controller-manager
+      updateStrategy:
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            k8s-app: ibmpowervs-cloud-controller-manager
+        spec:
+          nodeSelector:
+            node-role.kubernetes.io/control-plane: ""
+          tolerations:
+            - key: node.cloudprovider.kubernetes.io/uninitialized
+              value: "true"
+              effect: NoSchedule
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+              operator: Exists
+            - key: node-role.kubernetes.io/control-plane
+              effect: NoSchedule
+              operator: Exists
+            - key: node.kubernetes.io/not-ready
+              effect: NoSchedule
+              operator: Exists
+          serviceAccountName: cloud-controller-manager
+          containers:
+            - name: ibmpowervs-cloud-controller-manager
+              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:6c98ec5
+              args:
+                - --v=2
+                - --cloud-provider=ibm
+                - --cloud-config=/etc/cloud/ibmpowervs.conf
+                - --use-service-account-credentials=true
+              env:
+                - name: ENABLE_VPC_PUBLIC_ENDPOINT
+                  value: "true"
+              volumeMounts:
+                - mountPath: /etc/cloud
+                  name: ibmpowervs-config-volume
+                  readOnly: true
+                - mountPath: /etc/ibm-secret
+                  name: ibm-secret
+              resources:
+                requests:
+                  cpu: 200m
+          hostNetwork: true
+          volumes:
+            - name: ibmpowervs-config-volume
+              configMap:
+                name: ibmpowervs-cloud-config
+            - name: ibm-secret
+              secret:
+                secretName: ibmpowervs-cloud-credential
+kind: ConfigMap
+metadata:
+  name: cloud-controller-manager-addon
+  namespace: default
