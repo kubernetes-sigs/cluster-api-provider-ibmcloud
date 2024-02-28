@@ -195,7 +195,7 @@ func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *
 }
 
 func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(in *infrav1beta2.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s apiconversion.Scope) error {
-	if in.ServiceInstance.ID != nil {
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil {
 		out.ServiceInstanceID = *in.ServiceInstance.ID
 	}
 	return autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(in, out, s)

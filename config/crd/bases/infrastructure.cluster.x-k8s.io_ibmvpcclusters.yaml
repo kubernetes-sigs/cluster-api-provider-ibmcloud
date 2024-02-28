@@ -261,10 +261,12 @@ spec:
                     x-kubernetes-list-map-keys:
                     - port
                     x-kubernetes-list-type: map
+                  id:
+                    description: id of the loadbalancer
+                    type: string
                   name:
                     description: Name sets the name of the VPC load balancer.
                     maxLength: 63
-                    pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                     type: string
                   public:
                     default: true

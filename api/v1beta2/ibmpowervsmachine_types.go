@@ -40,6 +40,8 @@ const (
 	PowerVSProcessorTypeShared PowerVSProcessorType = "Shared"
 	// PowerVSProcessorTypeCapped enum property to identify a Capped Power VS processor type.
 	PowerVSProcessorTypeCapped PowerVSProcessorType = "Capped"
+	// DefaultIgnitionVersion represents default Ignition version generated for machine userdata.
+	DefaultIgnitionVersion = "2.3"
 )
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
@@ -82,7 +84,7 @@ type IBMPowerVSMachineSpec struct {
 	// When omitted, this means that the user has no opinion and the platform is left to choose a
 	// reasonable default, which is subject to change over time. The current default is s922 which is generally available.
 	// + This is not an enum because we expect other values to be added later which should be supported implicitly.
-	// +kubebuilder:validation:Enum:="s922";"e880";"e980";""
+	// +kubebuilder:validation:Enum:="s922";"e880";"e980";"s1022";""
 	// +optional
 	SystemType string `json:"systemType,omitempty"`
 
@@ -131,20 +133,6 @@ type IBMPowerVSMachineSpec struct {
 	// ProviderID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
-
-	// Ignition defined options related to the bootstrapping systems where Ignition is used.
-	// +optional
-	Ignition *Ignition `json:"ignition,omitempty"`
-}
-
-// Ignition defines options related to the bootstrapping systems where Ignition is used.
-type Ignition struct {
-	// Version defines which version of Ignition will be used to generate bootstrap data.
-	//
-	// +optional
-	// +kubebuilder:default="2.3"
-	// +kubebuilder:validation:Enum="2.3";"3.0";"3.1";"3.2";"3.3";"3.4"
-	Version string `json:"version,omitempty"`
 }
 
 // IBMPowerVSResourceReference is a reference to a specific PowerVS resource by ID, Name or RegEx
