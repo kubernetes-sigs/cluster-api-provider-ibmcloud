@@ -29,6 +29,7 @@ import (
 
 	models "github.com/IBM-Cloud/power-go-client/power/models"
 	gomock "go.uber.org/mock/gomock"
+	powervs "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 )
 
 // MockPowerVS is a mock of PowerVS interface.
@@ -69,6 +70,21 @@ func (mr *MockPowerVSMockRecorder) CreateCosImage(body any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCosImage", reflect.TypeOf((*MockPowerVS)(nil).CreateCosImage), body)
 }
 
+// CreateDHCPServer mocks base method.
+func (m *MockPowerVS) CreateDHCPServer(arg0 *models.DHCPServerCreate) (*models.DHCPServer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDHCPServer", arg0)
+	ret0, _ := ret[0].(*models.DHCPServer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateDHCPServer indicates an expected call of CreateDHCPServer.
+func (mr *MockPowerVSMockRecorder) CreateDHCPServer(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).CreateDHCPServer), arg0)
+}
+
 // CreateInstance mocks base method.
 func (m *MockPowerVS) CreateInstance(body *models.PVMInstanceCreate) (*models.PVMInstanceList, error) {
 	m.ctrl.T.Helper()
@@ -82,6 +98,20 @@ func (m *MockPowerVS) CreateInstance(body *models.PVMInstanceCreate) (*models.PV
 func (mr *MockPowerVSMockRecorder) CreateInstance(body any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockPowerVS)(nil).CreateInstance), body)
+}
+
+// DeleteDHCPServer mocks base method.
+func (m *MockPowerVS) DeleteDHCPServer(id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDHCPServer", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteDHCPServer indicates an expected call of DeleteDHCPServer.
+func (mr *MockPowerVSMockRecorder) DeleteDHCPServer(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).DeleteDHCPServer), id)
 }
 
 // DeleteImage mocks base method.
@@ -259,4 +289,48 @@ func (m *MockPowerVS) GetJob(id string) (*models.Job, error) {
 func (mr *MockPowerVSMockRecorder) GetJob(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJob", reflect.TypeOf((*MockPowerVS)(nil).GetJob), id)
+}
+
+// GetNetworkByID mocks base method.
+func (m *MockPowerVS) GetNetworkByID(id string) (*models.Network, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNetworkByID", id)
+	ret0, _ := ret[0].(*models.Network)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNetworkByID indicates an expected call of GetNetworkByID.
+func (mr *MockPowerVSMockRecorder) GetNetworkByID(id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByID", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByID), id)
+}
+
+// GetNetworkByName mocks base method.
+func (m *MockPowerVS) GetNetworkByName(networkName string) (*models.NetworkReference, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNetworkByName", networkName)
+	ret0, _ := ret[0].(*models.NetworkReference)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNetworkByName indicates an expected call of GetNetworkByName.
+func (mr *MockPowerVSMockRecorder) GetNetworkByName(networkName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByName", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByName), networkName)
+}
+
+// WithClients mocks base method.
+func (m *MockPowerVS) WithClients(options powervs.ServiceOptions) *powervs.Service {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithClients", options)
+	ret0, _ := ret[0].(*powervs.Service)
+	return ret0
+}
+
+// WithClients indicates an expected call of WithClients.
+func (mr *MockPowerVSMockRecorder) WithClients(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithClients", reflect.TypeOf((*MockPowerVS)(nil).WithClients), options)
 }

@@ -332,7 +332,7 @@ func TestCostructRegionFromZone(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := CostructRegionFromZone(tc.zone)
+			out := ConstructRegionFromZone(tc.zone)
 			require.Equal(t, tc.expectedRegion, out)
 		})
 	}
