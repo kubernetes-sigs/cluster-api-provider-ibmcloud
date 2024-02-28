@@ -528,5 +528,5 @@ func (m *MachineScope) APIServerPort() int32 {
 	if m.Cluster.Spec.ClusterNetwork != nil && m.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
 		return *m.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
-	return 6443
+	return infrav1beta2.DefaultAPIServerPort
 }
