@@ -64,7 +64,7 @@ func (r *IBMVPCMachineTemplateReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	region := endpoints.CostructRegionFromZone(machineTemplate.Spec.Template.Spec.Zone)
+	region := endpoints.ConstructRegionFromZone(machineTemplate.Spec.Template.Spec.Zone)
 
 	// Fetch the service endpoint.
 	svcEndpoint := endpoints.FetchVPCEndpoint(region, r.ServiceEndpoint)

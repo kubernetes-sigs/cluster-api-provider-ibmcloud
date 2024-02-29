@@ -377,16 +377,6 @@ func TestCreateMachinePVS(t *testing.T) {
 			g.Expect(err).To((Not(BeNil())))
 		})
 
-		t.Run("Error when both Network id and name are nil", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), nil, true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To((Not(BeNil())))
-		})
-
 		t.Run("Error when Image id does not exsist", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)

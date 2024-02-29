@@ -280,7 +280,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
-			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(int32(6443)))
+			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(infrav1beta2.DefaultAPIServerPort))
 		})
 	})
 }
@@ -368,7 +368,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
-			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(int32(6443)))
+			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(infrav1beta2.DefaultAPIServerPort))
 		})
 		t.Run("Should successfully reconcile IBMVPCCluster with user supplied port for the apiserver and set cluster status as Ready when LoadBalancer is in active state", func(t *testing.T) {
 			g := NewWithT(t)
@@ -401,7 +401,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 			g.Expect(clusterScope.IBMVPCCluster.Status.Ready).To(Equal(true))
-			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(int32(6443)))
+			g.Expect(clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port).To(Equal(infrav1beta2.DefaultAPIServerPort))
 		})
 		t.Run("Should successfully reconcile IBMVPCCluster and set cluster status as NotReady when LoadBalancer is create state", func(t *testing.T) {
 			g := NewWithT(t)

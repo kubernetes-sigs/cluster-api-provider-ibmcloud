@@ -159,7 +159,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			reconciler := &IBMPowerVSClusterReconciler{
 				Client: testEnv.Client,
 			}
-			_ = reconciler.reconcile(tc.powervsClusterScope)
+			_, _ = reconciler.reconcile(tc.powervsClusterScope)
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
 			g.Expect(tc.powervsClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSClusterFinalizer))
 		})

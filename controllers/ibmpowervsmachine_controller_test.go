@@ -283,6 +283,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 						Finalizers: []string{infrav1beta2.IBMPowerVSMachineFinalizer},
 					},
 				},
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			}
 			_, err := reconciler.reconcileDelete(machineScope)
 			g.Expect(err).To(BeNil())
@@ -304,6 +305,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 						InstanceID: "powervs-instance-id",
 					},
 				},
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			}
 			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(errors.New("Could not delete PowerVS instance"))
 			_, err := reconciler.reconcileDelete(machineScope)
@@ -314,7 +316,20 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
+
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "bootsecret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"value": []byte("user data"),
+				},
+			}
+
+			mockClient := fake.NewClientBuilder().WithObjects([]client.Object{secret}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
+				Client:           mockClient,
 				Logger:           klogr.New(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
@@ -326,7 +341,18 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 						InstanceID: "powervs-instance-id",
 					},
 				},
-				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
+				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				Machine: &capiv1beta1.Machine{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "default",
+					},
+					Spec: capiv1beta1.MachineSpec{
+						Bootstrap: capiv1beta1.Bootstrap{
+							DataSecretName: pointer.String("bootsecret"),
+						},
+					},
+				},
 			}
 			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(nil)
 			_, err := reconciler.reconcileDelete(machineScope)
@@ -528,8 +554,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						Ready: true,
 					},
 				},
-				IBMPowerVSClient: mockpowervs,
-				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				IBMPowerVSClient:  mockpowervs,
+				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			}
 
 			instanceReferences := &models.PVMInstances{

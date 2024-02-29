@@ -554,7 +554,7 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			scope.IBMVPCMachine.Status = vpcMachine.Status
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(&vpcv1.LoadBalancer{}, &core.DetailedResponse{}, errors.New("Could not fetch LoadBalancer"))
-			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(6443))
+			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(infrav1beta2.DefaultAPIServerPort))
 			g.Expect(err).To(Not(BeNil()))
 		})
 		t.Run("Error when LoadBalancer is not active", func(t *testing.T) {
@@ -569,7 +569,7 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 				ProvisioningStatus: core.StringPtr("pending"),
 			}
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
-			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(6443))
+			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(infrav1beta2.DefaultAPIServerPort))
 			g.Expect(err).To(Not(BeNil()))
 		})
 		t.Run("Error when no pool exist", func(t *testing.T) {
@@ -585,7 +585,7 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 				Pools:              []vpcv1.LoadBalancerPoolReference{},
 			}
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
-			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(6443))
+			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(infrav1beta2.DefaultAPIServerPort))
 			g.Expect(err).To(Not(BeNil()))
 		})
 		t.Run("Error when listing LoadBalancerPoolMembers", func(t *testing.T) {
@@ -597,7 +597,7 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 			scope.IBMVPCMachine.Status = vpcMachine.Status
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("Failed to list LoadBalancerPoolMembers"))
-			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(6443))
+			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(infrav1beta2.DefaultAPIServerPort))
 			g.Expect(err).To(Not(BeNil()))
 		})
 		t.Run("PoolMember already exist", func(t *testing.T) {
@@ -610,7 +610,7 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 			loadBalancerPoolMemberCollection := &vpcv1.LoadBalancerPoolMemberCollection{
 				Members: []vpcv1.LoadBalancerPoolMember{
 					{
-						Port: core.Int64Ptr(6443),
+						Port: core.Int64Ptr(int64(infrav1beta2.DefaultAPIServerPort)),
 						Target: &vpcv1.LoadBalancerPoolMemberTarget{
 							Address: core.StringPtr("192.168.1.1"),
 						},
@@ -619,7 +619,7 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 			}
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, &core.DetailedResponse{}, nil)
-			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(6443))
+			_, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(infrav1beta2.DefaultAPIServerPort))
 			g.Expect(err).To(BeNil())
 		})
 		t.Run("Error when creating LoadBalancerPoolMember", func(t *testing.T) {
@@ -642,18 +642,18 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 			scope := setupMachineScope(clusterName, machineName, mockvpc)
 			expectedOutput := &vpcv1.LoadBalancerPoolMember{
 				ID:   core.StringPtr("foo-load-balancer-pool-member-id"),
-				Port: core.Int64Ptr(6443),
+				Port: core.Int64Ptr(int64(infrav1beta2.DefaultAPIServerPort)),
 			}
 			scope.IBMVPCMachine.Spec = vpcMachine.Spec
 			scope.IBMVPCMachine.Status = vpcMachine.Status
 			loadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
 				ID:   core.StringPtr("foo-load-balancer-pool-member-id"),
-				Port: core.Int64Ptr(6443),
+				Port: core.Int64Ptr(int64(infrav1beta2.DefaultAPIServerPort)),
 			}
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
-			out, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(6443))
+			out, err := scope.CreateVPCLoadBalancerPoolMember(&scope.IBMVPCMachine.Status.Addresses[0].Address, int64(infrav1beta2.DefaultAPIServerPort))
 			g.Expect(err).To(BeNil())
 			require.Equal(t, expectedOutput, out)
 		})
@@ -702,7 +702,7 @@ func TestDeleteVPCLoadBalancerPoolMember(t *testing.T) {
 			Members: []vpcv1.LoadBalancerPoolMember{
 				{
 					ID:   core.StringPtr("foo-lb-pool-member-id"),
-					Port: core.Int64Ptr(6443),
+					Port: core.Int64Ptr(int64(infrav1beta2.DefaultAPIServerPort)),
 					Target: &vpcv1.LoadBalancerPoolMemberTarget{
 						Address: core.StringPtr("192.168.1.1"),
 					},
