@@ -14,7 +14,7 @@ require (
 	github.com/IBM/go-sdk-core/v5 v5.15.3
 	github.com/IBM/ibm-cos-sdk-go v1.10.2
 	github.com/IBM/networking-go-sdk v0.44.0
-	github.com/IBM/platform-services-go-sdk v0.59.0
+	github.com/IBM/platform-services-go-sdk v0.59.2
 	github.com/IBM/vpc-go-sdk v0.48.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.17.0
@@ -22,7 +22,7 @@ require (
 	github.com/go-openapi/strfmt v0.22.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/onsi/ginkgo/v2 v2.13.1
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/gomega v1.31.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
