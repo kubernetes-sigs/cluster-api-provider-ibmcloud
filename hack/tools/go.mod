@@ -2,10 +2,10 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.20
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.2
 
 require (
-	github.com/aquasecurity/trivy v0.48.0
+	github.com/aquasecurity/trivy v0.47.0
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/itchyny/gojq v0.12.14
@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v1.0.1
 	gotest.tools/gotestsum v1.11.0
 	k8s.io/code-generator v0.28.4
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240116152609-a150f715f5a6
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240220100102-da795db4c7da
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.13.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.3.0
@@ -78,8 +78,8 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
-	github.com/aquasecurity/defsec v0.93.2-0.20231120220217-6818261529c8 // indirect
-	github.com/aquasecurity/go-dep-parser v0.0.0-20231120074854-8322cc2242bf // indirect
+	github.com/aquasecurity/defsec v0.93.1 // indirect
+	github.com/aquasecurity/go-dep-parser v0.0.0-20231030050624-4548cca9a5c9 // indirect
 	github.com/aquasecurity/go-gem-version v0.0.0-20201115065557-8eed6fe000ce // indirect
 	github.com/aquasecurity/go-npm-version v0.0.0-20201110091526-0b796d180798 // indirect
 	github.com/aquasecurity/go-pep440-version v0.0.0-20210121094942-22b2f8951d46 // indirect
@@ -87,12 +87,9 @@ require (
 	github.com/aquasecurity/loading v0.0.5 // indirect
 	github.com/aquasecurity/table v1.8.0 // indirect
 	github.com/aquasecurity/tml v0.6.1 // indirect
-	github.com/aquasecurity/trivy-aws v0.5.0 // indirect
 	github.com/aquasecurity/trivy-db v0.0.0-20231005141211-4fc651f7ac8d // indirect
-	github.com/aquasecurity/trivy-iac v0.7.0 // indirect
 	github.com/aquasecurity/trivy-java-db v0.0.0-20230209231723-7cddb1406728 // indirect
-	github.com/aquasecurity/trivy-kubernetes v0.5.9-0.20231203080602-50a069120091 // indirect
-	github.com/aquasecurity/trivy-policies v0.6.1-0.20231120231532-f6f2330bf842 // indirect
+	github.com/aquasecurity/trivy-kubernetes v0.5.9-0.20231019164303-dcdfdc50763f // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/ashanbrown/forbidigo v1.6.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
@@ -347,7 +344,6 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
-	github.com/mattn/go-shellwords v1.0.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect
 	github.com/mgechev/revive v1.3.4 // indirect
