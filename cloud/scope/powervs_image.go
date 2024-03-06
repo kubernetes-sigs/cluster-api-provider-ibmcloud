@@ -91,17 +91,18 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	}
 	scope.patchHelper = helper
 
-	rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
-	if err != nil {
-		return nil, err
+	// Create Resource Controller client.
+	var serviceOption resourcecontroller.ServiceOptions
+	// Fetch the resource controller endpoint.
+	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
+	if rcEndpoint != "" {
+		serviceOption.URL = rcEndpoint
+		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
 	}
 
-	// Fetch the resource controller endpoint.
-	if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
-		if err := rc.SetServiceURL(rcEndpoint); err != nil {
-			return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
-		}
-		scope.Logger.V(3).Info("Overriding the default resource controller endpoint")
+	rc, err := resourcecontroller.NewService(serviceOption)
+	if err != nil {
+		return nil, err
 	}
 
 	var serviceInstanceID string

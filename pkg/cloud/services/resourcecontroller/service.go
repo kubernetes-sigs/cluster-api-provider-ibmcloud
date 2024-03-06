@@ -192,11 +192,13 @@ func NewService(options ServiceOptions) (*Service, error) {
 	if options.ResourceControllerV2Options == nil {
 		options.ResourceControllerV2Options = &resourcecontrollerv2.ResourceControllerV2Options{}
 	}
-	auth, err := authenticator.GetAuthenticator()
-	if err != nil {
-		return nil, err
+	if options.Authenticator == nil {
+		auth, err := authenticator.GetAuthenticator()
+		if err != nil {
+			return nil, err
+		}
+		options.Authenticator = auth
 	}
-	options.Authenticator = auth
 	service, err := resourcecontrollerv2.NewResourceControllerV2(options.ResourceControllerV2Options)
 	if err != nil {
 		return nil, err

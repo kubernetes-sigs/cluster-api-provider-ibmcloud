@@ -37,15 +37,19 @@ type Service struct {
 }
 
 // NewService returns a new service for the IBM Cloud Transit Gateway api client.
-func NewService() (TransitGateway, error) {
-	auth, err := authenticator.GetAuthenticator()
-	if err != nil {
-		return nil, err
+func NewService(options *tgapiv1.TransitGatewayApisV1Options) (TransitGateway, error) {
+	if options == nil {
+		options = &tgapiv1.TransitGatewayApisV1Options{}
 	}
-	tgClient, err := tgapiv1.NewTransitGatewayApisV1(&tgapiv1.TransitGatewayApisV1Options{
-		Authenticator: auth,
-		Version:       pointer.String(currentDate),
-	})
+	if options.Authenticator == nil {
+		auth, err := authenticator.GetAuthenticator()
+		if err != nil {
+			return nil, err
+		}
+		options.Authenticator = auth
+	}
+	options.Version = pointer.String(currentDate)
+	tgClient, err := tgapiv1.NewTransitGatewayApisV1(options)
 	if err != nil {
 		return nil, err
 	}
