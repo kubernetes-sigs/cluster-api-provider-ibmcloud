@@ -162,6 +162,8 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	var serviceInstanceID, serviceInstanceName string
 	if params.IBMPowerVSMachine.Spec.ServiceInstanceID != "" {
 		serviceInstanceID = params.IBMPowerVSMachine.Spec.ServiceInstanceID
+	} else if params.IBMPowerVSMachine.Spec.ServiceInstance != nil && params.IBMPowerVSMachine.Spec.ServiceInstance.ID != nil {
+		serviceInstanceID = *params.IBMPowerVSMachine.Spec.ServiceInstance.ID
 	} else {
 		serviceInstanceName = fmt.Sprintf("%s-%s", params.IBMPowerVSCluster.GetName(), "serviceInstance")
 		if params.IBMPowerVSCluster.Spec.ServiceInstance != nil && params.IBMPowerVSCluster.Spec.ServiceInstance.Name != nil {
