@@ -19,7 +19,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.18.0
 	github.com/go-logr/logr v1.4.1
-	github.com/go-openapi/strfmt v0.22.2
+	github.com/go-openapi/strfmt v0.23.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/onsi/ginkgo/v2 v2.13.1
 	github.com/onsi/gomega v1.31.1
@@ -80,7 +80,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/analysis v0.21.5 // indirect
-	github.com/go-openapi/errors v0.21.1 // indirect
+	github.com/go-openapi/errors v0.22.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.1 // indirect
 	github.com/go-openapi/jsonreference v0.20.3 // indirect
 	github.com/go-openapi/loads v0.21.3 // indirect
