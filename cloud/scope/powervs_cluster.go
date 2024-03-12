@@ -1297,7 +1297,7 @@ func (s *PowerVSClusterScope) createLoadBalancer(lb infrav1beta2.VPCLoadBalancer
 	}
 
 	options.SetName(lb.Name)
-	options.SetIsPublic(true)
+	options.SetIsPublic(lb.Public)
 	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
 		ID: &resourceGroupID,
 	})
@@ -1361,7 +1361,7 @@ func (s *PowerVSClusterScope) createLoadBalancer(lb infrav1beta2.VPCLoadBalancer
 		ID:                loadBalancer.ID,
 		State:             lbState,
 		Hostname:          loadBalancer.Hostname,
-		ControllerCreated: pointer.Bool(lb.Public),
+		ControllerCreated: pointer.Bool(true),
 	}, nil
 }
 
