@@ -93,7 +93,7 @@ spec:
                         properties:
                           additionalListeners:
                             description: AdditionalListeners sets the additional listeners
-                              for the control plane load balancer. .
+                              for the control plane load balancer.
                             items:
                               description: AdditionalListenerSpec defines the desired
                                 state of an additional listener on an VPC load balancer.

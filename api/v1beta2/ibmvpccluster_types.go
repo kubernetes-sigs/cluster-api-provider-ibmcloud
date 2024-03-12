@@ -72,7 +72,7 @@ type VPCLoadBalancerSpec struct {
 	// +optional
 	Public bool `json:"public,omitempty"`
 
-	// AdditionalListeners sets the additional listeners for the control plane load balancer. .
+	// AdditionalListeners sets the additional listeners for the control plane load balancer.
 	// +listType=map
 	// +listMapKey=port
 	// +optional
