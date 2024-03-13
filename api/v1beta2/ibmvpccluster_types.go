@@ -70,7 +70,7 @@ type VPCLoadBalancerSpec struct {
 	// public indicates that load balancer is public or private
 	// +kubebuilder:default=true
 	// +optional
-	Public bool `json:"public,omitempty"`
+	Public *bool `json:"public,omitempty"`
 
 	// AdditionalListeners sets the additional listeners for the control plane load balancer.
 	// +listType=map
