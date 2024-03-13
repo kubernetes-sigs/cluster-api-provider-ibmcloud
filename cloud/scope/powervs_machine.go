@@ -921,7 +921,7 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 	if len(m.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
 		loadBalancer := infrav1beta2.VPCLoadBalancerSpec{
 			Name:   fmt.Sprintf("%s-loadbalancer", m.IBMPowerVSCluster.Name),
-			Public: true,
+			Public: pointer.Bool(true),
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}

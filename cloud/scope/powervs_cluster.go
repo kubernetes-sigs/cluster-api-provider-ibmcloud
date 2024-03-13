@@ -439,11 +439,11 @@ func (s *PowerVSClusterScope) PublicLoadBalancer() *infrav1beta2.VPCLoadBalancer
 	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
 		return &infrav1beta2.VPCLoadBalancerSpec{
 			Name:   *s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancer),
-			Public: true,
+			Public: pointer.Bool(true),
 		}
 	}
 	for _, lb := range s.IBMPowerVSCluster.Spec.LoadBalancers {
-		if lb.Public {
+		if lb.Public != nil && *lb.Public {
 			return &lb
 		}
 	}
@@ -1213,7 +1213,7 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancer() error {
 	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
 		loadBalancer := infrav1beta2.VPCLoadBalancerSpec{
 			Name:   *s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancer),
-			Public: true,
+			Public: pointer.Bool(true),
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
@@ -1296,8 +1296,12 @@ func (s *PowerVSClusterScope) createLoadBalancer(lb infrav1beta2.VPCLoadBalancer
 		return nil, fmt.Errorf("error getting resource group id for resource group %v, id is empty", s.ResourceGroup())
 	}
 
+	var isPublic bool
+	if lb.Public != nil && *lb.Public {
+		isPublic = true
+	}
+	options.SetIsPublic(isPublic)
 	options.SetName(lb.Name)
-	options.SetIsPublic(lb.Public)
 	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
 		ID: &resourceGroupID,
 	})
