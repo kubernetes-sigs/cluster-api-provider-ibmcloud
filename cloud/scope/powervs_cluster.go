@@ -28,7 +28,9 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/client/datacenters"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/ibm-cos-sdk-go/aws"
 	"github.com/IBM/ibm-cos-sdk-go/aws/awserr"
+	cosSession "github.com/IBM/ibm-cos-sdk-go/aws/session"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
 	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
@@ -130,7 +132,15 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 
 	// if Spec.ServiceInstanceID is set fetch zone associated with it or else use Spec.Zone.
 	if params.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
-		rc, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
+		// Create Resource Controller client.
+		var serviceOption resourcecontroller.ServiceOptions
+		// Fetch the resource controller endpoint.
+		rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
+		if rcEndpoint != "" {
+			serviceOption.URL = rcEndpoint
+			params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
+		}
+		rc, err := resourcecontroller.NewService(serviceOption)
 		if err != nil {
 			return nil, err
 		}
@@ -138,6 +148,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		// Fetch the resource controller endpoint.
 		if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
 			if err := rc.SetServiceURL(rcEndpoint); err != nil {
+				params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
 				return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
 			}
 		}
@@ -156,6 +167,13 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		options.Zone = *params.IBMPowerVSCluster.Spec.Zone
 	}
 
+	// Fetch the PowerVS service endpoint.
+	powerVSServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), params.ServiceEndpoint)
+	if powerVSServiceEndpoint != "" {
+		params.Logger.V(3).Info("Overriding the default PowerVS endpoint", "powerVSEndpoint", powerVSServiceEndpoint)
+		options.IBMPIOptions.URL = powerVSServiceEndpoint
+	}
+
 	// TODO(karhtik-k-n): may be optimize NewService to use the session created here
 	powerVSClient, err := powervs.NewService(options)
 	if err != nil {
@@ -170,11 +188,15 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 	if err != nil {
 		return nil, fmt.Errorf("error failed to get account details %w", err)
 	}
-	// TODO(Karthik-k-n): Handle dubug and URL options.
+
 	sessionOptions := &ibmpisession.IBMPIOptions{
 		Authenticator: auth,
 		UserAccount:   account,
 		Zone:          options.Zone,
+		Debug:         params.Logger.V(DEBUGLEVEL).Enabled(),
+	}
+	if powerVSServiceEndpoint != "" {
+		sessionOptions.URL = powerVSServiceEndpoint
 	}
 	session, err := ibmpisession.NewIBMPISession(sessionOptions)
 	if err != nil {
@@ -210,13 +232,35 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		return nil, fmt.Errorf("error failed to create IBM VPC client: %w", err)
 	}
 
-	tgClient, err := transitgateway.NewService()
+	// Create TransitGateway client
+	tgOptions := &tgapiv1.TransitGatewayApisV1Options{
+		Authenticator: auth,
+	}
+	// Fetch the TransitGateway service endpoint.
+	tgServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.TransitGateway), params.ServiceEndpoint)
+	if tgServiceEndpoint != "" {
+		params.Logger.V(3).Info("Overriding the default TransitGateway endpoint", "transitGatewayEndpoint", tgServiceEndpoint)
+		tgOptions.URL = tgServiceEndpoint
+	}
+
+	tgClient, err := transitgateway.NewService(tgOptions)
 	if err != nil {
 		return nil, fmt.Errorf("error failed to create tranist gateway client: %w", err)
 	}
 
-	// TODO(karthik-k-n): consider passing auth in options to resource controller
-	resourceClient, err := resourcecontroller.NewService(resourcecontroller.ServiceOptions{})
+	// Create Resource Controller client.
+	serviceOption := resourcecontroller.ServiceOptions{
+		ResourceControllerV2Options: &resourcecontrollerv2.ResourceControllerV2Options{
+			Authenticator: auth,
+		},
+	}
+	// Fetch the resource controller endpoint.
+	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
+	if rcEndpoint != "" {
+		serviceOption.URL = rcEndpoint
+		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
+	}
+	resourceClient, err := resourcecontroller.NewService(serviceOption)
 	if err != nil {
 		return nil, fmt.Errorf("error failed to create resource client: %w", err)
 	}
@@ -298,6 +342,7 @@ func (s *PowerVSClusterScope) GetServiceInstanceID() string {
 
 // SetStatus set the IBMPowerVSCluster status for provided ResourceType.
 func (s *PowerVSClusterScope) SetStatus(resourceType infrav1beta2.ResourceType, resource infrav1beta2.ResourceReference) {
+	s.V(3).Info("Setting status", "resourceType", resourceType, "resource", resource)
 	switch resourceType {
 	case infrav1beta2.ResourceTypeServiceInstance:
 		if s.IBMPowerVSCluster.Status.ServiceInstance == nil {
@@ -1408,9 +1453,34 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance() error {
 	if !ok {
 		return fmt.Errorf("ibmcloud api key is not provided, set %s environmental variable", "IBMCLOUD_API_KEY")
 	}
+	region := s.IBMPowerVSCluster.Spec.CosInstance.BucketRegion
+	// if the bucket region is not set, use vpc region
+	if region == "" {
+		vpcDetails := s.VPC()
+		if vpcDetails == nil || vpcDetails.Region == nil {
+			return fmt.Errorf("failed to determine cos bucket region, both buckeet region and vpc region not set")
+		}
+		region = *vpcDetails.Region
+	}
 
-	// TODO: if bucket region is not set, fetch associated vpc region
-	cosClient, err := cos.NewService(cos.ServiceOptions{}, s.IBMPowerVSCluster.Spec.CosInstance.BucketRegion, apiKey, *cosServiceInstanceStatus.GUID)
+	serviceEndpoint := fmt.Sprintf("s3.%s.%s", region, cosURLDomain)
+	// Fetch the COS service endpoint.
+	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
+	if cosServiceEndpoint != "" {
+		s.Logger.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
+		serviceEndpoint = cosServiceEndpoint
+	}
+
+	cosOptions := cos.ServiceOptions{
+		Options: &cosSession.Options{
+			Config: aws.Config{
+				Endpoint: &serviceEndpoint,
+				Region:   &region,
+			},
+		},
+	}
+
+	cosClient, err := cos.NewService(cosOptions, apiKey, *cosServiceInstanceStatus.GUID)
 	if err != nil {
 		s.Error(err, "error creating cosClient")
 		return fmt.Errorf("failed to create cos client: %w", err)

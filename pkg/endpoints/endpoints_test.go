@@ -262,6 +262,68 @@ func TestFetchRCEndpoint(t *testing.T) {
 	}
 }
 
+func TestFetchEndpoints(t *testing.T) {
+	testCases := []struct {
+		name            string
+		serviceEndpoint []ServiceEndpoint
+		serviceID       string
+		expectedOutput  string
+	}{
+		{
+			name:            "With empty service endpoints",
+			serviceEndpoint: []ServiceEndpoint{},
+			expectedOutput:  "",
+		},
+		{
+			name:      "With invalid service id",
+			serviceID: "abc",
+			serviceEndpoint: []ServiceEndpoint{
+				{
+					ID:     "rc",
+					URL:    "https://rchost:8080",
+					Region: "us-south",
+				},
+			},
+			expectedOutput: "",
+		},
+		{
+			name:      "With service id not preset in service endpoints",
+			serviceID: "powervs",
+			serviceEndpoint: []ServiceEndpoint{
+				{
+					ID:     "rc",
+					URL:    "https://rchost:8080",
+					Region: "us-south",
+				},
+			},
+			expectedOutput: "",
+		},
+		{
+			name:      "With valid service id",
+			serviceID: "rc",
+			serviceEndpoint: []ServiceEndpoint{
+				{
+					ID:     "rc",
+					URL:    "https://rchost:8080",
+					Region: "us-south",
+				},
+				{
+					ID:  "powervs",
+					URL: "https://powervs:8081",
+				},
+			},
+			expectedOutput: "https://rchost:8080",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := FetchEndpoints(tc.serviceID, tc.serviceEndpoint)
+			require.Equal(t, tc.expectedOutput, out)
+		})
+	}
+}
+
 func TestCostructRegionFromZone(t *testing.T) {
 	testCases := []struct {
 		name           string

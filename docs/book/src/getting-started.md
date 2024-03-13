@@ -47,7 +47,7 @@ it into a management cluster using `clusterctl`.
    > `${ServiceRegion1}:${ServiceID1}=${URL1},${ServiceID2}=${URL2};${ServiceRegion2}:${ServiceID1}=${URL1...}`.
    
 
-    Supported ServiceIDs include - `vpc, powervs, rc`
+    Supported ServiceIDs include - `vpc, powervs, rc, cos, transitgateway`
      ```console
       export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
      ```
