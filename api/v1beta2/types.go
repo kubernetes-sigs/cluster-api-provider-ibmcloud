@@ -140,6 +140,22 @@ var (
 	ResourceTypeResourceGroup = ResourceType("resourceGroup")
 )
 
+// CosInstance represents IBM Cloud COS instance.
+type CosInstance struct {
+	// name defines name of IBM cloud COS instance to be created.
+	// when IBMPowerVSCluster.Ignition is set
+	// +kubebuilder:validation:MinLength:=3
+	// +kubebuilder:validation:MaxLength:=63
+	// +kubebuilder:validation:Pattern=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
+	Name string `json:"name,omitempty"`
+
+	// bucketName is IBM cloud COS bucket name
+	BucketName string `json:"bucketName,omitempty"`
+
+	// bucketRegion is IBM cloud COS bucket region
+	BucketRegion string `json:"bucketRegion,omitempty"`
+}
+
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface.
@@ -162,4 +178,24 @@ type VPCEndpoint struct {
 	FIPID *string `json:"floatingIPID,omitempty"`
 	// +optional
 	LBID *string `json:"loadBalancerIPID,omitempty"`
+}
+
+// VPCResourceReference is a reference to a specific VPC resource by ID or Name
+// Only one of ID or Name may be specified. Specifying more than one will result in
+// a validation error.
+type VPCResourceReference struct {
+	// id of resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// name of resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// region of IBM Cloud VPC.
+	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
+	// it is expected to set the region, not setting will result in webhook error.
+	Region *string `json:"region,omitempty"`
 }
