@@ -142,6 +142,21 @@ var (
 	ResourceTypeResourceGroup = ResourceType("resourceGroup")
 )
 
+// COSInstanceReference represents an IBM Cloud COS instance.
+type COSInstanceReference struct {
+	// id is the ID of the COS instance.
+	// +required
+	ID *string `json:"id"`
+
+	// bucketID is the IBM Cloud COS bucket ID.
+	// +optional
+	BucketID *string `json:"bucketID,omitempty"`
+
+	// bucketRegion is IBM Cloud COS bucket region.
+	// +optional
+	BucketRegion *string `json:"bucketRegion,omitempty"`
+}
+
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface.
@@ -164,4 +179,18 @@ type VPCEndpoint struct {
 	FIPID *string `json:"floatingIPID,omitempty"`
 	// +optional
 	LBID *string `json:"loadBalancerIPID,omitempty"`
+}
+
+// VPCResource represents a specific VPC resource.
+// +kubebuilder:validation:XValidation:rule="!has(self.id) && !has(self.name)",message="an id or name must be provided"
+type VPCResource struct {
+	// id of the resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// name of the resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
 }
