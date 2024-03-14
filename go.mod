@@ -11,7 +11,7 @@ replace (
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.6.0
-	github.com/IBM/go-sdk-core/v5 v5.16.0
+	github.com/IBM/go-sdk-core/v5 v5.16.1
 	github.com/IBM/ibm-cos-sdk-go v1.10.2
 	github.com/IBM/networking-go-sdk v0.45.0
 	github.com/IBM/platform-services-go-sdk v0.60.0
@@ -92,7 +92,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.18.0 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
-	github.com/go-yaml/yaml v2.1.0+incompatible // indirect
 	github.com/gobuffalo/flect v1.0.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
