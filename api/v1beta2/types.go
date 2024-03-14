@@ -396,3 +396,17 @@ type VPCEndpoint struct {
 	// +optional
 	LBID *string `json:"loadBalancerIPID,omitempty"`
 }
+
+// VPCResource represents a specific VPC resource.
+// +kubebuilder:validation:XValidation:rule="has(self.id) || has(self.name)",message="an id or name must be provided"
+type VPCResource struct {
+	// id of the resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// name of the resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
+}
