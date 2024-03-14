@@ -285,6 +285,122 @@ spec:
                       private
                     type: boolean
                 type: object
+              cosInstance:
+                description: cosInstance is the IBM COS instance to use for cluster
+                  resources.
+                properties:
+                  name:
+                    type: string
+                required:
+                - name
+                type: object
+              loadbalancers:
+                description: loadBalancers is a set of VPC Load Balancers definition
+                  to use for the cluster.
+                items:
+                  description: VPCLoadBalancerSpec defines the desired state of an
+                    VPC load balancer.
+                  properties:
+                    additionalListeners:
+                      description: AdditionalListeners sets the additional listeners
+                        for the control plane load balancer.
+                      items:
+                        description: |-
+                          AdditionalListenerSpec defines the desired state of an
+                          additional listener on an VPC load balancer.
+                        properties:
+                          port:
+                            description: Port sets the port for the additional listener.
+                            format: int64
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                        required:
+                        - port
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - port
+                      x-kubernetes-list-type: map
+                    id:
+                      description: id of the loadbalancer
+                      type: string
+                    name:
+                      description: Name sets the name of the VPC load balancer.
+                      maxLength: 63
+                      type: string
+                    public:
+                      default: true
+                      description: public indicates that load balancer is public or
+                        private
+                      type: boolean
+                  type: object
+                type: array
+              networkSpec:
+                description: networkSpec represents the VPC network to use for the
+                  cluster.
+                properties:
+                  computeSubnetsSpec:
+                    description: computeSubnetsSpec is a set of Subnet's which define
+                      the Compute subnets.
+                    items:
+                      description: Subnet describes a subnet.
+                      properties:
+                        cidr:
+                          type: string
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        zone:
+                          type: string
+                      type: object
+                    type: array
+                  controlPlaneSubentsSpec:
+                    description: controlPlaneSubnetsSpec is a set of Subnet's which
+                      define the Control Plane subnets.
+                    items:
+                      description: Subnet describes a subnet.
+                      properties:
+                        cidr:
+                          type: string
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        zone:
+                          type: string
+                      type: object
+                    type: array
+                  resourceGroup:
+                    description: |-
+                      resourceGroup is the name of the Resource Group containing all of the newtork resources.
+                      This can be different than the Resource Group containing the remaining cluster resources.
+                    type: string
+                  securityGroups:
+                    description: securityGroups is a set of SecurityGroup's which
+                      define the VPC Security Groups that manage traffic within and
+                      out of the VPC.
+                    items:
+                      description: |-
+                        SecurityGroup dummy.
+                        TODO(cjschaef): Dummy SecurityGroup until it is defined in a common location.
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  vpc:
+                    description: vpc defines the IBM Cloud VPC.
+                    properties:
+                      name:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                type: object
               region:
                 description: The IBM Cloud Region the cluster lives in.
                 type: string
@@ -352,14 +468,135 @@ spec:
                   type: object
                 type: array
               controlPlaneLoadBalancerState:
-                description: ControlPlaneLoadBalancerState is the status of the load
-                  balancer.
+                description: |-
+                  ControlPlaneLoadBalancerState is the status of the load balancer.
+                  dep: rely on NetworkStatus instead.
                 type: string
+              cosInstance:
+                description: COSInstance is the reference to the IBM Cloud COS Instance
+                  used for the cluster.
+                properties:
+                  controllerCreated:
+                    default: false
+                    description: controllerCreated indicates whether the resource
+                      is created by the controller.
+                    type: boolean
+                  id:
+                    description: id represents the id of the resource.
+                    type: string
+                type: object
+              networkStatus:
+                description: networkStatus is the status of the VPC network in its
+                  entirety resources.
+                properties:
+                  computeSubnets:
+                    description: computeSubnets references the VPC Subnets for the
+                      cluster's Data Plane.
+                    items:
+                      description: VPCResourceStatus identifies a resource by crn
+                        and type and whether it was created by the controller.
+                      properties:
+                        crn:
+                          description: crn defines the IBM Cloud CRN of the resource.
+                          type: string
+                      required:
+                      - crn
+                      type: object
+                    type: array
+                  controlPlaneSubnets:
+                    description: controlPlaneSubnets references the VPC Subnets for
+                      the cluster's Control Plane.
+                    items:
+                      description: VPCResourceStatus identifies a resource by crn
+                        and type and whether it was created by the controller.
+                      properties:
+                        crn:
+                          description: crn defines the IBM Cloud CRN of the resource.
+                          type: string
+                      required:
+                      - crn
+                      type: object
+                    type: array
+                  loadBalancers:
+                    description: loadBalancers references the VPC Load Balancer's
+                      for the cluster.
+                    items:
+                      description: VPCLoadBalancerStatus defines the status VPC load
+                        balancer.
+                      properties:
+                        controllerCreated:
+                          default: false
+                          description: controllerCreated indicates whether the resource
+                            is created by the controller.
+                          type: boolean
+                        hostname:
+                          description: hostname is the hostname of load balancer.
+                          type: string
+                        id:
+                          description: id of VPC load balancer.
+                          type: string
+                        state:
+                          description: State is the status of the load balancer.
+                          type: string
+                      type: object
+                    type: array
+                  publicGateways:
+                    description: publicGateways references the VPC Public Gateways
+                      for the cluster.
+                    items:
+                      description: VPCResourceStatus identifies a resource by crn
+                        and type and whether it was created by the controller.
+                      properties:
+                        crn:
+                          description: crn defines the IBM Cloud CRN of the resource.
+                          type: string
+                      required:
+                      - crn
+                      type: object
+                    type: array
+                  securityGroups:
+                    description: securityGroups references the VPC Security Groups
+                      for the cluster.
+                    items:
+                      description: VPCResourceStatus identifies a resource by crn
+                        and type and whether it was created by the controller.
+                      properties:
+                        crn:
+                          description: crn defines the IBM Cloud CRN of the resource.
+                          type: string
+                      required:
+                      - crn
+                      type: object
+                    type: array
+                  vpc:
+                    description: vpc references the IBM Cloud VPC.
+                    properties:
+                      crn:
+                        description: crn defines the IBM Cloud CRN of the resource.
+                        type: string
+                    required:
+                    - crn
+                    type: object
+                type: object
               ready:
-                description: Ready is true when the provider resource is ready.
+                default: false
+                description: ready is true when the provider resource is ready.
                 type: boolean
+              resourceGroupID:
+                description: resourceGroup is the reference to the IBM Cloud VPC resource
+                  group under which the resources will be created.
+                properties:
+                  controllerCreated:
+                    default: false
+                    description: controllerCreated indicates whether the resource
+                      is created by the controller.
+                    type: boolean
+                  id:
+                    description: id represents the id of the resource.
+                    type: string
+                type: object
               subnet:
-                description: Subnet describes a subnet.
+                description: 'dep: rely on NetworkStatus instead.'
                 properties:
                   cidr:
                     type: string
@@ -371,9 +608,7 @@ spec:
                     type: string
                 type: object
               vpc:
-                description: |-
-                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-                  Important: Run "make" to regenerate code after modifying this file
+                description: 'dep: rely on NetworkStatus instead.'
                 properties:
                   id:
                     type: string
@@ -384,7 +619,7 @@ spec:
                 - name
                 type: object
               vpcEndpoint:
-                description: VPCEndpoint describes a VPCEndpoint.
+                description: 'dep: rely on ControlPlaneEndpoint'
                 properties:
                   address:
                     type: string
@@ -397,6 +632,8 @@ spec:
                 required:
                 - address
                 type: object
+            required:
+            - ready
             type: object
         type: object
     served: true
