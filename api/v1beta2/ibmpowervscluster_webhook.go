@@ -133,10 +133,6 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSClusterCreateInfraPrereq() *field.
 		return field.Invalid(field.NewPath("spec.resourceGroup"), r.Spec.ResourceGroup, "value of resource group is empty")
 	}
 
-	if r.Spec.Ignition == nil {
-		return nil
-	}
-
 	// TODO(Phase 1): If ignition is set and these resources are not set, auto create them.
 	// If ignition is set, make sure to check that CosInstanceName, BucketName and region is set
 	if r.Spec.CosInstance == nil {
