@@ -46,8 +46,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2/klogr"
-	"k8s.io/utils/pointer"
+	"k8s.io/klog/v2/textlogger"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -133,7 +133,7 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	scope.IBMPowerVSImage = params.IBMPowerVSImage
 
 	if params.Logger == (logr.Logger{}) {
-		params.Logger = klogr.New()
+		params.Logger = textlogger.NewLogger(textlogger.NewConfig())
 	}
 	if params.Logger.V(DEBUGLEVEL).Enabled() {
 		core.SetLoggingLevel(core.LevelDebug)
@@ -934,10 +934,10 @@ func (m *PowerVSMachineScope) SetProviderID(id *string) {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
 	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
 		if id != nil {
-			m.IBMPowerVSMachine.Spec.ProviderID = pointer.String(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), m.GetServiceInstanceID(), *id))
+			m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), m.GetServiceInstanceID(), *id))
 		}
 	} else {
-		m.IBMPowerVSMachine.Spec.ProviderID = pointer.String(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
+		m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
 	}
 }
 
@@ -957,7 +957,7 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 	if len(m.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
 		loadBalancer := infrav1beta2.VPCLoadBalancerSpec{
 			Name:   fmt.Sprintf("%s-loadbalancer", m.IBMPowerVSCluster.Name),
-			Public: pointer.Bool(true),
+			Public: ptr.To(true),
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}

@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
@@ -101,8 +101,8 @@ var _ = Describe("Workload cluster creation", func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: pointer.Int64(1),
-					WorkerMachineCount:       pointer.Int64(1),
+					ControlPlaneMachineCount: ptr.To(int64(1)),
+					WorkerMachineCount:       ptr.To(int64(1)),
 				},
 				CNIManifestPath:              cniPath,
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -122,8 +122,8 @@ var _ = Describe("Workload cluster creation", func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: pointer.Int64(1),
-					WorkerMachineCount:       pointer.Int64(3),
+					ControlPlaneMachineCount: ptr.To(int64(1)),
+					WorkerMachineCount:       ptr.To(int64(3)),
 				},
 				CNIManifestPath:              cniPath,
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),
@@ -147,8 +147,8 @@ var _ = Describe("Workload cluster creation", func() {
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
 					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
-					ControlPlaneMachineCount: pointer.Int64(3),
-					WorkerMachineCount:       pointer.Int64(1),
+					ControlPlaneMachineCount: ptr.To(int64(3)),
+					WorkerMachineCount:       ptr.To(int64(1)),
 				},
 				CNIManifestPath:              cniPath,
 				WaitForClusterIntervals:      e2eConfig.GetIntervals(specName, "wait-cluster"),

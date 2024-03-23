@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util/defaulting"
 )
 
@@ -38,7 +38,7 @@ func TestIBMPowerVSMachine_default(t *testing.T) {
 			MemoryGiB:  4,
 			Processors: intstr.FromString("0.5"),
 			Image: &IBMPowerVSResourceReference{
-				ID: pointer.String("capi-image"),
+				ID: ptr.To("capi-image"),
 			},
 		},
 	}
@@ -62,8 +62,8 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					SystemType:        "a890",
 					ProcessorType:     "unknown",
 					Network: IBMPowerVSResourceReference{
-						ID:   pointer.String("capi-net-id"),
-						Name: pointer.String("capi-net"),
+						ID:   ptr.To("capi-net-id"),
+						Name: ptr.To("capi-net"),
 					},
 				},
 			},
@@ -77,7 +77,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					SystemType:        "s922",
 					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 				},
 			},
@@ -91,7 +91,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					SystemType:        "s922",
 					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image:    &IBMPowerVSResourceReference{},
 					ImageRef: &corev1.LocalObjectReference{},
@@ -107,11 +107,11 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					SystemType:        "s922",
 					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID:   pointer.String("capi-image-id"),
-						Name: pointer.String("capi-image"),
+						ID:   ptr.To("capi-image-id"),
+						Name: ptr.To("capi-image"),
 					},
 				},
 			},
@@ -125,10 +125,10 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					SystemType:        "s922",
 					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						Name: pointer.String("capi-image"),
+						Name: ptr.To("capi-image"),
 					},
 					Processors: intstr.FromString("two"),
 					MemoryGiB:  int32(-4),
@@ -144,10 +144,10 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					SystemType:        "s922",
 					ProcessorType:     PowerVSProcessorTypeShared,
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 					Processors: intstr.FromString("0.25"),
 					MemoryGiB:  4,
@@ -188,10 +188,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -203,10 +203,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -222,10 +222,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -237,11 +237,11 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
-						ID:   pointer.String("capi-net-ID"),
+						Name: ptr.To("capi-net"),
+						ID:   ptr.To("capi-net-ID"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -257,10 +257,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -272,11 +272,11 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID:   pointer.String("capi-image-id"),
-						Name: pointer.String("capi-image"),
+						ID:   ptr.To("capi-image-id"),
+						Name: ptr.To("capi-image"),
 					},
 				},
 			},
@@ -292,10 +292,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -307,10 +307,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         int32(-8),
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -326,10 +326,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -341,10 +341,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("two"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -360,10 +360,10 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         4,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					Image: &IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image-id"),
+						ID: ptr.To("capi-image-id"),
 					},
 				},
 			},
@@ -375,7 +375,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					MemoryGiB:         8,
 					Processors:        intstr.FromString("0.25"),
 					Network: IBMPowerVSResourceReference{
-						Name: pointer.String("capi-net"),
+						Name: ptr.To("capi-net"),
 					},
 					ImageRef: &corev1.LocalObjectReference{
 						Name: "capi-image",

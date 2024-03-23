@@ -24,8 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/klogr"
-	"k8s.io/utils/pointer"
+	"k8s.io/klog/v2/textlogger"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -178,7 +178,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				Logger: klogr.New(),
+				Logger: textlogger.NewLogger(textlogger.NewConfig()),
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -200,7 +200,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile with requeue by deleting the cluster descendants", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				Logger: klogr.New(),
+				Logger: textlogger.NewLogger(textlogger.NewConfig()),
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -230,9 +230,9 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      pointer.String("capi-image.ova.gz"),
-					Region:      pointer.String("us-south"),
-					Bucket:      pointer.String("capi-bucket"),
+					Object:      ptr.To("capi-image.ova.gz"),
+					Region:      ptr.To("us-south"),
+					Bucket:      ptr.To("capi-bucket"),
 				},
 			}
 			powervsImage2 := &infrav1beta2.IBMPowerVSImage{
@@ -250,9 +250,9 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      pointer.String("capi-image2.ova.gz"),
-					Region:      pointer.String("us-south"),
-					Bucket:      pointer.String("capi-bucket"),
+					Object:      ptr.To("capi-image2.ova.gz"),
+					Region:      ptr.To("us-south"),
+					Bucket:      ptr.To("capi-bucket"),
 				},
 			}
 			createObject(g, powervsImage1, "default")

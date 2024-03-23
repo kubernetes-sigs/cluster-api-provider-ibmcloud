@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestIBMPowerVSCluster_create(t *testing.T) {
@@ -35,7 +35,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID: pointer.String("capi-net-id"),
+						ID: ptr.To("capi-net-id"),
 					},
 				},
 			},
@@ -47,8 +47,8 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID:   pointer.String("capi-net-id"),
-						Name: pointer.String("capi-net"),
+						ID:   ptr.To("capi-net-id"),
+						Name: ptr.To("capi-net"),
 					},
 				},
 			},
@@ -60,9 +60,9 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID:    pointer.String("capi-net-id"),
-						Name:  pointer.String("capi-net"),
-						RegEx: pointer.String("^capi$"),
+						ID:    ptr.To("capi-net-id"),
+						Name:  ptr.To("capi-net"),
+						RegEx: ptr.To("^capi$"),
 					},
 				},
 			},
@@ -98,7 +98,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID: pointer.String("capi-net-id"),
+						ID: ptr.To("capi-net-id"),
 					},
 				},
 			},
@@ -106,7 +106,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID: pointer.String("capi-net-id"),
+						ID: ptr.To("capi-net-id"),
 					},
 				},
 			},
@@ -118,7 +118,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID: pointer.String("capi-net-id"),
+						ID: ptr.To("capi-net-id"),
 					},
 				},
 			},
@@ -126,8 +126,8 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID:   pointer.String("capi-net-id"),
-						Name: pointer.String("capi-net-name"),
+						ID:   ptr.To("capi-net-id"),
+						Name: ptr.To("capi-net-name"),
 					},
 				},
 			},
@@ -139,7 +139,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						RegEx: pointer.String("^capi-net-id$"),
+						RegEx: ptr.To("^capi-net-id$"),
 					},
 				},
 			},
@@ -147,7 +147,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						RegEx: pointer.String("^capi-net-id$"),
+						RegEx: ptr.To("^capi-net-id$"),
 					},
 				},
 			},
@@ -159,7 +159,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID: pointer.String("capi-net-id"),
+						ID: ptr.To("capi-net-id"),
 					},
 				},
 			},
@@ -167,9 +167,9 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: IBMPowerVSClusterSpec{
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
-						ID:    pointer.String("capi-net-id"),
-						Name:  pointer.String("capi-net-name"),
-						RegEx: pointer.String("^capi-net-id$"),
+						ID:    ptr.To("capi-net-id"),
+						Name:  ptr.To("capi-net-name"),
+						RegEx: ptr.To("^capi-net-id$"),
 					},
 				},
 			},

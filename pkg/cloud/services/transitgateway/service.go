@@ -23,7 +23,7 @@ import (
 	"github.com/IBM/go-sdk-core/v5/core"
 	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
@@ -48,7 +48,7 @@ func NewService(options *tgapiv1.TransitGatewayApisV1Options) (TransitGateway, e
 		}
 		options.Authenticator = auth
 	}
-	options.Version = pointer.String(currentDate)
+	options.Version = ptr.To(currentDate)
 	tgClient, err := tgapiv1.NewTransitGatewayApisV1(options)
 	if err != nil {
 		return nil, err
