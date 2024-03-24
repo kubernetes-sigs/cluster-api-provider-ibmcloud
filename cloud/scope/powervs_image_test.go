@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/klogr"
+	"k8s.io/klog/v2/textlogger"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -63,7 +63,7 @@ func setupPowerVSImageScope(imageName string, mockpowervs *mock.MockPowerVS) *Po
 	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &PowerVSImageScope{
 		Client:           client,
-		Logger:           klogr.New(),
+		Logger:           textlogger.NewLogger(textlogger.NewConfig()),
 		IBMPowerVSClient: mockpowervs,
 		IBMPowerVSImage:  powervsImage,
 	}

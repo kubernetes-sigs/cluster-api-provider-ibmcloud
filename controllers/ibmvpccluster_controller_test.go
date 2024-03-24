@@ -28,8 +28,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2/klogr"
-	"k8s.io/utils/pointer"
+	"k8s.io/klog/v2/textlogger"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -91,7 +91,7 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMVPCClusterReconciler{
 				Client: testEnv.Client,
-				Log:    klogr.New(),
+				Log:    textlogger.NewLogger(textlogger.NewConfig()),
 			}
 
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
@@ -154,12 +154,12 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		clusterScope = &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Cluster:      &capiv1beta1.Cluster{},
-			Logger:       klogr.New(),
+			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-cluster",
@@ -202,8 +202,8 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 		})
 		vpclist.Vpcs = []vpcv1.VPC{
 			{
-				Name: pointer.String("capi-vpc"),
-				ID:   pointer.String("capi-vpc-id"),
+				Name: ptr.To("capi-vpc"),
+				ID:   ptr.To("capi-vpc-id"),
 			},
 		}
 		subnetOptions := &vpcv1.ListSubnetsOptions{}
@@ -232,10 +232,10 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 		})
 		subnets.Subnets = []vpcv1.Subnet{
 			{
-				ID:   pointer.String("capi-subnet-id"),
-				Name: pointer.String("vpc-cluster-subnet"),
+				ID:   ptr.To("capi-subnet-id"),
+				Name: ptr.To("vpc-cluster-subnet"),
 				Zone: &vpcv1.ZoneReference{
-					Name: pointer.String("foo"),
+					Name: ptr.To("foo"),
 				},
 			},
 		}
@@ -291,12 +291,12 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		clusterScope := &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Cluster:      &capiv1beta1.Cluster{},
-			Logger:       klogr.New(),
+			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-cluster",
@@ -316,18 +316,18 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 		vpclist := &vpcv1.VPCCollection{
 			Vpcs: []vpcv1.VPC{
 				{
-					Name: pointer.String("capi-vpc"),
-					ID:   pointer.String("capi-vpc-id"),
+					Name: ptr.To("capi-vpc"),
+					ID:   ptr.To("capi-vpc-id"),
 				},
 			},
 		}
 		subnets := &vpcv1.SubnetCollection{
 			Subnets: []vpcv1.Subnet{
 				{
-					ID:   pointer.String("capi-subnet-id"),
-					Name: pointer.String("vpc-cluster-subnet"),
+					ID:   ptr.To("capi-subnet-id"),
+					Name: ptr.To("vpc-cluster-subnet"),
 					Zone: &vpcv1.ZoneReference{
-						Name: pointer.String("foo"),
+						Name: ptr.To("foo"),
 					},
 				},
 			},
@@ -448,18 +448,18 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		clusterScope = &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
-			Logger:       klogr.New(),
+			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Finalizers: []string{infrav1beta2.ClusterFinalizer},
 				},
 				Status: infrav1beta2.IBMVPCClusterStatus{
 					Subnet: infrav1beta2.Subnet{
-						ID: pointer.String("capi-subnet-id"),
+						ID: ptr.To("capi-subnet-id"),
 					},
 					VPC: infrav1beta2.VPC{
 						ID: "capi-vpc-id",
@@ -473,7 +473,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 	}
 
 	listVSIOpts := &vpcv1.ListInstancesOptions{
-		VPCID: pointer.String("capi-vpc-id"),
+		VPCID: ptr.To("capi-vpc-id"),
 	}
 	response := &core.DetailedResponse{}
 	instancelist := &vpcv1.InstanceCollection{}
@@ -491,19 +491,19 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			instancelist.TotalCount = pointer.Int64(2)
+			instancelist.TotalCount = ptr.To(int64(2))
 			mockvpc.EXPECT().ListInstances(listVSIOpts).Return(instancelist, response, nil)
 			_, err := reconciler.reconcileDelete(clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 		})
-		getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{ID: pointer.String("capi-subnet-id")}
+		getPGWOptions := &vpcv1.GetSubnetPublicGatewayOptions{ID: ptr.To("capi-subnet-id")}
 		subnet := &vpcv1.SubnetCollection{Subnets: []vpcv1.Subnet{{ID: core.StringPtr("capi-subnet-id")}}}
-		pgw := &vpcv1.PublicGateway{ID: pointer.String("capi-pgw-id")}
-		unsetPGWOptions := &vpcv1.UnsetSubnetPublicGatewayOptions{ID: pointer.String("capi-subnet-id")}
-		deleteSubnetOptions := &vpcv1.DeleteSubnetOptions{ID: pointer.String("capi-subnet-id")}
+		pgw := &vpcv1.PublicGateway{ID: ptr.To("capi-pgw-id")}
+		unsetPGWOptions := &vpcv1.UnsetSubnetPublicGatewayOptions{ID: ptr.To("capi-subnet-id")}
+		deleteSubnetOptions := &vpcv1.DeleteSubnetOptions{ID: ptr.To("capi-subnet-id")}
 		deletePGWOptions := &vpcv1.DeletePublicGatewayOptions{ID: pgw.ID}
-		instancelist.TotalCount = pointer.Int64(0)
+		instancelist.TotalCount = ptr.To(int64(0))
 		t.Run("Should fail deleting the subnet", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
@@ -518,7 +518,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(clusterScope.IBMVPCCluster.Finalizers).To(ContainElement(infrav1beta2.ClusterFinalizer))
 		})
-		deleteVpcOptions := &vpcv1.DeleteVPCOptions{ID: pointer.String("capi-vpc-id")}
+		deleteVpcOptions := &vpcv1.DeleteVPCOptions{ID: ptr.To("capi-vpc-id")}
 		t.Run("Should fail deleting the VPC", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
@@ -558,11 +558,11 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		clusterScope := &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
-			Logger:       klogr.New(),
+			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Finalizers: []string{infrav1beta2.ClusterFinalizer},
@@ -577,10 +577,10 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 				},
 				Status: infrav1beta2.IBMVPCClusterStatus{
 					VPCEndpoint: infrav1beta2.VPCEndpoint{
-						LBID: pointer.String("vpc-load-balancer-id"),
+						LBID: ptr.To("vpc-load-balancer-id"),
 					},
 					Subnet: infrav1beta2.Subnet{
-						ID: pointer.String("capi-subnet-id"),
+						ID: ptr.To("capi-subnet-id"),
 					},
 					VPC: infrav1beta2.VPC{
 						ID: "capi-vpc-id",

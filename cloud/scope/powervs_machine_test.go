@@ -33,8 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2/klogr"
-	"k8s.io/utils/pointer"
+	"k8s.io/klog/v2/textlogger"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -89,7 +89,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &PowerVSMachineScope{
 		Client:            client,
-		Logger:            klogr.New(),
+		Logger:            textlogger.NewLogger(textlogger.NewConfig()),
 		IBMPowerVSClient:  mockpowervs,
 		Cluster:           cluster,
 		Machine:           machine,
@@ -101,7 +101,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 
 func newPowerVSInstance(name, networkID, mac string) *models.PVMInstance {
 	return &models.PVMInstance{
-		ServerName: pointer.String(name),
+		ServerName: ptr.To(name),
 		Networks: []*models.PVMInstanceNetwork{
 			{
 				NetworkID:  networkID,
@@ -114,9 +114,9 @@ func newPowerVSInstance(name, networkID, mac string) *models.PVMInstance {
 func newDHCPServer(serverID, networkID string) models.DHCPServers {
 	return models.DHCPServers{
 		&models.DHCPServer{
-			ID: pointer.String(serverID),
+			ID: ptr.To(serverID),
 			Network: &models.DHCPServerNetwork{
-				ID: pointer.String(networkID),
+				ID: ptr.To(networkID),
 			},
 		},
 	}
@@ -124,11 +124,11 @@ func newDHCPServer(serverID, networkID string) models.DHCPServers {
 
 func newDHCPServerDetails(serverID, leaseIP, instanceMac string) *models.DHCPServerDetail {
 	return &models.DHCPServerDetail{
-		ID: pointer.String(serverID),
+		ID: ptr.To(serverID),
 		Leases: []*models.DHCPServerLeases{
 			{
-				InstanceIP:         pointer.String(leaseIP),
-				InstanceMacAddress: pointer.String(instanceMac),
+				InstanceIP:         ptr.To(leaseIP),
+				InstanceMacAddress: ptr.To(instanceMac),
 			},
 		},
 	}
@@ -496,7 +496,7 @@ func TestSetAddresses(t *testing.T) {
 						ExternalIP: "10.11.2.3",
 					},
 				},
-				ServerName: pointer.String(instanceName),
+				ServerName: ptr.To(instanceName),
 			},
 			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
 				Type:    corev1.NodeExternalIP,
@@ -516,7 +516,7 @@ func TestSetAddresses(t *testing.T) {
 						IPAddress: "192.168.10.3",
 					},
 				},
-				ServerName: pointer.String(instanceName),
+				ServerName: ptr.To(instanceName),
 			},
 			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
 				Type:    corev1.NodeInternalIP,
@@ -537,7 +537,7 @@ func TestSetAddresses(t *testing.T) {
 						ExternalIP: "10.11.2.3",
 					},
 				},
-				ServerName: pointer.String(instanceName),
+				ServerName: ptr.To(instanceName),
 			},
 			expectedNodeAddress: append(defaultExpectedMachineAddress, []corev1.NodeAddress{
 				{
@@ -559,7 +559,7 @@ func TestSetAddresses(t *testing.T) {
 				return mockPowerVSClient
 			},
 			pvmInstance: &models.PVMInstance{
-				ServerName: pointer.String(instanceName),
+				ServerName: ptr.To(instanceName),
 			},
 			expectedNodeAddress: defaultExpectedMachineAddress,
 			dhcpCacheStoreFunc:  defaultDhcpCacheStoreFunc,
@@ -571,8 +571,8 @@ func TestSetAddresses(t *testing.T) {
 				networks := &models.Networks{
 					Networks: []*models.NetworkReference{
 						{
-							NetworkID: pointer.String("test-ID"),
-							Name:      pointer.String("test-name"),
+							NetworkID: ptr.To("test-ID"),
+							Name:      ptr.To("test-name"),
 						},
 					},
 				}
@@ -713,7 +713,7 @@ func TestSetAddresses(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockPowerVSClient := tc.powerVSClientFunc(ctrl)
-			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", pointer.String("test-image-ID"), &networkID, tc.setNetworkID, mockPowerVSClient)
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", ptr.To("test-image-ID"), &networkID, tc.setNetworkID, mockPowerVSClient)
 			scope.DHCPIPCacheStore = tc.dhcpCacheStoreFunc()
 			scope.SetAddresses(tc.pvmInstance)
 			g.Expect(scope.IBMPowerVSMachine.Status.Addresses).To(Equal(tc.expectedNodeAddress))

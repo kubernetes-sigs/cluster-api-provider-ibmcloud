@@ -9,31 +9,31 @@ providers:
   - name: cluster-api
     type: CoreProvider
     versions:
-    - name: v1.6.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.2/core-components.yaml
+    - name: v1.7.0-beta.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.0-beta.0/core-components.yaml
       type: url
       files:
       - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
   - name: kubeadm
     type: BootstrapProvider
     versions:
-    - name: v1.6.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.2/bootstrap-components.yaml
+    - name: v1.7.0-beta.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.0-beta.0/bootstrap-components.yaml
       type: url
       files:
       - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
   - name: kubeadm
     type: ControlPlaneProvider
     versions:
-    - name: v1.6.2
-      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.6.2/control-plane-components.yaml
+    - name: v1.7.0-beta.0
+      value: https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.7.0-beta.0/control-plane-components.yaml
       type: url
       files:
       - sourcePath: "${PWD}/test/e2e/data/shared/metadata.yaml"
   - name: ibmcloud
     type: InfrastructureProvider
     versions:
-    - name: v0.7.0
+    - name: v0.8.0
       value: "${PWD}/config/default"
       files:
       - sourcePath: "${PWD}/metadata.yaml"

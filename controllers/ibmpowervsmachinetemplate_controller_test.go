@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -192,7 +192,7 @@ func stubPowerVSMachineTemplate(processor intstr.IntOrString, memory int32) *inf
 				Spec: infrav1beta2.IBMPowerVSMachineSpec{
 					ServiceInstanceID: "test_service_instance_id_27",
 					Image: &infrav1beta2.IBMPowerVSResourceReference{
-						ID: pointer.String("capi-image"),
+						ID: ptr.To("capi-image"),
 					},
 					Processors: processor,
 					MemoryGiB:  memory,

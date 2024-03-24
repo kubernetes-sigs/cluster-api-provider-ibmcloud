@@ -26,7 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -120,14 +120,14 @@ func TestIBMVPCMachineTemplateReconciler_reconcileNormal(t *testing.T) {
 		g := NewWithT(tt)
 		var expectedCapacity corev1.ResourceList
 		profileDetails := vpcv1.InstanceProfile{
-			Name: pointer.String("bx2-4x16"),
+			Name: ptr.To("bx2-4x16"),
 			VcpuCount: &vpcv1.InstanceProfileVcpu{
-				Type:  pointer.String("fixed"),
-				Value: pointer.Int64(4),
+				Type:  ptr.To("fixed"),
+				Value: ptr.To(int64(4)),
 			},
 			Memory: &vpcv1.InstanceProfileMemory{
-				Type:  pointer.String("fixed"),
-				Value: pointer.Int64(16),
+				Type:  ptr.To("fixed"),
+				Value: ptr.To(int64(16)),
 			},
 		}
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
@@ -223,7 +223,7 @@ func stubVPCMachineTemplate(profile string) infrav1beta2.IBMVPCMachineTemplate {
 			Template: infrav1beta2.IBMVPCMachineTemplateResource{
 				Spec: infrav1beta2.IBMVPCMachineSpec{
 					Image: &infrav1beta2.IBMVPCResourceReference{
-						ID: pointer.String("capi-image"),
+						ID: ptr.To("capi-image"),
 					},
 					Profile: profile,
 				},

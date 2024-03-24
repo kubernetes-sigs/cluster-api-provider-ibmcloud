@@ -28,8 +28,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2/klogr"
-	"k8s.io/utils/pointer"
+	"k8s.io/klog/v2/textlogger"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -63,9 +63,9 @@ func TestIBMPowerVSImageReconciler_Reconcile(t *testing.T) {
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      pointer.String("capi-image.ova.gz"),
-					Region:      pointer.String("us-south"),
-					Bucket:      pointer.String("capi-bucket"),
+					Object:      ptr.To("capi-image.ova.gz"),
+					Region:      ptr.To("us-south"),
+					Bucket:      ptr.To("capi-bucket"),
 				},
 			},
 			expectError: true,
@@ -151,16 +151,16 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					Name: "capi-powervs-cluster"},
 			}
 			imageScope := &scope.PowerVSImageScope{
-				Logger: klogr.New(),
+				Logger: textlogger.NewLogger(textlogger.NewConfig()),
 				IBMPowerVSImage: &infrav1beta2.IBMPowerVSImage{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-image",
 					},
 					Spec: infrav1beta2.IBMPowerVSImageSpec{
 						ClusterName: "capi-powervs-cluster",
-						Object:      pointer.String("capi-image.ova.gz"),
-						Region:      pointer.String("us-south"),
-						Bucket:      pointer.String("capi-bucket"),
+						Object:      ptr.To("capi-image.ova.gz"),
+						Region:      ptr.To("us-south"),
+						Bucket:      ptr.To("capi-bucket"),
 					},
 				},
 			}
@@ -196,15 +196,15 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      pointer.String("capi-image.ova.gz"),
-					Region:      pointer.String("us-south"),
-					Bucket:      pointer.String("capi-bucket"),
+					Object:      ptr.To("capi-image.ova.gz"),
+					Region:      ptr.To("us-south"),
+					Bucket:      ptr.To("capi-bucket"),
 				},
 			}
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{powervsCluster, powervsImage}...).Build()
 			imageScope := &scope.PowerVSImageScope{
-				Logger:           klogr.New(),
+				Logger:           textlogger.NewLogger(textlogger.NewConfig()),
 				Client:           mockclient,
 				IBMPowerVSImage:  powervsImage,
 				IBMPowerVSClient: mockpowervs,
@@ -219,9 +219,9 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSImageFinalizer))
 			})
 			job := &models.Job{
-				ID: pointer.String(jobID),
+				ID: ptr.To(jobID),
 				Status: &models.Status{
-					State: pointer.String("queued"),
+					State: ptr.To("queued"),
 				},
 			}
 			t.Run("When import job status is queued", func(_ *testing.T) {
@@ -235,7 +235,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When importing image is still in progress", func(_ *testing.T) {
-				job.Status.State = pointer.String("")
+				job.Status.State = ptr.To("")
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				result, err := reconciler.reconcile(powervsCluster, imageScope)
 				g.Expect(err).To(BeNil())
@@ -246,7 +246,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When import job status is failed", func(_ *testing.T) {
-				job.Status.State = pointer.String("failed")
+				job.Status.State = ptr.To("failed")
 				mockpowervs.EXPECT().GetJob(gomock.AssignableToTypeOf("job-1")).Return(job, nil)
 				result, err := reconciler.reconcile(powervsCluster, imageScope)
 				g.Expect(err).To(Not(BeNil()))
@@ -256,12 +256,12 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityError, infrav1beta2.ImageImportFailedReason}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
-			job.Status.State = pointer.String("completed")
+			job.Status.State = ptr.To("completed")
 			images := &models.Images{
 				Images: []*models.ImageReference{
 					{
-						Name:    pointer.String("capi-image"),
-						ImageID: pointer.String("capi-image-id"),
+						Name:    ptr.To("capi-image"),
+						ImageID: ptr.To("capi-image-id"),
 					},
 				},
 			}
@@ -276,8 +276,8 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSImageFinalizer))
 			})
 			image := &models.Image{
-				Name:    pointer.String("capi-image"),
-				ImageID: pointer.String("capi-image-id"),
+				Name:    ptr.To("capi-image"),
+				ImageID: ptr.To("capi-image-id"),
 				State:   "queued",
 			}
 			t.Run("When import job status is completed and image state is queued", func(_ *testing.T) {
@@ -337,7 +337,7 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 			Recorder: recorder,
 		}
 		imageScope = &scope.PowerVSImageScope{
-			Logger:           klogr.New(),
+			Logger:           textlogger.NewLogger(textlogger.NewConfig()),
 			IBMPowerVSImage:  &infrav1beta2.IBMPowerVSImage{},
 			IBMPowerVSClient: mockpowervs,
 		}

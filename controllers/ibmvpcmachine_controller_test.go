@@ -28,8 +28,8 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2/klogr"
-	"k8s.io/utils/pointer"
+	"k8s.io/klog/v2/textlogger"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -154,7 +154,7 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMVPCMachineReconciler{
 				Client: testEnv.Client,
-				Log:    klogr.New(),
+				Log:    textlogger.NewLogger(textlogger.NewConfig()),
 			}
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 			g.Expect(err).To(BeNil())
@@ -223,10 +223,10 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		machineScope = &scope.MachineScope{
-			Logger: klogr.New(),
+			Logger: textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -265,8 +265,8 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			machineScope.Machine.Spec.Bootstrap.DataSecretName = pointer.String("capi-machine")
-			machineScope.IBMVPCCluster.Status.Subnet.ID = pointer.String("capi-subnet-id")
+			machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("capi-machine")
+			machineScope.IBMVPCCluster.Status.Subnet.ID = ptr.To("capi-subnet-id")
 			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, errors.New("Failed to create or fetch instance"))
 			_, err := reconciler.reconcileNormal(machineScope)
 			g.Expect(err).To(Not(BeNil()))
@@ -281,10 +281,10 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		machineScope := &scope.MachineScope{
-			Logger: klogr.New(),
+			Logger: textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -298,7 +298,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				Spec: capiv1beta1.MachineSpec{
 					ClusterName: "vpc-cluster",
 					Bootstrap: capiv1beta1.Bootstrap{
-						DataSecretName: pointer.String("capi-machine"),
+						DataSecretName: ptr.To("capi-machine"),
 					},
 				},
 			},
@@ -310,7 +310,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				},
 				Status: infrav1beta2.IBMVPCClusterStatus{
 					Subnet: infrav1beta2.Subnet{
-						ID: pointer.String("capi-subnet-id"),
+						ID: ptr.To("capi-subnet-id"),
 					},
 					VPCEndpoint: infrav1beta2.VPCEndpoint{
 						LBID: core.StringPtr("vpc-load-balancer-id"),
@@ -327,13 +327,13 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 		instancelist := &vpcv1.InstanceCollection{
 			Instances: []vpcv1.Instance{
 				{
-					Name: pointer.String("capi-machine"),
-					ID:   pointer.String("capi-machine-id"),
+					Name: ptr.To("capi-machine"),
+					ID:   ptr.To("capi-machine-id"),
 					PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
 						PrimaryIP: &vpcv1.ReservedIPReference{
-							Address: pointer.String("192.129.11.50"),
+							Address: ptr.To("192.129.11.50"),
 						},
-						ID: pointer.String("capi-net"),
+						ID: ptr.To("capi-net"),
 					},
 				},
 			},
@@ -355,13 +355,13 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			customInstancelist := &vpcv1.InstanceCollection{
 				Instances: []vpcv1.Instance{
 					{
-						Name: pointer.String("capi-machine"),
-						ID:   pointer.String("capi-machine-id"),
+						Name: ptr.To("capi-machine"),
+						ID:   ptr.To("capi-machine-id"),
 						PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
 							PrimaryIP: &vpcv1.ReservedIPReference{
-								Address: pointer.String("0.0.0.0"),
+								Address: ptr.To("0.0.0.0"),
 							},
-							ID: pointer.String("capi-net"),
+							ID: ptr.To("capi-net"),
 						},
 					},
 				},
@@ -433,10 +433,10 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		machineScope = &scope.MachineScope{
-			Logger: klogr.New(),
+			Logger: textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
@@ -453,7 +453,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 		mockCtrl.Finish()
 	}
 
-	options := &vpcv1.DeleteInstanceOptions{ID: pointer.String("capi-instance-id")}
+	options := &vpcv1.DeleteInstanceOptions{ID: ptr.To("capi-instance-id")}
 	t.Run("Reconciling deleting IBMVPCMachine", func(t *testing.T) {
 		t.Run("Should fail to delete VPC machine", func(t *testing.T) {
 			g := NewWithT(t)
@@ -483,10 +483,10 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    klogr.New(),
+			Log:    textlogger.NewLogger(textlogger.NewConfig()),
 		}
 		machineScope := &scope.MachineScope{
-			Logger: klogr.New(),
+			Logger: textlogger.NewLogger(textlogger.NewConfig()),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
