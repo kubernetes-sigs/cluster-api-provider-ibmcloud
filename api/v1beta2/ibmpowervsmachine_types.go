@@ -41,7 +41,7 @@ const (
 	// PowerVSProcessorTypeCapped enum property to identify a Capped Power VS processor type.
 	PowerVSProcessorTypeCapped PowerVSProcessorType = "Capped"
 	// DefaultIgnitionVersion represents default Ignition version generated for machine userdata.
-	DefaultIgnitionVersion = "2.3"
+	DefaultIgnitionVersion = "2.4"
 )
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.

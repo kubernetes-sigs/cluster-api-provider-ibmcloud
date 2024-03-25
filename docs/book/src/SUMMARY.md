@@ -18,6 +18,7 @@
     - [Creating a cluster with External Cloud Provider](./topics/powervs/external-cloud-provider.md)
     - [Creating a cluster from ClusterClass](./topics/powervs/clusterclass-cluster.md)
     - [Creating a cluster by auto creating required resources](./topics/powervs/create-resources.md)
+    - [Creating a cluster using ignition](./topics/powervs/ignition.md)
     - [Using autoscaler with scaling from 0 machine](./topics/powervs/autoscaler-scalling-from-0.md)
 - [capibmadm CLI](./topics/capibmadm/index.md)
   - [PowerVS Commands](./topics/capibmadm/powervs/index.md)

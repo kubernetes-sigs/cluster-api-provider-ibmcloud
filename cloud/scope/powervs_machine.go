@@ -357,6 +357,41 @@ func (m *PowerVSMachineScope) resolveUserData() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if getIgnitionVersion(m) == "2.4" {
+		var ignData ignV2Types.Config
+		if err := json.Unmarshal(userData, &ignData); err != nil {
+			m.Error(err, "error while unmarshalling ignition data")
+			return "", err
+		}
+
+		// we make use of HTTPHeaders for fetching the ignition data from the COS bucket https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/258630acf8ef19c390b8defc64b4500c16316fe5/cloud/scope/powervs_machine.go#L470-L474
+		// by default cluster api bootstrap controller will create ignition with 2.3.0 version, but that version dont have HTTPHeaders authentication(https://github.com/coreos/ignition/blob/spec2x/doc/configuration-v2_3.md)
+		// So we convert the version to 2.4.0 to make use of HTTPHeaders for authentication(https://github.com/coreos/ignition/blob/spec2x/doc/configuration-v2_4.md)
+		if ignData.Ignition.Version == "2.3.0" {
+			ignData.Ignition.Version = "2.4.0"
+		}
+
+		// TODO(RemoveThis): For debug only
+		//ignData.Passwd = ignV2Types.Passwd{
+		//	Users: []ignV2Types.PasswdUser{
+		//		{
+		//			Name:         "",
+		//			PasswordHash: core.StringPtr(""),
+		//			SSHAuthorizedKeys: []ignV2Types.SSHAuthorizedKey{
+		//				"",
+		//			},
+		//		},
+		//	},
+		//}
+
+		userData, err = json.Marshal(ignData)
+		if err != nil {
+			m.Error(err, "error while marshalling ignition data")
+			return "", err
+		}
+	}
+
 	if m.UseIgnition(userDataFormat) {
 		data, err := m.ignitionUserData(userData)
 		if err != nil {

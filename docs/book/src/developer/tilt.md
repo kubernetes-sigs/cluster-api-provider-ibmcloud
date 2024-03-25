@@ -155,6 +155,25 @@ kustomize_substitutions:
   IBMCLOUD_AUTH_URL: "https://iam.test.cloud.ibm.com"
 ```
 
+### 4.  Configuration to deploy PowerVS workload cluster with ignition
+
+Set ```EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true"``` to update cluster-api bootstrap provider to use ignition format.
+
+```yaml
+default_registry: "gcr.io/you-project-name-here"
+provider_repos:
+- ../cluster-api-provider-ibmcloud
+enable_providers:
+- ibmcloud
+- kubeadm-bootstrap
+- kubeadm-control-plane
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
+  PROVIDER_ID_FORMAT: "v2"
+  EXP_CLUSTER_RESOURCE_SET: "true"
+  EXP_KUBEADM_BOOTSTRAP_FORMAT_IGNITION: "true",
+```
+
 **NOTE**: For information about all the fields that can be used in the `tilt-settings.yaml` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settings-fields).
 
 ## Run Tilt
