@@ -12,8 +12,8 @@ github.com/IBM/networking-go-sdk v0.45.0 h1:tYgDhVDpgKvELNY7tcodbZ4ny9fatpEWM6Pw
 github.com/IBM/networking-go-sdk v0.45.0/go.mod h1:NnJPA1e5GWr5opJe+5Hs6e1G6RcBIFz64TrkZsdnSp8=
 github.com/IBM/platform-services-go-sdk v0.62.0 h1:IA7kerhjqHHCSirXsLveX6Bk6DnUOA7Z9zaMqLZ5iBY=
 github.com/IBM/platform-services-go-sdk v0.62.0/go.mod h1:fd7gUOmsuQYhYLTZVLL+posObT/ISxVV+6JzsfDs5qE=
-github.com/IBM/vpc-go-sdk v0.49.1 h1:VIkZ8iJMBHqBulUXcPtN0ifxsa0xwlBtaLslU2V9HsY=
-github.com/IBM/vpc-go-sdk v0.49.1/go.mod h1:iBg9UJY1y/XpkweyP6YH7G6guzKPV8BYDoBMTdPupH4=
+github.com/IBM/vpc-go-sdk v0.50.0 h1:+vnXYK0FXFXYqaS/5/X1XEqH0bbRotkzkerRk21ZEjE=
+github.com/IBM/vpc-go-sdk v0.50.0/go.mod h1:iBg9UJY1y/XpkweyP6YH7G6guzKPV8BYDoBMTdPupH4=
 github.com/MakeNowJust/heredoc v1.0.0 h1:cXCdzVdstXyiTqTvfqk9SDHpKNjxuom+DOlyEeQ4pzQ=
 github.com/MakeNowJust/heredoc v1.0.0/go.mod h1:mG5amYoWBHf8vpLOuehzbGGw0EHxpZZ6lCpQ4fNJ8LE=
 github.com/Masterminds/goutils v1.1.1 h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=
