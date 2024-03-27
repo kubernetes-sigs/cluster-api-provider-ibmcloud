@@ -51,7 +51,6 @@ import (
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
 type IBMPowerVSClusterReconciler struct {
 	client.Client
-	UncachedClient  client.Client
 	Recorder        record.EventRecorder
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Scheme          *runtime.Scheme
@@ -66,7 +65,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Fetch the IBMPowerVSCluster instance.
 	ibmCluster := &infrav1beta2.IBMPowerVSCluster{}
-	err := r.UncachedClient.Get(ctx, req.NamespacedName, ibmCluster)
+	err := r.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil

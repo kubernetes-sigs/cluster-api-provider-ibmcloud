@@ -34,7 +34,6 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -243,14 +242,8 @@ func setupReconcilers(mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpo
 		os.Exit(1)
 	}
 
-	cfg := ctrl.GetConfigOrDie()
-	uncachedClient, err := client.New(cfg, client.Options{Scheme: mgr.GetScheme(), Mapper: mgr.GetRESTMapper()})
-	if err != nil {
-		setupLog.Error(err, "unable to set up uncached client")
-	}
 	if err := (&controllers.IBMPowerVSClusterReconciler{
 		Client:          mgr.GetClient(),
-		UncachedClient:  uncachedClient,
 		Recorder:        mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
