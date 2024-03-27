@@ -142,7 +142,7 @@ type Ignition struct {
 	// Version defines which version of Ignition will be used to generate bootstrap data.
 	//
 	// +optional
-	// +kubebuilder:default="2.3"
+	// +kubebuilder:default="2.4"
 	// +kubebuilder:validation:Enum="2.3";"2.4";"3.0";"3.1";"3.2";"3.3";"3.4"
 	Version string `json:"version,omitempty"`
 }
