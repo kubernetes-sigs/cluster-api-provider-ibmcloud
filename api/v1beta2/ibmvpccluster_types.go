@@ -54,6 +54,18 @@ type IBMVPCClusterSpec struct {
 	// ControlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
 	// +optional
 	ControlPlaneLoadBalancer *VPCLoadBalancerSpec `json:"controlPlaneLoadBalancer,omitempty"`
+
+	// cosInstance is the IBM COS instance to use for cluster resources.
+	// +optional
+	COSInstance *COSInstance `json:"cosInstance,omitempty"`
+
+	// loadBalancers is a set of VPC Load Balancers definition to use for the cluster.
+	// +optional
+	LoadBalancers []*VPCLoadBalancerSpec `json:"loadbalancers,omitempty"`
+
+	// networkSpec represents the VPC network to use for the cluster.
+	// +optional
+	NetworkSpec *VPCNetworkSpec `json:"networkSpec,omitempty"`
 }
 
 // VPCLoadBalancerSpec defines the desired state of an VPC load balancer.
@@ -103,25 +115,111 @@ type VPCLoadBalancerStatus struct {
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }
 
+// VPCNetworkSpec defines the desired state of the network resources for the cluster.
+type VPCNetworkSpec struct {
+	// computeSubnetsSpec is a set of Subnet's which define the Compute subnets.
+	ComputeSubnetsSpec []Subnet `json:"computeSubnetsSpec,omitempty"`
+
+	// controlPlaneSubnetsSpec is a set of Subnet's which define the Control Plane subnets.
+	ControlPlaneSubnetsSpec []Subnet `json:"controlPlaneSubentsSpec,omitempty"`
+
+	// resourceGroup is the name of the Resource Group containing all of the newtork resources.
+	// This can be different than the Resource Group containing the remaining cluster resources.
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+
+	// securityGroups is a set of SecurityGroup's which define the VPC Security Groups that manage traffic within and out of the VPC.
+	SecurityGroups []SecurityGroup `json:"securityGroups,omitempty"`
+
+	// vpc defines the IBM Cloud VPC.
+	VPC *VPCResource `json:"vpc,omitempty"`
+}
+
+// SecurityGroup dummy.
+// TODO(cjschaef): Dummy SecurityGroup until it is defined in a common location.
+type SecurityGroup struct {
+	Name string `json:"name"`
+}
+
+// COSInstance dummy.
+// TODO(cjschaef): Dummy COSInstance until it is defined in a common location.
+type COSInstance struct {
+	Name string `json:"name"`
+}
+
+// VPCResource dummy.
+// TODO(cjschaef): Dummy VPCResource until it is defined in a common location.
+type VPCResource struct {
+	Name string `json:"name"`
+}
+
 // IBMVPCClusterStatus defines the observed state of IBMVPCCluster.
 type IBMVPCClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	VPC VPC `json:"vpc,omitempty"`
-
-	// Ready is true when the provider resource is ready.
-	// +optional
-	Ready       bool        `json:"ready"`
-	Subnet      Subnet      `json:"subnet,omitempty"`
-	VPCEndpoint VPCEndpoint `json:"vpcEndpoint,omitempty"`
-
-	// ControlPlaneLoadBalancerState is the status of the load balancer.
-	// +optional
-	ControlPlaneLoadBalancerState VPCLoadBalancerState `json:"controlPlaneLoadBalancerState,omitempty"`
 
 	// Conditions defines current service state of the load balancer.
 	// +optional
 	Conditions capiv1beta1.Conditions `json:"conditions,omitempty"`
+
+	// ControlPlaneLoadBalancerState is the status of the load balancer.
+	// dep: rely on NetworkStatus instead.
+	// +optional
+	ControlPlaneLoadBalancerState VPCLoadBalancerState `json:"controlPlaneLoadBalancerState,omitempty"`
+
+	// COSInstance is the reference to the IBM Cloud COS Instance used for the cluster.
+	COSInstance *ResourceReference `json:"cosInstance,omitempty"`
+
+	// networkStatus is the status of the VPC network in its entirety resources.
+	NetworkStatus *VPCNetworkStatus `json:"networkStatus,omitempty"`
+
+	// ready is true when the provider resource is ready.
+	// +kubebuilder:default=false
+	Ready bool `json:"ready"`
+
+	// resourceGroup is the reference to the IBM Cloud VPC resource group under which the resources will be created.
+	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
+
+	// dep: rely on NetworkStatus instead.
+	Subnet Subnet `json:"subnet,omitempty"`
+
+	// dep: rely on NetworkStatus instead.
+	VPC VPC `json:"vpc,omitempty"`
+
+	// dep: rely on ControlPlaneEndpoint
+	VPCEndpoint VPCEndpoint `json:"vpcEndpoint,omitempty"`
+}
+
+// VPCNetworkStatus provides details on the status of VPC network resources.
+type VPCNetworkStatus struct {
+	// computeSubnets references the VPC Subnets for the cluster's Data Plane.
+	// +optional
+	ComputeSubnets []*VPCResourceStatus `json:"computeSubnets,omitempty"`
+
+	// controlPlaneSubnets references the VPC Subnets for the cluster's Control Plane.
+	// +optional
+	ControlPlaneSubnets []*VPCResourceStatus `json:"controlPlaneSubnets,omitempty"`
+
+	// loadBalancers references the VPC Load Balancer's for the cluster.
+	// +optional
+	LoadBalancers []VPCLoadBalancerStatus `json:"loadBalancers,omitempty"`
+
+	// publicGateways references the VPC Public Gateways for the cluster.
+	// +optional
+	PublicGateways []*VPCResourceStatus `json:"publicGateways,omitempty"`
+
+	// securityGroups references the VPC Security Groups for the cluster.
+	// +optional
+	SecurityGroups []*VPCResourceStatus `json:"securityGroups,omitempty"`
+
+	// vpc references the IBM Cloud VPC.
+	// +optional
+	VPC *VPCResourceStatus `json:"vpc,omitempty"`
+}
+
+// VPCResourceStatus identifies a resource by crn and type and whether it was created by the controller.
+type VPCResourceStatus struct {
+	// crn defines the IBM Cloud CRN of the resource.
+	// +required
+	CRN string `json:"crn"`
 }
 
 // VPC holds the VPC information.
