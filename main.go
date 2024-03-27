@@ -34,6 +34,7 @@ import (
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -130,6 +131,13 @@ func main() {
 			Port:    webhookPort,
 			CertDir: webhookCertDir,
 		}),
+		Client: client.Options{
+			Cache: &client.CacheOptions{
+				DisableFor: []client.Object{
+					&infrav1beta2.IBMPowerVSCluster{},
+				},
+			},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

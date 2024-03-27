@@ -300,6 +300,17 @@ func (r *IBMPowerVSClusterReconciler) deleteIBMPowerVSImage(ctx context.Context,
 		return reconcile.Result{}, err
 	}
 
+	// since we are avoiding using cache for IBMPowerVSCluster the Type meta of the retrieved object will be empty
+	// explicitly setting here to filter children
+	if gvk := cluster.GetObjectKind().GroupVersionKind(); gvk.Empty() {
+		gvk, err := r.GroupVersionKindFor(cluster)
+		if err != nil {
+			log.Error(err, "Failed to get GVK of cluster")
+			return reconcile.Result{}, err
+		}
+		cluster.SetGroupVersionKind(gvk)
+	}
+
 	children, err := descendants.filterOwnedDescendants(cluster)
 	if err != nil {
 		log.Error(err, "Failed to extract direct descendants")
