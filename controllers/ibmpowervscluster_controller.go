@@ -51,7 +51,6 @@ import (
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
 type IBMPowerVSClusterReconciler struct {
 	client.Client
-	UncachedClient  client.Client
 	Recorder        record.EventRecorder
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Scheme          *runtime.Scheme
@@ -66,7 +65,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Fetch the IBMPowerVSCluster instance.
 	ibmCluster := &infrav1beta2.IBMPowerVSCluster{}
-	err := r.UncachedClient.Get(ctx, req.NamespacedName, ibmCluster)
+	err := r.Get(ctx, req.NamespacedName, ibmCluster)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -299,6 +298,17 @@ func (r *IBMPowerVSClusterReconciler) deleteIBMPowerVSImage(ctx context.Context,
 	if err != nil {
 		log.Error(err, "Failed to list descendants")
 		return reconcile.Result{}, err
+	}
+
+	// since we are avoiding using cache for IBMPowerVSCluster the Type meta of the retrieved object will be empty
+	// explicitly setting here to filter children
+	if gvk := cluster.GetObjectKind().GroupVersionKind(); gvk.Empty() {
+		gvk, err := r.GroupVersionKindFor(cluster)
+		if err != nil {
+			log.Error(err, "Failed to get GVK of cluster")
+			return reconcile.Result{}, err
+		}
+		cluster.SetGroupVersionKind(gvk)
 	}
 
 	children, err := descendants.filterOwnedDescendants(cluster)
