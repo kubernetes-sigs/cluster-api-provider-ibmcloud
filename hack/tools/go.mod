@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.20
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.2
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.6.3
 
 require (
 	github.com/aquasecurity/trivy v0.47.0
@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v1.0.1
 	gotest.tools/gotestsum v1.11.0
 	k8s.io/code-generator v0.28.4
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240220100102-da795db4c7da
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240312120258-965ffa1d9423
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.13.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.3.0
@@ -499,7 +499,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231030173426-d783a09b4405 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/evanphx/json-patch.v5 v5.6.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
