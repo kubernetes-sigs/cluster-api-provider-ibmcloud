@@ -16,6 +16,8 @@ limitations under the License.
 
 package v1beta2
 
+import "github.com/IBM/vpc-go-sdk/vpcv1"
+
 // DefaultAPIServerPort is defuault API server port number.
 const DefaultAPIServerPort int32 = 6443
 
@@ -188,10 +190,193 @@ var (
 	ResourceTypeResourceGroup = ResourceType("resourceGroup")
 )
 
+// SecurityGroupRuleAction represents the actions for a Security Group Rule.
+// +kubebuilder:validation:Enum=allow;deny
+type SecurityGroupRuleAction string
+
+const (
+	// SecurityGroupRuleActionAllow defines that the Rule should allow traffic.
+	SecurityGroupRuleActionAllow SecurityGroupRuleAction = vpcv1.NetworkACLRuleActionAllowConst
+	// SecurityGroupRuleActionDeny defines that the Rule should deny traffic.
+	SecurityGroupRuleActionDeny SecurityGroupRuleAction = vpcv1.NetworkACLRuleActionDenyConst
+)
+
+// SecurityGroupRuleDirection represents the directions for a Security Group Rule.
+// +kubebuilder:validation:Enum=inbound;outbound
+type SecurityGroupRuleDirection string
+
+const (
+	// SecurityGroupRuleDirectionInbound defines the Rule is for inbound traffic.
+	SecurityGroupRuleDirectionInbound SecurityGroupRuleDirection = vpcv1.NetworkACLRuleDirectionInboundConst
+	// SecurityGroupRuleDirectionOutbound defines the Rule is for outbound traffic.
+	SecurityGroupRuleDirectionOutbound SecurityGroupRuleDirection = vpcv1.NetworkACLRuleDirectionOutboundConst
+)
+
+// SecurityGroupRuleProtocol represents the protocols for a Security Group Rule.
+// +kubebuilder:validation:Enum=all;icmp;tcp;udp
+type SecurityGroupRuleProtocol string
+
+const (
+	// SecurityGroupRuleProtocolAll defines the Rule is for all network protocols.
+	SecurityGroupRuleProtocolAll SecurityGroupRuleProtocol = vpcv1.NetworkACLRuleProtocolAllConst
+	// SecurityGroupRuleProtocolIcmp defiens the Rule is for ICMP network protocol.
+	SecurityGroupRuleProtocolIcmp SecurityGroupRuleProtocol = vpcv1.NetworkACLRuleProtocolIcmpConst
+	// SecurityGroupRuleProtocolTCP defines the Rule is for TCP network protocol.
+	SecurityGroupRuleProtocolTCP SecurityGroupRuleProtocol = vpcv1.NetworkACLRuleProtocolTCPConst
+	// SecurityGroupRuleProtocolUDP defines the Rule is for UDP network protocol.
+	SecurityGroupRuleProtocolUDP SecurityGroupRuleProtocol = vpcv1.NetworkACLRuleProtocolUDPConst
+)
+
+// SecurityGroupRuleRemoteType represents the type of Security Group Rule's destination or source is
+// intended. This is intended to define the SecurityGroupRulePrototype subtype.
+// For example:
+// - any - Any source or destination (0.0.0.0/0)
+// - cidr - A CIDR representing a set of IP's (10.0.0.0/28)
+// - ip - A specific IP address (192.168.0.1)
+// - sg - A Security Group.
+// +kubebuilder:validation:Enum=any;cidr;ip;sg
+type SecurityGroupRuleRemoteType string
+
+const (
+	// SecurityGroupRuleRemoteTypeAny defines the destination or source for the Rule is anything/anywhere.
+	SecurityGroupRuleRemoteTypeAny SecurityGroupRuleRemoteType = SecurityGroupRuleRemoteType("any")
+	// SecurityGroupRuleRemoteTypeCIDR defines the destination or source for the Rule is a CIDR block.
+	SecurityGroupRuleRemoteTypeCIDR SecurityGroupRuleRemoteType = SecurityGroupRuleRemoteType("cidr")
+	// SecurityGroupRuleRemoteTypeIP defines the destination or source for the Rule is an IP address.
+	SecurityGroupRuleRemoteTypeIP SecurityGroupRuleRemoteType = SecurityGroupRuleRemoteType("ip")
+	// SecurityGroupRuleRemoteTypeSG defines the destination or source for the Rule is a VPC Security Group.
+	SecurityGroupRuleRemoteTypeSG SecurityGroupRuleRemoteType = SecurityGroupRuleRemoteType("sg")
+)
+
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {
 	// Subnet ID of the network interface.
 	Subnet string `json:"subnet,omitempty"`
+}
+
+// PortRange represents a range of ports, minimum to maximum.
+// +kubebuilder:validation:XValidation:rule="self.maximumPort >= self.minimumPort",message="maximum port must be greater than or equal to minimum port"
+type PortRange struct {
+	// maximumPort is the inclusive upper range of ports.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	MaximumPort int `json:"maximumPort,omitempty"`
+
+	// minimumPort is the inclusive lower range of ports.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	MinimumPort int `json:"minimumPort,omitempty"`
+}
+
+// SecurityGroup defines a VPC Security Group that should exist or be created within the specified VPC, with the specified Security Group Rules.
+// +kubebuilder:validation:XValidation:rule="!has(self.id) && !has(self.name)",message="either an id or name must be specified"
+type SecurityGroup struct {
+	// id of the Security Group.
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// name of the Security Group.
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// resourceGroup of the Security Group.
+	// +optional
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+
+	// rules are the Security Group Rules for the Security Group.
+	// +optional
+	Rules []*SecurityGroupRule `json:"rules,omitempty"`
+
+	// tags are tags to add to the Security Group.
+	// +optional
+	Tags []*string `json:"tags,omitempty"`
+
+	// vpc is the IBM Cloud VPC for the Security Group.
+	// +optional
+	VPC *VPCResourceReference `json:"vpc,omitempty"`
+}
+
+// SecurityGroupRule defines a VPC Security Group Rule for a specified Security Group.
+// +kubebuilder:validation:XValidation:rule="(has(self.destination) && !has(self.source)) || (!has(self.destination) && has(self.source))",message="both destination and source cannot be provided"
+// +kubebuilder:validation:XValidation:rule="has(self.destination) && self.direction == 'inbound'",message="destinationis not valid for SecurityGroupRuleDirectionInbound direction"
+// +kubebuilder:validation:XValidation:rule="has(self.source) && self.direction == 'outbound'",message="source is not valid for SecurityGroupRuleDirectionOutbound direction"
+type SecurityGroupRule struct {
+	// action defines whether to allow or deny traffic defined by the Security Group Rule.
+	// +required
+	Action SecurityGroupRuleAction `json:"action"`
+
+	// destination is a SecurityGroupRulePrototype which defines the destination of outbound traffic for the Security Group Rule.
+	// Only used when direction is SecurityGroupRuleDirectionOutbound.
+	// +optional
+	Destination *SecurityGroupRulePrototype `json:"destination,omitempty"`
+
+	// direction defines whether the traffic is inbound or outbound for the Security Group Rule.
+	// +required
+	Direction SecurityGroupRuleDirection `json:"direction"`
+
+	// securityGroupID is the ID of the Security Group for the Security Group Rule.
+	// +optional
+	SecurityGroupID *string `json:"securityGroupID,omitempty"`
+
+	// source is a SecurityGroupRulePrototype which defines the source of inbound traffic for the Security Group Rule.
+	// Only used when direction is SecurityGroupRuleDirectionInbound.
+	// +optional
+	Source *SecurityGroupRulePrototype `json:"source,omitempty"`
+}
+
+// SecurityGroupRuleRemote defines a VPC Security Group Rule's remote details.
+// The type of remote defines the additional remote details where are used for defining the remote.
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'any' && (has(self.cidrSubnetName) || has(self.ip) || has(self.securityGroupName))",message="cidrSubnetName, ip, and securityGroupName are not valid for SecurityGroupRuleRemoteTypeAny remoteType"
+// +kubebuilder:validation:XValidation:rule="has(self.cidrSubnetName) && self.remoteType != 'cidr'",message="cidrSubnetName is only valid for SecurityGroupRuleRemoteTypeCIDR remoteType"
+// +kubebuilder:validation:XValidation:rule="has(self.ip) && self.remoteType != 'ip'",message="ip is only valid for SecurityGroupRuleRemoteTypeIP remoteType"
+// +kubebuilder:validation:XValidation:rule="has(self.securityGroupName) && self.remoteType != 'sg'",message="securityGroupName is only valid for SecurityGroupRuleRemoteTypeSG remoteType"
+type SecurityGroupRuleRemote struct {
+	// cidrSubnetName is the name of the VPC Subnet to retrieve the CIDR from, to use for the remote's destination/source.
+	// Only used when remoteType is SecurityGroupRuleRemoteTypeCIDR.
+	// +optional
+	CIDRSubnetName *string `json:"cidrSubnetName,omitempty"`
+
+	// ip is the IP to use for the remote's destination/source.
+	// Only used when remoteType is SecurityGroupRuleRemoteTypeIP.
+	// +optional
+	IP *string `json:"ip,omitempty"`
+
+	// remoteType defines the type of filter to define for the remote's destination/source.
+	// +required
+	RemoteType SecurityGroupRuleRemoteType `json:"remoteType"`
+
+	// securityGroupName is the name of the VPC Security Group to use for the remote's destination/source.
+	// Only used when remoteType is SecurityGroupRuleRemoteTypeSG
+	// +optional
+	SecurityGroupName *string `json:"securityGroupName,omitempty"`
+}
+
+// SecurityGroupRulePrototype defines a VPC Security Group Rule's traffic specifics for a series of remotes (destinations or sources).
+// +kubebuilder:validation:XValidation:rule="self.protocol != 'icmp' && (has(self.icmpCode) || has(self.icmpType))",message="icmpCode and icmpType are only supported for the ICMP protocol"
+// +kubebuilder:validation:XValidation:rule="self.protocol == 'all' && has(self.portRange)",message="portRange is not valid for SecurityGroupRuleProtocolAll protocol"
+type SecurityGroupRulePrototype struct {
+	// icmpCode is the ICMP code for the Rule.
+	// Only used when Protocol is SecurityGroupProtocolICMP.
+	// +optional
+	ICMPCode *string `json:"icmpCode,omitempty"`
+
+	// icmpType is the ICMP type for the Rule.
+	// Only used when Protocol is SecurityGroupProtocolICMP.
+	// +optional
+	ICMPType *string `json:"icmpType,omitempty"`
+
+	// portRange is a range of ports allowed for the Rule's remote.
+	// +optional
+	PortRange *PortRange `json:"portRange,omitempty"`
+
+	// protocol defines the traffic protocol used for the Security Group Rule.
+	// +required
+	Protocol SecurityGroupRuleProtocol `json:"protocol"`
+
+	// remotes is a set of SecurityGroupRuleRemote's that define the traffic allowed by the Rule's remote.
+	// Specifying multiple SecurityGroupRuleRemote's creates a unique Security Group Rule with the shared Protocol, PortRange, etc.
+	// This allows for easier management of Security Group Rule's for sets of CIDR's, IP's, etc.
+	Remotes []SecurityGroupRuleRemote `json:"remotes"`
 }
 
 // Subnet describes a subnet.
