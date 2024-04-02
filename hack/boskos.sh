@@ -33,20 +33,24 @@ release_account(){
 }
 
 checkout_account(){
+    if [[ $- =~ x ]]; then
+        set +x
+    fi
     resource_type=$1
     url="http://${BOSKOS_HOST}/acquire?type=${resource_type}&state=free&dest=busy&owner=${USER}"
-    output=$(curl -X POST ${url})
+    curl -X POST ${url} -o output.json
     [ $? = 0 ] && status_code=200
 
     if [[ ${status_code} == 200 ]]; then
-        echo "export BOSKOS_RESOURCE_NAME=$(echo ${output} | jq -r '.name')"
-        echo "export IBMCLOUD_API_KEY=$(echo ${output} | jq -r '.userdata["api-key"]')"
-        echo "export BOSKOS_RESOURCE_GROUP=$(echo ${output} | jq -r '.userdata["resource-group"]')"
-        echo "export BOSKOS_REGION=$(echo ${output} | jq -r '.userdata["region"]')"
+        export BOSKOS_RESOURCE_NAME=$(jq -r '.name' < output.json)
+        export IBMCLOUD_API_KEY=$(jq -r '.userdata["api-key"]' < output.json)
+        export BOSKOS_RESOURCE_GROUP=$(jq -r '.userdata["resource-group"]' < output.json)
+        export BOSKOS_REGION=$(jq -r '.userdata["region"]' < output.json)
         if [[ ${resource_type} == "powervs-service" ]]; then
-            echo "export BOSKOS_RESOURCE_ID=$(echo ${output} | jq -r '.userdata["service-instance-id"]')"
-             echo "export BOSKOS_ZONE=$(echo ${output} | jq -r '.userdata["zone"]')"
+            export BOSKOS_RESOURCE_ID=$(jq -r '.userdata["service-instance-id"]' < output.json)
+            export BOSKOS_ZONE=$(jq -r '.userdata["zone"]' < output.json)
         fi
+        rm -rf output.json
     else
         echo "Got invalid response- ${status_code}"
         exit 1
