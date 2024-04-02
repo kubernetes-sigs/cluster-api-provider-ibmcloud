@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.21
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.7.0-beta.1
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.7.0-rc.0
 
 require (
 	github.com/aquasecurity/trivy v0.48.3
@@ -15,7 +15,7 @@ require (
 	golang.org/x/vuln v1.0.4
 	gotest.tools/gotestsum v1.11.0
 	k8s.io/code-generator v0.29.3
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240326170919-852e7884f8fe
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240402171010-6e6ef9539065
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.14.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.3.0
@@ -270,7 +270,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.2 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
 	github.com/gordonklaus/ineffassign v0.1.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
@@ -500,11 +500,11 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.19.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
-	google.golang.org/api v0.170.0 // indirect
+	google.golang.org/api v0.172.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240304161311-37d4d3c04a78 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240311132316-a219d84964c2 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
