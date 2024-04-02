@@ -18,8 +18,6 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-set -x
-
 docker network create \
   --ipv6 \
   --subnet=fc00:f853:ccd:e793::/64 \
