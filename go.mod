@@ -1,4 +1,4 @@
-module sigs.k8s.io/cluster-api-provider-ibmcloud
+module github.com/hamzy/cluster-api-provider-ibmcloud
 
 go 1.21
 
