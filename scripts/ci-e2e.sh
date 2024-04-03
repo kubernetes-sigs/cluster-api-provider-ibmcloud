@@ -142,7 +142,7 @@ prerequisites_vpc(){
     export PROVIDER_ID_FORMAT=v2
     export EXP_CLUSTER_RESOURCE_SET=true
     export IBMACCOUNT_ID=${IBMACCOUNT_ID:-"7cfbd5381a434af7a09289e795840d4e"}
-    export BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64)
+    export BASE64_API_KEY=$(tr -d '\n' <<<"$IBMCLOUD_API_KEY" | base64)
 }
 
 main(){
@@ -198,6 +198,10 @@ main(){
     # If Boskos is being used then release the IBM Cloud resource back to Boskos.
     [ -z "${BOSKOS_HOST:-}" ] || release_account >> "$ARTIFACTS/logs/boskos.log" 2>&1
 }
+
+if [[ $- =~ x ]]; then
+    set +x
+fi
 
 main "$@"
 exit "${test_status}"
