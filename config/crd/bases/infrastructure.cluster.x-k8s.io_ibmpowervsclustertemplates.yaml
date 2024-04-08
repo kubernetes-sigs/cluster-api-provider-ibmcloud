@@ -325,6 +325,7 @@ spec:
                             name:
                               description: Name sets the name of the VPC load balancer.
                               maxLength: 63
+                              pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                               type: string
                             public:
                               default: true
@@ -444,7 +445,9 @@ spec:
                             type: string
                           name:
                             description: name of resource.
+                            maxLength: 63
                             minLength: 1
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           region:
                             description: |-
@@ -470,6 +473,8 @@ spec:
                             id:
                               type: string
                             name:
+                              maxLength: 63
+                              pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                               type: string
                             zone:
                               type: string

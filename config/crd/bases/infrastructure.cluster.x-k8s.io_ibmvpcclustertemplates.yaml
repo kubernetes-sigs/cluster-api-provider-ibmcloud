@@ -127,6 +127,7 @@ spec:
                           name:
                             description: Name sets the name of the VPC load balancer.
                             maxLength: 63
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           public:
                             default: true

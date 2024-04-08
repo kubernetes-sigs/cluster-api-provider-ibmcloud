@@ -261,6 +261,8 @@ type VPCResourceReference struct {
 
 	// name of resource.
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength:=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
 	// +optional
 	Name *string `json:"name,omitempty"`
 

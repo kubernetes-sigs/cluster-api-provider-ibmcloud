@@ -382,9 +382,11 @@ type SecurityGroupRulePrototype struct {
 // Subnet describes a subnet.
 type Subnet struct {
 	Ipv4CidrBlock *string `json:"cidr,omitempty"`
-	Name          *string `json:"name,omitempty"`
-	ID            *string `json:"id,omitempty"`
-	Zone          *string `json:"zone,omitempty"`
+	// +kubebuilder:validation:MaxLength:=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	Name *string `json:"name,omitempty"`
+	ID   *string `json:"id,omitempty"`
+	Zone *string `json:"zone,omitempty"`
 }
 
 // VPCEndpoint describes a VPCEndpoint.
