@@ -259,6 +259,8 @@ spec:
                           name:
                             description: Optional name of DHCP Service. Only alphanumeric
                               characters and dashes are allowed.
+                            maxLength: 63
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           snat:
                             default: true
@@ -351,7 +353,9 @@ spec:
                             type: string
                           name:
                             description: Name of resource
+                            maxLength: 63
                             minLength: 1
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -373,7 +377,9 @@ spec:
                             type: string
                           name:
                             description: Name of resource
+                            maxLength: 63
                             minLength: 1
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -401,7 +407,9 @@ spec:
                             type: string
                           name:
                             description: Name of resource
+                            maxLength: 63
                             minLength: 1
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -428,6 +436,8 @@ spec:
                             type: string
                           name:
                             description: name of resource.
+                            maxLength: 63
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                         type: object
                       vpc:
