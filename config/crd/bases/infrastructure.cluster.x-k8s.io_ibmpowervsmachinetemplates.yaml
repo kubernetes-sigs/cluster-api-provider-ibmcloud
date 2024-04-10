@@ -205,9 +205,7 @@ spec:
                             type: string
                           name:
                             description: Name of resource
-                            maxLength: 63
                             minLength: 1
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -252,9 +250,7 @@ spec:
                             type: string
                           name:
                             description: Name of resource
-                            maxLength: 63
                             minLength: 1
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -317,9 +313,7 @@ spec:
                             type: string
                           name:
                             description: Name of resource
-                            maxLength: 63
                             minLength: 1
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-

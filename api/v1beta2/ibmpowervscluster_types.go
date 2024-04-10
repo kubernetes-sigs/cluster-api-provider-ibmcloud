@@ -157,8 +157,6 @@ type DHCPServer struct {
 	DNSServer *string `json:"dnsServer,omitempty"`
 
 	// Optional name of DHCP Service. Only alphanumeric characters and dashes are allowed.
-	// +kubebuilder:validation:MaxLength:=63
-	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
 	Name *string `json:"name,omitempty"`
 
 	// Optional id of the existing DHCPServer
@@ -245,8 +243,9 @@ type IBMPowerVSClusterList struct {
 // TransitGateway holds the TransitGateway information.
 type TransitGateway struct {
 	// name of resource.
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength:=63
-	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +kubebuilder:validation:Pattern=`^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$`
 	// +optional
 	Name *string `json:"name,omitempty"`
 	// id of resource.
@@ -260,6 +259,8 @@ type TransitGateway struct {
 type VPCResourceReference struct {
 	// id of resource.
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength:=64
+	// +kubebuilder:validation:Pattern=`^[-0-9a-z_]+$`
 	// +optional
 	ID *string `json:"id,omitempty"`
 

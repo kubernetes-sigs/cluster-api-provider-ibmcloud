@@ -382,9 +382,13 @@ type SecurityGroupRulePrototype struct {
 // Subnet describes a subnet.
 type Subnet struct {
 	Ipv4CidrBlock *string `json:"cidr,omitempty"`
+	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength:=63
 	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
 	Name *string `json:"name,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength:=64
+	// +kubebuilder:validation:Pattern=`^[-0-9a-z_]+$`
 	ID   *string `json:"id,omitempty"`
 	Zone *string `json:"zone,omitempty"`
 }

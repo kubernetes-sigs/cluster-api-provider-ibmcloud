@@ -259,8 +259,6 @@ spec:
                           name:
                             description: Optional name of DHCP Service. Only alphanumeric
                               characters and dashes are allowed.
-                            maxLength: 63
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           snat:
                             default: true
@@ -323,10 +321,14 @@ spec:
                               x-kubernetes-list-type: map
                             id:
                               description: id of the loadbalancer
+                              maxLength: 64
+                              minLength: 1
+                              pattern: ^[-0-9a-z_]+$
                               type: string
                             name:
                               description: Name sets the name of the VPC load balancer.
                               maxLength: 63
+                              minLength: 1
                               pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                               type: string
                             public:
@@ -353,9 +355,7 @@ spec:
                             type: string
                           name:
                             description: Name of resource
-                            maxLength: 63
                             minLength: 1
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -377,9 +377,7 @@ spec:
                             type: string
                           name:
                             description: Name of resource
-                            maxLength: 63
                             minLength: 1
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -407,9 +405,7 @@ spec:
                             type: string
                           name:
                             description: Name of resource
-                            maxLength: 63
                             minLength: 1
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                             type: string
                           regex:
                             description: |-
@@ -437,7 +433,8 @@ spec:
                           name:
                             description: name of resource.
                             maxLength: 63
-                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                            minLength: 1
+                            pattern: ^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$
                             type: string
                         type: object
                       vpc:
@@ -451,7 +448,9 @@ spec:
                         properties:
                           id:
                             description: id of resource.
+                            maxLength: 64
                             minLength: 1
+                            pattern: ^[-0-9a-z_]+$
                             type: string
                           name:
                             description: name of resource.
@@ -481,9 +480,13 @@ spec:
                             cidr:
                               type: string
                             id:
+                              maxLength: 64
+                              minLength: 1
+                              pattern: ^[-0-9a-z_]+$
                               type: string
                             name:
                               maxLength: 63
+                              minLength: 1
                               pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                               type: string
                             zone:
