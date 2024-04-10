@@ -269,7 +269,7 @@ type PortRange struct {
 }
 
 // SecurityGroup defines a VPC Security Group that should exist or be created within the specified VPC, with the specified Security Group Rules.
-// +kubebuilder:validation:XValidation:rule="!has(self.id) && !has(self.name)",message="either an id or name must be specified"
+// +kubebuilder:validation:XValidation:rule="has(self.id) || has(self.name)",message="either an id or name must be specified"
 type SecurityGroup struct {
 	// id of the Security Group.
 	// +optional
@@ -298,8 +298,10 @@ type SecurityGroup struct {
 
 // SecurityGroupRule defines a VPC Security Group Rule for a specified Security Group.
 // +kubebuilder:validation:XValidation:rule="(has(self.destination) && !has(self.source)) || (!has(self.destination) && has(self.source))",message="both destination and source cannot be provided"
-// +kubebuilder:validation:XValidation:rule="has(self.destination) && self.direction == 'inbound'",message="destinationis not valid for SecurityGroupRuleDirectionInbound direction"
-// +kubebuilder:validation:XValidation:rule="has(self.source) && self.direction == 'outbound'",message="source is not valid for SecurityGroupRuleDirectionOutbound direction"
+// +kubebuilder:validation:XValidation:rule="self.direction == 'inbound' ? has(self.source) : true",message="source must be set for SecurityGroupRuleDirectionInbound direction"
+// +kubebuilder:validation:XValidation:rule="self.direction == 'inbound' ? !has(self.destination) : true",message="destination is not valid for SecurityGroupRuleDirectionInbound direction"
+// +kubebuilder:validation:XValidation:rule="self.direction == 'outbound' ? has(self.destination) : true",message="destination must be set for SecurityGroupRuleDirectionOutbound direction"
+// +kubebuilder:validation:XValidation:rule="self.direction == 'outbound' ? !has(self.source) : true",message="source is not valid for SecurityGroupRuleDirectionOutbound direction"
 type SecurityGroupRule struct {
 	// action defines whether to allow or deny traffic defined by the Security Group Rule.
 	// +required
@@ -326,10 +328,10 @@ type SecurityGroupRule struct {
 
 // SecurityGroupRuleRemote defines a VPC Security Group Rule's remote details.
 // The type of remote defines the additional remote details where are used for defining the remote.
-// +kubebuilder:validation:XValidation:rule="self.remoteType == 'any' && (has(self.cidrSubnetName) || has(self.ip) || has(self.securityGroupName))",message="cidrSubnetName, ip, and securityGroupName are not valid for SecurityGroupRuleRemoteTypeAny remoteType"
-// +kubebuilder:validation:XValidation:rule="has(self.cidrSubnetName) && self.remoteType != 'cidr'",message="cidrSubnetName is only valid for SecurityGroupRuleRemoteTypeCIDR remoteType"
-// +kubebuilder:validation:XValidation:rule="has(self.ip) && self.remoteType != 'ip'",message="ip is only valid for SecurityGroupRuleRemoteTypeIP remoteType"
-// +kubebuilder:validation:XValidation:rule="has(self.securityGroupName) && self.remoteType != 'sg'",message="securityGroupName is only valid for SecurityGroupRuleRemoteTypeSG remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'any' ? (!has(self.cidrSubnetName) && !has(self.ip) && !has(self.securityGroupName)) : true",message="cidrSubnetName, ip, and securityGroupName are not valid for SecurityGroupRuleRemoteTypeAny remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'cidr' ? (has(self.cidrSubnetName) && !has(self.ip) && !has(self.securityGroupName)) : true",message="only cidrSubnetName is valid for SecurityGroupRuleRemoteTypeCIDR remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'ip' ? (has(self.ip) && !has(self.cidrSubnetName) && !has(self.securityGroupName)) : true",message="only ip is valid for SecurityGroupRuleRemoteTypeIP remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'sg' ? (has(self.securityGroupName) && !has(self.cidrSubnetName) && !has(self.ip)) : true",message="only securityGroupName is valid for SecurityGroupRuleRemoteTypeSG remoteType"
 type SecurityGroupRuleRemote struct {
 	// cidrSubnetName is the name of the VPC Subnet to retrieve the CIDR from, to use for the remote's destination/source.
 	// Only used when remoteType is SecurityGroupRuleRemoteTypeCIDR.
@@ -352,8 +354,9 @@ type SecurityGroupRuleRemote struct {
 }
 
 // SecurityGroupRulePrototype defines a VPC Security Group Rule's traffic specifics for a series of remotes (destinations or sources).
-// +kubebuilder:validation:XValidation:rule="self.protocol != 'icmp' && (has(self.icmpCode) || has(self.icmpType))",message="icmpCode and icmpType are only supported for the ICMP protocol"
-// +kubebuilder:validation:XValidation:rule="self.protocol == 'all' && has(self.portRange)",message="portRange is not valid for SecurityGroupRuleProtocolAll protocol"
+// +kubebuilder:validation:XValidation:rule="self.protocol != 'icmp' ? (!has(self.icmpCode) && !has(self.icmpType)) : true",message="icmpCode and icmpType are only supported for SecurityGroupRuleProtocolIcmp protocol"
+// +kubebuilder:validation:XValidation:rule="self.protocol == 'all' ? !has(self.portRange) : true",message="portRange is not valid for SecurityGroupRuleProtocolAll protocol"
+// +kubebuilder:validation:XValidation:rule="self.protocol == 'icmp' ? !has(self.portRange) : true",message="portRange is not valid for SecurityGroupRuleProtocolIcmp protocol"
 type SecurityGroupRulePrototype struct {
 	// icmpCode is the ICMP code for the Rule.
 	// Only used when Protocol is SecurityGroupProtocolICMP.
