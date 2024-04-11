@@ -274,10 +274,15 @@ spec:
                     x-kubernetes-list-type: map
                   id:
                     description: id of the loadbalancer
+                    maxLength: 64
+                    minLength: 1
+                    pattern: ^[-0-9a-z_]+$
                     type: string
                   name:
                     description: Name sets the name of the VPC load balancer.
                     maxLength: 63
+                    minLength: 1
+                    pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                     type: string
                   public:
                     default: true
@@ -364,8 +369,14 @@ spec:
                   cidr:
                     type: string
                   id:
+                    maxLength: 64
+                    minLength: 1
+                    pattern: ^[-0-9a-z_]+$
                     type: string
                   name:
+                    maxLength: 63
+                    minLength: 1
+                    pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                     type: string
                   zone:
                     type: string
