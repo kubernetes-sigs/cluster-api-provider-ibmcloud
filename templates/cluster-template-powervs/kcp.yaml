@@ -13,4 +13,3 @@ spec:
       nodeRegistration:
         kubeletExtraArgs:
           provider-id: ibmpowervs://${CLUSTER_NAME}/'{{ v1.local_hostname }}'
-
