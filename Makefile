@@ -546,6 +546,17 @@ else
 	echo "Versions are different across Makefiles. Please ensure to keep them uniform."
 endif
 
+
+.PHONY: yamllint
+yamllint:
+	@docker run --rm $$(tty -s && echo "-it" || echo) -v $(PWD):/data cytopia/yamllint:latest /data --config-file /data/.yamllint --no-warnings
+
+.PHONY: lint-yaml-no-warnings
+lint-yaml-no-warnings: ## Run yamllint and won’t output warning level problems
+	@echo "Running yamllint and won't output warning level problems..."
+	@yamllint . --no-warnings
+	@echo "Linting Yaml files completed"
+
 ## --------------------------------------
 ## Cleanup / Verification
 ## --------------------------------------
