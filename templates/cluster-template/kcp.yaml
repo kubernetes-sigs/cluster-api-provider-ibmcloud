@@ -12,4 +12,3 @@ spec:
       apiServer:
         extraArgs:
           cloud-provider: external
-
