@@ -439,10 +439,19 @@ func (s *PowerVSClusterScope) GetVPCSubnetID(subnetName string) *string {
 
 // GetVPCSubnetIDs returns all the VPC subnet ids.
 func (s *PowerVSClusterScope) GetVPCSubnetIDs() []*string {
+	subnets := []*string{}
+	// use the vpc subnet id set by user.
+	for _, subnet := range s.IBMPowerVSCluster.Spec.VPCSubnets {
+		if subnet.ID != nil {
+			subnets = append(subnets, subnet.ID)
+		}
+	}
+	if len(subnets) != 0 {
+		return subnets
+	}
 	if s.IBMPowerVSCluster.Status.VPCSubnet == nil {
 		return nil
 	}
-	subnets := []*string{}
 	for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnet {
 		subnets = append(subnets, subnet.ID)
 	}
