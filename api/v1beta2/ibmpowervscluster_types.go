@@ -103,6 +103,10 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	VPCSubnets []Subnet `json:"vpcSubnets,omitempty"`
 
+	// VPCSecurityGroups to attach it to the VPC resource
+	// +optional
+	VPCSecurityGroups []VPCSecurityGroup `json:"vpcSecurityGroups,omitempty"`
+
 	// transitGateway contains information about IBM Cloud TransitGateway
 	// IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud Power VS and VPC infrastructure
 	// more information about TransitGateway can be found here https://www.ibm.com/products/transit-gateway.
@@ -199,6 +203,9 @@ type IBMPowerVSClusterStatus struct {
 
 	// vpcSubnet is reference to IBM Cloud VPC subnet.
 	VPCSubnet map[string]ResourceReference `json:"vpcSubnet,omitempty"`
+
+	// vpcSecurityGroups is reference to IBM Cloud VPC security group.
+	VPCSecurityGroups map[string]VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
 
 	// transitGateway is reference to IBM Cloud TransitGateway.
 	TransitGateway *ResourceReference `json:"transitGateway,omitempty"`

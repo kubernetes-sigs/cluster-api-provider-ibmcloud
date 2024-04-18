@@ -119,6 +119,22 @@ func (mr *MockVpcMockRecorder) CreatePublicGateway(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePublicGateway", reflect.TypeOf((*MockVpc)(nil).CreatePublicGateway), options)
 }
 
+// CreateSecurityGroup mocks base method.
+func (m *MockVpc) CreateSecurityGroup(options *vpcv1.CreateSecurityGroupOptions) (*vpcv1.SecurityGroup, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSecurityGroup", options)
+	ret0, _ := ret[0].(*vpcv1.SecurityGroup)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateSecurityGroup indicates an expected call of CreateSecurityGroup.
+func (mr *MockVpcMockRecorder) CreateSecurityGroup(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecurityGroup", reflect.TypeOf((*MockVpc)(nil).CreateSecurityGroup), options)
+}
+
 // CreateSecurityGroupRule mocks base method.
 func (m *MockVpc) CreateSecurityGroupRule(options *vpcv1.CreateSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -227,6 +243,21 @@ func (mr *MockVpcMockRecorder) DeletePublicGateway(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePublicGateway", reflect.TypeOf((*MockVpc)(nil).DeletePublicGateway), options)
 }
 
+// DeleteSecurityGroup mocks base method.
+func (m *MockVpc) DeleteSecurityGroup(options *vpcv1.DeleteSecurityGroupOptions) (*core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteSecurityGroup", options)
+	ret0, _ := ret[0].(*core.DetailedResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteSecurityGroup indicates an expected call of DeleteSecurityGroup.
+func (mr *MockVpcMockRecorder) DeleteSecurityGroup(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSecurityGroup", reflect.TypeOf((*MockVpc)(nil).DeleteSecurityGroup), options)
+}
+
 // DeleteSubnet mocks base method.
 func (m *MockVpc) DeleteSubnet(options *vpcv1.DeleteSubnetOptions) (*core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -318,6 +349,53 @@ func (m *MockVpc) GetLoadBalancerByName(loadBalancerName string) (*vpcv1.LoadBal
 func (mr *MockVpcMockRecorder) GetLoadBalancerByName(loadBalancerName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerByName", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerByName), loadBalancerName)
+}
+
+// GetSecurityGroup mocks base method.
+func (m *MockVpc) GetSecurityGroup(options *vpcv1.GetSecurityGroupOptions) (*vpcv1.SecurityGroup, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSecurityGroup", options)
+	ret0, _ := ret[0].(*vpcv1.SecurityGroup)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetSecurityGroup indicates an expected call of GetSecurityGroup.
+func (mr *MockVpcMockRecorder) GetSecurityGroup(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroup", reflect.TypeOf((*MockVpc)(nil).GetSecurityGroup), options)
+}
+
+// GetSecurityGroupByName mocks base method.
+func (m *MockVpc) GetSecurityGroupByName(name string) (*vpcv1.SecurityGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSecurityGroupByName", name)
+	ret0, _ := ret[0].(*vpcv1.SecurityGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSecurityGroupByName indicates an expected call of GetSecurityGroupByName.
+func (mr *MockVpcMockRecorder) GetSecurityGroupByName(name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroupByName", reflect.TypeOf((*MockVpc)(nil).GetSecurityGroupByName), name)
+}
+
+// GetSecurityGroupRule mocks base method.
+func (m *MockVpc) GetSecurityGroupRule(options *vpcv1.GetSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSecurityGroupRule", options)
+	ret0, _ := ret[0].(vpcv1.SecurityGroupRuleIntf)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetSecurityGroupRule indicates an expected call of GetSecurityGroupRule.
+func (mr *MockVpcMockRecorder) GetSecurityGroupRule(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroupRule", reflect.TypeOf((*MockVpc)(nil).GetSecurityGroupRule), options)
 }
 
 // GetSubnet mocks base method.
@@ -491,6 +569,22 @@ func (m *MockVpc) ListLoadBalancers(options *vpcv1.ListLoadBalancersOptions) (*v
 func (mr *MockVpcMockRecorder) ListLoadBalancers(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLoadBalancers", reflect.TypeOf((*MockVpc)(nil).ListLoadBalancers), options)
+}
+
+// ListSecurityGroups mocks base method.
+func (m *MockVpc) ListSecurityGroups(options *vpcv1.ListSecurityGroupsOptions) (*vpcv1.SecurityGroupCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSecurityGroups", options)
+	ret0, _ := ret[0].(*vpcv1.SecurityGroupCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListSecurityGroups indicates an expected call of ListSecurityGroups.
+func (mr *MockVpcMockRecorder) ListSecurityGroups(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecurityGroups", reflect.TypeOf((*MockVpc)(nil).ListSecurityGroups), options)
 }
 
 // ListSubnets mocks base method.

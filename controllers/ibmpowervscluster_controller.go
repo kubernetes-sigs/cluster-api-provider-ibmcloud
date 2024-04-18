@@ -189,6 +189,15 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 	}
 	conditions.MarkTrue(powerVSCluster, infrav1beta2.VPCSubnetReadyCondition)
 
+	// reconcile VPC security group
+	clusterScope.Info("Reconciling VPC security group")
+	if err := clusterScope.ReconcileVPCSecurityGroups(); err != nil {
+		clusterScope.Error(err, "failed to reconcile VPC security group")
+		conditions.MarkFalse(powerVSCluster, infrav1beta2.VPCSecurityGroupReadyCondition, infrav1beta2.VPCSecurityGroupReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		return reconcile.Result{}, err
+	}
+	conditions.MarkTrue(powerVSCluster, infrav1beta2.VPCSecurityGroupReadyCondition)
+
 	// reconcile Transit Gateway
 	clusterScope.Info("Reconciling Transit Gateway")
 	if requeue, err := clusterScope.ReconcileTransitGateway(); err != nil {
@@ -277,6 +286,11 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	} else if requeue {
 		clusterScope.Info("VPC load balancer deletion is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
+
+	clusterScope.Info("Deleting VPC security group")
+	if err := clusterScope.DeleteVPCSecurityGroups(); err != nil {
+		allErrs = append(allErrs, errors.Wrapf(err, "failed to delete VPC subnet"))
 	}
 
 	clusterScope.Info("Deleting VPC subnet")
