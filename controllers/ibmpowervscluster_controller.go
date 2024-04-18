@@ -179,8 +179,8 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 
 	// reconcile VPC Subnet
 	clusterScope.Info("Reconciling VPC subnets")
-	if requeue, err := clusterScope.ReconcileVPCSubnet(); err != nil {
-		clusterScope.Error(err, "failed to reconcile VPC subnet")
+	if requeue, err := clusterScope.ReconcileVPCSubnets(); err != nil {
+		clusterScope.Error(err, "failed to reconcile VPC subnets")
 		conditions.MarkFalse(powerVSCluster, infrav1beta2.VPCSubnetReadyCondition, infrav1beta2.VPCSubnetReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
@@ -192,7 +192,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 	// reconcile VPC security group
 	clusterScope.Info("Reconciling VPC security group")
 	if err := clusterScope.ReconcileVPCSecurityGroups(); err != nil {
-		clusterScope.Error(err, "failed to reconcile VPC security group")
+		clusterScope.Error(err, "failed to reconcile VPC security groups")
 		conditions.MarkFalse(powerVSCluster, infrav1beta2.VPCSecurityGroupReadyCondition, infrav1beta2.VPCSecurityGroupReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, err
 	}
@@ -212,8 +212,8 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 
 	// reconcile LoadBalancer
 	clusterScope.Info("Reconciling VPC load balancers")
-	if requeue, err := clusterScope.ReconcileLoadBalancer(); err != nil {
-		clusterScope.Error(err, "failed to reconcile VPC load balancer")
+	if requeue, err := clusterScope.ReconcileLoadBalancers(); err != nil {
+		clusterScope.Error(err, "failed to reconcile VPC load balancers")
 		conditions.MarkFalse(powerVSCluster, infrav1beta2.LoadBalancerReadyCondition, infrav1beta2.LoadBalancerReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
@@ -330,6 +330,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	}
 
 	if len(allErrs) > 0 {
+		clusterScope.Error(kerrors.NewAggregate(allErrs), "failed to delete IBMPowerVSCluster")
 		return ctrl.Result{}, kerrors.NewAggregate(allErrs)
 	}
 

@@ -80,7 +80,7 @@ type IBMPowerVSClusterSpec struct {
 	// resourceGroup name under which the resources will be created.
 	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
 	// 1. it is expected to set the ResourceGroup.Name, not setting will result in webhook error.
-	// ServiceInstance.ID and ServiceInstance.Regex is not yet supported and system will ignore the value.
+	// ResourceGroup.ID and ResourceGroup.Regex is not yet supported and system will ignore the value.
 	// +optional
 	ResourceGroup *IBMPowerVSResourceReference `json:"resourceGroup,omitempty"`
 
