@@ -50,6 +50,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
@@ -89,11 +90,12 @@ type PowerVSClusterScope struct {
 	patchHelper *patch.Helper
 	session     *ibmpisession.IBMPISession
 
-	IBMPowerVSClient     powervs.PowerVS
-	IBMVPCClient         vpc.Vpc
-	TransitGatewayClient transitgateway.TransitGateway
-	ResourceClient       resourcecontroller.ResourceController
-	COSClient            cos.Cos
+	IBMPowerVSClient      powervs.PowerVS
+	IBMVPCClient          vpc.Vpc
+	TransitGatewayClient  transitgateway.TransitGateway
+	ResourceClient        resourcecontroller.ResourceController
+	COSClient             cos.Cos
+	ResourceManagerClient resourcemanager.ResourceManager
 
 	Cluster           *capiv1beta1.Cluster
 	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
@@ -226,13 +228,16 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		core.SetLoggingLevel(core.LevelDebug)
 	}
 
+	// Fetch the VPC service endpoint.
 	svcEndpoint := endpoints.FetchVPCEndpoint(*params.IBMPowerVSCluster.Spec.VPC.Region, params.ServiceEndpoint)
+
+	// Create VPC client.
 	vpcClient, err := vpc.NewService(svcEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("error failed to create IBM VPC client: %w", err)
 	}
 
-	// Create TransitGateway client
+	// Create TransitGateway client.
 	tgOptions := &tgapiv1.TransitGatewayApisV1Options{
 		Authenticator: auth,
 	}
@@ -265,18 +270,35 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		return nil, fmt.Errorf("error failed to create resource client: %w", err)
 	}
 
+	// Create Resource Manager client.
+	rcManagerOptions := &resourcemanagerv2.ResourceManagerV2Options{
+		Authenticator: auth,
+	}
+
+	rmEndpoint := endpoints.FetchEndpoints(string(endpoints.RM), params.ServiceEndpoint)
+	if rmEndpoint != "" {
+		rcManagerOptions.URL = rmEndpoint
+		params.Logger.V(3).Info("Overriding the default resource manager endpoint", "ResourceManagerEndpoint", rmEndpoint)
+	}
+
+	rmClient, err := resourcemanager.NewService(rcManagerOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create resource manager client: %w", err)
+	}
+
 	clusterScope := &PowerVSClusterScope{
-		session:              session,
-		Logger:               params.Logger,
-		Client:               params.Client,
-		patchHelper:          helper,
-		Cluster:              params.Cluster,
-		IBMPowerVSCluster:    params.IBMPowerVSCluster,
-		ServiceEndpoint:      params.ServiceEndpoint,
-		IBMPowerVSClient:     powerVSClient,
-		IBMVPCClient:         vpcClient,
-		TransitGatewayClient: tgClient,
-		ResourceClient:       resourceClient,
+		session:               session,
+		Logger:                params.Logger,
+		Client:                params.Client,
+		patchHelper:           helper,
+		Cluster:               params.Cluster,
+		IBMPowerVSCluster:     params.IBMPowerVSCluster,
+		ServiceEndpoint:       params.ServiceEndpoint,
+		IBMPowerVSClient:      powerVSClient,
+		IBMVPCClient:          vpcClient,
+		TransitGatewayClient:  tgClient,
+		ResourceClient:        resourceClient,
+		ResourceManagerClient: rmClient,
 	}
 	return clusterScope, nil
 }
@@ -1698,18 +1720,10 @@ func (s *PowerVSClusterScope) fetchResourceGroupID() (string, error) {
 	if s.ResourceGroup() == nil || s.ResourceGroup().Name == nil {
 		return "", fmt.Errorf("resource group name is not set")
 	}
-	rmv2, err := resourcemanagerv2.NewResourceManagerV2(&resourcemanagerv2.ResourceManagerV2Options{
-		Authenticator: s.session.Options.Authenticator,
-	})
-	if err != nil {
-		return "", err
-	}
-	if rmv2 == nil {
-		return "", fmt.Errorf("unable to get resource controller")
-	}
+
 	resourceGroup := s.ResourceGroup().Name
 	rmv2ListResourceGroupOpt := resourcemanagerv2.ListResourceGroupsOptions{Name: resourceGroup, AccountID: &s.session.Options.UserAccount}
-	resourceGroupListResult, _, err := rmv2.ListResourceGroups(&rmv2ListResourceGroupOpt)
+	resourceGroupListResult, _, err := s.ResourceManagerClient.ListResourceGroups(&rmv2ListResourceGroupOpt)
 	if err != nil {
 		return "", err
 	}
