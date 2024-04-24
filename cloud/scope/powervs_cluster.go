@@ -1841,7 +1841,7 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer() (bool, error) {
 		})
 
 		if err != nil {
-			if strings.Contains(err.Error(), "cannot be found") {
+			if strings.Contains(err.Error(), string(VPCLoadBalancerNotFound)) {
 				s.Info("VPC load balancer successfully deleted")
 				return false, nil
 			}
@@ -1876,7 +1876,7 @@ func (s *PowerVSClusterScope) DeleteVPCSubnet() (bool, error) {
 		})
 
 		if err != nil {
-			if strings.Contains(err.Error(), "Subnet not found") {
+			if strings.Contains(err.Error(), string(VPCSubnetNotFound)) {
 				s.Info("VPC subnet successfully deleted")
 				return false, nil
 			}
@@ -1912,7 +1912,7 @@ func (s *PowerVSClusterScope) DeleteVPC() (bool, error) {
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "VPC not found") {
+		if strings.Contains(err.Error(), string(VPCNotFound)) {
 			s.Info("VPC successfully deleted")
 			return false, nil
 		}
@@ -1946,7 +1946,7 @@ func (s *PowerVSClusterScope) DeleteTransitGateway() (bool, error) {
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), "gateway was not found") {
+		if strings.Contains(err.Error(), string(TransitGatewayNotFound)) {
 			s.Info("Transit gateway successfully deleted")
 			return false, nil
 		}
@@ -2012,7 +2012,7 @@ func (s *PowerVSClusterScope) DeleteDHCPServer() error {
 
 	server, err := s.IBMPowerVSClient.GetDHCPServer(*s.IBMPowerVSCluster.Status.DHCPServer.ID)
 	if err != nil {
-		if strings.Contains(err.Error(), "dhcp server does not exist") {
+		if strings.Contains(err.Error(), string(DHCPServerNotFound)) {
 			s.Info("DHCP server successfully deleted")
 			return nil
 		}
@@ -2081,7 +2081,7 @@ func (s *PowerVSClusterScope) DeleteCOSInstance() error {
 		ID: s.IBMPowerVSCluster.Status.COSInstance.ID,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "COS instance unavailable") {
+		if strings.Contains(err.Error(), string(COSInstanceNotFound)) {
 			return nil
 		}
 		return fmt.Errorf("error fetching COS service instance: %w", err)
