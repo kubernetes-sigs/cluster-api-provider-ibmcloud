@@ -39,7 +39,8 @@ Compose the `user-variables.json` file containing the information for the PowerV
   "region": "",
   "service_instance_id": "",
   "ssh_private_key_file": "",
-  "zone": ""
+  "zone": "",
+  "dhcp_network": "false"
 }
 ```
 
@@ -58,6 +59,7 @@ Compose the `user-variables.json` file containing the information for the PowerV
 - `service_instance_id`: PowerVS service instance ID
 - `ssh_private_key_file`: Path to the SSH private key file used to connect to the vm while image preparation, e.g: /Users/manjunath/.ssh/id_rsa
 - `zone`: PowerVS zone, e.g: osa21
+- `dhcp_network`: Boolean value when set to true, a DHCP server will be created in PowerVS workspace and its private network will be attached to VM, Make sure to customize the network settings while building OS using [pvsadm tool](https://github.com/ppc64le-cloud/pvsadm/blob/main/docs/Build%20DHCP%20enabled%20Centos%20Images.md).
 
 ```shell
 # Clone the image-builder repository
