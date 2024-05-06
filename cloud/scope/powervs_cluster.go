@@ -837,6 +837,9 @@ func (s *PowerVSClusterScope) getNetwork() (*string, error) {
 // isDHCPServerActive checks if the DHCP server status is active.
 func (s *PowerVSClusterScope) isDHCPServerActive() (bool, error) {
 	dhcpID := *s.GetDHCPServerID()
+	if dhcpID == "" {
+		return false, fmt.Errorf("DHCP ID is nil")
+	}
 	dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(dhcpID)
 	if err != nil {
 		return false, err
@@ -1128,6 +1131,9 @@ func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*stri
 
 	// create subnet
 	vpcID := s.GetVPCID()
+	if vpcID == nil {
+		return nil, fmt.Errorf("VPC ID is nil")
+	}
 	cidrBlock, err := s.IBMVPCClient.GetSubnetAddrPrefix(*vpcID, zone)
 	if err != nil {
 		return nil, err
@@ -1760,8 +1766,12 @@ func (s *PowerVSClusterScope) getVPCRegion() *string {
 
 // fetchVPCCRN returns VPC CRN.
 func (s *PowerVSClusterScope) fetchVPCCRN() (*string, error) {
+	vpcID := s.GetVPCID()
+	if vpcID == nil {
+		return nil, fmt.Errorf("VPC ID is nil")
+	}
 	vpcDetails, _, err := s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
-		ID: s.GetVPCID(),
+		ID: vpcID,
 	})
 	if err != nil {
 		return nil, err
