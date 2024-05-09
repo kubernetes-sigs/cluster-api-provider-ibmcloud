@@ -454,9 +454,9 @@ func (c clusterDescendants) filterOwnedDescendants(cluster *infrav1beta2.IBMPowe
 }
 
 // SetupWithManager creates a new IBMPowerVSCluster controller for a manager.
-func (r *IBMPowerVSClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *IBMPowerVSClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1beta2.IBMPowerVSCluster{}).
-		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(context.TODO()))).
+		WithEventFilter(predicates.ResourceIsNotExternallyManaged(ctrl.LoggerFrom(ctx))).
 		Complete(r)
 }
