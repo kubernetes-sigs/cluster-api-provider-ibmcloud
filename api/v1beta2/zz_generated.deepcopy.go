@@ -1408,12 +1408,12 @@ func (in *SecurityGroupRulePrototype) DeepCopyInto(out *SecurityGroupRulePrototy
 	*out = *in
 	if in.ICMPCode != nil {
 		in, out := &in.ICMPCode, &out.ICMPCode
-		*out = new(string)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.ICMPType != nil {
 		in, out := &in.ICMPType, &out.ICMPType
-		*out = new(string)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.PortRange != nil {
