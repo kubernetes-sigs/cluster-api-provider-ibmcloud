@@ -24,7 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -178,7 +178,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -200,7 +200,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile with requeue by deleting the cluster descendants", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",

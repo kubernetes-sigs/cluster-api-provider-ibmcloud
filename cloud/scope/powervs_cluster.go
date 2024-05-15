@@ -37,7 +37,7 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -117,7 +117,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		return nil, err
 	}
 	if params.Logger == (logr.Logger{}) {
-		params.Logger = textlogger.NewLogger(textlogger.NewConfig())
+		params.Logger = klog.Background()
 	}
 
 	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)

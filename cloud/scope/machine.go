@@ -28,7 +28,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,7 +80,7 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}
 
 	if params.Logger == (logr.Logger{}) {
-		params.Logger = textlogger.NewLogger(textlogger.NewConfig())
+		params.Logger = klog.Background()
 	}
 
 	helper, err := patch.NewHelper(params.IBMVPCMachine, params.Client)

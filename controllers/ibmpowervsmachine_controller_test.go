@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -192,7 +192,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMPowerVSMachineReconciler{
 				Client: testEnv.Client,
-				Log:    textlogger.NewLogger(textlogger.NewConfig()),
+				Log:    klog.Background(),
 			}
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 			g.Expect(err).To(BeNil())
@@ -262,7 +262,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSMachineReconciler{
 			Client:   testEnv.Client,
-			Log:      textlogger.NewLogger(textlogger.NewConfig()),
+			Log:      klog.Background(),
 			Recorder: recorder,
 		}
 	}
@@ -276,7 +276,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger:           textlogger.NewLogger(textlogger.NewConfig()),
+				Logger:           klog.Background(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -294,7 +294,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger:           textlogger.NewLogger(textlogger.NewConfig()),
+				Logger:           klog.Background(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -330,7 +330,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			mockClient := fake.NewClientBuilder().WithObjects([]client.Object{secret}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
 				Client:           mockClient,
-				Logger:           textlogger.NewLogger(textlogger.NewConfig()),
+				Logger:           klog.Background(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -377,7 +377,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSMachineReconciler{
 			Client:   testEnv.Client,
-			Log:      textlogger.NewLogger(textlogger.NewConfig()),
+			Log:      klog.Background(),
 			Recorder: recorder,
 		}
 	}
@@ -390,7 +390,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: false,
@@ -408,7 +408,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: true,
@@ -431,7 +431,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: true,
@@ -457,7 +457,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			var instances = &models.PVMInstances{}
 			mockclient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build()
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				Client: mockclient,
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
@@ -540,7 +540,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				Client: mockclient,
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
