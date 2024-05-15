@@ -251,6 +251,11 @@ type TransitGateway struct {
 	// id of resource.
 	// +optional
 	ID *string `json:"id,omitempty"`
+	// globalRouting indicates whether to set global routing true or not while creating the transit gateway.
+	// set this field to true only when PowerVS and VPC are from different regions, if they are same it's suggested to use local routing by setting the field to false.
+	// when the field is omitted,  based on PowerVS region (region associated with IBMPowerVSCluster.Spec.Zone) and VPC region(IBMPowerVSCluster.Spec.VPC.Region) system will decide whether to enable globalRouting or not.
+	// +optional
+	GlobalRouting *bool `json:"globalRouting,omitempty"`
 }
 
 // VPCResourceReference is a reference to a specific VPC resource by ID or Name

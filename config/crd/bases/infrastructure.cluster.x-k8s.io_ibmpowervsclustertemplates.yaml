@@ -427,6 +427,12 @@ spec:
                           when TransitGateway.ID is set, its expected that there exist a TransitGateway with ID or else system will give error.
                           when TransitGateway.Name is set, system will first check for TransitGateway with Name, if not exist system will create new TransitGateway.
                         properties:
+                          globalRouting:
+                            description: |-
+                              globalRouting indicates whether to set global routing true or not while creating the transit gateway.
+                              set this field to true only when PowerVS and VPC are from different regions, if they are same it's suggested to use local routing by setting the field to false.
+                              when the field is omitted,  based on PowerVS region (region associated with IBMPowerVSCluster.Spec.Zone) and VPC region(IBMPowerVSCluster.Spec.VPC.Region) system will decide whether to enable globalRouting or not.
+                            type: boolean
                           id:
                             description: id of resource.
                             type: string
