@@ -25,7 +25,6 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
-	"github.com/IBM-Cloud/power-go-client/power/client/datacenters"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/ibm-cos-sdk-go/aws"
@@ -593,17 +592,12 @@ func (s *PowerVSClusterScope) IsPowerVSZoneSupportsPER() error {
 		return fmt.Errorf("powervs zone is not set")
 	}
 	// fetch the datacenter capabilities for zone.
-	// though the function name is WithDatacenterRegion it takes zone as parameter
-	params := datacenters.NewV1DatacentersGetParamsWithContext(context.TODO()).WithDatacenterRegion(*zone)
-	datacenter, err := s.session.Power.Datacenters.V1DatacentersGet(params)
+	datacenter, err := s.IBMPowerVSClient.GetDatacenters(*zone)
 	if err != nil {
-		return fmt.Errorf("failed to get datacenter details for zone: %s err:%w", *zone, err)
-	}
-	if datacenter == nil || datacenter.Payload == nil || datacenter.Payload.Capabilities == nil {
-		return fmt.Errorf("failed to get datacenter capabilities for zone: %s", *zone)
+		return err
 	}
 	// check for the PER support in datacenter capabilities.
-	perAvailable, ok := datacenter.Payload.Capabilities[powerEdgeRouter]
+	perAvailable, ok := datacenter.Capabilities[powerEdgeRouter]
 	if !ok {
 		return fmt.Errorf("%s capability unknown for zone: %s", powerEdgeRouter, *zone)
 	}
