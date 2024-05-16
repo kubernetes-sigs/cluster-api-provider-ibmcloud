@@ -19,10 +19,10 @@ package powervs
 import (
 	"context"
 	"fmt"
-	"github.com/IBM-Cloud/power-go-client/power/client/datacenters"
 
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
+	"github.com/IBM-Cloud/power-go-client/power/client/datacenters"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_images"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
@@ -188,8 +188,8 @@ func (s *Service) GetNetworkByName(networkName string) (*models.NetworkReference
 	return network, nil
 }
 
+// GetDatacenters fetches the datacenter capabilities for the given zone.
 func (s *Service) GetDatacenters(zone string) (*models.Datacenter, error) {
-	// fetch the datacenter capabilities for zone.
 	// though the function name is WithDatacenterRegion it takes zone as parameter
 	params := datacenters.NewV1DatacentersGetParamsWithContext(context.TODO()).WithDatacenterRegion(zone)
 	datacenter, err := s.session.Power.Datacenters.V1DatacentersGet(params)
