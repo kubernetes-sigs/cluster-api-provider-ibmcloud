@@ -38,7 +38,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/textlogger"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,7 +64,7 @@ var (
 func init() {
 	klog.InitFlags(nil)
 
-	logger := textlogger.NewLogger(textlogger.NewConfig())
+	logger := klog.Background()
 	ctrl.SetLogger(logger)
 
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme.Scheme))

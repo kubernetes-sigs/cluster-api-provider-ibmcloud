@@ -28,7 +28,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -154,7 +154,7 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMVPCMachineReconciler{
 				Client: testEnv.Client,
-				Log:    textlogger.NewLogger(textlogger.NewConfig()),
+				Log:    klog.Background(),
 			}
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 			g.Expect(err).To(BeNil())
@@ -223,10 +223,10 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		machineScope = &scope.MachineScope{
-			Logger: textlogger.NewLogger(textlogger.NewConfig()),
+			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -281,10 +281,10 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		machineScope := &scope.MachineScope{
-			Logger: textlogger.NewLogger(textlogger.NewConfig()),
+			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -433,10 +433,10 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		machineScope = &scope.MachineScope{
-			Logger: textlogger.NewLogger(textlogger.NewConfig()),
+			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
@@ -483,10 +483,10 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		machineScope := &scope.MachineScope{
-			Logger: textlogger.NewLogger(textlogger.NewConfig()),
+			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",

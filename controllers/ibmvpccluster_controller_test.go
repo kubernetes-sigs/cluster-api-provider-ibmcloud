@@ -28,7 +28,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -91,7 +91,7 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMVPCClusterReconciler{
 				Client: testEnv.Client,
-				Log:    textlogger.NewLogger(textlogger.NewConfig()),
+				Log:    klog.Background(),
 			}
 
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
@@ -154,12 +154,12 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		clusterScope = &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Cluster:      &capiv1beta1.Cluster{},
-			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
+			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-cluster",
@@ -291,12 +291,12 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		clusterScope := &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Cluster:      &capiv1beta1.Cluster{},
-			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
+			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-cluster",
@@ -448,11 +448,11 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 		mockvpc = mock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		clusterScope = &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
-			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
+			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Finalizers: []string{infrav1beta2.ClusterFinalizer},
@@ -558,11 +558,11 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCClusterReconciler{
 			Client: testEnv.Client,
-			Log:    textlogger.NewLogger(textlogger.NewConfig()),
+			Log:    klog.Background(),
 		}
 		clusterScope := &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
-			Logger:       textlogger.NewLogger(textlogger.NewConfig()),
+			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Finalizers: []string{infrav1beta2.ClusterFinalizer},

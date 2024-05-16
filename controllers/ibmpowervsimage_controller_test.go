@@ -28,7 +28,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -151,7 +151,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					Name: "capi-powervs-cluster"},
 			}
 			imageScope := &scope.PowerVSImageScope{
-				Logger: textlogger.NewLogger(textlogger.NewConfig()),
+				Logger: klog.Background(),
 				IBMPowerVSImage: &infrav1beta2.IBMPowerVSImage{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-image",
@@ -204,7 +204,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{powervsCluster, powervsImage}...).Build()
 			imageScope := &scope.PowerVSImageScope{
-				Logger:           textlogger.NewLogger(textlogger.NewConfig()),
+				Logger:           klog.Background(),
 				Client:           mockclient,
 				IBMPowerVSImage:  powervsImage,
 				IBMPowerVSClient: mockpowervs,
@@ -337,7 +337,7 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 			Recorder: recorder,
 		}
 		imageScope = &scope.PowerVSImageScope{
-			Logger:           textlogger.NewLogger(textlogger.NewConfig()),
+			Logger:           klog.Background(),
 			IBMPowerVSImage:  &infrav1beta2.IBMPowerVSImage{},
 			IBMPowerVSClient: mockpowervs,
 		}

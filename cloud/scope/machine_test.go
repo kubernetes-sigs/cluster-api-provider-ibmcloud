@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -66,7 +66,7 @@ func setupMachineScope(clusterName string, machineName string, mockvpc *mock.Moc
 	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &MachineScope{
 		Client:        client,
-		Logger:        textlogger.NewLogger(textlogger.NewConfig()),
+		Logger:        klog.Background(),
 		IBMVPCClient:  mockvpc,
 		Cluster:       cluster,
 		Machine:       machine,

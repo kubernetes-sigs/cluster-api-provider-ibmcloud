@@ -33,7 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2/textlogger"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -89,7 +89,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &PowerVSMachineScope{
 		Client:            client,
-		Logger:            textlogger.NewLogger(textlogger.NewConfig()),
+		Logger:            klog.Background(),
 		IBMPowerVSClient:  mockpowervs,
 		Cluster:           cluster,
 		Machine:           machine,
