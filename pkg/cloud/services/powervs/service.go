@@ -188,8 +188,8 @@ func (s *Service) GetNetworkByName(networkName string) (*models.NetworkReference
 	return network, nil
 }
 
-// GetDatacenters fetches the datacenter capabilities for the given zone.
-func (s *Service) GetDatacenters(zone string) (*models.Datacenter, error) {
+// GetDatacenterCapabilities fetches the datacenter capabilities for the given zone.
+func (s *Service) GetDatacenterCapabilities(zone string) (map[string]bool, error) {
 	// though the function name is WithDatacenterRegion it takes zone as parameter
 	params := datacenters.NewV1DatacentersGetParamsWithContext(context.TODO()).WithDatacenterRegion(zone)
 	datacenter, err := s.session.Power.Datacenters.V1DatacentersGet(params)
@@ -199,5 +199,5 @@ func (s *Service) GetDatacenters(zone string) (*models.Datacenter, error) {
 	if datacenter == nil || datacenter.Payload == nil || datacenter.Payload.Capabilities == nil {
 		return nil, fmt.Errorf("failed to get datacenter capabilities for zone: %s", zone)
 	}
-	return datacenter.Payload, nil
+	return datacenter.Payload.Capabilities, nil
 }

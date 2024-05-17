@@ -592,12 +592,12 @@ func (s *PowerVSClusterScope) IsPowerVSZoneSupportsPER() error {
 		return fmt.Errorf("powervs zone is not set")
 	}
 	// fetch the datacenter capabilities for zone.
-	datacenter, err := s.IBMPowerVSClient.GetDatacenters(*zone)
+	datacenterCapabilities, err := s.IBMPowerVSClient.GetDatacenterCapabilities(*zone)
 	if err != nil {
 		return err
 	}
 	// check for the PER support in datacenter capabilities.
-	perAvailable, ok := datacenter.Capabilities[powerEdgeRouter]
+	perAvailable, ok := datacenterCapabilities[powerEdgeRouter]
 	if !ok {
 		return fmt.Errorf("%s capability unknown for zone: %s", powerEdgeRouter, *zone)
 	}
