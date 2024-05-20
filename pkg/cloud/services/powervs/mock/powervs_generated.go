@@ -246,6 +246,21 @@ func (mr *MockPowerVSMockRecorder) GetDHCPServer(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).GetDHCPServer), id)
 }
 
+// GetDatacenterCapabilities mocks base method.
+func (m *MockPowerVS) GetDatacenterCapabilities(zone string) (map[string]bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDatacenterCapabilities", zone)
+	ret0, _ := ret[0].(map[string]bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDatacenterCapabilities indicates an expected call of GetDatacenterCapabilities.
+func (mr *MockPowerVSMockRecorder) GetDatacenterCapabilities(zone any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDatacenterCapabilities", reflect.TypeOf((*MockPowerVS)(nil).GetDatacenterCapabilities), zone)
+}
+
 // GetImage mocks base method.
 func (m *MockPowerVS) GetImage(id string) (*models.Image, error) {
 	m.ctrl.T.Helper()
