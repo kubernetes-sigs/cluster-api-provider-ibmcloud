@@ -323,6 +323,11 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targe
 
 // DeleteVPCLoadBalancerPoolMember deletes a pool member from the load balancer pool.
 func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
+	if m.IBMVPCMachine.Status.InstanceID == "" {
+		m.Info("instance is not created, ignore deleting load balancer pool member")
+		return nil
+	}
+
 	loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
 		ID: m.IBMVPCCluster.Status.VPCEndpoint.LBID,
 	})
