@@ -398,15 +398,16 @@ data:
                 - --cloud-provider=ibm
                 - --cloud-config=/etc/cloud/ibm.conf
                 - --use-service-account-credentials=true
+              resources:
+                requests:
+                  cpu: 200m
+              terminationMessagePolicy: FallbackToLogsOnError
               volumeMounts:
                 - mountPath: /etc/cloud
                   name: ibm-config-volume
                   readOnly: true
                 - mountPath: /etc/ibm-secret
                   name: ibm-secret
-              resources:
-                requests:
-                  cpu: 200m
           hostNetwork: true
           volumes:
             - name: ibm-config-volume

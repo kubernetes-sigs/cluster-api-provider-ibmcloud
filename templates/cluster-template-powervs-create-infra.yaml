@@ -446,6 +446,7 @@ data:
               resources:
                 requests:
                   cpu: 200m
+              terminationMessagePolicy: FallbackToLogsOnError
           hostNetwork: true
           volumes:
             - name: ibmpowervs-config-volume
