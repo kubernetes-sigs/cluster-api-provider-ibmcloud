@@ -36,6 +36,7 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
@@ -1835,6 +1836,8 @@ func (s *PowerVSClusterScope) GetServiceName(resourceType infrav1beta2.ResourceT
 
 // DeleteLoadBalancer deletes loadBalancer.
 func (s *PowerVSClusterScope) DeleteLoadBalancer() (bool, error) {
+	errs := []error{}
+	requeue := false
 	for _, lb := range s.IBMPowerVSCluster.Status.LoadBalancers {
 		if lb.ID == nil || lb.ControllerCreated == nil || !*lb.ControllerCreated {
 			continue
@@ -1847,9 +1850,10 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer() (bool, error) {
 		if err != nil {
 			if strings.Contains(err.Error(), string(VPCLoadBalancerNotFound)) {
 				s.Info("VPC load balancer successfully deleted")
-				return false, nil
+				continue
 			}
-			return false, fmt.Errorf("error fetching the load balancer: %w", err)
+			errs = append(errs, fmt.Errorf("error fetching the load balancer: %w", err))
+			continue
 		}
 
 		if lb != nil && lb.ProvisioningStatus != nil && *lb.ProvisioningStatus == string(infrav1beta2.VPCLoadBalancerStateDeletePending) {
@@ -1860,16 +1864,21 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer() (bool, error) {
 		if _, err = s.IBMVPCClient.DeleteLoadBalancer(&vpcv1.DeleteLoadBalancerOptions{
 			ID: lb.ID,
 		}); err != nil {
-			s.Error(err, "error deleting the load balancer")
-			return false, err
+			errs = append(errs, fmt.Errorf("error deleting the load balancer: %w", err))
+			continue
 		}
-		return true, nil
+		requeue = true
 	}
-	return false, nil
+	if len(errs) > 0 {
+		return false, kerrors.NewAggregate(errs)
+	}
+	return requeue, nil
 }
 
 // DeleteVPCSubnet deletes VPC subnet.
 func (s *PowerVSClusterScope) DeleteVPCSubnet() (bool, error) {
+	errs := []error{}
+	requeue := false
 	for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnet {
 		if subnet.ID == nil || subnet.ControllerCreated == nil || !*subnet.ControllerCreated {
 			continue
@@ -1882,9 +1891,10 @@ func (s *PowerVSClusterScope) DeleteVPCSubnet() (bool, error) {
 		if err != nil {
 			if strings.Contains(err.Error(), string(VPCSubnetNotFound)) {
 				s.Info("VPC subnet successfully deleted")
-				return false, nil
+				continue
 			}
-			return false, fmt.Errorf("error fetching the subnet: %w", err)
+			errs = append(errs, fmt.Errorf("error fetching the subnet: %w", err))
+			continue
 		}
 
 		if net != nil && net.Status != nil && *net.Status == string(infrav1beta2.VPCSubnetStateDeleting) {
@@ -1894,11 +1904,15 @@ func (s *PowerVSClusterScope) DeleteVPCSubnet() (bool, error) {
 		if _, err = s.IBMVPCClient.DeleteSubnet(&vpcv1.DeleteSubnetOptions{
 			ID: net.ID,
 		}); err != nil {
-			return false, fmt.Errorf("error deleting VPC subnet: %w", err)
+			errs = append(errs, fmt.Errorf("error deleting VPC subnet: %w", err))
+			continue
 		}
-		return true, nil
+		requeue = true
 	}
-	return false, nil
+	if len(errs) > 0 {
+		return false, kerrors.NewAggregate(errs)
+	}
+	return requeue, nil
 }
 
 // DeleteVPC deletes VPC.
@@ -2051,14 +2065,17 @@ func (s *PowerVSClusterScope) DeleteServiceInstance() (bool, error) {
 		return false, nil
 	}
 
-	servers, err := s.IBMPowerVSClient.GetAllDHCPServers()
-	if err != nil {
-		return false, fmt.Errorf("error fetching networks in the PowerVS service instance: %w", err)
-	}
+	// If PowerVS service instance is in failed state, proceed with deletion instead of checking for existing network resources.
+	if serviceInstance != nil && *serviceInstance.State != string(infrav1beta2.ServiceInstanceStateFailed) {
+		servers, err := s.IBMPowerVSClient.GetAllDHCPServers()
+		if err != nil {
+			return false, fmt.Errorf("error fetching networks in the PowerVS service instance: %w", err)
+		}
 
-	if len(servers) > 0 {
-		s.Info("Wait for DHCP server to be deleted before deleting PowerVS service instance")
-		return true, nil
+		if len(servers) > 0 {
+			s.Info("Wait for DHCP server to be deleted before deleting PowerVS service instance")
+			return true, nil
+		}
 	}
 
 	if _, err = s.ResourceClient.DeleteResourceInstance(&resourcecontrollerv2.DeleteResourceInstanceOptions{
