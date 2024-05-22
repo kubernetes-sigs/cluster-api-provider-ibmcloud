@@ -1759,16 +1759,26 @@ func (s *PowerVSClusterScope) createTransitGateway() (*string, error) {
 		return nil, fmt.Errorf("error getting resource group id for resource group %v, id is empty", s.ResourceGroup())
 	}
 
-	vpcRegion := s.getVPCRegion()
-	if vpcRegion == nil {
-		return nil, fmt.Errorf("failed to get vpc region")
+	location, globalRouting, err := genUtil.GetTransitGatewayLocationAndRouting(s.Zone(), s.VPC().Region)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transit gateway location and routing: %w", err)
+	}
+
+	// throw error when user tries to use local routing where global routing is required.
+	// TODO: Add a webhook validation for below condition.
+	if s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting != nil && !*s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting && *globalRouting {
+		return nil, fmt.Errorf("failed to use local routing for transit gateway since powervs and vpc are in different region and requires global routing")
+	}
+	// setting global routing to true when it is set by user.
+	if s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting != nil && *s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting {
+		globalRouting = ptr.To(true)
 	}
 
 	tgName := s.GetServiceName(infrav1beta2.ResourceTypeTransitGateway)
 	tg, _, err := s.TransitGatewayClient.CreateTransitGateway(&tgapiv1.CreateTransitGatewayOptions{
-		Location:      vpcRegion,
+		Location:      location,
 		Name:          tgName,
-		Global:        ptr.To(true),
+		Global:        globalRouting,
 		ResourceGroup: &tgapiv1.ResourceGroupIdentity{ID: ptr.To(resourceGroupID)},
 	})
 	if err != nil {
@@ -2167,26 +2177,6 @@ func (s *PowerVSClusterScope) fetchResourceGroupID() (string, error) {
 
 	err = fmt.Errorf("could not retrieve resource group id for %s", *resourceGroup)
 	return "", err
-}
-
-// getVPCRegion returns region associated with VPC zone.
-func (s *PowerVSClusterScope) getVPCRegion() *string {
-	if s.IBMPowerVSCluster.Spec.VPC != nil {
-		return s.IBMPowerVSCluster.Spec.VPC.Region
-	}
-	// if vpc region is not set try to fetch corresponding region from power vs zone
-	zone := s.Zone()
-	if zone == nil {
-		s.Info("powervs zone is not set")
-		return nil
-	}
-	region := endpoints.ConstructRegionFromZone(*zone)
-	vpcRegion, err := genUtil.VPCRegionForPowerVSRegion(region)
-	if err != nil {
-		s.Error(err, fmt.Sprintf("failed to fetch vpc region associated with powervs region %s", region))
-		return nil
-	}
-	return &vpcRegion
 }
 
 // fetchVPCCRN returns VPC CRN.
