@@ -232,9 +232,9 @@ const (
 // For example:
 // - any - Any source or destination (0.0.0.0/0)
 // - cidr - A CIDR representing a set of IP's (10.0.0.0/28)
-// - ip - A specific IP address (192.168.0.1)
+// - address - A specific address (192.168.0.1)
 // - sg - A Security Group.
-// +kubebuilder:validation:Enum=any;cidr;ip;sg
+// +kubebuilder:validation:Enum=any;cidr;address;sg
 type VPCSecurityGroupRuleRemoteType string
 
 const (
@@ -242,8 +242,8 @@ const (
 	VPCSecurityGroupRuleRemoteTypeAny VPCSecurityGroupRuleRemoteType = VPCSecurityGroupRuleRemoteType("any")
 	// VPCSecurityGroupRuleRemoteTypeCIDR defines the destination or source for the Rule is a CIDR block.
 	VPCSecurityGroupRuleRemoteTypeCIDR VPCSecurityGroupRuleRemoteType = VPCSecurityGroupRuleRemoteType("cidr")
-	// VPCSecurityGroupRuleRemoteTypeIP defines the destination or source for the Rule is an IP address.
-	VPCSecurityGroupRuleRemoteTypeIP VPCSecurityGroupRuleRemoteType = VPCSecurityGroupRuleRemoteType("ip")
+	// VPCSecurityGroupRuleRemoteTypeAddress defines the destination or source for the Rule is an address.
+	VPCSecurityGroupRuleRemoteTypeAddress VPCSecurityGroupRuleRemoteType = VPCSecurityGroupRuleRemoteType("address")
 	// VPCSecurityGroupRuleRemoteTypeSG defines the destination or source for the Rule is a VPC Security Group.
 	VPCSecurityGroupRuleRemoteTypeSG VPCSecurityGroupRuleRemoteType = VPCSecurityGroupRuleRemoteType("sg")
 )
@@ -320,20 +320,20 @@ type VPCSecurityGroupRule struct {
 
 // VPCSecurityGroupRuleRemote defines a VPC Security Group Rule's remote details.
 // The type of remote defines the additional remote details where are used for defining the remote.
-// +kubebuilder:validation:XValidation:rule="self.remoteType == 'any' ? (!has(self.cidrSubnetName) && !has(self.ip) && !has(self.securityGroupName)) : true",message="cidrSubnetName, ip, and securityGroupName are not valid for VPCSecurityGroupRuleRemoteTypeAny remoteType"
-// +kubebuilder:validation:XValidation:rule="self.remoteType == 'cidr' ? (has(self.cidrSubnetName) && !has(self.ip) && !has(self.securityGroupName)) : true",message="only cidrSubnetName is valid for VPCSecurityGroupRuleRemoteTypeCIDR remoteType"
-// +kubebuilder:validation:XValidation:rule="self.remoteType == 'ip' ? (has(self.ip) && !has(self.cidrSubnetName) && !has(self.securityGroupName)) : true",message="only ip is valid for VPCSecurityGroupRuleRemoteTypeIP remoteType"
-// +kubebuilder:validation:XValidation:rule="self.remoteType == 'sg' ? (has(self.securityGroupName) && !has(self.cidrSubnetName) && !has(self.ip)) : true",message="only securityGroupName is valid for VPCSecurityGroupRuleRemoteTypeSG remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'any' ? (!has(self.cidrSubnetName) && !has(self.address) && !has(self.securityGroupName)) : true",message="cidrSubnetName, addresss, and securityGroupName are not valid for VPCSecurityGroupRuleRemoteTypeAny remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'cidr' ? (has(self.cidrSubnetName) && !has(self.address) && !has(self.securityGroupName)) : true",message="only cidrSubnetName is valid for VPCSecurityGroupRuleRemoteTypeCIDR remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'address' ? (has(self.address) && !has(self.cidrSubnetName) && !has(self.securityGroupName)) : true",message="only address is valid for VPCSecurityGroupRuleRemoteTypeIP remoteType"
+// +kubebuilder:validation:XValidation:rule="self.remoteType == 'sg' ? (has(self.securityGroupName) && !has(self.cidrSubnetName) && !has(self.address)) : true",message="only securityGroupName is valid for VPCSecurityGroupRuleRemoteTypeSG remoteType"
 type VPCSecurityGroupRuleRemote struct {
 	// cidrSubnetName is the name of the VPC Subnet to retrieve the CIDR from, to use for the remote's destination/source.
 	// Only used when remoteType is VPCSecurityGroupRuleRemoteTypeCIDR.
 	// +optional
 	CIDRSubnetName *string `json:"cidrSubnetName,omitempty"`
 
-	// ip is the IP to use for the remote's destination/source.
-	// Only used when remoteType is VPCSecurityGroupRuleRemoteTypeIP.
+	//  address is the address to use for the remote's destination/source.
+	// Only used when remoteType is VPCSecurityGroupRuleRemoteTypeAddress.
 	// +optional
-	IP *string `json:"ip,omitempty"`
+	Address *string `json:"address,omitempty"`
 
 	// remoteType defines the type of filter to define for the remote's destination/source.
 	// +required
