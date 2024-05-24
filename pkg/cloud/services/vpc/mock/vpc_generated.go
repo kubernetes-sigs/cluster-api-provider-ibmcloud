@@ -491,21 +491,6 @@ func (mr *MockVpcMockRecorder) GetSubnet(arg0 any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnet", reflect.TypeOf((*MockVpc)(nil).GetSubnet), arg0)
 }
 
-// GetSubnetAddrPrefix mocks base method.
-func (m *MockVpc) GetSubnetAddrPrefix(vpcID, zone string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetSubnetAddrPrefix", vpcID, zone)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetSubnetAddrPrefix indicates an expected call of GetSubnetAddrPrefix.
-func (mr *MockVpcMockRecorder) GetSubnetAddrPrefix(vpcID, zone any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetAddrPrefix", reflect.TypeOf((*MockVpc)(nil).GetSubnetAddrPrefix), vpcID, zone)
-}
-
 // GetSubnetPublicGateway mocks base method.
 func (m *MockVpc) GetSubnetPublicGateway(options *vpcv1.GetSubnetPublicGatewayOptions) (*vpcv1.PublicGateway, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()

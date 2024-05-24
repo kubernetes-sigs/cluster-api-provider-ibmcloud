@@ -74,7 +74,12 @@ var (
 )
 
 // powerEdgeRouter is identifier for PER.
-const powerEdgeRouter = "power-edge-router"
+const (
+	powerEdgeRouter = "power-edge-router"
+	// vpcSubnetIPAddressCount is the total IP Addresses for the subnet.
+	// Support for custom address prefixes will be added at a later time. Currently, we use the ip count for subnet creation.
+	vpcSubnetIPAddressCount int64 = 256
+)
 
 // PowerVSClusterScopeParams defines the input parameters used to create a new PowerVSClusterScope.
 type PowerVSClusterScopeParams struct {
@@ -1102,16 +1107,16 @@ func (s *PowerVSClusterScope) createVPC() (*string, error) {
 // ReconcileVPCSubnets reconciles VPC subnet.
 func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 	subnets := make([]infrav1beta2.Subnet, 0)
+	vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
+	if err != nil {
+		return false, err
+	}
+	if len(vpcZones) == 0 {
+		return false, fmt.Errorf("failed to fetch VPC zones, no zone found for region %s", *s.VPC().Region)
+	}
 	// check whether user has set the vpc subnets
 	if len(s.IBMPowerVSCluster.Spec.VPCSubnets) == 0 {
 		// if the user did not set any subnet, we try to create subnet in all the zones.
-		vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
-		if err != nil {
-			return false, err
-		}
-		if len(vpcZones) == 0 {
-			return false, fmt.Errorf("failed to fetch VPC zones, no zone found for region %s", *s.VPC().Region)
-		}
 		for _, zone := range vpcZones {
 			subnet := infrav1beta2.Subnet{
 				Name: ptr.To(fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1beta2.ResourceTypeSubnet), zone)),
@@ -1164,6 +1169,9 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 			continue
 		}
 
+		if subnet.Zone == nil {
+			subnet.Zone = &vpcZones[index%len(vpcZones)]
+		}
 		s.V(3).Info("Creating VPC subnet")
 		subnetID, err = s.createVPCSubnet(subnet)
 		if err != nil {
@@ -1172,7 +1180,10 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 		}
 		s.Info("Created VPC subnet", "subnetID", subnetID)
 		s.SetVPCSubnetStatus(*subnet.Name, infrav1beta2.ResourceReference{ID: subnetID, ControllerCreated: ptr.To(true)})
-		return true, nil
+		// Requeue only when the creation of all subnets has been triggered.
+		if index == len(subnets)-1 {
+			return true, nil
+		}
 	}
 	return false, nil
 }
@@ -1198,42 +1209,25 @@ func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*stri
 	if resourceGroupID == "" {
 		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
 	}
-	var zone string
-	if subnet.Zone != nil {
-		zone = *subnet.Zone
-	} else {
-		vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
-		if err != nil {
-			return nil, err
-		}
-		// TODO(karthik-k-n): Decide on using all zones or using one zone
-		if len(vpcZones) == 0 {
-			return nil, fmt.Errorf("failed to fetch VPC zones, error: %v", err)
-		}
-		zone = vpcZones[0]
-	}
 
 	// create subnet
 	vpcID := s.GetVPCID()
 	if vpcID == nil {
 		return nil, fmt.Errorf("VPC ID is empty")
 	}
-	cidrBlock, err := s.IBMVPCClient.GetSubnetAddrPrefix(*vpcID, zone)
-	if err != nil {
-		return nil, err
-	}
-	ipVersion := "ipv4"
+
+	ipVersion := vpcSubnetIPVersion4
 
 	options := &vpcv1.CreateSubnetOptions{}
 	options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
-		IPVersion:     &ipVersion,
-		Ipv4CIDRBlock: &cidrBlock,
-		Name:          subnet.Name,
+		IPVersion:             &ipVersion,
+		TotalIpv4AddressCount: ptr.To(vpcSubnetIPAddressCount),
+		Name:                  subnet.Name,
 		VPC: &vpcv1.VPCIdentity{
 			ID: vpcID,
 		},
 		Zone: &vpcv1.ZoneIdentity{
-			Name: &zone,
+			Name: subnet.Zone,
 		},
 		ResourceGroup: &vpcv1.ResourceGroupIdentity{
 			ID: &resourceGroupID,
