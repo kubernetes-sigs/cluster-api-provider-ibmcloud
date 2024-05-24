@@ -1102,6 +1102,7 @@ func (s *PowerVSClusterScope) createVPC() (*string, error) {
 // ReconcileVPCSubnets reconciles VPC subnet.
 func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 	subnets := make([]infrav1beta2.Subnet, 0)
+	vpcZones := []string{}
 	// check whether user has set the vpc subnets
 	if len(s.IBMPowerVSCluster.Spec.VPCSubnets) == 0 {
 		// if the user did not set any subnet, we try to create subnet in all the zones.
@@ -1163,9 +1164,14 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 			// check for next subnet
 			continue
 		}
-
+		var zone string
+		if subnet.Zone != nil {
+			zone = *subnet.Zone
+		} else {
+			zone = vpcZones[index]
+		}
 		s.V(3).Info("Creating VPC subnet")
-		subnetID, err = s.createVPCSubnet(subnet)
+		subnetID, err = s.createVPCSubnet(subnet, zone)
 		if err != nil {
 			s.Error(err, "failed to create VPC subnet")
 			return false, err
@@ -1191,14 +1197,13 @@ func (s *PowerVSClusterScope) checkVPCSubnet(subnetName string) (string, error) 
 }
 
 // createVPCSubnet creates a VPC subnet.
-func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*string, error) {
+func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet, zone string) (*string, error) {
 	// TODO(karthik-k-n): consider moving to clusterscope
 	// fetch resource group id
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
 		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
 	}
-	var zone string
 	if subnet.Zone != nil {
 		zone = *subnet.Zone
 	} else {
@@ -1218,17 +1223,13 @@ func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*stri
 	if vpcID == nil {
 		return nil, fmt.Errorf("VPC ID is empty")
 	}
-	cidrBlock, err := s.IBMVPCClient.GetSubnetAddrPrefix(*vpcID, zone)
-	if err != nil {
-		return nil, err
-	}
 	ipVersion := "ipv4"
 
 	options := &vpcv1.CreateSubnetOptions{}
 	options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
-		IPVersion:     &ipVersion,
-		Ipv4CIDRBlock: &cidrBlock,
-		Name:          subnet.Name,
+		IPVersion: &ipVersion,
+		//Ipv4CIDRBlock: &cidrBlock,
+		Name: subnet.Name,
 		VPC: &vpcv1.VPCIdentity{
 			ID: vpcID,
 		},
