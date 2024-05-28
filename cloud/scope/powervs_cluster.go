@@ -680,7 +680,7 @@ func (s *PowerVSClusterScope) ReconcilePowerVSServiceInstance() (bool, error) {
 			return false, fmt.Errorf("failed to get PowerVS service instance with ID %s", serviceInstanceID)
 		}
 
-		requeue, err := s.checkServiceInstanceState(serviceInstance.State)
+		requeue, err := s.checkServiceInstanceState(*serviceInstance)
 		if err != nil {
 			return false, err
 		}
@@ -716,9 +716,9 @@ func (s *PowerVSClusterScope) ReconcilePowerVSServiceInstance() (bool, error) {
 // checkServiceInstanceState checks the state of a PowerVS service instance.
 // If state is provisioning, true is returned indicating a requeue for reconciliation.
 // In all other cases, it returns false.
-func (s *PowerVSClusterScope) checkServiceInstanceState(state *string) (bool, error) {
-	s.V(3).Info("Checking the state of PowerVS service instance")
-	switch *state {
+func (s *PowerVSClusterScope) checkServiceInstanceState(instance resourcecontrollerv2.ResourceInstance) (bool, error) {
+	s.V(3).Info("Checking the state of PowerVS service instance", "name", *instance.Name)
+	switch *instance.State {
 	case string(infrav1beta2.ServiceInstanceStateActive):
 		s.V(3).Info("PowerVS service instance is in active state")
 		return false, nil
@@ -745,7 +745,7 @@ func (s *PowerVSClusterScope) isServiceInstanceExists() (string, bool, error) {
 		return "", false, nil
 	}
 
-	requeue, err := s.checkServiceInstanceState(serviceInstance.State)
+	requeue, err := s.checkServiceInstanceState(*serviceInstance)
 	if err != nil {
 		return "", false, err
 	}
@@ -879,7 +879,7 @@ func (s *PowerVSClusterScope) isDHCPServerActive() (bool, error) {
 		return false, err
 	}
 
-	requeue, err := s.checkDHCPServerStatus(dhcpServer.Status)
+	requeue, err := s.checkDHCPServerStatus(*dhcpServer)
 	if err != nil {
 		return false, err
 	}
@@ -889,9 +889,9 @@ func (s *PowerVSClusterScope) isDHCPServerActive() (bool, error) {
 // checkDHCPServerStatus checks the state of a DHCP server.
 // If state is BUILD, true is returned indicating a requeue for reconciliation.
 // In all other cases, it returns false.
-func (s *PowerVSClusterScope) checkDHCPServerStatus(status *string) (bool, error) {
-	s.V(3).Info("Checking the status of DHCP server")
-	switch *status {
+func (s *PowerVSClusterScope) checkDHCPServerStatus(dhcpServer models.DHCPServerDetail) (bool, error) {
+	s.V(3).Info("Checking the status of DHCP server", "id", *dhcpServer.ID)
+	switch *dhcpServer.Status {
 	case string(infrav1beta2.DHCPServerStateActive):
 		s.V(3).Info("DHCP server is in active state")
 		return false, nil
@@ -1674,7 +1674,7 @@ func (s *PowerVSClusterScope) checkTransitGateway(transitGatewayID *string) (boo
 // If state is pending, true is returned indicating a requeue for reconciliation.
 // In all other cases, it returns false.
 func (s *PowerVSClusterScope) checkTransitGatewayStatus(tg *tgapiv1.TransitGateway) (bool, error) {
-	s.V(3).Info("Checking the status of transit gateway")
+	s.V(3).Info("Checking the status of transit gateway", "name", *tg.Name)
 	switch *tg.Status {
 	case string(infrav1beta2.TransitGatewayStateAvailable):
 		s.V(3).Info("Transit gateway is in available state")
@@ -1714,7 +1714,7 @@ func (s *PowerVSClusterScope) checkTransitGatewayConnections(id *string) (bool, 
 	var powerVSAttached, vpcAttached bool
 	for _, conn := range tgConnections.Connections {
 		if *conn.NetworkType == string(vpcNetworkConnectionType) && *conn.NetworkID == *vpcCRN {
-			if requeue, err := s.checkTransitGatewayConnectionStatus(conn.Status); err != nil {
+			if requeue, err := s.checkTransitGatewayConnectionStatus(conn); err != nil {
 				return requeue, err
 			} else if requeue {
 				return requeue, nil
@@ -1723,7 +1723,7 @@ func (s *PowerVSClusterScope) checkTransitGatewayConnections(id *string) (bool, 
 			vpcAttached = true
 		}
 		if *conn.NetworkType == string(powervsNetworkConnectionType) && *conn.NetworkID == *pvsServiceInstanceCRN {
-			if requeue, err := s.checkTransitGatewayConnectionStatus(conn.Status); err != nil {
+			if requeue, err := s.checkTransitGatewayConnectionStatus(conn); err != nil {
 				return requeue, err
 			} else if requeue {
 				return requeue, nil
@@ -1741,14 +1741,14 @@ func (s *PowerVSClusterScope) checkTransitGatewayConnections(id *string) (bool, 
 // checkTransitGatewayConnectionStatus checks the state of a transit gateway connection.
 // If state is pending, true is returned indicating a requeue for reconciliation.
 // In all other cases, it returns false.
-func (s *PowerVSClusterScope) checkTransitGatewayConnectionStatus(status *string) (bool, error) {
-	s.V(3).Info("Checking the status of transit gateway connection")
-	switch *status {
+func (s *PowerVSClusterScope) checkTransitGatewayConnectionStatus(con tgapiv1.TransitGatewayConnectionCust) (bool, error) {
+	s.V(3).Info("Checking the status of transit gateway connection", "name", *con.Name)
+	switch *con.Status {
 	case string(infrav1beta2.TransitGatewayConnectionStateAttached):
 		s.V(3).Info("Transit gateway connection is in attached state")
 		return false, nil
 	case string(infrav1beta2.TransitGatewayConnectionStateFailed):
-		return false, fmt.Errorf("failed to attach connection to transit gateway, current status: %s", *status)
+		return false, fmt.Errorf("failed to attach connection to transit gateway, current status: %s", *con.Status)
 	case string(infrav1beta2.TransitGatewayConnectionStatePending):
 		s.V(3).Info("Transit gateway connection is in pending state")
 		return true, nil
@@ -1856,7 +1856,7 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers() (bool, error) {
 				return false, err
 			}
 
-			if requeue := s.checkLoadBalancerStatus(loadBalancer.ProvisioningStatus); requeue {
+			if requeue := s.checkLoadBalancerStatus(*loadBalancer); requeue {
 				return requeue, nil
 			}
 
@@ -1893,13 +1893,16 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers() (bool, error) {
 // checkLoadBalancerStatus checks the state of a VPC load balancer.
 // If state is pending, true is returned indicating a requeue for reconciliation.
 // In all other cases, it returns false.
-func (s *PowerVSClusterScope) checkLoadBalancerStatus(status *string) bool {
-	s.V(3).Info("Checking the status of VPC load balancer")
-	switch *status {
+func (s *PowerVSClusterScope) checkLoadBalancerStatus(lb vpcv1.LoadBalancer) bool {
+	s.V(3).Info("Checking the status of VPC load balancer", "name", *lb.Name)
+	switch *lb.ProvisioningStatus {
 	case string(infrav1beta2.VPCLoadBalancerStateActive):
 		s.V(3).Info("VPC load balancer is in active state")
 	case string(infrav1beta2.VPCLoadBalancerStateCreatePending):
 		s.V(3).Info("VPC load balancer creation is in pending state")
+		return true
+	case string(infrav1beta2.VPCLoadBalancerStateUpdatePending):
+		s.V(3).Info("VPC load balancer is in updating state")
 		return true
 	}
 	return false
@@ -2550,7 +2553,7 @@ func (s *PowerVSClusterScope) DeleteServiceInstance() (bool, error) {
 		return false, err
 	}
 	s.Info("PowerVS service instance successfully deleted")
-	return false, nil
+	return true, nil
 }
 
 // DeleteCOSInstance deletes COS instance.
