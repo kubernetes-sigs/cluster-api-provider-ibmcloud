@@ -922,10 +922,16 @@ func (m *PowerVSMachineScope) GetZone() string {
 
 // GetServiceInstanceID returns the service instance id.
 func (m *PowerVSMachineScope) GetServiceInstanceID() string {
-	if m.IBMPowerVSCluster.Status.ServiceInstance == nil || m.IBMPowerVSCluster.Status.ServiceInstance.ID == nil {
-		return ""
+	if m.IBMPowerVSCluster.Status.ServiceInstance != nil && m.IBMPowerVSCluster.Status.ServiceInstance.ID != nil {
+		return *m.IBMPowerVSCluster.Status.ServiceInstance.ID
 	}
-	return *m.IBMPowerVSCluster.Status.ServiceInstance.ID
+	if m.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
+		return m.IBMPowerVSCluster.Spec.ServiceInstanceID
+	}
+	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
+		return *m.IBMPowerVSCluster.Spec.ServiceInstance.ID
+	}
+	return ""
 }
 
 // SetProviderID will set the provider id for the machine.
