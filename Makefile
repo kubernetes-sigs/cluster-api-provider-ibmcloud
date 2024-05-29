@@ -187,7 +187,7 @@ generate-go-conversions: $(CONVERSION_GEN) ## Generate conversions go code
 		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt
 
 .PHONY: generate-templates
-generate-templates: $(KUSTOMIZE)
+generate-templates: $(KUSTOMIZE) ## Generate cluster templates
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template.yaml
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs.yaml
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-powervs-cloud-provider.yaml
@@ -195,7 +195,7 @@ generate-templates: $(KUSTOMIZE)
 	$(KUSTOMIZE) build $(TEMPLATES_DIR)/cluster-template-vpc-clusterclass --load-restrictor LoadRestrictionsNone > $(TEMPLATES_DIR)/cluster-template-vpc-clusterclass.yaml
 	
 .PHONY: generate-e2e-templates
-generate-e2e-templates: $(KUSTOMIZE)
+generate-e2e-templates: $(KUSTOMIZE) ## Generate E2E cluster templates
 ifeq ($(E2E_FLAVOR), powervs-md-remediation)
 	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation.yaml
 else
