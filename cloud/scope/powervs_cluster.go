@@ -1050,17 +1050,12 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 	// check whether user has set the vpc subnets
 	if len(s.IBMPowerVSCluster.Spec.VPCSubnets) == 0 {
 		// if the user did not set any subnet, we try to create subnet in all the zones.
-		powerVSZone := s.Zone()
-		if powerVSZone == nil {
-			return false, fmt.Errorf("PowerVS zone is not set")
-		}
-		region := endpoints.ConstructRegionFromZone(*powerVSZone)
-		vpcZones, err := genUtil.VPCZonesForPowerVSRegion(region)
+		vpcZones, err := genUtil.VPCZonesForVPCRegion(*s.VPC().Region)
 		if err != nil {
 			return false, err
 		}
 		if len(vpcZones) == 0 {
-			return false, fmt.Errorf("failed to fetch VPC zones, no zone found for region %s", region)
+			return false, fmt.Errorf("failed to fetch VPC zones, no zone found for region %s", *s.VPC().Region)
 		}
 		for _, zone := range vpcZones {
 			subnet := infrav1beta2.Subnet{
@@ -1150,12 +1145,7 @@ func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*stri
 	if subnet.Zone != nil {
 		zone = *subnet.Zone
 	} else {
-		powerVSZone := s.Zone()
-		if powerVSZone == nil {
-			return nil, fmt.Errorf("PowerVS zone is not set")
-		}
-		region := endpoints.ConstructRegionFromZone(*powerVSZone)
-		vpcZones, err := genUtil.VPCZonesForPowerVSRegion(region)
+		vpcZones, err := genUtil.VPCZonesForVPCRegion(*s.VPC().Region)
 		if err != nil {
 			return nil, err
 		}
