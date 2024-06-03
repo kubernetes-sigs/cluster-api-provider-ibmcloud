@@ -8,7 +8,7 @@ require (
 	github.com/aquasecurity/trivy v0.48.3
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golangci/golangci-lint v1.59.0
-	github.com/itchyny/gojq v0.12.15
+	github.com/itchyny/gojq v0.12.16
 	github.com/joelanford/go-apidiff v0.8.2
 	github.com/onsi/ginkgo/v2 v2.17.3
 	go.uber.org/mock v0.4.0
@@ -298,7 +298,7 @@ require (
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/itchyny/timefmt-go v0.1.5 // indirect
+	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jgautheron/goconst v1.7.1 // indirect
 	github.com/jingyugao/rowserrcheck v1.1.1 // indirect
