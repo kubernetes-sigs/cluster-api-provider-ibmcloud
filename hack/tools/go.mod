@@ -13,7 +13,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.17.3
 	go.uber.org/mock v0.4.0
 	golang.org/x/vuln v1.1.1
-	gotest.tools/gotestsum v1.11.0
+	gotest.tools/gotestsum v1.12.0
 	k8s.io/code-generator v0.29.3
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240513085657-a5898a2f63b8
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
@@ -155,7 +155,7 @@ require (
 	github.com/aws/smithy-go v1.18.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
-	github.com/bitfield/gotestdox v0.2.1 // indirect
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bitnami/go-version v0.0.0-20231130084017-bb00604d650c // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
