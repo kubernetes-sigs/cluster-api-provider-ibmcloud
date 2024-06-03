@@ -119,6 +119,9 @@ var (
 	// VPCLoadBalancerStateCreatePending is the string representing the load balancer in a queued state.
 	VPCLoadBalancerStateCreatePending = VPCLoadBalancerState("create_pending")
 
+	// VPCLoadBalancerStateUpdatePending is the string representing the load balancer in updating state.
+	VPCLoadBalancerStateUpdatePending = VPCLoadBalancerState("update_pending")
+
 	// VPCLoadBalancerStateDeletePending is the string representing the load balancer in deleting state.
 	VPCLoadBalancerStateDeletePending = VPCLoadBalancerState("delete_pending")
 )
