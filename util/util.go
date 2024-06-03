@@ -230,3 +230,13 @@ func GetTransitGatewayLocationAndRouting(powerVSZone *string, vpcRegion *string)
 	// since VPC region is not set and used PowerVS region to calculate the transit gateway location, hence returning local routing as default.
 	return &location, ptr.To(false), nil
 }
+
+// VPCZonesForVPCRegion returns the VPC zones associated with the VPC region.
+func VPCZonesForVPCRegion(region string) ([]string, error) {
+	for _, regionDetails := range Regions {
+		if regionDetails.VPCRegion == region {
+			return regionDetails.VPCZones, nil
+		}
+	}
+	return nil, fmt.Errorf("VPC zones corresponding to the VPC region %s is not found", region)
+}
