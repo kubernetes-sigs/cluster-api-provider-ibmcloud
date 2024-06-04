@@ -81,6 +81,7 @@ type VPCLoadBalancerSpec struct {
 	// +listType=map
 	// +listMapKey=port
 	// +optional
+	// ++kubebuilder:validation:UniqueItems=true
 	AdditionalListeners []AdditionalListenerSpec `json:"additionalListeners,omitempty"`
 }
 

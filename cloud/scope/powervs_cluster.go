@@ -1858,6 +1858,7 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers() (bool, error) {
 			s.SetLoadBalancerStatus(*loadBalancer.Name, loadBalancerStatus)
 			continue
 		}
+
 		// check VPC load balancer exist in cloud
 		loadBalancerStatus, err := s.checkLoadBalancer(loadBalancer)
 		if err != nil {
@@ -1867,6 +1868,13 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers() (bool, error) {
 			s.SetLoadBalancerStatus(loadBalancer.Name, *loadBalancerStatus)
 			continue
 		}
+
+		// check loadbalancer port against apiserver port.
+		err = s.checkLoadBalancerPort(loadBalancer)
+		if err != nil {
+			return false, err
+		}
+
 		// create loadBalancer
 		s.V(3).Info("Creating VPC load balancer")
 		loadBalancerStatus, err = s.createLoadBalancer(loadBalancer)
@@ -1896,6 +1904,15 @@ func (s *PowerVSClusterScope) checkLoadBalancerStatus(lb vpcv1.LoadBalancer) boo
 		return true
 	}
 	return false
+}
+
+func (s *PowerVSClusterScope) checkLoadBalancerPort(lb infrav1beta2.VPCLoadBalancerSpec) error {
+	for _, listerner := range lb.AdditionalListeners {
+		if listerner.Port == int64(s.APIServerPort()) {
+			return fmt.Errorf("port %d for the %s load balancer cannot be used as an additional listener port, as it is already assigned to the API server", listerner.Port, lb.Name)
+		}
+	}
+	return nil
 }
 
 // checkLoadBalancer checks loadBalancer in cloud.
