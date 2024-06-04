@@ -197,7 +197,7 @@ func (s *Service) CreateResourceKey(options *resourcecontrollerv2.CreateResource
 }
 
 // NewService returns a new service for the IBM Cloud Resource Controller api client.
-func NewService(options ServiceOptions) (*Service, error) {
+func NewService(options ServiceOptions) (ResourceController, error) {
 	if options.ResourceControllerV2Options == nil {
 		options.ResourceControllerV2Options = &resourcecontrollerv2.ResourceControllerV2Options{}
 	}

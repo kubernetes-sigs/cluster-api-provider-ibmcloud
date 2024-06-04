@@ -83,6 +83,19 @@ type PowerVSClusterScopeParams struct {
 	Cluster           *capiv1beta1.Cluster
 	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
+
+	// ClientFactory contains collection of functions to override actual client, which helps in testing.
+	ClientFactory
+}
+
+// ClientFactory is collection of function used for overriding actual clients to help in testing.
+type ClientFactory struct {
+	AuthenticatorFactory      func() (core.Authenticator, error)
+	PowerVSClientFactory      func() (powervs.PowerVS, error)
+	VPCClientFactory          func() (vpc.Vpc, error)
+	TransitGatewayFactory     func() (transitgateway.TransitGateway, error)
+	ResourceControllerFactory func() (resourcecontroller.ResourceController, error)
+	ResourceManagerFactory    func() (resourcemanager.ResourceManager, error)
 }
 
 // PowerVSClusterScope defines a scope defined around a Power VS Cluster.
@@ -90,7 +103,6 @@ type PowerVSClusterScope struct {
 	logr.Logger
 	Client      client.Client
 	patchHelper *patch.Helper
-	session     *ibmpisession.IBMPISession
 
 	IBMPowerVSClient      powervs.PowerVS
 	IBMVPCClient          vpc.Vpc
@@ -105,7 +117,7 @@ type PowerVSClusterScope struct {
 }
 
 // NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.
-func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterScope, error) { //nolint:gocyclo
+func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterScope, error) {
 	if params.Client == nil {
 		err := errors.New("failed to generate new scope as client is nil")
 		return nil, err
@@ -128,7 +140,20 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		return nil, err
 	}
 
-	options := powervs.ServiceOptions{
+	// if powervs.cluster.x-k8s.io/create-infra=true annotation is not set, create only powerVSClient.
+	if !CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
+		return &PowerVSClusterScope{
+			Logger:            params.Logger,
+			Client:            params.Client,
+			patchHelper:       helper,
+			Cluster:           params.Cluster,
+			IBMPowerVSCluster: params.IBMPowerVSCluster,
+			ServiceEndpoint:   params.ServiceEndpoint,
+		}, nil
+	}
+
+	// if powervs.cluster.x-k8s.io/create-infra=true annotation is set, create necessary clients.
+	piOptions := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
 		},
@@ -164,76 +189,27 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		if err != nil {
 			return nil, fmt.Errorf("failed to get resource instance: %w", err)
 		}
-		options.Zone = *res.RegionID
-		options.CloudInstanceID = params.IBMPowerVSCluster.Spec.ServiceInstanceID
+		piOptions.Zone = *res.RegionID
+		piOptions.CloudInstanceID = params.IBMPowerVSCluster.Spec.ServiceInstanceID
 	} else {
-		options.Zone = *params.IBMPowerVSCluster.Spec.Zone
+		piOptions.Zone = *params.IBMPowerVSCluster.Spec.Zone
 	}
 
-	// Fetch the PowerVS service endpoint.
-	powerVSServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), params.ServiceEndpoint)
-	if powerVSServiceEndpoint != "" {
-		params.Logger.V(3).Info("Overriding the default PowerVS endpoint", "powerVSEndpoint", powerVSServiceEndpoint)
-		options.IBMPIOptions.URL = powerVSServiceEndpoint
+	// Get the authenticator.
+	auth, err := params.getAuthenticator()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create authenticator %w", err)
 	}
+	piOptions.Authenticator = auth
 
-	// TODO(karhtik-k-n): may be optimize NewService to use the session created here
-	powerVSClient, err := powervs.NewService(options)
+	// Create PowerVS client.
+	powerVSClient, err := params.getPowerVSClient(piOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PowerVS client %w", err)
 	}
 
-	auth, err := authenticator.GetAuthenticator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create authenticator %w", err)
-	}
-	account, err := utils.GetAccount(auth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get account details %w", err)
-	}
-
-	sessionOptions := &ibmpisession.IBMPIOptions{
-		Authenticator: auth,
-		UserAccount:   account,
-		Zone:          options.Zone,
-		Debug:         params.Logger.V(DEBUGLEVEL).Enabled(),
-	}
-	if powerVSServiceEndpoint != "" {
-		sessionOptions.URL = powerVSServiceEndpoint
-	}
-	session, err := ibmpisession.NewIBMPISession(sessionOptions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get PowerVS session %w", err)
-	}
-
-	// if powervs.cluster.x-k8s.io/create-infra=true annotation is not set, create only powerVSClient.
-	if !CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
-		return &PowerVSClusterScope{
-			session:           session,
-			Logger:            params.Logger,
-			Client:            params.Client,
-			patchHelper:       helper,
-			Cluster:           params.Cluster,
-			IBMPowerVSCluster: params.IBMPowerVSCluster,
-			ServiceEndpoint:   params.ServiceEndpoint,
-			IBMPowerVSClient:  powerVSClient,
-		}, nil
-	}
-
-	// if powervs.cluster.x-k8s.io/create-infra=true annotation is set, create necessary clients.
-	if params.IBMPowerVSCluster.Spec.VPC == nil || params.IBMPowerVSCluster.Spec.VPC.Region == nil {
-		return nil, fmt.Errorf("failed to create VPC client as VPC info is nil")
-	}
-
-	if params.Logger.V(DEBUGLEVEL).Enabled() {
-		core.SetLoggingLevel(core.LevelDebug)
-	}
-
-	// Fetch the VPC service endpoint.
-	svcEndpoint := endpoints.FetchVPCEndpoint(*params.IBMPowerVSCluster.Spec.VPC.Region, params.ServiceEndpoint)
-
 	// Create VPC client.
-	vpcClient, err := vpc.NewService(svcEndpoint)
+	vpcClient, err := params.getVPCClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create VPC client: %w", err)
 	}
@@ -242,14 +218,8 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 	tgOptions := &tgapiv1.TransitGatewayApisV1Options{
 		Authenticator: auth,
 	}
-	// Fetch the TransitGateway service endpoint.
-	tgServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.TransitGateway), params.ServiceEndpoint)
-	if tgServiceEndpoint != "" {
-		params.Logger.V(3).Info("Overriding the default TransitGateway endpoint", "transitGatewayEndpoint", tgServiceEndpoint)
-		tgOptions.URL = tgServiceEndpoint
-	}
 
-	tgClient, err := transitgateway.NewService(tgOptions)
+	tgClient, err := params.getTransitGatewayClient(tgOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tranist gateway client: %w", err)
 	}
@@ -260,13 +230,8 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 			Authenticator: auth,
 		},
 	}
-	// Fetch the resource controller endpoint.
-	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
-	if rcEndpoint != "" {
-		serviceOption.URL = rcEndpoint
-		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
-	}
-	resourceClient, err := resourcecontroller.NewService(serviceOption)
+
+	resourceClient, err := params.getResourceControllerClient(serviceOption)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource controller client: %w", err)
 	}
@@ -276,19 +241,12 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		Authenticator: auth,
 	}
 
-	rmEndpoint := endpoints.FetchEndpoints(string(endpoints.RM), params.ServiceEndpoint)
-	if rmEndpoint != "" {
-		rcManagerOptions.URL = rmEndpoint
-		params.Logger.V(3).Info("Overriding the default resource manager endpoint", "ResourceManagerEndpoint", rmEndpoint)
-	}
-
-	rmClient, err := resourcemanager.NewService(rcManagerOptions)
+	rmClient, err := params.getResourceManagerClient(rcManagerOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource manager client: %w", err)
 	}
 
 	clusterScope := &PowerVSClusterScope{
-		session:               session,
 		Logger:                params.Logger,
 		Client:                params.Client,
 		patchHelper:           helper,
@@ -302,6 +260,81 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		ResourceManagerClient: rmClient,
 	}
 	return clusterScope, nil
+}
+
+func (params PowerVSClusterScopeParams) getAuthenticator() (core.Authenticator, error) {
+	if params.AuthenticatorFactory != nil {
+		return params.AuthenticatorFactory()
+	}
+	return authenticator.GetAuthenticator()
+}
+
+func (params PowerVSClusterScopeParams) getPowerVSClient(options powervs.ServiceOptions) (powervs.PowerVS, error) {
+	if params.PowerVSClientFactory != nil {
+		return params.PowerVSClientFactory()
+	}
+
+	// Fetch the PowerVS service endpoint.
+	powerVSServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), params.ServiceEndpoint)
+	if powerVSServiceEndpoint != "" {
+		params.Logger.V(3).Info("Overriding the default PowerVS endpoint", "powerVSEndpoint", powerVSServiceEndpoint)
+		options.URL = powerVSServiceEndpoint
+	}
+	return powervs.NewService(options)
+}
+
+func (params PowerVSClusterScopeParams) getVPCClient() (vpc.Vpc, error) {
+	if params.Logger.V(DEBUGLEVEL).Enabled() {
+		core.SetLoggingLevel(core.LevelDebug)
+	}
+	if params.VPCClientFactory != nil {
+		return params.VPCClientFactory()
+	}
+	if params.IBMPowerVSCluster.Spec.VPC == nil || params.IBMPowerVSCluster.Spec.VPC.Region == nil {
+		return nil, fmt.Errorf("failed to create VPC client as VPC info is nil")
+	}
+	// Fetch the VPC service endpoint.
+	svcEndpoint := endpoints.FetchVPCEndpoint(*params.IBMPowerVSCluster.Spec.VPC.Region, params.ServiceEndpoint)
+	return vpc.NewService(svcEndpoint)
+}
+
+func (params PowerVSClusterScopeParams) getTransitGatewayClient(options *tgapiv1.TransitGatewayApisV1Options) (transitgateway.TransitGateway, error) {
+	if params.TransitGatewayFactory != nil {
+		return params.TransitGatewayFactory()
+	}
+	// Fetch the TransitGateway service endpoint.
+	tgServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.TransitGateway), params.ServiceEndpoint)
+	if tgServiceEndpoint != "" {
+		params.Logger.V(3).Info("Overriding the default TransitGateway endpoint", "transitGatewayEndpoint", tgServiceEndpoint)
+		options.URL = tgServiceEndpoint
+	}
+	return transitgateway.NewService(options)
+}
+
+func (params PowerVSClusterScopeParams) getResourceControllerClient(options resourcecontroller.ServiceOptions) (resourcecontroller.ResourceController, error) {
+	if params.ResourceControllerFactory != nil {
+		return params.ResourceControllerFactory()
+	}
+	// Fetch the resource controller endpoint.
+	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
+	if rcEndpoint != "" {
+		options.URL = rcEndpoint
+		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
+	}
+	return resourcecontroller.NewService(options)
+}
+
+func (params PowerVSClusterScopeParams) getResourceManagerClient(options *resourcemanagerv2.ResourceManagerV2Options) (resourcemanager.ResourceManager, error) {
+	if params.ResourceManagerFactory != nil {
+		return params.ResourceManagerFactory()
+	}
+	// Fetch the resource manager endpoint.
+	rmEndpoint := endpoints.FetchEndpoints(string(endpoints.RM), params.ServiceEndpoint)
+	if rmEndpoint != "" {
+		options.URL = rmEndpoint
+		params.Logger.V(3).Info("Overriding the default resource manager endpoint", "ResourceManagerEndpoint", rmEndpoint)
+	}
+	return resourcemanager.NewService(options)
 }
 
 // PatchObject persists the cluster configuration and status.
@@ -2183,8 +2216,18 @@ func (s *PowerVSClusterScope) fetchResourceGroupID() (string, error) {
 		return "", fmt.Errorf("resource group name is not set")
 	}
 
+	auth, err := authenticator.GetAuthenticator()
+	if err != nil {
+		return "", err
+	}
+
+	account, err := utils.GetAccount(auth)
+	if err != nil {
+		return "", err
+	}
+
 	resourceGroup := s.ResourceGroup().Name
-	rmv2ListResourceGroupOpt := resourcemanagerv2.ListResourceGroupsOptions{Name: resourceGroup, AccountID: &s.session.Options.UserAccount}
+	rmv2ListResourceGroupOpt := resourcemanagerv2.ListResourceGroupsOptions{Name: resourceGroup, AccountID: &account}
 	resourceGroupListResult, _, err := s.ResourceManagerClient.ListResourceGroups(&rmv2ListResourceGroupOpt)
 	if err != nil {
 		return "", err
