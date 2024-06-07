@@ -52,5 +52,6 @@ spec:
           requests:
             cpu: 100m
             memory: 20Mi
+        terminationMessagePolicy: FallbackToLogsOnError
       terminationGracePeriodSeconds: 10
       serviceAccountName: manager

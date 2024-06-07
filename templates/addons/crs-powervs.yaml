@@ -243,15 +243,16 @@ data:
               env:
                 - name: ENABLE_VPC_PUBLIC_ENDPOINT
                   value: "true"
+              resources:
+                requests:
+                  cpu: 200m
+              terminationMessagePolicy: FallbackToLogsOnError
               volumeMounts:
                 - mountPath: /etc/cloud
                   name: ibmpowervs-config-volume
                   readOnly: true
                 - mountPath: /etc/ibm-secret
                   name: ibm-secret
-              resources:
-                requests:
-                  cpu: 200m
           hostNetwork: true
           volumes:
             - name: ibmpowervs-config-volume
