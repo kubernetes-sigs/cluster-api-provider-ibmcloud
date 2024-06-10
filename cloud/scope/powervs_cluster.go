@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
@@ -206,7 +207,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 	}
 
 	// if powervs.cluster.x-k8s.io/create-infra=true annotation is not set, create only powerVSClient.
-	if !genUtil.CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
+	if !CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
 		return &PowerVSClusterScope{
 			session:           session,
 			Logger:            params.Logger,
@@ -1050,7 +1051,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets() (bool, error) {
 	// check whether user has set the vpc subnets
 	if len(s.IBMPowerVSCluster.Spec.VPCSubnets) == 0 {
 		// if the user did not set any subnet, we try to create subnet in all the zones.
-		vpcZones, err := genUtil.VPCZonesForVPCRegion(*s.VPC().Region)
+		vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
 		if err != nil {
 			return false, err
 		}
@@ -1145,7 +1146,7 @@ func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*stri
 	if subnet.Zone != nil {
 		zone = *subnet.Zone
 	} else {
-		vpcZones, err := genUtil.VPCZonesForVPCRegion(*s.VPC().Region)
+		vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
 		if err != nil {
 			return nil, err
 		}

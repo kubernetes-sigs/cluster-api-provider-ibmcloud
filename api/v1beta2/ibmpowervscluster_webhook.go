@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strconv"
 
+	regionUtil "github.com/ppc64le-cloud/powervs-utils"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -29,6 +31,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
 // log is for logging in this package.
@@ -122,6 +126,16 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSClusterVPCSubnetNames() (allErrs f
 	return allErrs
 }
 
+func (r *IBMPowerVSCluster) validateIBMPowerVSClusterTransitGateway() *field.Error {
+	if r.Spec.Zone == nil && r.Spec.VPC == nil {
+		return nil
+	}
+	if _, globalRouting, _ := genUtil.GetTransitGatewayLocationAndRouting(r.Spec.Zone, r.Spec.VPC.Region); r.Spec.TransitGateway.GlobalRouting != nil && !*r.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
+		return field.Invalid(field.NewPath("spec.transitGateway.globalRouting"), r.Spec.TransitGateway.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
+	}
+	return nil
+}
+
 func (r *IBMPowerVSCluster) validateIBMPowerVSClusterCreateInfraPrereq() (allErrs field.ErrorList) {
 	annotations := r.GetAnnotations()
 	if len(annotations) == 0 {
@@ -146,12 +160,20 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSClusterCreateInfraPrereq() (allErr
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), r.Spec.Zone, "value of zone is empty"))
 	}
 
+	if r.Spec.Zone != nil && !regionUtil.ValidateZone(*r.Spec.Zone) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), r.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", *r.Spec.Zone)))
+	}
+
 	if r.Spec.VPC == nil {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc"), r.Spec.VPC, "value of VPC is empty"))
 	}
 
 	if r.Spec.VPC.Region == nil {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), r.Spec.VPC.Region, "value of VPC region is empty"))
+	}
+
+	if r.Spec.VPC.Region != nil && !regionUtil.ValidateVPCRegion(*r.Spec.VPC.Region) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), r.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", *r.Spec.VPC.Region)))
 	}
 
 	if r.Spec.ResourceGroup == nil {
@@ -163,6 +185,10 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSClusterCreateInfraPrereq() (allErr
 
 	if err := r.validateIBMPowerVSClusterLoadBalancerNames(); err != nil {
 		allErrs = append(allErrs, err...)
+	}
+
+	if err := r.validateIBMPowerVSClusterTransitGateway(); err != nil {
+		allErrs = append(allErrs, err)
 	}
 
 	return allErrs

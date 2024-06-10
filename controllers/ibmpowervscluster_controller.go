@@ -45,7 +45,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
@@ -119,7 +118,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 
 	// check for annotation set for cluster resource and decide on proceeding with infra creation.
 	// do not proceed further if "powervs.cluster.x-k8s.io/create-infra=true" annotation is not set.
-	if !genUtil.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
+	if !scope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
 		clusterScope.IBMPowerVSCluster.Status.Ready = true
 		return ctrl.Result{}, nil
 	}
@@ -263,7 +262,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	}
 
 	// check for annotation set for cluster resource and decide on proceeding with infra deletion.
-	if !genUtil.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
+	if !scope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
 		controllerutil.RemoveFinalizer(cluster, infrav1beta2.IBMPowerVSClusterFinalizer)
 		return ctrl.Result{}, nil
 	}
