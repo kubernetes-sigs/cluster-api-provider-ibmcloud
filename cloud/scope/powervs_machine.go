@@ -32,6 +32,7 @@ import (
 	"github.com/blang/semver/v4"
 	ignV3Types "github.com/coreos/ignition/v2/config/v3_4/types"
 	"github.com/go-logr/logr"
+	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
@@ -66,7 +67,6 @@ import (
 	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/ignition"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
-	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
 const cosURLDomain = "cloud-object-storage.appdomain.cloud"
@@ -221,13 +221,13 @@ func NewPowerVSMachineScope(params PowerVSMachineScopeParams) (scope *PowerVSMac
 	scope.IBMPowerVSClient = c
 	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
 
-	if !genUtil.CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
+	if !CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
 		return scope, nil
 	}
 
 	var vpcRegion string
 	if params.IBMPowerVSCluster.Spec.VPC == nil || params.IBMPowerVSCluster.Spec.VPC.Region == nil {
-		vpcRegion, err = genUtil.VPCRegionForPowerVSRegion(scope.GetRegion())
+		vpcRegion, err = regionUtil.VPCRegionForPowerVSRegion(scope.GetRegion())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create VPC client, error getting VPC region %v", err)
 		}
