@@ -12,7 +12,7 @@ require (
 	github.com/joelanford/go-apidiff v0.8.2
 	github.com/onsi/ginkgo/v2 v2.17.3
 	go.uber.org/mock v0.4.0
-	golang.org/x/vuln v1.1.1
+	golang.org/x/vuln v1.1.2
 	gotest.tools/gotestsum v1.12.0
 	k8s.io/code-generator v0.29.3
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20240513085657-a5898a2f63b8
@@ -501,6 +501,7 @@ require (
 	golang.org/x/oauth2 v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
 	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
