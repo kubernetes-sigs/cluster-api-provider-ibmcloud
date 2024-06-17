@@ -81,7 +81,7 @@ PULL_POLICY ?= Always
 # Set build time variables including version details
 LDFLAGS := $(shell ./hack/version.sh)
 
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.27.1
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.29.3
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
