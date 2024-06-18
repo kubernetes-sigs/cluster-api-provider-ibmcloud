@@ -1,6 +1,7 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.21
+toolchain go1.22.4
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
@@ -10,7 +11,7 @@ replace (
 )
 
 require (
-	github.com/IBM-Cloud/power-go-client v1.6.0
+	github.com/IBM-Cloud/power-go-client v1.7.0
 	github.com/IBM/go-sdk-core/v5 v5.17.3
 	github.com/IBM/ibm-cos-sdk-go v1.10.3
 	github.com/IBM/networking-go-sdk v0.45.0
