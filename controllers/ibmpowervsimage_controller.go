@@ -66,11 +66,17 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
+	cluster, err := scope.GetClusterByName(ctx, r.Client, ibmImage.Namespace, ibmImage.Spec.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	// Create the scope.
 	imageScope, err := scope.NewPowerVSImageScope(scope.PowerVSImageScopeParams{
 		Client:          r.Client,
 		Logger:          log,
 		IBMPowerVSImage: ibmImage,
+		Zone:            cluster.Spec.Zone,
 		ServiceEndpoint: r.ServiceEndpoint,
 	})
 	if err != nil {
@@ -91,10 +97,6 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return r.reconcileDelete(imageScope)
 	}
 
-	cluster, err := scope.GetClusterByName(ctx, r.Client, ibmImage.Namespace, ibmImage.Spec.ClusterName)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
 	return r.reconcile(cluster, imageScope)
 }
 

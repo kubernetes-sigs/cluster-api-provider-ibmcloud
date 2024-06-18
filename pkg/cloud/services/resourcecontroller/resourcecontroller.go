@@ -27,7 +27,7 @@ type ResourceController interface {
 	ListResourceInstances(listResourceInstancesOptions *resourcecontrollerv2.ListResourceInstancesOptions) (result *resourcecontrollerv2.ResourceInstancesList, response *core.DetailedResponse, err error)
 	GetResourceInstance(*resourcecontrollerv2.GetResourceInstanceOptions) (*resourcecontrollerv2.ResourceInstance, *core.DetailedResponse, error)
 	CreateResourceInstance(*resourcecontrollerv2.CreateResourceInstanceOptions) (*resourcecontrollerv2.ResourceInstance, *core.DetailedResponse, error)
-	GetServiceInstance(string, string) (*resourcecontrollerv2.ResourceInstance, error)
+	GetServiceInstance(string, string, *string) (*resourcecontrollerv2.ResourceInstance, error)
 	DeleteResourceInstance(*resourcecontrollerv2.DeleteResourceInstanceOptions) (*core.DetailedResponse, error)
 
 	GetInstanceByName(string, string, string) (*resourcecontrollerv2.ResourceInstance, error)

@@ -757,7 +757,7 @@ func (s *PowerVSClusterScope) isServiceInstanceExists() (string, bool, error) {
 // getServiceInstance return resource instance by name.
 func (s *PowerVSClusterScope) getServiceInstance() (*resourcecontrollerv2.ResourceInstance, error) {
 	//TODO: Support regular expression
-	return s.ResourceClient.GetServiceInstance("", *s.GetServiceName(infrav1beta2.ResourceTypeServiceInstance))
+	return s.ResourceClient.GetServiceInstance("", *s.GetServiceName(infrav1beta2.ResourceTypeServiceInstance), s.IBMPowerVSCluster.Spec.Zone)
 }
 
 // createServiceInstance creates the service instance.
