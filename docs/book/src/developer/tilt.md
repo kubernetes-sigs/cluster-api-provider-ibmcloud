@@ -55,7 +55,8 @@ podman machine start
 
 ## Create a kind cluster
 
-First, make sure you have a kind cluster and that your `KUBECONFIG` is set up correctly:
+First, make sure you have a kind cluster and that your `KUBECONFIG` is set up correctly.
+> **Note:** Execute the following from the `cluster-api-provider-ibmcloud` respository. 
 
 ``` bash
 make kind-cluster
@@ -97,11 +98,9 @@ extra_args:
 
 > **Note:** Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental features.
 
-### 1.  Configuration to deploy PowerVS workload cluster with external cloud controller manager
+### 1.  Configuration to deploy workload cluster with external cloud controller manager
 
-To deploy workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html)(experimental) or to deploy workload cluster with [cloud controller manager](/topics/vpc/load-balancer.html)(experimental), set `PROVIDER_ID_FORMAT` to `v2` and enable cluster resourceset feature gate under kustomize_substitutions.
-
-This requires setting the feature gate `EXP_CLUSTER_RESOURCE_SET` to `true` under kustomize_substitutions.
+To deploy workload cluster with cloud controller manager, set `PROVIDER_ID_FORMAT` to `v2` and enable cluster resourceset feature gate by setting `EXP_CLUSTER_RESOURCE_SET` to `true under kustomize_substitutions.
 
 ```yaml
 default_registry: "gcr.io/you-project-name-here"
@@ -119,9 +118,7 @@ kustomize_substitutions:
 
 ### 2.  Configuration to deploy workload cluster from ClusterClass template
 
-To deploy workload cluster with [clusterclass-template](/topics/powervs/clusterclass-cluster.html), set the `PROVIDER_ID_FORMAT` to `v2` under kustomize_substitutions.
-
-This requires setting the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
+To deploy workload cluster with [clusterclass-template](/topics/powervs/clusterclass-cluster.html), set the `PROVIDER_ID_FORMAT` to `v2` and enable the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true`under kustomize_substitutions.
 
 ```yaml
 default_registry: "gcr.io/you-project-name-here"
