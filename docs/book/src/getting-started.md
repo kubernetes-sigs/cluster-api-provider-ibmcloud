@@ -93,7 +93,7 @@ it into a management cluster using `clusterctl`.
 
 ### Deploy with Cloud Controller manager
 
-   To deploy VPC workload cluster with [IBM cloud controller manager](/topics/vpc/load-balancer.html), or with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `PROVIDER_ID_FORMAT` environmental variable to `v2`.
+   To deploy PowerVS workload cluster with [PowerVS cloud controller manager](/topics/powervs/external-cloud-provider.html), set the `PROVIDER_ID_FORMAT` environmental variable to `v2`.
 
    ```console
       export PROVIDER_ID_FORMAT=v2
