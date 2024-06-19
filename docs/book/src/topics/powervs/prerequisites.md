@@ -27,7 +27,7 @@ Please refer to the following [documentation](https://cloud.ibm.com/docs/account
 
 After you have an active IBM Cloud account, you can create a Power Systems Virtual Server service. To do so, perform the following steps:
 
-1. ***TO-DO***
+> **Note:** If you are deploying a [PowerVS cluster with infrastructure creation](./creating-a-cluster.md#deploy-a-powervs-cluster-with-infrastructure-creation), you can diretly proceed to the step 2 of cluster creation [here](./creating-a-cluster.md#provision-workload-cluster-in-ibm-cloud-powervs) as creating network resources and importing boot images is not required.
 
 ## Create Network
 
