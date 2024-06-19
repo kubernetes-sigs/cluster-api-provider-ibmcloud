@@ -45,8 +45,8 @@ go build .
 ```
 
 Note:
-1. autoscaler can be run in different ways the possible ways are described [here](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/clusterapi/README.md#connecting-cluster-autoscaler-to-cluster-api-management-and-workload-clusters).
-2. autoscaler supports various command line flags and more details about it can be found [here](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca).
+1. Autoscaler can be run in different ways, the possible ways are described [here](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/clusterapi/README.md#connecting-cluster-autoscaler-to-cluster-api-management-and-workload-clusters).
+2. Autoscaler supports various command line flags and more details about it can be found [here](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca).
 
 ## Use case of cluster-autoscaler 
 
@@ -97,17 +97,17 @@ busybox-deployment-7c87788568-t26bb   0/1     Pending   0          5s
 5. On the management cluster verify that the new machine creation is being triggered by autoscaler
 ```
 NAME                                        CLUSTER               NODENAME                                  PROVIDERID                                                                                      PHASE          AGE     VERSION
-karthik-ibm-powervs-control-plane-smvf7     karthik-ibm-powervs   karthik-ibm-powervs-control-plane-pgwmz   ibmpowervs://osa/osa21/3229a-af54-4212-bf60-6202b6fd0a07/809cd0f2-7502-4112-bf44-84d178020d8a   Running        82m     v1.24.2
-karthik-ibm-powervs-md-0-6b4d67ccf4-npdbm   karthik-ibm-powervs   karthik-ibm-powervs-md-0-qch8f            ibmpowervs://osa/osa21/3229a-af54-4212-bf60-6202b6fd0a07/50f841e5-f58c-4569-894d-b40ba0d2696e   Running        76m     v1.24.2
-karthik-ibm-powervs-md-0-6b4d67ccf4-v7xv9   karthik-ibm-powervs                                                                                                                                             Provisioning   3m19s   v1.24.2
+ibm-powervs-control-plane-smvf7     ibm-powervs   ibm-powervs-control-plane-pgwmz   ibmpowervs://osa/osa21/3229a-af54-4212-bf60-6202b6fd0a07/809cd0f2-7502-4112-bf44-84d178020d8a   Running        82m     v1.24.2
+ibm-powervs-md-0-6b4d67ccf4-npdbm   ibm-powervs   ibm-powervs-md-0-qch8f            ibmpowervs://osa/osa21/3229a-af54-4212-bf60-6202b6fd0a07/50f841e5-f58c-4569-894d-b40ba0d2696e   Running        76m     v1.24.2
+ibm-powervs-md-0-6b4d67ccf4-v7xv9   ibm-powervs                                                                                                                                             Provisioning   3m19s   v1.24.2
 ```
 6. After sometime verify that the new node being added to the cluster and pod is in running state
 ```
 kubectl get nodes
 NAME                                      STATUS   ROLES           AGE   VERSION
-karthik-ibm-powervs-control-plane-pgwmz   Ready    control-plane   92m   v1.24.2
-karthik-ibm-powervs-md-0-n8c6d            Ready    <none>          42s   v1.24.2
-karthik-ibm-powervs-md-0-qch8f            Ready    <none>          85m   v1.24.2
+ibm-powervs-control-plane-pgwmz   Ready    control-plane   92m   v1.24.2
+ibm-powervs-md-0-n8c6d            Ready    <none>          42s   v1.24.2
+ibm-powervs-md-0-qch8f            Ready    <none>          85m   v1.24.2
 
 kubectl get pods
 NAME                                  READY   STATUS    RESTARTS   AGE
@@ -120,7 +120,7 @@ kubectl delete deployment/busybox-deployment
 
 kubectl get nodes
 NAME                                      STATUS   ROLES           AGE    VERSION
-karthik-ibm-powervs-control-plane-pgwmz   Ready    control-plane   105m   v1.24.2
-karthik-ibm-powervs-md-0-qch8f            Ready    <none>          98m    v1.24.2
+ibm-powervs-control-plane-pgwmz   Ready    control-plane   105m   v1.24.2
+ibm-powervs-md-0-qch8f            Ready    <none>          98m    v1.24.2
 ```
 
