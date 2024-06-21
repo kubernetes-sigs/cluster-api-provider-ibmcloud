@@ -2285,12 +2285,12 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer() (bool, error) {
 			continue
 		}
 
-		lb, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+		lb, resp, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
 			ID: lb.ID,
 		})
 
 		if err != nil {
-			if strings.Contains(err.Error(), string(VPCLoadBalancerNotFound)) {
+			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
 				s.Info("VPC load balancer successfully deleted")
 				continue
 			}
@@ -2324,10 +2324,10 @@ func (s *PowerVSClusterScope) DeleteVPCSecurityGroups() error {
 			s.Info("Skipping VPC security group deletion as resource is not created by controller", "ID", *securityGroup.ID)
 			continue
 		}
-		if _, _, err := s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{
+		if _, resp, err := s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{
 			ID: securityGroup.ID,
 		}); err != nil {
-			if strings.Contains(err.Error(), string(VPCSecurityGroupNotFound)) {
+			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
 				s.Info("VPC security group has been already deleted", "ID", *securityGroup.ID)
 				continue
 			}
@@ -2356,12 +2356,12 @@ func (s *PowerVSClusterScope) DeleteVPCSubnet() (bool, error) {
 			continue
 		}
 
-		net, _, err := s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{
+		net, resp, err := s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{
 			ID: subnet.ID,
 		})
 
 		if err != nil {
-			if strings.Contains(err.Error(), string(VPCSubnetNotFound)) {
+			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
 				s.Info("VPC subnet successfully deleted")
 				continue
 			}
@@ -2398,12 +2398,12 @@ func (s *PowerVSClusterScope) DeleteVPC() (bool, error) {
 		return false, nil
 	}
 
-	vpc, _, err := s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
+	vpc, resp, err := s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
 		ID: s.IBMPowerVSCluster.Status.VPC.ID,
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), string(VPCNotFound)) {
+		if resp != nil && resp.StatusCode == ResourceNotFoundCode {
 			s.Info("VPC successfully deleted")
 			return false, nil
 		}
@@ -2433,12 +2433,12 @@ func (s *PowerVSClusterScope) DeleteTransitGateway() (bool, error) {
 		return false, nil
 	}
 
-	tg, _, err := s.TransitGatewayClient.GetTransitGateway(&tgapiv1.GetTransitGatewayOptions{
+	tg, resp, err := s.TransitGatewayClient.GetTransitGateway(&tgapiv1.GetTransitGatewayOptions{
 		ID: s.IBMPowerVSCluster.Status.TransitGateway.ID,
 	})
 
 	if err != nil {
-		if strings.Contains(err.Error(), string(TransitGatewayNotFound)) {
+		if resp != nil && resp.StatusCode == ResourceNotFoundCode {
 			s.Info("Transit gateway successfully deleted")
 			return false, nil
 		}
@@ -2498,6 +2498,10 @@ func (s *PowerVSClusterScope) DeleteDHCPServer() error {
 		s.Info("Skipping DHP server deletion as resource is not created by controller")
 		return nil
 	}
+	if s.isResourceCreatedByController(infrav1beta2.ResourceTypeServiceInstance) {
+		s.Info("Skipping DHCP server deletion as PowerVS service instance is created by controller, will directly delete the PowerVS service instance since it will delete the DHCP server internally")
+		return nil
+	}
 
 	if s.IBMPowerVSCluster.Status.DHCPServer.ID == nil {
 		return nil
@@ -2541,26 +2545,13 @@ func (s *PowerVSClusterScope) DeleteServiceInstance() (bool, error) {
 		return false, nil
 	}
 
-	// If PowerVS service instance is in failed state, proceed with deletion instead of checking for existing network resources.
-	if serviceInstance != nil && *serviceInstance.State != string(infrav1beta2.ServiceInstanceStateFailed) {
-		servers, err := s.IBMPowerVSClient.GetAllDHCPServers()
-		if err != nil {
-			return false, fmt.Errorf("error fetching networks in the PowerVS service instance: %w", err)
-		}
-
-		if len(servers) > 0 {
-			s.Info("Wait for DHCP server to be deleted before deleting PowerVS service instance")
-			return true, nil
-		}
-	}
-
 	if _, err = s.ResourceClient.DeleteResourceInstance(&resourcecontrollerv2.DeleteResourceInstanceOptions{
 		ID: serviceInstance.ID,
 	}); err != nil {
 		s.Error(err, "failed to delete Power VS service instance")
 		return false, err
 	}
-	s.Info("PowerVS service instance successfully deleted")
+
 	return true, nil
 }
 
@@ -2575,11 +2566,11 @@ func (s *PowerVSClusterScope) DeleteCOSInstance() error {
 		return nil
 	}
 
-	cosInstance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+	cosInstance, resp, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
 		ID: s.IBMPowerVSCluster.Status.COSInstance.ID,
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), string(COSInstanceNotFound)) {
+		if resp != nil && resp.StatusCode == ResourceNotFoundCode {
 			return nil
 		}
 		return fmt.Errorf("failed to fetch COS service instance: %w", err)
