@@ -18,7 +18,7 @@ ROOT_DIR_RELATIVE := .
 
 include $(ROOT_DIR_RELATIVE)/common.mk
 
-GO_VERSION ?= 1.21.9
+GO_VERSION ?= 1.21.11
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
