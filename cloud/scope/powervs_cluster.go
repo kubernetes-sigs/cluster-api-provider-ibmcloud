@@ -790,13 +790,13 @@ func (s *PowerVSClusterScope) createServiceInstance() (*resourcecontrollerv2.Res
 func (s *PowerVSClusterScope) ReconcileNetwork() (bool, error) {
 	if s.GetDHCPServerID() != nil {
 		s.V(3).Info("DHCP server ID is set, fetching details", "id", s.GetDHCPServerID())
-		requeue, err := s.isDHCPServerActive()
+		active, err := s.isDHCPServerActive()
 		if err != nil {
 			return false, err
 		}
 		// if dhcp server exist and in active state, its assumed that dhcp network exist
 		// TODO(Phase 2): Verify that dhcp network is exist.
-		return requeue, nil
+		return active, nil
 		//	TODO(karthik-k-n): If needed set dhcp status here
 	}
 	// check network exist in cloud
@@ -818,7 +818,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork() (bool, error) {
 
 	s.Info("Created DHCP Server", "id", *dhcpServer)
 	s.SetStatus(infrav1beta2.ResourceTypeDHCPServer, infrav1beta2.ResourceReference{ID: dhcpServer, ControllerCreated: ptr.To(true)})
-	return true, nil
+	return false, nil
 }
 
 // checkNetwork checks the network exist in cloud.
@@ -880,25 +880,25 @@ func (s *PowerVSClusterScope) isDHCPServerActive() (bool, error) {
 		return false, err
 	}
 
-	requeue, err := s.checkDHCPServerStatus(*dhcpServer)
+	active, err := s.checkDHCPServerStatus(*dhcpServer)
 	if err != nil {
 		return false, err
 	}
-	return requeue, nil
+	return active, nil
 }
 
 // checkDHCPServerStatus checks the state of a DHCP server.
-// If state is BUILD, true is returned indicating a requeue for reconciliation.
+// If state is active, true is returned.
 // In all other cases, it returns false.
 func (s *PowerVSClusterScope) checkDHCPServerStatus(dhcpServer models.DHCPServerDetail) (bool, error) {
 	s.V(3).Info("Checking the status of DHCP server", "id", *dhcpServer.ID)
 	switch *dhcpServer.Status {
 	case string(infrav1beta2.DHCPServerStateActive):
 		s.V(3).Info("DHCP server is in active state")
-		return false, nil
+		return true, nil
 	case string(infrav1beta2.DHCPServerStateBuild):
 		s.V(3).Info("DHCP server is in build state")
-		return true, nil
+		return false, nil
 	case string(infrav1beta2.DHCPServerStateError):
 		return false, fmt.Errorf("DHCP server creation failed and is in error state")
 	}
@@ -1884,9 +1884,9 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers() (bool, error) {
 		}
 		s.Info("Created VPC load balancer", "id", loadBalancerStatus.ID)
 		s.SetLoadBalancerStatus(loadBalancer.Name, *loadBalancerStatus)
-		return true, nil
+		return false, nil
 	}
-	return false, nil
+	return true, nil
 }
 
 // checkLoadBalancerStatus checks the state of a VPC load balancer.
