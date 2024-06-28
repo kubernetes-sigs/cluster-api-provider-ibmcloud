@@ -1,7 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - ../../../../../templates/cluster-template-powervs.yaml
-  - mhc-md-powervs.yaml
+  - ../../../../../templates/cluster-template-powervs-cloud-provider.yaml
 patchesStrategicMerge:
   - patches/mhc-label.yaml
