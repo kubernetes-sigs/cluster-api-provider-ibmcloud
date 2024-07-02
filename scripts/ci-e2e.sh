@@ -96,7 +96,7 @@ create_powervs_network_instance(){
     ibmcloud pi workspace target ${CRN}
 
     # Create the network instance
-    ${capibmadm} powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
+    ${capibmadm} powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --dns-servers 1.1.1.1,8.8.8.8,9.9.9.9 --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
 
 }
 
