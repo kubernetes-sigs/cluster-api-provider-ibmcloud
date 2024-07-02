@@ -128,6 +128,12 @@ prerequisites_powervs(){
     export IBMPOWERVS_SERVICE_INSTANCE_ID=${BOSKOS_RESOURCE_ID:-"d53da3bf-1f4a-42fa-9735-acf16b1a05cd"}
     export IBMPOWERVS_NETWORK_NAME="capi-net-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
     export ZONE=${BOSKOS_ZONE:-"osa21"}
+    export IBMPOWERVS_REGION=${BOSKOS_REGION:-"osa"}
+    export IBMPOWERVS_ZONE=${BOSKOS_ZONE:-"osa21"}
+    export PROVIDER_ID_FORMAT=v2
+    export EXP_CLUSTER_RESOURCE_SET=true
+    export IBMACCOUNT_ID=${IBMACCOUNT_ID:-"7cfbd5381a434af7a09289e795840d4e"}
+    export BASE64_API_KEY=$(tr -d '\n' <<<"$IBMCLOUD_API_KEY" | base64)
 }
 
 prerequisites_vpc(){
