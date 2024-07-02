@@ -21,111 +21,274 @@ import (
 	"testing"
 	"time"
 
+	"github.com/IBM/go-sdk-core/v5/core"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	"sigs.k8s.io/cluster-api/util"
+
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 
 	. "github.com/onsi/gomega"
 )
 
 func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
-	testCases := []struct {
-		name           string
-		powervsCluster *infrav1beta2.IBMPowerVSCluster
-		ownerCluster   *capiv1beta1.Cluster
-		expectError    bool
-	}{
-		{
-			name: "Should fail Reconcile if owner cluster not found",
-			powervsCluster: &infrav1beta2.IBMPowerVSCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "powervs-test-",
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
-							Kind:       "Cluster",
-							Name:       "capi-test",
-							UID:        "1",
-						}}},
-				Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"}},
-			expectError: true,
-		},
-		{
-			name: "Should not reconcile if owner reference is not set",
-			powervsCluster: &infrav1beta2.IBMPowerVSCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: "powervs-test-"},
-				Spec: infrav1beta2.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "foo"}},
-			expectError: false,
-		},
-		{
-			name:        "Should Reconcile successfully if no IBMPowerVSCluster found",
-			expectError: false,
-		},
-	}
+	t.Run("Should fail Reconcile if owner cluster not found", func(t *testing.T) {
+		g := NewWithT(t)
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			g := NewWithT(t)
-			reconciler := &IBMPowerVSClusterReconciler{
-				Client: testEnv.Client,
-			}
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
 
-			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
-			g.Expect(err).To(BeNil())
-
-			if tc.ownerCluster != nil {
-				tc.ownerCluster.Namespace = ns.Name
-				g.Expect(testEnv.Create(ctx, tc.ownerCluster)).To(Succeed())
-				defer func(do ...client.Object) {
-					g.Expect(testEnv.Cleanup(ctx, do...)).To(Succeed())
-				}(tc.ownerCluster)
-				tc.powervsCluster.OwnerReferences = []metav1.OwnerReference{
+		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "powervs-test-",
+				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: capiv1beta1.GroupVersion.String(),
 						Kind:       "Cluster",
-						Name:       tc.ownerCluster.Name,
+						Name:       "capi-test",
 						UID:        "1",
-					},
-				}
-			}
-			createCluster(g, tc.powervsCluster, ns.Name)
-			defer cleanupCluster(g, tc.powervsCluster, ns)
+					}}},
+			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+		}
 
-			if tc.powervsCluster != nil {
-				_, err := reconciler.Reconcile(ctx, ctrl.Request{
-					NamespacedName: client.ObjectKey{
-						Namespace: tc.powervsCluster.Namespace,
-						Name:      tc.powervsCluster.Name,
-					},
-				})
-				if tc.expectError {
-					g.Expect(err).ToNot(BeNil())
-				} else {
-					g.Expect(err).To(BeNil())
-				}
-			} else {
-				_, err := reconciler.Reconcile(ctx, ctrl.Request{
-					NamespacedName: client.ObjectKey{
-						Namespace: ns.Name,
-						Name:      "test",
-					},
-				})
-				g.Expect(err).To(BeNil())
-			}
+		createCluster(g, powerVSCluster, ns.Name)
+		defer cleanupCluster(g, powerVSCluster, ns)
+
+		reconciler := &IBMPowerVSClusterReconciler{
+			Client: testEnv.Client,
+		}
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{
+				Namespace: powerVSCluster.Namespace,
+				Name:      powerVSCluster.Name,
+			},
 		})
-	}
+
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("Should not reconcile if owner reference is not set", func(t *testing.T) {
+		g := NewWithT(t)
+
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
+
+		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "powervs-test-"},
+			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+		}
+
+		createCluster(g, powerVSCluster, ns.Name)
+		defer cleanupCluster(g, powerVSCluster, ns)
+
+		reconciler := &IBMPowerVSClusterReconciler{
+			Client: testEnv.Client,
+		}
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{
+				Namespace: powerVSCluster.Namespace,
+				Name:      powerVSCluster.Name,
+			},
+		})
+
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("Should Reconcile successfully if no IBMPowerVSCluster found", func(t *testing.T) {
+		g := NewWithT(t)
+
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
+
+		reconciler := &IBMPowerVSClusterReconciler{
+			Client: testEnv.Client,
+		}
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{
+				Namespace: ns.Name,
+				Name:      "test-cluster",
+			},
+		})
+
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("Error creating cluster scope", func(t *testing.T) {
+		g := NewWithT(t)
+
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
+
+		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "powervs-test-",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: capiv1beta1.GroupVersion.String(),
+						Kind:       "Cluster",
+						Name:       "capi-test",
+						UID:        "1",
+					}}},
+			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+		}
+
+		createCluster(g, powerVSCluster, ns.Name)
+		defer cleanupCluster(g, powerVSCluster, ns)
+
+		reconciler := &IBMPowerVSClusterReconciler{
+			Client: testEnv.Client,
+		}
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{
+				Namespace: powerVSCluster.Namespace,
+				Name:      powerVSCluster.Name,
+			},
+		})
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("Successfully reconcile", func(t *testing.T) {
+		g := NewWithT(t)
+
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
+
+		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "powervs-test-",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: capiv1beta1.GroupVersion.String(),
+						Kind:       "Cluster",
+						Name:       "capi-test",
+						UID:        "1",
+					}}},
+			Spec: infrav1beta2.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+		}
+
+		ownerCluster := &capiv1beta1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-test",
+				Namespace: ns.Name,
+			},
+		}
+
+		g.Expect(testEnv.Create(ctx, ownerCluster)).To(Succeed())
+		defer func(obj ...client.Object) {
+			g.Expect(testEnv.Cleanup(ctx, obj...)).To(Succeed())
+		}(ownerCluster)
+
+		createCluster(g, powerVSCluster, ns.Name)
+		defer cleanupCluster(g, powerVSCluster, ns)
+
+		reconciler := &IBMPowerVSClusterReconciler{
+			Client: testEnv.Client,
+			ClientFactory: scope.ClientFactory{
+				PowerVSClientFactory: func() (powervs.PowerVS, error) {
+					return nil, nil
+				},
+				AuthenticatorFactory: func() (core.Authenticator, error) {
+					return nil, nil
+				},
+			},
+		}
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{
+				Namespace: powerVSCluster.Namespace,
+				Name:      powerVSCluster.Name,
+			},
+		})
+		g.Expect(err).To(BeNil())
+
+		ibmPowerVSCluster := &infrav1beta2.IBMPowerVSCluster{}
+		g.Eventually(func(gomega Gomega) {
+			gomega.Expect(testEnv.Client.Get(ctx, client.ObjectKey{
+				Name:      powerVSCluster.GetName(),
+				Namespace: powerVSCluster.GetNamespace(),
+			}, ibmPowerVSCluster)).To(Succeed())
+			gomega.Expect(len(ibmPowerVSCluster.Finalizers)).To(Equal(1))
+		}).Should(Succeed())
+	})
+
+	t.Run("Successfully call reconcile delete", func(t *testing.T) {
+		g := NewWithT(t)
+
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
+
+		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "powervs-test-",
+				Finalizers:   []string{"ibmpowervscluster.infrastructure.cluster.x-k8s.io"},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: capiv1beta1.GroupVersion.String(),
+						Kind:       "Cluster",
+						Name:       "capi-test",
+						UID:        "1",
+					}}},
+			Spec: infrav1beta2.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+		}
+
+		ownerCluster := &capiv1beta1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-test",
+				Namespace: ns.Name,
+			},
+		}
+
+		g.Expect(testEnv.Create(ctx, ownerCluster)).To(Succeed())
+		defer func(obj ...client.Object) {
+			g.Expect(testEnv.Cleanup(ctx, obj...)).To(Succeed())
+		}(ownerCluster)
+
+		createCluster(g, powerVSCluster, ns.Name)
+		defer cleanupCluster(g, powerVSCluster, ns)
+
+		g.Expect(testEnv.Delete(ctx, powerVSCluster)).To(Succeed())
+		ibmPowerVSCluster := &infrav1beta2.IBMPowerVSCluster{}
+
+		g.Eventually(func() bool {
+			err := testEnv.Client.Get(ctx, client.ObjectKey{
+				Name:      powerVSCluster.GetName(),
+				Namespace: powerVSCluster.GetNamespace(),
+			}, ibmPowerVSCluster)
+			g.Expect(err).To(BeNil())
+			return ibmPowerVSCluster.DeletionTimestamp.IsZero() == false
+		}, 10*time.Second).Should(BeTrue(), "Eventually failed while checking delete timestamp")
+
+		reconciler := &IBMPowerVSClusterReconciler{
+			Client: testEnv.Client,
+			ClientFactory: scope.ClientFactory{
+				PowerVSClientFactory: func() (powervs.PowerVS, error) {
+					return nil, nil
+				},
+				AuthenticatorFactory: func() (core.Authenticator, error) {
+					return nil, nil
+				},
+			},
+		}
+		_, err = reconciler.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{
+				Namespace: powerVSCluster.Namespace,
+				Name:      powerVSCluster.Name,
+			},
+		})
+		g.Expect(err).To(BeNil())
+	})
 }
 
 func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
