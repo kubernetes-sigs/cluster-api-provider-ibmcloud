@@ -59,7 +59,12 @@ Compose the `user-variables.json` file containing the information for the PowerV
 - `service_instance_id`: PowerVS service instance ID
 - `ssh_private_key_file`: Path to the SSH private key file used to connect to the vm while image preparation, e.g: /Users/manjunath/.ssh/id_rsa
 - `zone`: PowerVS zone, e.g: osa21
-- `dhcp_network`: Boolean value when set to true, a DHCP server will be created in PowerVS workspace and its private network will be attached to VM, Make sure to customize the network settings while building OS using [pvsadm tool](https://github.com/ppc64le-cloud/pvsadm/blob/main/docs/Build%20DHCP%20enabled%20Centos%20Images.md).
+- `dhcp_network`: Set to `true` if the image has to be built with DHCP support
+
+> **Note:**
+> 1. When setting `dhcp_network: true`, you need to build an OS image with certain network settings using [pvsadm tool](https://github.com/ppc64le-cloud/pvsadm/blob/main/docs/Build%20DHCP%20enabled%20Centos%20Images.md) and replace [the fields](https://github.com/kubernetes-sigs/image-builder/blob/cb925047f388090a0db3430ca3172da63eff952c/images/capi/packer/powervs/centos-8.json#L6) with the custom image details.
+> 2. Clone the image-builder repo and run `make build` commands from a system where the DHCP private IP can be reached and SSH able(you can use a transit gateway with connections added for VPC and PowerVS workspace and build the image from a virtual server instance in VPC).
+
 
 ```shell
 # Clone the image-builder repository
