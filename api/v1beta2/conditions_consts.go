@@ -120,4 +120,8 @@ const (
 	// CreateInfrastructureAnnotation is the name of an annotation that indicates if
 	// Power VS infrastructure should be created as a part of cluster creation.
 	CreateInfrastructureAnnotation = "powervs.cluster.x-k8s.io/create-infra"
+
+	// CreateVPCInfrastructureAnnotation is the name of an annotation that indicates if
+	// VPC infrastructure should be created as part of cluster creation.
+	CreateVPCInfrastructureAnnotation = "vpc.cluster.x-k8s.io/create-infra"
 )
