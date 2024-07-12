@@ -139,6 +139,60 @@ spec:
                               or private
                             type: boolean
                         type: object
+                      network:
+                        description: network represents the VPC network to use for
+                          the cluster.
+                        properties:
+                          controlPlaneSubnets:
+                            description: controlPlaneSubnets is a set of Subnet's
+                              which define the Control Plane subnets.
+                            items:
+                              description: Subnet describes a subnet.
+                              properties:
+                                cidr:
+                                  type: string
+                                id:
+                                  maxLength: 64
+                                  minLength: 1
+                                  pattern: ^[-0-9a-z_]+$
+                                  type: string
+                                name:
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                  type: string
+                                zone:
+                                  type: string
+                              type: object
+                            type: array
+                          resourceGroup:
+                            description: |-
+                              resourceGroup is the name of the Resource Group containing all of the newtork resources.
+                              This can be different than the Resource Group containing the remaining cluster resources.
+                            type: string
+                          workerSubnets:
+                            description: workerSubnets is a set of Subnet's which
+                              define the Worker subnets.
+                            items:
+                              description: Subnet describes a subnet.
+                              properties:
+                                cidr:
+                                  type: string
+                                id:
+                                  maxLength: 64
+                                  minLength: 1
+                                  pattern: ^[-0-9a-z_]+$
+                                  type: string
+                                name:
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                  type: string
+                                zone:
+                                  type: string
+                              type: object
+                            type: array
+                        type: object
                       region:
                         description: The IBM Cloud Region the cluster lives in.
                         type: string

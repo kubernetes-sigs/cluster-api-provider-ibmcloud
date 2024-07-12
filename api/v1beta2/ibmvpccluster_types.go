@@ -54,6 +54,10 @@ type IBMVPCClusterSpec struct {
 	// ControlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
 	// +optional
 	ControlPlaneLoadBalancer *VPCLoadBalancerSpec `json:"controlPlaneLoadBalancer,omitempty"`
+
+	// network represents the VPC network to use for the cluster.
+	// +optional
+	Network *VPCNetworkSpec `json:"network,omitempty"`
 }
 
 // VPCLoadBalancerSpec defines the desired state of an VPC load balancer.
@@ -92,6 +96,24 @@ type AdditionalListenerSpec struct {
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	Port int64 `json:"port"`
+}
+
+// VPCNetworkSpec defines the desired state of the network resources for the cluster.
+type VPCNetworkSpec struct {
+	// workerSubnets is a set of Subnet's which define the Worker subnets.
+	// +optional
+	WorkerSubnets []Subnet `json:"workerSubnets,omitempty"`
+
+	// controlPlaneSubnets is a set of Subnet's which define the Control Plane subnets.
+	// +optional
+	ControlPlaneSubnets []Subnet `json:"controlPlaneSubnets,omitempty"`
+
+	// resourceGroup is the name of the Resource Group containing all of the newtork resources.
+	// This can be different than the Resource Group containing the remaining cluster resources.
+	// +optional
+	ResourceGroup *string `json:"resourceGroup,omitempty"`
+
+	// TODO(cjschaef): Complete spec definition (SecurityGroups, VPC)
 }
 
 // VPCSecurityGroupStatus defines a vpc security group resource status with its id and respective rule's ids.
