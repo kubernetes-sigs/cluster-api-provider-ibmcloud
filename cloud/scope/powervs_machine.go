@@ -422,6 +422,12 @@ func (m *PowerVSMachineScope) createIgnitionData(data []byte) (string, error) {
 	}
 
 	objHost := fmt.Sprintf("%s.s3.%s.%s", bucket, region, cosURLDomain)
+
+	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), m.ServiceEndpoint)
+	if cosServiceEndpoint != "" {
+		m.Logger.V(3).Info("Overriding the default COS endpoint in ignition URL", "cosEndpoint", cosServiceEndpoint)
+		objHost = fmt.Sprintf("%s.%s", bucket, cosServiceEndpoint)
+	}
 	objectURL := &url.URL{
 		Scheme: "https",
 		Host:   objHost,
