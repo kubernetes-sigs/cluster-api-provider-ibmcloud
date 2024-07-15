@@ -170,6 +170,22 @@ spec:
                               resourceGroup is the name of the Resource Group containing all of the newtork resources.
                               This can be different than the Resource Group containing the remaining cluster resources.
                             type: string
+                          vpc:
+                            description: vpc defines the IBM Cloud VPC for extended
+                              VPC Infrastructure support.
+                            properties:
+                              id:
+                                description: id of the resource.
+                                minLength: 1
+                                type: string
+                              name:
+                                description: name of the resource.
+                                minLength: 1
+                                type: string
+                            type: object
+                            x-kubernetes-validations:
+                            - message: an id or name must be provided
+                              rule: has(self.id) || has(self.name)
                           workerSubnets:
                             description: workerSubnets is a set of Subnet's which
                               define the Worker subnets.

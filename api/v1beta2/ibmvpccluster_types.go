@@ -98,7 +98,7 @@ type AdditionalListenerSpec struct {
 	Port int64 `json:"port"`
 }
 
-// VPCNetworkSpec defines the desired state of the network resources for the cluster.
+// VPCNetworkSpec defines the desired state of the network resources for the cluster for extended VPC Infrastructure support.
 type VPCNetworkSpec struct {
 	// workerSubnets is a set of Subnet's which define the Worker subnets.
 	// +optional
@@ -113,7 +113,11 @@ type VPCNetworkSpec struct {
 	// +optional
 	ResourceGroup *string `json:"resourceGroup,omitempty"`
 
-	// TODO(cjschaef): Complete spec definition (SecurityGroups, VPC)
+	// vpc defines the IBM Cloud VPC for extended VPC Infrastructure support.
+	// +optional
+	VPC *VPCResource `json:"vpc,omitempty"`
+
+	// TODO(cjschaef): Complete spec definition (SecurityGroups, etc.)
 }
 
 // VPCSecurityGroupStatus defines a vpc security group resource status with its id and respective rule's ids.
@@ -146,11 +150,22 @@ type VPCLoadBalancerStatus struct {
 type IBMVPCClusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	// dep: rely on Network instead.
 	VPC VPC `json:"vpc,omitempty"`
+
+	// network is the status of the VPC network resources for extended VPC Infrastructure support.
+	// +optional
+	Network *VPCNetworkStatus `json:"network,omitempty"`
 
 	// Ready is true when the provider resource is ready.
 	// +optional
-	Ready       bool        `json:"ready"`
+	// +kubebuilder:default=false
+	Ready bool `json:"ready"`
+
+	// resourceGroup is the status of the cluster's Resource Group for extended VPC Infrastructure support.
+	// +optional
+	ResourceGroup *ResourceStatus `json:"resourceGroup,omitempty"`
+
 	Subnet      Subnet      `json:"subnet,omitempty"`
 	VPCEndpoint VPCEndpoint `json:"vpcEndpoint,omitempty"`
 
@@ -161,6 +176,18 @@ type IBMVPCClusterStatus struct {
 	// Conditions defines current service state of the load balancer.
 	// +optional
 	Conditions capiv1beta1.Conditions `json:"conditions,omitempty"`
+}
+
+// VPCNetworkStatus provides details on the status of VPC network resources for extended VPC Infrastructure support.
+type VPCNetworkStatus struct {
+	// resourceGroup references the Resource Group for Network resources for the cluster.
+	// This can be the same or unique from the cluster's Resource Group.
+	// +optional
+	ResourceGroup *ResourceStatus `json:"resourceGroup,omitempty"`
+
+	// vpc references the status of the IBM Cloud VPC as part of the extended VPC Infrastructure support.
+	// +optional
+	VPC *ResourceStatus `json:"vpc,omitempty"`
 }
 
 // VPC holds the VPC information.

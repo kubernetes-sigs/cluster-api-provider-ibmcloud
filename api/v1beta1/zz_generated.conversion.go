@@ -1298,7 +1298,9 @@ func autoConvert_v1beta2_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(in *
 	if err := Convert_v1beta2_VPC_To_v1beta1_VPC(&in.VPC, &out.VPC, s); err != nil {
 		return err
 	}
+	// WARNING: in.Network requires manual conversion: does not exist in peer-type
 	out.Ready = in.Ready
+	// WARNING: in.ResourceGroup requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta2_Subnet_To_v1beta1_Subnet(&in.Subnet, &out.Subnet, s); err != nil {
 		return err
 	}
