@@ -400,3 +400,42 @@ type VPCEndpoint struct {
 	// +optional
 	LBID *string `json:"loadBalancerIPID,omitempty"`
 }
+
+// ResourceStatus identifies a resource by id (and name) and whether it is ready.
+type ResourceStatus struct {
+	// id defines the Id of the IBM Cloud resource status.
+	// +required
+	ID string `json:"id"`
+
+	// name defines the name of the IBM Cloud resource status.
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// ready defines whether the IBM Cloud resource is ready.
+	// +required
+	Ready bool `json:"ready"`
+}
+
+// Set sets the ResourceStatus fields.
+func (s *ResourceStatus) Set(resource ResourceStatus) {
+	s.ID = resource.ID
+	// Set the name if it hasn't been, or the incoming name won't remove it (nil).
+	if s.Name == nil && resource.Name != nil {
+		s.Name = resource.Name
+	}
+	s.Ready = resource.Ready
+}
+
+// VPCResource represents a VPC resource.
+// +kubebuilder:validation:XValidation:rule="has(self.id) || has(self.name)",message="an id or name must be provided"
+type VPCResource struct {
+	// id of the resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// name of the resource.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	Name *string `json:"name,omitempty"`
+}

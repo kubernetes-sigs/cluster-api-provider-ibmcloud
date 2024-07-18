@@ -320,6 +320,22 @@ spec:
                       resourceGroup is the name of the Resource Group containing all of the newtork resources.
                       This can be different than the Resource Group containing the remaining cluster resources.
                     type: string
+                  vpc:
+                    description: vpc defines the IBM Cloud VPC for extended VPC Infrastructure
+                      support.
+                    properties:
+                      id:
+                        description: id of the resource.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: name of the resource.
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: an id or name must be provided
+                      rule: has(self.id) || has(self.name)
                   workerSubnets:
                     description: workerSubnets is a set of Subnet's which define the
                       Worker subnets.
@@ -413,9 +429,71 @@ spec:
                 description: ControlPlaneLoadBalancerState is the status of the load
                   balancer.
                 type: string
+              network:
+                description: network is the status of the VPC network resources for
+                  extended VPC Infrastructure support.
+                properties:
+                  resourceGroup:
+                    description: |-
+                      resourceGroup references the Resource Group for Network resources for the cluster.
+                      This can be the same or unique from the cluster's Resource Group.
+                    properties:
+                      id:
+                        description: id defines the Id of the IBM Cloud resource status.
+                        type: string
+                      name:
+                        description: name defines the name of the IBM Cloud resource
+                          status.
+                        type: string
+                      ready:
+                        description: ready defines whether the IBM Cloud resource
+                          is ready.
+                        type: boolean
+                    required:
+                    - id
+                    - ready
+                    type: object
+                  vpc:
+                    description: vpc references the status of the IBM Cloud VPC as
+                      part of the extended VPC Infrastructure support.
+                    properties:
+                      id:
+                        description: id defines the Id of the IBM Cloud resource status.
+                        type: string
+                      name:
+                        description: name defines the name of the IBM Cloud resource
+                          status.
+                        type: string
+                      ready:
+                        description: ready defines whether the IBM Cloud resource
+                          is ready.
+                        type: boolean
+                    required:
+                    - id
+                    - ready
+                    type: object
+                type: object
               ready:
+                default: false
                 description: Ready is true when the provider resource is ready.
                 type: boolean
+              resourceGroup:
+                description: resourceGroup is the status of the cluster's Resource
+                  Group for extended VPC Infrastructure support.
+                properties:
+                  id:
+                    description: id defines the Id of the IBM Cloud resource status.
+                    type: string
+                  name:
+                    description: name defines the name of the IBM Cloud resource status.
+                    type: string
+                  ready:
+                    description: ready defines whether the IBM Cloud resource is ready.
+                    type: boolean
+                required:
+                - id
+                - ready
+                type: object
               subnet:
                 description: Subnet describes a subnet.
                 properties:
@@ -438,6 +516,7 @@ spec:
                 description: |-
                   INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
                   Important: Run "make" to regenerate code after modifying this file
+                  dep: rely on Network instead.
                 properties:
                   id:
                     type: string
