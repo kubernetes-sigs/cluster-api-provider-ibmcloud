@@ -39,11 +39,13 @@ const (
 	COS serviceID = "cos"
 	// RM used to identify Resource-Manager service.
 	RM serviceID = "rm"
+	// GlobalTagging used to identify the Global Tagging service.
+	GlobalTagging serviceID = "globaltagging"
 )
 
 type serviceID string
 
-var serviceIDs = []serviceID{VPC, PowerVS, RC, TransitGateway, COS}
+var serviceIDs = []serviceID{VPC, PowerVS, RC, TransitGateway, COS, RM, GlobalTagging}
 
 // ServiceEndpoint holds the Service endpoint specific information.
 type ServiceEndpoint struct {

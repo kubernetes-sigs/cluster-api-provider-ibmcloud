@@ -229,8 +229,29 @@ func (r *IBMVPCClusterReconciler) reconcile(clusterScope *scope.ClusterScope) (c
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMVPCClusterReconciler) reconcileCluster(_ *scope.VPCClusterScope) (ctrl.Result, error) {
-	return ctrl.Result{}, fmt.Errorf("not implemented")
+func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCClusterScope) (ctrl.Result, error) {
+	// If the IBMVPCCluster doesn't have our finalizer, add it.
+	if controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrav1beta2.ClusterFinalizer) {
+		return ctrl.Result{}, nil
+	}
+
+	// Reconcile the cluster's VPC.
+	clusterScope.Info("Reconciling VPC")
+	if requeue, err := clusterScope.ReconcileVPC(); err != nil {
+		clusterScope.Error(err, "failed to reconcile VPC")
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition, infrav1beta2.VPCReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		return reconcile.Result{}, err
+	} else if requeue {
+		clusterScope.Info("VPC creation is pending, requeuing")
+		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
+	}
+	conditions.MarkTrue(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition)
+
+	// TODO(cjschaef): add remaining resource reconciliation.
+
+	// Mark cluster as ready.
+	clusterScope.IBMVPCCluster.Status.Ready = true
+	return ctrl.Result{}, nil
 }
 
 func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterScope) (ctrl.Result, error) {
