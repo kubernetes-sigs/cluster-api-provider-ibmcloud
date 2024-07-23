@@ -28,7 +28,8 @@ spec:
         args:
         - "--leader-elect"
         - "--provider-id-fmt=${PROVIDER_ID_FORMAT:=v2}"
-        - "--metrics-bind-addr=127.0.0.1:8080"
+        - "--diagnostics-address=${CAPIBM_DIAGNOSTICS_ADDRESS:=:8443}"
+        - "--insecure-diagnostics=${CAPIBM_INSECURE_DIAGNOSTICS:=false}"
         - "--service-endpoint=${SERVICE_ENDPOINT:=none}"
         - "--v=${LOGLEVEL:=0}"
         image: controller:latest
@@ -36,6 +37,9 @@ spec:
         ports:
           - containerPort: 9440
             name: healthz
+            protocol: TCP
+          - containerPort: 8443
+            name: metrics
             protocol: TCP
         readinessProbe:
           httpGet:
