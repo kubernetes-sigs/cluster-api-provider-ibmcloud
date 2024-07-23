@@ -275,12 +275,30 @@ spec:
                           AdditionalListenerSpec defines the desired state of an
                           additional listener on an VPC load balancer.
                         properties:
+                          defaultPoolName:
+                            description: defaultPoolName defines the name of a VPC
+                              Load Balancer Backend Pool to use for the VPC Load Balancer
+                              Listener.
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                            type: string
                           port:
                             description: Port sets the port for the additional listener.
                             format: int64
                             maximum: 65535
                             minimum: 1
                             type: integer
+                          protocol:
+                            description: |-
+                              protocol defines the protocol to use for the VPC Load Balancer Listener.
+                              Will default to TCP protocol if not specified.
+                            enum:
+                            - http
+                            - https
+                            - tcp
+                            - udp
+                            type: string
                         required:
                         - port
                         type: object
@@ -288,6 +306,93 @@ spec:
                       x-kubernetes-list-map-keys:
                       - port
                       x-kubernetes-list-type: map
+                    backendPools:
+                      description: backendPools defines the load balancer's backend
+                        pools.
+                      items:
+                        description: VPCLoadBalancerBackendPoolSpec defines the desired
+                          configuration of a VPC Load Balancer Backend Pool.
+                        properties:
+                          algorithm:
+                            description: algorithm defines the load balancing algorithm
+                              to use.
+                            enum:
+                            - least_connections
+                            - round_robin
+                            - weighted_round_robin
+                            type: string
+                          healthMonitor:
+                            description: healthMonitor defines the backend pool's
+                              health monitor.
+                            properties:
+                              delay:
+                                description: delay defines the seconds to wait between
+                                  health checks.
+                                format: int64
+                                maximum: 60
+                                minimum: 2
+                                type: integer
+                              port:
+                                description: port defines the port to perform health
+                                  monitoring on.
+                                format: int64
+                                maximum: 65535
+                                minimum: 1
+                                type: integer
+                              retries:
+                                description: retries defines the max retries for health
+                                  check.
+                                format: int64
+                                maximum: 10
+                                minimum: 1
+                                type: integer
+                              timeout:
+                                description: timeout defines the seconds to wait for
+                                  a health check response.
+                                format: int64
+                                maximum: 59
+                                minimum: 1
+                                type: integer
+                              type:
+                                description: type defines the protocol used for health
+                                  checks.
+                                enum:
+                                - http
+                                - https
+                                - tcp
+                                type: string
+                              urlPath:
+                                description: urlPath defines the URL to use for health
+                                  monitoring.
+                                pattern: ^\/(([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})+(\/([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})*)*)?(\\?([a-zA-Z0-9-._~!$&'()*+,;=:@\/?]|%[a-fA-F0-9]{2})*)?$
+                                type: string
+                            required:
+                            - delay
+                            - retries
+                            - timeout
+                            - type
+                            type: object
+                          name:
+                            description: name defines the name of the Backend Pool.
+                            maxLength: 63
+                            minLength: 1
+                            pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                            type: string
+                          protocol:
+                            description: protocol defines the protocol to use for
+                              the Backend Pool.
+                            enum:
+                            - http
+                            - https
+                            - tcp
+                            - udp
+                            type: string
+                        required:
+                        - algorithm
+                        - healthMonitor
+                        - protocol
+                        type: object
+                      type: array
                     id:
                       description: id of the loadbalancer
                       maxLength: 64
@@ -305,6 +410,46 @@ spec:
                       description: public indicates that load balancer is public or
                         private
                       type: boolean
+                    securityGroups:
+                      description: |-
+                        securityGroups defines the Security Groups to attach to the load balancer.
+                        Security Groups defined here are expected to already exist when the load balancer is reconciled (these do not get created when reconciling the load balancer).
+                      items:
+                        description: VPCResource represents a VPC resource.
+                        properties:
+                          id:
+                            description: id of the resource.
+                            minLength: 1
+                            type: string
+                          name:
+                            description: name of the resource.
+                            minLength: 1
+                            type: string
+                        type: object
+                        x-kubernetes-validations:
+                        - message: an id or name must be provided
+                          rule: has(self.id) || has(self.name)
+                      type: array
+                    subnets:
+                      description: |-
+                        subnets defines the VPC Subnets to attach to the load balancer.
+                        Subnets defiens here are expected to already exist when the load balancer is reconciled (these do not get created when reconciling the load balancer).
+                      items:
+                        description: VPCResource represents a VPC resource.
+                        properties:
+                          id:
+                            description: id of the resource.
+                            minLength: 1
+                            type: string
+                          name:
+                            description: name of the resource.
+                            minLength: 1
+                            type: string
+                        type: object
+                        x-kubernetes-validations:
+                        - message: an id or name must be provided
+                          rule: has(self.id) || has(self.name)
+                      type: array
                   type: object
                 type: array
               network:
