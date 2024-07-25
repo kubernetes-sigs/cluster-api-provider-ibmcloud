@@ -18,9 +18,12 @@ package util
 
 import (
 	"fmt"
+	"math"
+	"net"
 
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
+	"github.com/apparentlymart/go-cidr/cidr"
 	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -46,4 +49,22 @@ func GetTransitGatewayLocationAndRouting(powerVSZone *string, vpcRegion *string)
 
 	// since VPC region is not set and used PowerVS region to calculate the transit gateway location, hence returning local routing as default.
 	return &location, ptr.To(false), nil
+}
+
+func GetSubnetAddr(networkNum int, addrPrefix string) (string, error) {
+	_, ipv4Net, err := net.ParseCIDR(addrPrefix)
+	if err != nil {
+		return "", fmt.Errorf("error parsing CIDR address prefix: %w", err)
+	}
+	mask, _ := ipv4Net.Mask.Size()
+	// totalIPAddresses defines the prefix length of the subnet to be created
+	// TODO: totalIPAddresses should be provided by user instead of hard coding
+	totalIPAddresses := 256
+	subnetPrefixBits := 32 - int(math.Ceil(math.Log2(float64(totalIPAddresses))))
+	subnet, err := cidr.Subnet(ipv4Net, subnetPrefixBits-mask, networkNum)
+	if err != nil {
+		return "", fmt.Errorf("error fetching subnet address: %w", err)
+	}
+	subnetAddr := fmt.Sprintf("%s/%d", subnet.IP, subnetPrefixBits)
+	return subnetAddr, nil
 }
