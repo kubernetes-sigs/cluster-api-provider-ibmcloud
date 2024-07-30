@@ -6,7 +6,6 @@
 
 - To deploy a VPC workload cluster with Load Balancer IBM external [cloud provider](https://kubernetes.io/docs/concepts/architecture/cloud-controller/), create a cluster configuration with the [external cloud provider template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template-load-balancer.yaml)
 - The [external cloud provider template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template-load-balancer.yaml) will use [clusterresourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) and will create the necessary config map, secret and roles to run the cloud controller manager
-- As a prerequisite set the `provider-id-fmt` [flag](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/ee70591709ac5ddaeed23222ccbfa78335d984a1/main.go#L183) with value v2
 
 ### Deploy VPC cluster with Load Balancer and IBM cloud provider
 

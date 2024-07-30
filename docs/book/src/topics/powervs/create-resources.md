@@ -5,7 +5,6 @@
 - To deploy cluster which creates required resources, set ```powervs.cluster.x-k8s.io/create-infra:true``` annotation to IBMPowerVSCluster resource.
 - The cluster will be configured with IBM PowerVS external [cloud provider](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
 - The [create_infra template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template-powervs-create-infra.yaml) will use [clusterresourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) and will create the necessary config map, secret and roles to run the cloud controller manager
-- As a prerequisite set the `provider-id-fmt` [flag](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/5e7f80878f2252c6ab13c16102de90c784a2624d/main.go#L168-L173) with value v2
 
 ### Deploy PowerVS cluster with IBM PowerVS cloud provider
 
