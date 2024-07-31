@@ -227,10 +227,10 @@ endif
 setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder
 	@if [ $(shell go env GOOS) == "darwin" ]; then \
 		$(eval KUBEBUILDER_ASSETS := $(shell $(SETUP_ENVTEST) use --use-env -p path --arch amd64 $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))) \
-		echo "kube-builder assets set using darwin OS"; \
+		echo "kube-builder assets set using darwin OS at location $(KUBEBUILDER_ASSETS)"; \
 	else \
 		$(eval KUBEBUILDER_ASSETS := $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))) \
-		echo "kube-builder assets set using other OS"; \
+		echo "kube-builder assets set using other OS at location $(KUBEBUILDER_ASSETS)"; \
 	fi
 
 # Run unit tests
