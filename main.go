@@ -103,11 +103,10 @@ func initFlags(fs *pflag.FlagSet) {
 		10*time.Minute,
 		"The minimum interval at which watched resources are reconciled.",
 	)
-
 	fs.StringVar(
 		&options.ProviderIDFormat,
 		"provider-id-fmt",
-		string(options.ProviderIDFormatV1),
+		string(options.ProviderIDFormatV2),
 		"ProviderID format is used set the Provider ID format for Machine",
 	)
 
@@ -132,8 +131,9 @@ func initFlags(fs *pflag.FlagSet) {
 
 func validateFlags() error {
 	switch options.ProviderIDFormatType(options.ProviderIDFormat) {
+	// Deprecated: ProviderIDFormatV1 is deprecated and will be removed in a future release.
 	case options.ProviderIDFormatV1:
-		setupLog.Info("Using v1 version of ProviderID format")
+		setupLog.Info("Using v1 version of ProviderID format.V1 is deprecated and will be removed in a future release.Instead use V2.")
 	case options.ProviderIDFormatV2:
 		setupLog.Info("Using v2 version of ProviderID format")
 	default:

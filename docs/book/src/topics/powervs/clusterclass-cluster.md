@@ -2,7 +2,7 @@
 ## Steps
 
 - To deploy PowerVS workload cluster using [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html), create a cluster configuration from the [clusterclass-template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template-simple-powervs-clusterclass.yaml)
-- The PowerVS cluster will use [external cloud provider](https://kubernetes.io/docs/concepts/architecture/cloud-controller/). As a prerequisite set the `provider-id-fmt` [flag](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/5e7f80878f2252c6ab13c16102de90c784a2624d/main.go#L168-L173) with value v2
+- The PowerVS cluster will use [external cloud provider](https://kubernetes.io/docs/concepts/architecture/cloud-controller/).
 - The [clusterclass-template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template-simple-powervs-clusterclass.yaml) will use [clusterresourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) and will create the necessary config map, secret and roles to run the cloud controller manager
 
 ### Deploy PowerVS cluster with IBM PowerVS cloud provider
