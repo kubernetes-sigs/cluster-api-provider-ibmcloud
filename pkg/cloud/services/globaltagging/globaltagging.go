@@ -21,6 +21,9 @@ import (
 	"github.com/IBM/platform-services-go-sdk/globaltaggingv1"
 )
 
+//go:generate ../../../../hack/tools/bin/mockgen -source=./globaltagging.go -destination=./mock/globaltagging_generated.go -package=mock
+//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt ./mock/globaltagging_generated.go > ./mock/_globaltagging_generated.go && mv ./mock/_globaltagging_generated.go ./mock/globaltagging_generated.go"
+
 // GlobalTagging interface defines a method that a IBMCLOUD service object should implement in order to
 // use the manage tags with the Global Tagging APIs.
 type GlobalTagging interface {
