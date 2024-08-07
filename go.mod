@@ -30,7 +30,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
 	golang.org/x/crypto v0.26.0
-	golang.org/x/net v0.27.0
+	golang.org/x/net v0.28.0
 	golang.org/x/text v0.17.0
 	k8s.io/api v0.29.3
 	k8s.io/apiextensions-apiserver v0.29.3
