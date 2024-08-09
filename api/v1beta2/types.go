@@ -18,8 +18,13 @@ package v1beta2
 
 import "github.com/IBM/vpc-go-sdk/vpcv1"
 
-// DefaultAPIServerPort is defuault API server port number.
-const DefaultAPIServerPort int32 = 6443
+const (
+	// CIDRBlockAny is the CIDRBlock representing any allowable destination/source IP.
+	CIDRBlockAny string = "0.0.0.0/0"
+
+	// DefaultAPIServerPort is defuault API server port number.
+	DefaultAPIServerPort int32 = 6443
+)
 
 // PowerVSInstanceState describes the state of an IBM Power VS instance.
 type PowerVSInstanceState string
@@ -109,6 +114,51 @@ var (
 	TransitGatewayConnectionStateDeleting = TransitGatewayConnectionState("deleting")
 )
 
+// VPCLoadBalancerBackendPoolAlgorithm describes the backend pool's load balancing algorithm.
+type VPCLoadBalancerBackendPoolAlgorithm string
+
+var (
+	// VPCLoadBalancerBackendPoolAlgorithmLeastConnections is the string representing the least_connections load balancing algorithm.
+	VPCLoadBalancerBackendPoolAlgorithmLeastConnections = VPCLoadBalancerBackendPoolAlgorithm("least_connections")
+
+	// VPCLoadBalancerBackendPoolAlgorithmRoundRobin is the string representing the round_robin load balancing algorithm.
+	VPCLoadBalancerBackendPoolAlgorithmRoundRobin = VPCLoadBalancerBackendPoolAlgorithm("round_robin")
+
+	// VPCLoadBalancerBackendPoolAlgorithmWeightedRoundRobin is the string representing the weighted_round_robin load balancing algorithm.
+	VPCLoadBalancerBackendPoolAlgorithmWeightedRoundRobin = VPCLoadBalancerBackendPoolAlgorithm("weighted_round_robin")
+)
+
+// VPCLoadBalancerProtocol describes the protocol for load balancer resources.
+type VPCLoadBalancerProtocol string
+
+var (
+	// VPCLoadBalancerProtocolHTTP is the string representing the http protocol for load balancer resources.
+	VPCLoadBalancerProtocolHTTP = VPCLoadBalancerProtocol("http")
+
+	// VPCLoadBalancerProtocolHTTPS is the string representing the https protocol for load balancer resources.
+	VPCLoadBalancerProtocolHTTPS = VPCLoadBalancerProtocol("https")
+
+	// VPCLoadBalancerProtocolTCP is the string representing the tcp protocol for load balancer resources.
+	VPCLoadBalancerProtocolTCP = VPCLoadBalancerProtocol("tcp")
+
+	// VPCLoadBalancerProtocolUDP is the string representing the tudp protocol for load balancer resources.
+	VPCLoadBalancerProtocolUDP = VPCLoadBalancerProtocol("udp")
+)
+
+// VPCLoadBalancerBackendPoolHealthMonitorType describes the backend pool's health check protocol type.
+type VPCLoadBalancerBackendPoolHealthMonitorType string
+
+var (
+	// VPCLoadBalancerBackendPoolHealthMonitorTypeHTTP is the string representing the http health pool protocol type.
+	VPCLoadBalancerBackendPoolHealthMonitorTypeHTTP = VPCLoadBalancerBackendPoolHealthMonitorType("http")
+
+	// VPCLoadBalancerBackendPoolHealthMonitorTypeHTTPS is the string representing the https health pool protocol type.
+	VPCLoadBalancerBackendPoolHealthMonitorTypeHTTPS = VPCLoadBalancerBackendPoolHealthMonitorType("https")
+
+	// VPCLoadBalancerBackendPoolHealthMonitorTypeTCP is the string representing the tcp health pool protocol type.
+	VPCLoadBalancerBackendPoolHealthMonitorTypeTCP = VPCLoadBalancerBackendPoolHealthMonitorType("tcp")
+)
+
 // VPCLoadBalancerState describes the state of the load balancer.
 type VPCLoadBalancerState string
 
@@ -185,12 +235,33 @@ var (
 	ResourceTypeVPC = ResourceType("vpc")
 	// ResourceTypeSubnet is VPC subnet resource.
 	ResourceTypeSubnet = ResourceType("subnet")
+	// ResourceTypeComputeSubnet is a VPC subnet resource designated for the Compute (Data) Plane.
+	ResourceTypeComputeSubnet = ResourceType("computeSubnet")
+	// ResourceTypeControlPlaneSubnet is a VPC subnet resource designated for the Control Plane.
+	ResourceTypeControlPlaneSubnet = ResourceType("controlPlaneSubnet")
+	// ResourceTypeSecurityGroup is a VPC Security Group resource.
+	ResourceTypeSecurityGroup = ResourceType("securityGroup")
 	// ResourceTypeCOSInstance is IBM COS instance resource.
 	ResourceTypeCOSInstance = ResourceType("cosInstance")
 	// ResourceTypeCOSBucket is IBM COS bucket resource.
 	ResourceTypeCOSBucket = ResourceType("cosBucket")
 	// ResourceTypeResourceGroup is IBM Resource Group.
 	ResourceTypeResourceGroup = ResourceType("resourceGroup")
+	// ResourceTypePublicGateway is a VPC Public Gatway.
+	ResourceTypePublicGateway = ResourceType("publicGateway")
+	// ResourceTypeCustomImage is a VPC Custom Image.
+	ResourceTypeCustomImage = ResourceType("customImage")
+)
+
+const (
+	// VPCSecurityGroupRuleProtocolAllType is a string representation of the 'SecurityGroupRuleSecurityGroupRuleProtocolAll' type.
+	VPCSecurityGroupRuleProtocolAllType = "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll"
+
+	// VPCSecurityGroupRuleProtocolIcmpType is a string representation of the 'SecurityGroupRuleSecurityGroupRuleProtocolIcmp' type.
+	VPCSecurityGroupRuleProtocolIcmpType = "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp"
+
+	// VPCSecurityGroupRuleProtocolTcpudpType is a string representation of the 'SecurityGroupRuleSecurityGroupRuleProtocolTcpudp' type.
+	VPCSecurityGroupRuleProtocolTcpudpType = "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp"
 )
 
 // VPCSecurityGroupRuleAction represents the actions for a Security Group Rule.
@@ -250,6 +321,17 @@ const (
 	// VPCSecurityGroupRuleRemoteTypeSG defines the destination or source for the Rule is a VPC Security Group.
 	VPCSecurityGroupRuleRemoteTypeSG VPCSecurityGroupRuleRemoteType = VPCSecurityGroupRuleRemoteType("sg")
 )
+
+// IBMCloudResourceReference represents an IBM Cloud resource.
+type IBMCloudResourceReference struct {
+	// id defines the IBM Cloud Resource ID.
+	// +required
+	ID string `json:"id"`
+
+	// name defines the IBM Cloud Resource Name.
+	// +optional
+	Name *string `json:"name,omitempty"`
+}
 
 // NetworkInterface holds the network interface information like subnet id.
 type NetworkInterface struct {

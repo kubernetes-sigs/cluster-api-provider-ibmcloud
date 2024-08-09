@@ -55,6 +55,22 @@ func (m *MockResourceManager) EXPECT() *MockResourceManagerMockRecorder {
 	return m.recorder
 }
 
+// GetResourceGroup mocks base method.
+func (m *MockResourceManager) GetResourceGroup(arg0 *resourcemanagerv2.GetResourceGroupOptions) (*resourcemanagerv2.ResourceGroup, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceGroup", arg0)
+	ret0, _ := ret[0].(*resourcemanagerv2.ResourceGroup)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetResourceGroup indicates an expected call of GetResourceGroup.
+func (mr *MockResourceManagerMockRecorder) GetResourceGroup(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceGroup", reflect.TypeOf((*MockResourceManager)(nil).GetResourceGroup), arg0)
+}
+
 // GetResourceGroupByName mocks base method.
 func (m *MockResourceManager) GetResourceGroupByName(arg0 string) (*resourcemanagerv2.ResourceGroup, error) {
 	m.ctrl.T.Helper()
