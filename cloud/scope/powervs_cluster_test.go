@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
+	"go.uber.org/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -31,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	mockRC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
@@ -1105,5 +1108,270 @@ func TestGetResourceGroupID(t *testing.T) {
 			vpcID := tc.clusterScope.GetResourceGroupID()
 			g.Expect(vpcID).To(Equal(tc.expectedID))
 		})
+	}
+}
+
+func TestReconcilePowerVSServiceInstance(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCtrl               *gomock.Controller
+	)
+	serviceInstanceID := "serviceInstanceID"
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+	t.Run("When service instance id is set and GetResourceInstance returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, fmt.Errorf("intentional error"))
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When service instance id is set and GetResourceInstance returns nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When service instance id is set and instance in failed state", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			instance := &resourcecontrollerv2.ResourceInstance{
+				Name:  ptr.To("test-instance"),
+				State: ptr.To("failed"),
+			}
+			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When service instance id is set and instance in failed state", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			instance := &resourcecontrollerv2.ResourceInstance{
+				Name:  ptr.To("test-instance"),
+				State: ptr.To("failed"),
+			}
+			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When service instance id is set and instance in active state", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			instance := &resourcecontrollerv2.ResourceInstance{
+				Name:  ptr.To("test-instance"),
+				State: ptr.To("active"),
+			}
+			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When isServiceInstanceExists returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("intentional error"))
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When service instance exists in cloud and in active state", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			instance := &resourcecontrollerv2.ResourceInstance{
+				GUID:  ptr.To("instance-GUID"),
+				Name:  ptr.To("test-instance"),
+				State: ptr.To("active"),
+			}
+			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(instance, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.ServiceInstance.ID).To(Equal("instance-GUID"))
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.ServiceInstance.ControllerCreated).To(BeFalse())
+	})
+
+	t.Run("When create service instance return error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, fmt.Errorf("intentional error"))
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ResourceGroup = &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When created service instance is nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ResourceGroup = &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When successfully created new service instance", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScopeParams := getPowerVSClusterScopeParams()
+		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
+			instance := &resourcecontrollerv2.ResourceInstance{
+				GUID: ptr.To("instance-GUID"),
+				Name: ptr.To("test-instance"),
+			}
+
+			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(instance, nil, nil)
+			return mockResourceController, nil
+		}
+		clusterScope, _ := NewPowerVSClusterScope(clusterScopeParams)
+		clusterScope.IBMPowerVSCluster.Spec.ResourceGroup = &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.ServiceInstance.ID).To(Equal("instance-GUID"))
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.ServiceInstance.ControllerCreated).To(BeTrue())
+	})
+}
+
+func getPowerVSClusterScopeParams() PowerVSClusterScopeParams {
+	return PowerVSClusterScopeParams{
+		Client:  testEnv.Client,
+		Cluster: newCluster(clusterName),
+		IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations:  map[string]string{"powervs.cluster.x-k8s.io/create-infra": "true"},
+				GenerateName: "powervs-test-",
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: capiv1beta1.GroupVersion.String(),
+						Kind:       "Cluster",
+						Name:       "capi-test",
+						UID:        "1",
+					}}},
+			Spec: infrav1beta2.IBMPowerVSClusterSpec{
+				Zone: ptr.To("zone"),
+				VPC:  &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-gb")},
+			},
+		},
+		ClientFactory: ClientFactory{
+			AuthenticatorFactory: func() (core.Authenticator, error) {
+				return nil, nil
+			},
+			PowerVSClientFactory: func() (powervs.PowerVS, error) {
+				return nil, nil
+			},
+			VPCClientFactory: func() (vpc.Vpc, error) {
+				return nil, nil
+			},
+			TransitGatewayFactory: func() (transitgateway.TransitGateway, error) {
+				return nil, nil
+			},
+			ResourceControllerFactory: func() (resourcecontroller.ResourceController, error) {
+				return nil, nil
+			},
+			ResourceManagerFactory: func() (resourcemanager.ResourceManager, error) {
+				return nil, nil
+			},
+		},
 	}
 }
