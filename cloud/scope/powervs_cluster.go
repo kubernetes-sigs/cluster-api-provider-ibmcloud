@@ -779,7 +779,7 @@ func (s *PowerVSClusterScope) checkServiceInstanceState(instance resourcecontrol
 	case string(infrav1beta2.ServiceInstanceStateFailed):
 		return false, fmt.Errorf("PowerVS service instance is in failed state")
 	}
-	return false, nil
+	return false, fmt.Errorf("PowerVS service instance is in %s state", *instance.State)
 }
 
 // checkServiceInstance checks PowerVS service instance exist in cloud.
