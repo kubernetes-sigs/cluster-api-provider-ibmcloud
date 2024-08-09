@@ -53,6 +53,11 @@ func NewService(options *resourcemanagerv2.ResourceManagerV2Options) (ResourceMa
 	}, nil
 }
 
+// GetResourceGroup returns a Resource Group.
+func (s *Service) GetResourceGroup(getResourceGroupOptions *resourcemanagerv2.GetResourceGroupOptions) (*resourcemanagerv2.ResourceGroup, *core.DetailedResponse, error) {
+	return s.client.GetResourceGroup(getResourceGroupOptions)
+}
+
 // ListResourceGroups lists the resource groups.
 func (s *Service) ListResourceGroups(listResourceGroupsOptions *resourcemanagerv2.ListResourceGroupsOptions) (result *resourcemanagerv2.ResourceGroupList, response *core.DetailedResponse, err error) {
 	return s.client.ListResourceGroups(listResourceGroupsOptions)

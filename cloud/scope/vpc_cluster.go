@@ -225,27 +225,44 @@ func (s *VPCClusterScope) GetNetworkResourceGroupID() (string, error) {
 	}
 
 	// If there is no Network Resource Group defined, use the cluster's Resource Group.
-	if s.NetworkSpec() == nil || s.NetworkSpec().ResourceGroup == nil {
+	if s.NetworkSpec() == nil || s.NetworkSpec().ResourceGroup == nil || (s.NetworkSpec().ResourceGroup.ID == "" && s.NetworkSpec().ResourceGroup.Name == nil) {
 		return s.GetResourceGroupID()
 	}
 
-	// Otherwise, Collect the Network's Resource Group Id.
-	// Retrieve the Resource Group based on the name.
-	resourceGroup, err := s.ResourceManagerClient.GetResourceGroupByName(*s.NetworkSpec().ResourceGroup)
-	if err != nil {
-		return "", fmt.Errorf("failed to retrieve network resource group id by name: %w", err)
-	} else if resourceGroup == nil || resourceGroup.ID == nil {
-		return "", fmt.Errorf("error retrieving network resource group by name: %s", *s.NetworkSpec().ResourceGroup)
+	// Otherwise, collect the Network's Resource Group Id.
+	resourceGroupID := s.NetworkSpec().ResourceGroup.ID
+	var resourceGroupName *string
+	if resourceGroupID != "" {
+		// Verify the Resource Group exists, using the provided ID.
+		resourceGroupDetails, _, err := s.ResourceManagerClient.GetResourceGroup(&resourcemanagerv2.GetResourceGroupOptions{
+			ID: ptr.To(resourceGroupID),
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to retrieve newtork resource group by id: %w", err)
+		} else if resourceGroupDetails == nil || resourceGroupDetails.Name == nil {
+			return "", fmt.Errorf("error retrieving network resource group by id: %s", resourceGroupID)
+		}
+		resourceGroupName = resourceGroupDetails.Name
+	} else {
+		// Retrieve the Resource Group based on the name (Name must exist if ID is empty).
+		resourceGroup, err := s.ResourceManagerClient.GetResourceGroupByName(*s.NetworkSpec().ResourceGroup.Name)
+		if err != nil {
+			return "", fmt.Errorf("failed to retrieve network resource group id by name: %w", err)
+		} else if resourceGroup == nil || resourceGroup.ID == nil {
+			return "", fmt.Errorf("error retrieving network resource group by name: %s", *s.NetworkSpec().ResourceGroup.Name)
+		}
+		resourceGroupID = *resourceGroup.ID
+		resourceGroupName = s.NetworkSpec().ResourceGroup.Name
 	}
 
 	// Populate the Network Status' Resource Group to shortcut future lookups.
 	s.SetResourceStatus(infrav1beta2.ResourceTypeResourceGroup, &infrav1beta2.ResourceStatus{
-		ID:    *resourceGroup.ID,
-		Name:  s.NetworkSpec().ResourceGroup,
+		ID:    resourceGroupID,
+		Name:  resourceGroupName,
 		Ready: true,
 	})
 
-	return *resourceGroup.ID, nil
+	return resourceGroupID, nil
 }
 
 // GetResourceGroupID returns the Resource Group ID for the cluster.
