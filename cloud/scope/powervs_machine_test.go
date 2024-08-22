@@ -42,6 +42,7 @@ import (
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 
 	. "github.com/onsi/gomega"
 )
@@ -188,6 +189,255 @@ func TestNewPowerVSMachineScope(t *testing.T) {
 			g.Expect(err).To(Not(BeNil()))
 		})
 	}
+}
+
+func TestGetServiceInstanceID(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("GetServiceInstanceID", func(t *testing.T) {
+		serviceInstanceID := "service-instance-id"
+		t.Run("Get service instance ID from IBMPowerVSCluster status", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			serviceInstance := new(infrav1beta2.ResourceReference)
+			serviceInstance.ID = core.StringPtr(serviceInstanceID)
+			scope.IBMPowerVSCluster.Status.ServiceInstance = serviceInstance
+			returnedID := scope.GetServiceInstanceID()
+			require.Equal(t, returnedID, serviceInstanceID)
+		})
+
+		t.Run("Get service instance ID from IBMPowerVSCluster Spec", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+
+			scope := setupPowerVSMachineScope(clusterName, *core.StringPtr("foo-machine-1"), core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			scope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+			returnedID := scope.GetServiceInstanceID()
+			require.Equal(t, returnedID, serviceInstanceID)
+		})
+
+		t.Run("Get service instance ID from IBMPowerVSCluster Spec's ServiceInstanceID", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+
+			scope := setupPowerVSMachineScope(clusterName, *core.StringPtr("foo-machine-1"), core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			serviceInstance := new(infrav1beta2.IBMPowerVSResourceReference)
+			serviceInstance.ID = core.StringPtr(serviceInstanceID)
+			scope.IBMPowerVSCluster.Spec.ServiceInstance = serviceInstance
+			returnedID := scope.GetServiceInstanceID()
+			require.Equal(t, returnedID, serviceInstanceID)
+		})
+
+		t.Run("Empty ServiceInstanceID", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+
+			scope := setupPowerVSMachineScope(clusterName, *core.StringPtr("foo-machine-1"), core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			returnedID := scope.GetServiceInstanceID()
+			require.Equal(t, returnedID, "")
+		})
+	})
+
+}
+
+func TestSetReady(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("SetReady", func(t *testing.T) {
+		t.Run("Set status as ready for the machine.", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			scope.SetReady()
+			require.Equal(t, scope.IsReady(), true)
+		})
+	})
+}
+
+func TestSetNotReady(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("SetNotReady", func(t *testing.T) {
+		t.Run("Set status as not ready for the machine.", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			scope.SetNotReady()
+			require.Equal(t, scope.IsReady(), false)
+		})
+	})
+}
+
+func TestSetRegion(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("SetRegion", func(t *testing.T) {
+		t.Run("Set region", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			region := "us-south"
+			scope.SetRegion(region)
+			require.Equal(t, scope.GetRegion(), region)
+		})
+		t.Run("No region set", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			require.Equal(t, scope.GetRegion(), "")
+		})
+	})
+}
+
+func TestSetZone(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("SetZone", func(t *testing.T) {
+		t.Run("Set zone", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			region := "us-south-1"
+			scope.SetZone(region)
+			require.Equal(t, scope.GetZone(), region)
+		})
+		t.Run("No zone set", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			require.Equal(t, scope.GetZone(), "")
+		})
+	})
+}
+
+func TestSetInstanceState(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("SetInstanceState", func(t *testing.T) {
+		t.Run("Set Instance state to ready", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			instanceState := core.StringPtr("Ready")
+			scope.SetInstanceState(instanceState)
+			require.Equal(t, scope.GetInstanceState(), infrav1beta2.PowerVSInstanceState(*instanceState))
+		})
+	})
+}
+
+func TestSetProviderID(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Set Provider ID", func(t *testing.T) {
+		providerID := core.StringPtr("foo-provider-id")
+		t.Run("Set Provider ID in v2 format", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			options.ProviderIDFormat = string(options.ProviderIDFormatV2)
+			scope.SetZone("us-south-1")
+			scope.SetRegion("us-south")
+			scope.IBMPowerVSCluster.Spec.ServiceInstanceID = "service-instance-1"
+			scope.SetProviderID(providerID)
+			expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", scope.GetRegion(), scope.GetZone(), scope.GetServiceInstanceID(), *providerID))
+			require.Equal(t, *scope.IBMPowerVSMachine.Spec.ProviderID, *expectedProviderID)
+		})
+
+		t.Run("Set Provider ID in v1 format", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			options.ProviderIDFormat = string(options.ProviderIDFormatV1)
+			scope.SetProviderID(providerID)
+			expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", scope.Machine.Spec.ClusterName, scope.IBMPowerVSMachine.Name))
+			require.Equal(t, *scope.IBMPowerVSMachine.Spec.ProviderID, *expectedProviderID)
+		})
+	})
 }
 
 func TestCreateMachinePVS(t *testing.T) {
