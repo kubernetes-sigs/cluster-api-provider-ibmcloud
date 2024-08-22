@@ -250,7 +250,6 @@ func TestGetServiceInstanceID(t *testing.T) {
 			require.Equal(t, returnedID, "")
 		})
 	})
-
 }
 
 func TestSetReady(t *testing.T) {
