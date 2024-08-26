@@ -25,6 +25,7 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -40,8 +41,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	resourcecontrollermock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 
 	. "github.com/onsi/gomega"
@@ -133,6 +137,116 @@ func newDHCPServerDetails(serverID, leaseIP, instanceMac string) *models.DHCPSer
 			},
 		},
 	}
+}
+
+func TestAPIServerPort(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Get APIServerPort", func(t *testing.T) {
+		t.Run("Getting default APIServerPort", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			require.Equal(t, infrav1beta2.DefaultAPIServerPort, scope.APIServerPort())
+		})
+		t.Run("Getting assigned APIServerPort", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			apiServerPort := int32(6553)
+			scope.Cluster.Spec.ClusterNetwork = &capiv1beta1.ClusterNetwork{APIServerPort: &apiServerPort}
+			require.Equal(t, apiServerPort, scope.APIServerPort())
+		})
+	})
+}
+
+func TestBucketName(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Get Bucketname", func(t *testing.T) {
+		t.Run("Getting default BucketName", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			expectedBucketName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosbucket")
+			require.Equal(t, expectedBucketName, scope.bucketName())
+		})
+		t.Run("Getting existing bucketname", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			expectedBucketName := "foo-bucket-1"
+			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1beta2.CosInstance{BucketName: expectedBucketName}
+			require.Equal(t, expectedBucketName, scope.bucketName())
+		})
+	})
+}
+
+func TestBucketRegion(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Get Bucketname", func(t *testing.T) {
+		t.Run("Getting region - bucket exists", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			expectedBucketRegion := "us-south"
+			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1beta2.CosInstance{BucketRegion: expectedBucketRegion}
+			require.Equal(t, expectedBucketRegion, scope.bucketRegion())
+		})
+
+		t.Run("Getting region - bucket region not set", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			expectedBucketRegion := "us-south"
+			scope.IBMPowerVSCluster.Spec.VPC = &infrav1beta2.VPCResourceReference{Region: &expectedBucketRegion}
+			require.Equal(t, expectedBucketRegion, scope.bucketRegion())
+		})
+
+		t.Run("Getting region - no region set", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			require.Equal(t, "", scope.bucketRegion())
+		})
+	})
 }
 
 func TestNewPowerVSMachineScope(t *testing.T) {
@@ -435,6 +549,104 @@ func TestSetProviderID(t *testing.T) {
 			scope.SetProviderID(providerID)
 			expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", scope.Machine.Spec.ClusterName, scope.IBMPowerVSMachine.Name))
 			require.Equal(t, *scope.IBMPowerVSMachine.Spec.ProviderID, *expectedProviderID)
+		})
+	})
+}
+
+func TestCreateCOSClient(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Create COS client", func(t *testing.T) {
+		mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
+		t.Run("Create ignition data - error getting instance", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
+			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, errors.New("error listing cos instances"))
+			scope.ResourceClient = mockResourceController
+			result, err := scope.createCOSClient()
+			var nilCosService *cos.Service
+			require.Equal(t, nilCosService, result)
+			require.NotNil(t, err)
+		})
+
+		t.Run("Create ignition data - empty service instance", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
+			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, nil)
+			scope.ResourceClient = mockResourceController
+			result, err := scope.createCOSClient()
+			var nilCosService *cos.Service
+			require.Equal(t, nilCosService, result)
+			require.Nil(t, err)
+		})
+
+		t.Run("Create ignition data - service instance is not in active state", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			serviceInstance := new(resourcecontrollerv2.ResourceInstance)
+			state := string(infrav1beta2.ServiceInstanceStateProvisioning)
+			serviceInstance.State = &state
+			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
+			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			scope.ResourceClient = mockResourceController
+			result, err := scope.createCOSClient()
+			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1beta2.ServiceInstanceStateProvisioning)
+			var nilCosService *cos.Service
+			require.Equal(t, nilCosService, result)
+			require.ErrorContains(t, err, expectedError)
+		})
+
+		t.Run("Create ignition data - bucket region not set", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			serviceInstance := new(resourcecontrollerv2.ResourceInstance)
+			state := string(infrav1beta2.ServiceInstanceStateActive)
+			serviceInstance.State = &state
+			scope.SetRegion("us-south")
+			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
+			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			scope.ResourceClient = mockResourceController
+			result, err := scope.createCOSClient()
+			expectedError := "failed to determine COS bucket region, both bucket region and VPC region not set"
+			var nilCosService *cos.Service
+			require.Equal(t, nilCosService, result)
+			require.ErrorContains(t, err, expectedError)
+		})
+		t.Run("Create ignition data - success", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			serviceInstance := new(resourcecontrollerv2.ResourceInstance)
+			state := string(infrav1beta2.ServiceInstanceStateActive)
+			serviceInstance.State = &state
+			guid := "foo-guid"
+			serviceInstance.GUID = &guid
+			scope.SetRegion("us-south")
+			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
+			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			scope.ResourceClient = mockResourceController
+			expectedBucketRegion := "us-south"
+			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1beta2.CosInstance{BucketRegion: expectedBucketRegion}
+			_, err := scope.createCOSClient()
+			require.Nil(t, err)
 		})
 	})
 }
