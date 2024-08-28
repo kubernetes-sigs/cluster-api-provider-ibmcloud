@@ -23,6 +23,7 @@ import (
 
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
+	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"go.uber.org/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +39,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
 )
@@ -173,30 +175,6 @@ func TestGetServiceInstanceID(t *testing.T) {
 			},
 		},
 		{
-			name: "Service Instance ID is set in spec.ServiceInstanceID",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						ServiceInstanceID: "specServiceInstanceID",
-					},
-				},
-			},
-			expectedID: "specServiceInstanceID",
-		},
-		{
-			name: "Service Instance ID is set in spec.ServiceInstance.ID",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
-							ID: ptr.To("specServiceInstanceID"),
-						},
-					},
-				},
-			},
-			expectedID: "specServiceInstanceID",
-		},
-		{
 			name: "Service Instance ID is set in status.ServiceInstanceID",
 			clusterScope: PowerVSClusterScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
@@ -208,22 +186,6 @@ func TestGetServiceInstanceID(t *testing.T) {
 				},
 			},
 			expectedID: "statusServiceInstanceID",
-		},
-		{
-			name: "Spec Service Instance ID takes precedence over status Service Instance ID",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						ServiceInstanceID: "specServiceInstanceID",
-					},
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						ServiceInstance: &infrav1beta2.ResourceReference{
-							ID: ptr.To("statusServiceInstanceID"),
-						},
-					},
-				},
-			},
-			expectedID: "specServiceInstanceID",
 		},
 	}
 
@@ -249,39 +211,12 @@ func TestGetDHCPServerID(t *testing.T) {
 			},
 		},
 		{
-			name: "DHCP server ID is set in spec",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						DHCPServer: &infrav1beta2.DHCPServer{ID: ptr.To("dhcpserverid")},
-					},
-				},
-			},
-			expectedID: ptr.To("dhcpserverid"),
-		},
-		{
 			name: "DHCP server ID is set in status",
 			clusterScope: PowerVSClusterScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					Status: infrav1beta2.IBMPowerVSClusterStatus{
 						DHCPServer: &infrav1beta2.ResourceReference{
 							ID: ptr.To("dhcpserverid"),
-						},
-					},
-				},
-			},
-			expectedID: ptr.To("dhcpserverid"),
-		},
-		{
-			name: "Spec DHCP server ID takes precedence over status DHCP Server ID",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						DHCPServer: &infrav1beta2.DHCPServer{ID: ptr.To("dhcpserverid")},
-					},
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						DHCPServer: &infrav1beta2.ResourceReference{
-							ID: ptr.To("dhcpserveridstatus"),
 						},
 					},
 				},
@@ -312,39 +247,12 @@ func TestGetVPCID(t *testing.T) {
 			},
 		},
 		{
-			name: "VPC ID is set in spec",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						VPC: &infrav1beta2.VPCResourceReference{ID: ptr.To("vpcID")},
-					},
-				},
-			},
-			expectedID: ptr.To("vpcID"),
-		},
-		{
 			name: "VPC ID is set in status",
 			clusterScope: PowerVSClusterScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					Status: infrav1beta2.IBMPowerVSClusterStatus{
 						VPC: &infrav1beta2.ResourceReference{
 							ID: ptr.To("vpcID"),
-						},
-					},
-				},
-			},
-			expectedID: ptr.To("vpcID"),
-		},
-		{
-			name: "spec VPC ID takes precedence over status VPC ID",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						VPC: &infrav1beta2.VPCResourceReference{ID: ptr.To("vpcID")},
-					},
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						VPC: &infrav1beta2.ResourceReference{
-							ID: ptr.To("vpcID1"),
 						},
 					},
 				},
@@ -452,24 +360,6 @@ func TestGetVPCSubnetIDs(t *testing.T) {
 			clusterScope: PowerVSClusterScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			},
-		},
-		{
-			name: "VPC subnet id is set in spec",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						VPCSubnets: []infrav1beta2.Subnet{
-							{
-								ID: ptr.To("subnet1"),
-							},
-							{
-								ID: ptr.To("subnet2"),
-							},
-						},
-					},
-				},
-			},
-			expectedIDs: []*string{ptr.To("subnet1"), ptr.To("subnet2")},
 		},
 		{
 			name: "VPC subnet id is set in status",
@@ -868,166 +758,337 @@ func TestGetLoadBalancerState(t *testing.T) {
 }
 
 func TestGetLoadBalancerHostName(t *testing.T) {
-	testCases := []struct {
-		name             string
-		lbName           string
-		expectedHostName *string
-		clusterScope     PowerVSClusterScope
-	}{
-		{
-			name: "LoadBalancer status is not set",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
-			},
-		},
-		{
-			name: "LoadBalancer status is empty",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						LoadBalancers: make(map[string]infrav1beta2.VPCLoadBalancerStatus),
-					},
-				},
-			},
-		},
-		{
-			name: "empty LoadBalancer name is passed",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
-							"lb": {
-								Hostname: ptr.To("hostname"),
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "invalid LoadBalancer name is passed",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
-							"lb": {
-								Hostname: ptr.To("hostname"),
-							},
-						},
-					},
-				},
-			},
-			lbName: "lb2",
-		},
-		{
-			name: "valid LoadBalancer name is passed",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Status: infrav1beta2.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
-							"lb": {
-								Hostname: ptr.To("hostname"),
-							},
-						},
-					},
-				},
-			},
-			lbName:           "lb",
-			expectedHostName: ptr.To("hostname"),
-		},
+	var (
+		mockVPC  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVPC = mock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
 	}
 
-	for _, tc := range testCases {
+	t.Run("Load balancer status is nil", func(t *testing.T) {
 		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			lbName := tc.clusterScope.GetLoadBalancerHostName(tc.lbName)
-			g.Expect(utils.DereferencePointer(lbName)).To(Equal(utils.DereferencePointer(tc.expectedHostName)))
-		})
-	}
-}
+		setup(t)
+		t.Cleanup(teardown)
 
-func TestPublicLoadBalancer(t *testing.T) {
-	testCases := []struct {
-		name         string
-		expectedLB   *infrav1beta2.VPCLoadBalancerSpec
-		clusterScope PowerVSClusterScope
-	}{
-		{
-			name: "IBMPowerVSCluster spec is empty",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
+		clusterScope := PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{},
 			},
-			expectedLB: &infrav1beta2.VPCLoadBalancerSpec{
-				Name:   "-loadbalancer",
-				Public: ptr.To(true),
-			},
-		},
-		{
-			name: "one public loadbalancer is configured",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
-							{
-								Name:   "lb",
-								Public: ptr.To(true),
-							},
-						},
-					},
-				},
-			},
-			expectedLB: &infrav1beta2.VPCLoadBalancerSpec{
-				Name:   "lb",
-				Public: ptr.To(true),
-			},
-		},
-		{
-			name: "multiple public loadbalancer is configured",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
-							{
-								Name:   "lb",
-								Public: ptr.To(true),
-							},
-							{
-								Name:   "lb2",
-								Public: ptr.To(true),
-							},
-						},
-					},
-				},
-			},
-			expectedLB: &infrav1beta2.VPCLoadBalancerSpec{
-				Name:   "lb",
-				Public: ptr.To(true),
-			},
-		},
-		{
-			name: "only private loadbalancer is configured",
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
-							{
-								Name:   "lb",
-								Public: ptr.To(false),
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+		}
 
-	for _, tc := range testCases {
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(BeNil())
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Load balancer name is not set in IBMPowerVSCluster spec", func(t *testing.T) {
 		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			lbSpec := tc.clusterScope.PublicLoadBalancer()
-			g.Expect(lbSpec).To(Equal(tc.expectedLB))
-		})
-	}
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"-loadbalancer": {
+							Hostname: ptr.To("lb-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb-hostname")))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Invalid load balancer name is set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name:   "lb",
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"loadbalancer": {
+							Hostname: ptr.To("lb-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(BeNil())
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Valid load balancer name is set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name:   "loadbalancer",
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"loadbalancer": {
+							Hostname: ptr.To("lb-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb-hostname")))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Both public and private load balancer name is set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name:   "lb1",
+							Public: core.BoolPtr(false),
+						},
+						{
+							Name:   "lb2",
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"lb1": {
+							Hostname: ptr.To("lb1-hostname"),
+						},
+						"lb2": {
+							Hostname: ptr.To("lb2-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb2-hostname")))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Multiple public load balancer names are set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name:   "lb1",
+							Public: core.BoolPtr(true),
+						},
+						{
+							Name:   "lb2",
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"lb1": {
+							Hostname: ptr.To("lb1-hostname"),
+						},
+						"lb2": {
+							Hostname: ptr.To("lb2-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb1-hostname")))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Valid load balancer ID is set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID:     ptr.To("loadbalancer-id"),
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"loadbalancer": {
+							Hostname: ptr.To("lb-hostname"),
+						},
+					},
+				},
+			},
+		}
+		lb := &vpcv1.LoadBalancer{
+			Name: ptr.To("loadbalancer"),
+		}
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(lb, &core.DetailedResponse{}, nil)
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb-hostname")))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Invalid load balancer ID is set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID:     ptr.To("loadbalancer-id1"),
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"loadbalancer": {
+							Hostname: ptr.To("lb-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(nil, &core.DetailedResponse{}, errors.New("failed to get the load balancer"))
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+	t.Run("Multiple public load balancer IDs are set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID:     ptr.To("lb1"),
+							Public: core.BoolPtr(true),
+						},
+						{
+							ID:     ptr.To("lb2"),
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"loadbalancer1": {
+							Hostname: ptr.To("lb1-hostname"),
+						},
+						"loadbalancer2": {
+							Hostname: ptr.To("lb2-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		lb := &vpcv1.LoadBalancer{
+			Name: ptr.To("loadbalancer1"),
+		}
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(lb, &core.DetailedResponse{}, nil)
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb1-hostname")))
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("Both private and public load balancer IDs are set in IBMPowerVSCluster spec", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID:     ptr.To("lb1"),
+							Public: core.BoolPtr(false),
+						},
+						{
+							ID:     ptr.To("lb2"),
+							Public: core.BoolPtr(true),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"loadbalancer1": {
+							Hostname: ptr.To("lb1-hostname"),
+						},
+						"loadbalancer2": {
+							Hostname: ptr.To("lb2-hostname"),
+						},
+					},
+				},
+			},
+		}
+
+		lb := &vpcv1.LoadBalancer{
+			Name: ptr.To("loadbalancer2"),
+		}
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(lb, &core.DetailedResponse{}, nil)
+
+		hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+		g.Expect(hostName).To(Equal(ptr.To("lb2-hostname")))
+		g.Expect(err).To(BeNil())
+	})
 }
 
 func TestGetResourceGroupID(t *testing.T) {
@@ -1107,125 +1168,151 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 	teardown := func() {
 		mockCtrl.Finish()
 	}
-	t.Run("When service instance id is set and GetResourceInstance returns error", func(t *testing.T) {
+	t.Run("When service instance id is set in status and GetResourceInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to get resource instance"))
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To(serviceInstanceID),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to get resource instance"))
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("When service instance id is set and GetResourceInstance returns nil", func(t *testing.T) {
+	t.Run("When service instance id is set in status and GetResourceInstance returns nil", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To(serviceInstanceID),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("When service instance id is set and instance in failed state", func(t *testing.T) {
+	t.Run("When service instance id is set in status and instance is in failed state", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			instance := &resourcecontrollerv2.ResourceInstance{
-				Name:  ptr.To("test-instance"),
-				State: ptr.To("failed"),
-			}
-			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To(serviceInstanceID),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		instance := &resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-instance"),
+			State: ptr.To("failed"),
+		}
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("When service instance id is set and instance in active state", func(t *testing.T) {
+	t.Run("When service instance id is set in status and instance is in active state", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			instance := &resourcecontrollerv2.ResourceInstance{
-				Name:  ptr.To("test-instance"),
-				State: ptr.To("active"),
-			}
-			mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To(serviceInstanceID),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ServiceInstanceID = serviceInstanceID
+
+		instance := &resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-instance"),
+			State: ptr.To("active"),
+		}
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).To(BeNil())
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("When isServiceInstanceExists returns error", func(t *testing.T) {
+	t.Run("When service instance id is set in spec and instance does not exist", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("failed to get service instance"))
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To(serviceInstanceID),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to get resource instance"))
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("When service instance exists in cloud and in active state", func(t *testing.T) {
+	t.Run("When service instance id is set in spec and instance exists in active state", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			instance := &resourcecontrollerv2.ResourceInstance{
-				GUID:  ptr.To("instance-GUID"),
-				Name:  ptr.To("test-instance"),
-				State: ptr.To("active"),
-			}
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(instance, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To(serviceInstanceID),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		instance := &resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-instance"),
+			State: ptr.To("active"),
+			GUID:  ptr.To("instance-GUID"),
+		}
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(instance, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).To(BeNil())
@@ -1234,20 +1321,55 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 		g.Expect(*clusterScope.IBMPowerVSCluster.Status.ServiceInstance.ControllerCreated).To(BeFalse())
 	})
 
-	t.Run("When create service instance return error", func(t *testing.T) {
+	t.Run("When service instance id is set in both spec and status, ID from status takes precedence", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
-			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to create resource instance"))
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("serviceInstanceIDSpec"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("serviceInstanceIDStatus"),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
+
+		resource := &resourcecontrollerv2.GetResourceInstanceOptions{
+			ID: clusterScope.IBMPowerVSCluster.Status.ServiceInstance.ID,
+		}
+
+		instance := &resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-instance"),
+			State: ptr.To("active"),
+		}
+		mockResourceController.EXPECT().GetResourceInstance(resource).Return(instance, nil, nil)
+
+		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ResourceGroup = &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("When create service instance returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{},
+			},
+		}
+
+		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).ToNot(BeNil())
@@ -1259,40 +1381,50 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
-			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("resource-group-id"),
+					},
+					Zone: ptr.To("zone1"),
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ResourceGroup = &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}
+
+		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("When successfully created new service instance", func(t *testing.T) {
+	t.Run("When successfully created a new service instance", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			instance := &resourcecontrollerv2.ResourceInstance{
-				GUID: ptr.To("instance-GUID"),
-				Name: ptr.To("test-instance"),
-			}
-
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
-			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(instance, nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("resource-group-id"),
+					},
+					Zone: ptr.To("zone1"),
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.ResourceGroup = &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}
+
+		instance := &resourcecontrollerv2.ResourceInstance{
+			GUID: ptr.To("instance-GUID"),
+			Name: ptr.To("test-instance"),
+		}
+
+		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(instance, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance()
 		g.Expect(err).To(BeNil())
@@ -1358,90 +1490,116 @@ func TestIsServiceInstanceExists(t *testing.T) {
 	teardown := func() {
 		mockCtrl.Finish()
 	}
-	t.Run("When get service instance returns error", func(t *testing.T) {
+
+	t.Run("When ServiceInstanceID is set in spec and GetResourceInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("failed to get service instance"))
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "instance-id",
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to get resource instance"))
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists()
 		g.Expect(instanceID).To(Equal(""))
 		g.Expect(requeue).To(BeFalse())
 		g.Expect(err).NotTo(BeNil())
 	})
-	t.Run("When get service instance returns nil", func(t *testing.T) {
+	t.Run("When ServiceInstance.ID is set in spec and GetResourceInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("instance-id"),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to get resource instance"))
+
+		instanceID, requeue, err := clusterScope.isServiceInstanceExists()
+		g.Expect(instanceID).To(Equal(""))
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(err).NotTo(BeNil())
+	})
+	t.Run("When ServiceInstance.Name is set in spec and GetResourceInstance returns nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						Name: ptr.To("instance-name"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists()
 		g.Expect(instanceID).To(Equal(""))
 		g.Expect(requeue).To(BeFalse())
 		g.Expect(err).To(BeNil())
 	})
+
 	t.Run("When checkServiceInstanceState returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{Name: ptr.To("instance"), State: ptr.To("unknown")}, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						Name: ptr.To("instance"),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{Name: ptr.To("instance"), State: ptr.To("unknown")}, nil)
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists()
 		g.Expect(instanceID).To(Equal(""))
 		g.Expect(requeue).To(BeFalse())
 		g.Expect(err).ToNot(BeNil())
 	})
-	t.Run("When checkServiceInstanceState returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{Name: ptr.To("instance"), State: ptr.To("unknown")}, nil)
-			return mockResourceController, nil
-		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-
-		instanceID, requeue, err := clusterScope.isServiceInstanceExists()
-		g.Expect(instanceID).To(Equal(""))
-		g.Expect(requeue).To(BeFalse())
-		g.Expect(err).ToNot(BeNil())
-	})
 	t.Run("When isServiceInstanceExists returns success", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{GUID: ptr.To("guid"), Name: ptr.To("instance"), State: ptr.To("active")}, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						Name: ptr.To("instance"),
+					},
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{GUID: ptr.To("guid"), Name: ptr.To("instance"), State: ptr.To("active")}, nil)
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists()
 		g.Expect(instanceID).To(Equal("guid"))
@@ -1468,10 +1626,12 @@ func TestCreateServiceInstance(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.IBMPowerVSCluster.Spec.ResourceGroup = nil
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{},
+			},
+		}
 
 		instance, err := clusterScope.createServiceInstance()
 		g.Expect(instance).To(BeNil())
@@ -1482,10 +1642,16 @@ func TestCreateServiceInstance(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
-		clusterScope.IBMPowerVSCluster.Spec.Zone = nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("resource-group-id"),
+					},
+				},
+			},
+		}
 
 		instance, err := clusterScope.createServiceInstance()
 		g.Expect(instance).To(BeNil())
@@ -1496,13 +1662,19 @@ func TestCreateServiceInstance(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to create resource instance"))
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("resource-group-id"),
+					},
+					Zone: ptr.To("zone1"),
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to create resource instance"))
 
 		instance, err := clusterScope.createServiceInstance()
 		g.Expect(instance).To(BeNil())
@@ -1513,60 +1685,22 @@ func TestCreateServiceInstance(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 
-		clusterScopeParams := getPowerVSClusterScopeParams()
-		clusterScopeParams.ResourceControllerFactory = func() (resourcecontroller.ResourceController, error) {
-			mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{}, nil, nil)
-			return mockResourceController, nil
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("resource-group-id"),
+					},
+					Zone: ptr.To("zone1"),
+				},
+			},
 		}
-		clusterScope, err := NewPowerVSClusterScope(clusterScopeParams)
-		g.Expect(err).To(BeNil())
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{}, nil, nil)
 
 		instance, err := clusterScope.createServiceInstance()
 		g.Expect(instance).ToNot(BeNil())
 		g.Expect(err).To(BeNil())
 	})
-}
-
-func getPowerVSClusterScopeParams() PowerVSClusterScopeParams {
-	return PowerVSClusterScopeParams{
-		Client:  testEnv.Client,
-		Cluster: newCluster(clusterName),
-		IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations:  map[string]string{"powervs.cluster.x-k8s.io/create-infra": "true"},
-				GenerateName: "powervs-test-",
-				OwnerReferences: []metav1.OwnerReference{
-					{
-						APIVersion: capiv1beta1.GroupVersion.String(),
-						Kind:       "Cluster",
-						Name:       "capi-test",
-						UID:        "1",
-					}}},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{
-				Zone:          ptr.To("zone"),
-				VPC:           &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-gb")},
-				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("rg-id")},
-			},
-		},
-		ClientFactory: ClientFactory{
-			AuthenticatorFactory: func() (core.Authenticator, error) {
-				return nil, nil
-			},
-			PowerVSClientFactory: func() (powervs.PowerVS, error) {
-				return nil, nil
-			},
-			VPCClientFactory: func() (vpc.Vpc, error) {
-				return nil, nil
-			},
-			TransitGatewayFactory: func() (transitgateway.TransitGateway, error) {
-				return nil, nil
-			},
-			ResourceControllerFactory: func() (resourcecontroller.ResourceController, error) {
-				return nil, nil
-			},
-			ResourceManagerFactory: func() (resourcemanager.ResourceManager, error) {
-				return nil, nil
-			},
-		},
-	}
 }
