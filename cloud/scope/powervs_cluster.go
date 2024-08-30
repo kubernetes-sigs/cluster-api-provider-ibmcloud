@@ -840,7 +840,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork() (bool, error) {
 	if networkID != nil {
 		s.V(3).Info("Found PowerVS network in IBM Cloud", "id", networkID)
 		s.SetStatus(infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: networkID, ControllerCreated: ptr.To(false)})
-		return false, nil
+		return true, nil
 	}
 
 	dhcpServer, err := s.createDHCPServer()
