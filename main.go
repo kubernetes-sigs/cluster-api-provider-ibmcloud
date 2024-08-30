@@ -55,7 +55,7 @@ var (
 	enableLeaderElection bool
 	healthAddr           string
 	syncPeriod           time.Duration
-	diagnosticsOptions   = flags.DiagnosticsOptions{}
+	managerOptions       = flags.ManagerOptions{}
 	webhookPort          int
 	webhookCertDir       string
 
@@ -126,7 +126,7 @@ func initFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
 		"The webhook certificate directory, where the server should find the TLS certificate and key.")
 
-	flags.AddDiagnosticsOptions(fs, &diagnosticsOptions)
+	flags.AddManagerOptions(fs, &managerOptions)
 }
 
 func validateFlags() error {
@@ -175,7 +175,11 @@ func main() {
 		BurstSize: 100,
 	})
 
-	diagnosticsOpts := flags.GetDiagnosticsOptions(diagnosticsOptions)
+	_, metricsOptions, err := flags.GetManagerOptions(managerOptions)
+	if err != nil {
+		setupLog.Error(err, "Unable to start manager: invalid flags")
+		os.Exit(1)
+	}
 
 	var watchNamespaces map[string]cache.Config
 	if watchNamespace != "" {
@@ -187,7 +191,7 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:           scheme,
 		LeaderElection:   enableLeaderElection,
-		Metrics:          diagnosticsOpts,
+		Metrics:          *metricsOptions,
 		LeaderElectionID: "effcf9b8.cluster.x-k8s.io",
 		Cache: cache.Options{
 			DefaultNamespaces: watchNamespaces,
