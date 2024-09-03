@@ -55,6 +55,22 @@ func (m *MockVpc) EXPECT() *MockVpcMockRecorder {
 	return m.recorder
 }
 
+// CreateImage mocks base method.
+func (m *MockVpc) CreateImage(options *vpcv1.CreateImageOptions) (*vpcv1.Image, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateImage", options)
+	ret0, _ := ret[0].(*vpcv1.Image)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateImage indicates an expected call of CreateImage.
+func (mr *MockVpcMockRecorder) CreateImage(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockVpc)(nil).CreateImage), options)
+}
+
 // CreateInstance mocks base method.
 func (m *MockVpc) CreateInstance(options *vpcv1.CreateInstanceOptions) (*vpcv1.Instance, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -286,6 +302,37 @@ func (m *MockVpc) DeleteVPC(options *vpcv1.DeleteVPCOptions) (*core.DetailedResp
 func (mr *MockVpcMockRecorder) DeleteVPC(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVPC", reflect.TypeOf((*MockVpc)(nil).DeleteVPC), options)
+}
+
+// GetImage mocks base method.
+func (m *MockVpc) GetImage(options *vpcv1.GetImageOptions) (*vpcv1.Image, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImage", options)
+	ret0, _ := ret[0].(*vpcv1.Image)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetImage indicates an expected call of GetImage.
+func (mr *MockVpcMockRecorder) GetImage(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockVpc)(nil).GetImage), options)
+}
+
+// GetImageByName mocks base method.
+func (m *MockVpc) GetImageByName(imageName string) (*vpcv1.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageByName", imageName)
+	ret0, _ := ret[0].(*vpcv1.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageByName indicates an expected call of GetImageByName.
+func (mr *MockVpcMockRecorder) GetImageByName(imageName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByName", reflect.TypeOf((*MockVpc)(nil).GetImageByName), imageName)
 }
 
 // GetInstance mocks base method.

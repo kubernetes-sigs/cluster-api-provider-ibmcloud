@@ -462,7 +462,7 @@ spec:
                     description: name is the name of the desired VPC Custom Image.
                     maxLength: 63
                     minLength: 1
-                    pattern: '''/^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$/'''
+                    pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                     type: string
                   operatingSystem:
                     description: operatingSystem is the Custom Image's Operating System

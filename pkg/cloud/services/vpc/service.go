@@ -159,9 +159,19 @@ func (s *Service) ListKeys(options *vpcv1.ListKeysOptions) (*vpcv1.KeyCollection
 	return s.vpcService.ListKeys(options)
 }
 
+// CreateImage creates a new VPC Custom Image.
+func (s *Service) CreateImage(options *vpcv1.CreateImageOptions) (*vpcv1.Image, *core.DetailedResponse, error) {
+	return s.vpcService.CreateImage(options)
+}
+
 // ListImages returns list of images in a region.
 func (s *Service) ListImages(options *vpcv1.ListImagesOptions) (*vpcv1.ImageCollection, *core.DetailedResponse, error) {
 	return s.vpcService.ListImages(options)
+}
+
+// GetImage returns a VPC Custom image.
+func (s *Service) GetImage(options *vpcv1.GetImageOptions) (*vpcv1.Image, *core.DetailedResponse, error) {
+	return s.vpcService.GetImage(options)
 }
 
 // GetInstanceProfile returns instance profile.
@@ -211,6 +221,45 @@ func (s *Service) GetVPCByName(vpcName string) (*vpcv1.VPC, error) {
 	}
 
 	return vpc, nil
+}
+
+// GetImageByName returns the VPC Custom Image with given name. If not found, returns nil.
+func (s *Service) GetImageByName(imageName string) (*vpcv1.Image, error) {
+	var image *vpcv1.Image
+	f := func(start string) (bool, string, error) {
+		// check for existing images
+		listImagesOptions := &vpcv1.ListImagesOptions{}
+		if start != "" {
+			listImagesOptions.Start = &start
+		}
+
+		imagesList, _, err := s.ListImages(listImagesOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if imagesList == nil {
+			return false, "", fmt.Errorf("image list returned is nil")
+		}
+
+		for i, v := range imagesList.Images {
+			if *v.Name == imageName {
+				image = &imagesList.Images[i]
+				return true, "", nil
+			}
+		}
+
+		if imagesList.Next != nil && *imagesList.Next.Href != "" {
+			return false, *imagesList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
+		return nil, err
+	}
+
+	return image, nil
 }
 
 // GetSubnet return subnet.

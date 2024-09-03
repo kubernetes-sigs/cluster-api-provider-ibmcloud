@@ -245,7 +245,21 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 		clusterScope.Info("VPC creation is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
+	clusterScope.Info("Reconciliation of VPC complete")
 	conditions.MarkTrue(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition)
+
+	// Reconcile the cluster's VPC Custom Image.
+	clusterScope.Info("Reconciling VPC Custom Image")
+	if requeue, err := clusterScope.ReconcileVPCCustomImage(); err != nil {
+		clusterScope.Error(err, "failed to reconcile VPC Custom Image")
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		return reconcile.Result{}, err
+	} else if requeue {
+		clusterScope.Info("VPC Custom Image creation is pending, requeueing")
+		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
+	}
+	clusterScope.Info("Reconciliation of VPC Custom Image complete")
+	conditions.MarkTrue(clusterScope.IBMVPCCluster, infrav1beta2.ImageReadyCondition)
 
 	// TODO(cjschaef): add remaining resource reconciliation.
 
