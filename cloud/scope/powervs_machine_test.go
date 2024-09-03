@@ -46,6 +46,8 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capierrors "sigs.k8s.io/cluster-api/errors"
+	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -653,6 +655,108 @@ func TestCreateCOSClient(t *testing.T) {
 			_, err := scope.createCOSClient()
 			require.Nil(t, err)
 		})
+	})
+}
+
+func TestClose(t *testing.T) {
+	var (
+		mockpowervs *mock.MockPowerVS
+		mockCtrl    *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Test Close", func(t *testing.T) {
+		t.Run("IBMPowerVSMachine is not nil", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			patchHelper, _ := patch.NewHelper(scope.IBMPowerVSMachine, scope.Client)
+			scope.patchHelper = patchHelper
+			err := scope.Close()
+			require.Nil(t, err)
+		})
+		t.Run("IBMPowerVSMachine is nil", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			patchHelper, _ := patch.NewHelper(scope.IBMPowerVSMachine, scope.Client)
+			scope.patchHelper = patchHelper
+			scope.IBMPowerVSMachine = nil
+			err := scope.Close()
+			require.NotNil(t, err)
+		})
+	})
+}
+
+func TestSetInstanceID(t *testing.T) {
+	t.Run("Test Close", func(t *testing.T) {
+		scope := PowerVSMachineScope{
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				Status: infrav1beta2.IBMPowerVSMachineStatus{},
+			},
+		}
+		instanceID := "foo-instance-id"
+		scope.SetInstanceID(ptr.To(instanceID))
+		require.Equal(t, instanceID, scope.GetInstanceID())
+	})
+}
+
+func TestSetFailureReason(t *testing.T) {
+	t.Run("Test SetFailureReason", func(t *testing.T) {
+		scope := PowerVSMachineScope{
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				Status: infrav1beta2.IBMPowerVSMachineStatus{},
+			},
+		}
+		scope.SetFailureReason(capierrors.InvalidConfigurationMachineError)
+		require.Equal(t, *scope.IBMPowerVSMachine.Status.FailureReason, capierrors.InvalidConfigurationMachineError)
+	})
+}
+
+func TestSetHealth(t *testing.T) {
+	t.Run("Test SetHealth", func(t *testing.T) {
+		t.Run("Test SetHealth - status healthy", func(t *testing.T) {
+			scope := PowerVSMachineScope{
+				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+					Status: infrav1beta2.IBMPowerVSMachineStatus{},
+				},
+			}
+			healthStatus := &models.PVMInstanceHealth{
+				Status: "healthy",
+			}
+			scope.SetHealth(healthStatus)
+			require.Equal(t, scope.IBMPowerVSMachine.Status.Health, healthStatus.Status)
+		})
+		t.Run("Test SetHealth - nil health status", func(t *testing.T) {
+			scope := PowerVSMachineScope{
+				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+					Status: infrav1beta2.IBMPowerVSMachineStatus{},
+				},
+			}
+			scope.SetHealth(nil)
+			require.Equal(t, scope.IBMPowerVSMachine.Status.Health, "")
+		})
+	})
+}
+
+func TestSetFailureMessage(t *testing.T) {
+	t.Run("Test SetFailureMessage", func(t *testing.T) {
+		scope := PowerVSMachineScope{
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				Status: infrav1beta2.IBMPowerVSMachineStatus{},
+			},
+		}
+		failureMessage := "invalid configuration provided"
+		scope.SetFailureMessage(failureMessage)
+		require.Equal(t, *scope.IBMPowerVSMachine.Status.FailureMessage, failureMessage)
 	})
 }
 
