@@ -13,8 +13,6 @@ updates:
     # together with controller-runtime.
     - dependency-name: "k8s.io/*"
     - dependency-name: "github.com/onsi/*"
-    - dependency-name: "github.com/IBM/networking-go-sdk"
-    - dependency-name: "github.com/aquasecurity/trivy"
     labels:
       - "ok-to-test"
 
