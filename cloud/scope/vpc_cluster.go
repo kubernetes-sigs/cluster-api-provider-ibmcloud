@@ -275,7 +275,7 @@ func (s *VPCClusterScope) GetResourceGroupID() (string, error) {
 	// If the Resource Group is not defined in Spec, we generate the name based on the cluster name.
 	resourceGroupName := s.IBMVPCCluster.Spec.ResourceGroup
 	if resourceGroupName == "" {
-		resourceGroupName = s.IBMVPCCluster.Name
+		resourceGroupName = s.Name()
 	}
 
 	// Retrieve the Resource Group based on the name.
@@ -486,7 +486,9 @@ func (s *VPCClusterScope) createVPC() (*vpcv1.VPC, error) {
 	} else if vpcDetails == nil {
 		return nil, fmt.Errorf("no vpc details after creation")
 	}
-	if err = s.TagResource(s.IBMVPCCluster.Name, *vpcDetails.CRN); err != nil {
+
+	// NOTE: This tagging is only attempted once. We may wish to refactor in case this single attempt fails.
+	if err = s.TagResource(s.Name(), *vpcDetails.CRN); err != nil {
 		return nil, fmt.Errorf("error tagging vpc: %w", err)
 	}
 
