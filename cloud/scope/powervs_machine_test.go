@@ -735,6 +735,15 @@ func TestSetProviderID(t *testing.T) {
 			require.Equal(t, *scope.IBMPowerVSMachine.Spec.ProviderID, *expectedProviderID)
 		})
 
+		t.Run("Provider ID is nil", func(t *testing.T) {
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
+			options.ProviderIDFormat = string(options.ProviderIDFormatV2)
+			scope.SetProviderID(nil)
+			require.Nil(t, scope.IBMPowerVSMachine.Spec.ProviderID)
+		})
+
 		t.Run("Set Provider ID in v1 format", func(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
