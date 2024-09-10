@@ -452,31 +452,22 @@ func (s *VPCClusterScope) ReconcileVPC() (bool, error) {
 
 	// If no VPC id was found, we need to create a new VPC.
 	s.V(3).Info("Creating a VPC")
-	vpcDetails, err := s.createVPC()
+	err = s.createVPC()
 	if err != nil {
 		return false, fmt.Errorf("failed to create vpc: %w", err)
 	}
 
 	s.V(3).Info("Successfully created VPC")
-	var vpcName *string
-	if vpcDetails != nil {
-		vpcName = vpcDetails.Name
-	}
-	s.SetResourceStatus(infrav1beta2.ResourceTypeVPC, &infrav1beta2.ResourceStatus{
-		ID:    *vpcDetails.ID,
-		Name:  vpcName,
-		Ready: false,
-	})
 	return true, nil
 }
 
-func (s *VPCClusterScope) createVPC() (*vpcv1.VPC, error) {
+func (s *VPCClusterScope) createVPC() error {
 	// We use the cluster's Resource Group ID, as we expect to create all resources in that Resource Group.
 	resourceGroupID, err := s.GetResourceGroupID()
 	if err != nil {
-		return nil, fmt.Errorf("failed retreiving resource group id during vpc creation: %w", err)
+		return fmt.Errorf("failed retreiving resource group id during vpc creation: %w", err)
 	} else if resourceGroupID == "" {
-		return nil, fmt.Errorf("resource group id is empty cannot create vpc")
+		return fmt.Errorf("resource group id is empty cannot create vpc")
 	}
 	vpcName := s.GetServiceName(infrav1beta2.ResourceTypeVPC)
 	if s.NetworkSpec() != nil && s.NetworkSpec().VPC != nil && s.NetworkSpec().VPC.Name != nil {
@@ -492,17 +483,25 @@ func (s *VPCClusterScope) createVPC() (*vpcv1.VPC, error) {
 	}
 	vpcDetails, _, err := s.VPCClient.CreateVPC(vpcOptions)
 	if err != nil {
-		return nil, fmt.Errorf("error creating vpc: %w", err)
+		return fmt.Errorf("error creating vpc: %w", err)
 	} else if vpcDetails == nil {
-		return nil, fmt.Errorf("no vpc details after creation")
+		return fmt.Errorf("no vpc details after creation")
 	}
+
+	// Set the VPC status.
+	s.SetResourceStatus(infrav1beta2.ResourceTypeVPC, &infrav1beta2.ResourceStatus{
+		ID:   *vpcDetails.ID,
+		Name: vpcDetails.Name,
+		// We wait for a followup reconcile loop to set as Ready, to confirm the VPC can be found.
+		Ready: false,
+	})
 
 	// NOTE: This tagging is only attempted once. We may wish to refactor in case this single attempt fails.
 	if err = s.TagResource(s.Name(), *vpcDetails.CRN); err != nil {
-		return nil, fmt.Errorf("error tagging vpc: %w", err)
+		return fmt.Errorf("error tagging vpc: %w", err)
 	}
 
-	return vpcDetails, nil
+	return nil
 }
 
 // ReconcileVPCCustomImage reconciles the VPC Custom Image.
