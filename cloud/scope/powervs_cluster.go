@@ -398,13 +398,25 @@ func (s *PowerVSClusterScope) GetServiceInstanceID() string {
 	return ""
 }
 
+// SetTransitGatewayConnectionStatus sets the connection status of Transit gateway.
+func (s *PowerVSClusterScope) SetTransitGatewayConnectionStatus(networkType networkConnectionType, resource *infrav1beta2.ResourceReference) {
+	if s.IBMPowerVSCluster.Status.TransitGateway == nil || resource == nil {
+		return
+	}
+
+	switch networkType {
+	case powervsNetworkConnectionType:
+		s.IBMPowerVSCluster.Status.TransitGateway.PowerVSConnection = resource
+	case vpcNetworkConnectionType:
+		s.IBMPowerVSCluster.Status.TransitGateway.VPCConnection = resource
+	}
+}
+
 // SetTransitGatewayStatus sets the status of Transit gateway.
-func (s *PowerVSClusterScope) SetTransitGatewayStatus(id *string, controllerCreated *bool, powerVSConnResource, vpcConnResource *infrav1beta2.ResourceReference) {
+func (s *PowerVSClusterScope) SetTransitGatewayStatus(id *string, controllerCreated *bool) {
 	s.IBMPowerVSCluster.Status.TransitGateway = &infrav1beta2.TransitGatewayStatus{
 		ID:                id,
 		ControllerCreated: controllerCreated,
-		PowerVSConnection: powerVSConnResource,
-		VPCConnection:     vpcConnResource,
 	}
 }
 
@@ -1632,7 +1644,7 @@ func (s *PowerVSClusterScope) ReconcileTransitGateway() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		requeue, _, _, err := s.checkAndUpdateTransitGateway(tg, false)
+		requeue, err := s.checkAndUpdateTransitGateway(tg)
 		if err != nil {
 			return false, err
 		}
@@ -1647,24 +1659,19 @@ func (s *PowerVSClusterScope) ReconcileTransitGateway() (bool, error) {
 
 	// check the status and update the transit gateway's connections if they are not proper
 	if tg != nil {
-		requeue, powerVSConn, vpcConn, err := s.checkAndUpdateTransitGateway(tg, true)
+		requeue, err := s.checkAndUpdateTransitGateway(tg)
 		if err != nil {
 			return false, err
 		}
-		s.SetTransitGatewayStatus(tg.ID, ptr.To(false), powerVSConn, vpcConn)
 		return requeue, nil
 	}
 
 	// create transit gateway
 	s.V(3).Info("Creating transit gateway")
-	transitGatewayID, powerVSConnID, vpcConnID, err := s.createTransitGateway()
-	if err != nil {
+	if err := s.createTransitGateway(); err != nil {
 		return false, fmt.Errorf("failed to create transit gateway: %v", err)
 	}
-	if transitGatewayID != nil {
-		s.Info("Created transit gateway", "id", transitGatewayID)
-		s.SetTransitGatewayStatus(transitGatewayID, ptr.To(true), &infrav1beta2.ResourceReference{ID: powerVSConnID, ControllerCreated: ptr.To(true)}, &infrav1beta2.ResourceReference{ID: vpcConnID, ControllerCreated: ptr.To(true)})
-	}
+
 	return true, nil
 }
 
@@ -1691,21 +1698,23 @@ func (s *PowerVSClusterScope) isTransitGatewayExists() (*tgapiv1.TransitGateway,
 		return nil, nil
 	}
 
+	s.SetTransitGatewayStatus(transitGateway.ID, ptr.To(false))
+
 	return transitGateway, nil
 }
 
 // checkAndUpdateTransitGateway checks given transit gateway's status and its connections.
 // if update is set to true, it updates the transit gateway connections too if it is not exist already.
-func (s *PowerVSClusterScope) checkAndUpdateTransitGateway(transitGateway *tgapiv1.TransitGateway, update bool) (bool, *infrav1beta2.ResourceReference, *infrav1beta2.ResourceReference, error) {
+func (s *PowerVSClusterScope) checkAndUpdateTransitGateway(transitGateway *tgapiv1.TransitGateway) (bool, error) {
 	requeue, err := s.checkTransitGatewayStatus(transitGateway)
 	if err != nil {
-		return false, nil, nil, err
+		return false, err
 	}
 	if requeue {
-		return requeue, nil, nil, nil
+		return requeue, nil
 	}
 
-	return s.checkAndUpdateTransitGatewayConnections(transitGateway, update)
+	return s.checkAndUpdateTransitGatewayConnections(transitGateway)
 }
 
 // checkTransitGatewayStatus checks the state of a transit gateway.
@@ -1727,144 +1736,96 @@ func (s *PowerVSClusterScope) checkTransitGatewayStatus(tg *tgapiv1.TransitGatew
 }
 
 // checkAndUpdateTransitGatewayConnections checks given transit gateway's connections status.
-// if update is set to true, it updates the transit gateway connections too if it is not exist already.
-func (s *PowerVSClusterScope) checkAndUpdateTransitGatewayConnections(transitGateway *tgapiv1.TransitGateway, update bool) (bool, *infrav1beta2.ResourceReference, *infrav1beta2.ResourceReference, error) {
+// it also creates the transit gateway connections if it is not exist already.
+func (s *PowerVSClusterScope) checkAndUpdateTransitGatewayConnections(transitGateway *tgapiv1.TransitGateway) (bool, error) {
 	tgConnections, _, err := s.TransitGatewayClient.ListTransitGatewayConnections(&tgapiv1.ListTransitGatewayConnectionsOptions{
 		TransitGatewayID: transitGateway.ID,
 	})
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("failed to list transit gateway connections: %w", err)
+		return false, fmt.Errorf("failed to list transit gateway connections: %w", err)
 	}
 
 	vpcCRN, err := s.fetchVPCCRN()
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("failed to fetch VPC CRN: %w", err)
+		return false, fmt.Errorf("failed to fetch VPC CRN: %w", err)
 	}
 
 	pvsServiceInstanceCRN, err := s.fetchPowerVSServiceInstanceCRN()
 	if err != nil {
-		return false, nil, nil, fmt.Errorf("failed to fetch PowerVS service instance CRN: %w", err)
+		return false, fmt.Errorf("failed to fetch PowerVS service instance CRN: %w", err)
 	}
-
-	var powerVSConnResource, vpcConnResource *infrav1beta2.ResourceReference
 
 	if len(tgConnections.Connections) == 0 {
-		if update {
-			s.V(3).Info("Connections not exist on existing transit gateway, creating them")
-			powerVSConnID, vpcConnID, err := s.createTransitGatewayConnections(transitGateway, pvsServiceInstanceCRN, vpcCRN)
-			if err != nil {
-				return false, nil, nil, err
-			}
-
-			powerVSConnResource = &infrav1beta2.ResourceReference{
-				ID:                powerVSConnID,
-				ControllerCreated: ptr.To(true),
-			}
-
-			vpcConnResource = &infrav1beta2.ResourceReference{
-				ID:                vpcConnID,
-				ControllerCreated: ptr.To(true),
-			}
-
-			return true, powerVSConnResource, vpcConnResource, nil
+		s.V(3).Info("Connections not exist on transit gateway, creating them")
+		if err := s.createTransitGatewayConnections(transitGateway, pvsServiceInstanceCRN, vpcCRN); err != nil {
+			return false, err
 		}
 
-		return false, nil, nil, fmt.Errorf("no connections are attached to transit gateway")
+		return true, nil
 	}
 
-	requeue, powerVSConnID, vpcConnID, err := s.validateTransitGatewayConnections(tgConnections.Connections, vpcCRN, pvsServiceInstanceCRN)
+	requeue, powerVSConnStatus, vpcConnStatus, err := s.validateTransitGatewayConnections(tgConnections.Connections, vpcCRN, pvsServiceInstanceCRN)
 	if err != nil {
-		return false, nil, nil, err
+		return false, err
 	} else if requeue {
-		return requeue, nil, nil, nil
+		return requeue, nil
 	}
 
 	// return when connections are in attached state.
-	if powerVSConnID != nil && vpcConnID != nil {
-		powerVSConnResource = &infrav1beta2.ResourceReference{
-			ID:                powerVSConnID,
-			ControllerCreated: ptr.To(false),
-		}
-
-		vpcConnResource = &infrav1beta2.ResourceReference{
-			ID:                vpcConnID,
-			ControllerCreated: ptr.To(false),
-		}
-
-		return false, powerVSConnResource, vpcConnResource, nil
+	if powerVSConnStatus && vpcConnStatus {
+		return false, nil
 	}
 
-	// return error when any of the connections are not in attached state.
-	if (powerVSConnID == nil || vpcConnID == nil) && !update {
-		return false, nil, nil, fmt.Errorf("either one of PowerVS or VPC transit gateway connections is not attached, PowerVS: %t VPC: %t", powerVSConnID != nil, vpcConnID != nil)
-	}
-
-	// update the connections when update is set to true
-	if powerVSConnID == nil {
+	// update the connections when connection not exist
+	if !powerVSConnStatus {
 		s.V(3).Info("Only PowerVS connection not exist in transit gateway, creating it")
-		conn, err := s.createTransitGatewayConnection(transitGateway.ID, ptr.To(getTGPowerVSConnectionName(*transitGateway.Name)), ptr.To(string(powervsNetworkConnectionType)), pvsServiceInstanceCRN)
-		if err != nil {
-			return false, nil, nil, err
-		}
-		powerVSConnResource = &infrav1beta2.ResourceReference{
-			ID:                conn.ID,
-			ControllerCreated: ptr.To(true),
-		}
-	} else {
-		s.V(3).Info("Using existing PowerVS connection in transit gateway", "id", powerVSConnID)
-		powerVSConnResource = &infrav1beta2.ResourceReference{
-			ID:                powerVSConnID,
-			ControllerCreated: ptr.To(false),
+		if err := s.createTransitGatewayConnection(transitGateway.ID, ptr.To(getTGPowerVSConnectionName(*transitGateway.Name)), pvsServiceInstanceCRN, powervsNetworkConnectionType); err != nil {
+			return false, err
 		}
 	}
 
-	if vpcConnID == nil {
+	if !vpcConnStatus {
 		s.V(3).Info("Only VPC connection not exist in transit gateway, creating it")
-		conn, err := s.createTransitGatewayConnection(transitGateway.ID, ptr.To(getTGVPCConnectionName(*transitGateway.Name)), ptr.To(string(vpcNetworkConnectionType)), vpcCRN)
-		if err != nil {
-			return false, nil, nil, err
-		}
-		vpcConnResource = &infrav1beta2.ResourceReference{
-			ID:                conn.ID,
-			ControllerCreated: ptr.To(true),
-		}
-	} else {
-		s.V(3).Info("Using existing VPC connection in transit gateway", "id", vpcConnID)
-		vpcConnResource = &infrav1beta2.ResourceReference{
-			ID:                vpcConnID,
-			ControllerCreated: ptr.To(false),
+		if err := s.createTransitGatewayConnection(transitGateway.ID, ptr.To(getTGVPCConnectionName(*transitGateway.Name)), vpcCRN, vpcNetworkConnectionType); err != nil {
+			return false, err
 		}
 	}
 
-	return true, powerVSConnResource, vpcConnResource, nil
+	return true, nil
 }
 
 // validateTransitGatewayConnections validates the existing transit gateway connections.
 // to avoid returning many return values, connection id will be returned and considered that connection is in attached state.
-func (s *PowerVSClusterScope) validateTransitGatewayConnections(connections []tgapiv1.TransitGatewayConnectionCust, vpcCRN, pvsServiceInstanceCRN *string) (bool, *string, *string, error) {
-	var powerVSConnID, vpcConnID *string
+func (s *PowerVSClusterScope) validateTransitGatewayConnections(connections []tgapiv1.TransitGatewayConnectionCust, vpcCRN, pvsServiceInstanceCRN *string) (bool, bool, bool, error) {
+	var powerVSConnStatus, vpcConnStatus bool
 	for _, conn := range connections {
 		if *conn.NetworkType == string(vpcNetworkConnectionType) && *conn.NetworkID == *vpcCRN {
 			if requeue, err := s.checkTransitGatewayConnectionStatus(conn); err != nil {
-				return requeue, nil, nil, err
+				return requeue, false, false, err
 			} else if requeue {
-				return requeue, nil, nil, nil
+				return requeue, false, false, nil
 			}
-			s.V(3).Info("VPC connection in Transit gateway is in attached state", "name", *conn.Name)
-			vpcConnID = conn.ID
+
+			if s.IBMPowerVSCluster.Status.TransitGateway != nil && s.IBMPowerVSCluster.Status.TransitGateway.VPCConnection == nil {
+				s.SetTransitGatewayConnectionStatus(vpcNetworkConnectionType, &infrav1beta2.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(false)})
+			}
+			vpcConnStatus = true
 		}
 		if *conn.NetworkType == string(powervsNetworkConnectionType) && *conn.NetworkID == *pvsServiceInstanceCRN {
 			if requeue, err := s.checkTransitGatewayConnectionStatus(conn); err != nil {
-				return requeue, nil, nil, err
+				return requeue, false, false, err
 			} else if requeue {
-				return requeue, nil, nil, nil
+				return requeue, false, false, nil
 			}
-			s.V(3).Info("PowerVS connection in Transit gateway is in attached state", "name", *conn.Name)
-			powerVSConnID = conn.ID
+
+			if s.IBMPowerVSCluster.Status.TransitGateway != nil && s.IBMPowerVSCluster.Status.TransitGateway.PowerVSConnection == nil {
+				s.SetTransitGatewayConnectionStatus(powervsNetworkConnectionType, &infrav1beta2.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(false)})
+			}
+			powerVSConnStatus = true
 		}
 	}
 
-	return false, powerVSConnID, vpcConnID, nil
+	return false, powerVSConnStatus, vpcConnStatus, nil
 }
 
 // checkTransitGatewayConnectionStatus checks the state of a transit gateway connection.
@@ -1885,54 +1846,56 @@ func (s *PowerVSClusterScope) checkTransitGatewayConnectionStatus(con tgapiv1.Tr
 	return false, nil
 }
 
-// createTransitGatewayConnection creates transit gateway connection.
-func (s *PowerVSClusterScope) createTransitGatewayConnection(transitGatewayID, connName, networkType, networkID *string) (*tgapiv1.TransitGatewayConnectionCust, error) {
+// createTransitGatewayConnection creates transit gateway connection and sets the connection status.
+func (s *PowerVSClusterScope) createTransitGatewayConnection(transitGatewayID, connName, networkID *string, networkType networkConnectionType) error {
 	s.V(3).Info("Creating transit gateway connection", "tgID", transitGatewayID, "type", networkType, "name", connName)
 	conn, _, err := s.TransitGatewayClient.CreateTransitGatewayConnection(&tgapiv1.CreateTransitGatewayConnectionOptions{
 		TransitGatewayID: transitGatewayID,
-		NetworkType:      networkType,
+		NetworkType:      ptr.To(string(networkType)),
 		NetworkID:        networkID,
 		Name:             connName,
 	})
+	if err != nil {
+		return err
+	}
+	s.SetTransitGatewayConnectionStatus(networkType, &infrav1beta2.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(true)})
 
-	return conn, err
+	return nil
 }
 
 // createTransitGatewayConnections creates PowerVS and VPC connections in the transit gateway.
-func (s *PowerVSClusterScope) createTransitGatewayConnections(tg *tgapiv1.TransitGateway, pvsServiceInstanceCRN, vpcCRN *string) (*string, *string, error) {
-	powerVSConn, err := s.createTransitGatewayConnection(tg.ID, ptr.To(getTGPowerVSConnectionName(*tg.Name)), ptr.To(string(powervsNetworkConnectionType)), pvsServiceInstanceCRN)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create PowerVS connection in transit gateway: %w", err)
+func (s *PowerVSClusterScope) createTransitGatewayConnections(tg *tgapiv1.TransitGateway, pvsServiceInstanceCRN, vpcCRN *string) error {
+	if err := s.createTransitGatewayConnection(tg.ID, ptr.To(getTGPowerVSConnectionName(*tg.Name)), pvsServiceInstanceCRN, powervsNetworkConnectionType); err != nil {
+		return fmt.Errorf("failed to create PowerVS connection in transit gateway: %w", err)
 	}
 
-	vpcConn, err := s.createTransitGatewayConnection(tg.ID, ptr.To(getTGVPCConnectionName(*tg.Name)), ptr.To(string(vpcNetworkConnectionType)), vpcCRN)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create VPC connection in transit gateway: %w", err)
+	if err := s.createTransitGatewayConnection(tg.ID, ptr.To(getTGVPCConnectionName(*tg.Name)), vpcCRN, vpcNetworkConnectionType); err != nil {
+		return fmt.Errorf("failed to create VPC connection in transit gateway: %w", err)
 	}
 
-	return powerVSConn.ID, vpcConn.ID, nil
+	return nil
 }
 
-// createTransitGateway create transit gateway.
-func (s *PowerVSClusterScope) createTransitGateway() (*string, *string, *string, error) {
+// createTransitGateway creates transit gateway and sets the transit gateway status.
+func (s *PowerVSClusterScope) createTransitGateway() error {
 	// TODO(karthik-k-n): Verify that the supplied zone supports PER
 	// TODO(karthik-k-n): consider moving to clusterscope
 
 	// fetch resource group id
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, nil, nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
 	}
 
 	location, globalRouting, err := genUtil.GetTransitGatewayLocationAndRouting(s.Zone(), s.VPC().Region)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get transit gateway location and routing: %w", err)
+		return fmt.Errorf("failed to get transit gateway location and routing: %w", err)
 	}
 
 	// throw error when user tries to use local routing where global routing is required.
 	// TODO: Add a webhook validation for below condition.
 	if s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting != nil && !*s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting && *globalRouting {
-		return nil, nil, nil, fmt.Errorf("failed to use local routing for transit gateway since powervs and vpc are in different region and requires global routing")
+		return fmt.Errorf("failed to use local routing for transit gateway since powervs and vpc are in different region and requires global routing")
 	}
 	// setting global routing to true when it is set by user.
 	if s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting != nil && *s.IBMPowerVSCluster.Spec.TransitGateway.GlobalRouting {
@@ -1947,23 +1910,25 @@ func (s *PowerVSClusterScope) createTransitGateway() (*string, *string, *string,
 		ResourceGroup: &tgapiv1.ResourceGroupIdentity{ID: ptr.To(resourceGroupID)},
 	})
 	if err != nil {
-		return nil, nil, nil, err
+		return err
 	}
+
+	s.SetTransitGatewayStatus(tg.ID, ptr.To(true))
 
 	vpcCRN, err := s.fetchVPCCRN()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to fetch VPC CRN: %w", err)
+		return fmt.Errorf("failed to fetch VPC CRN: %w", err)
 	}
 	pvsServiceInstanceCRN, err := s.fetchPowerVSServiceInstanceCRN()
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to fetch PowerVS service instance CRN: %w", err)
+		return fmt.Errorf("failed to fetch PowerVS service instance CRN: %w", err)
 	}
 
-	powerVSConnID, vpcConnID, err := s.createTransitGatewayConnections(tg, pvsServiceInstanceCRN, vpcCRN)
-	if err != nil {
-		return nil, nil, nil, err
+	if err := s.createTransitGatewayConnections(tg, pvsServiceInstanceCRN, vpcCRN); err != nil {
+		return err
 	}
-	return tg.ID, powerVSConnID, vpcConnID, nil
+
+	return nil
 }
 
 // ReconcileLoadBalancers reconcile loadBalancer.
