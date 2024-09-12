@@ -1098,6 +1098,32 @@ spec:
                   id:
                     description: id represents the id of the resource.
                     type: string
+                  powerVSConnection:
+                    description: powerVSConnection defines the powervs connection
+                      status in transit gateway.
+                    properties:
+                      controllerCreated:
+                        default: false
+                        description: controllerCreated indicates whether the resource
+                          is created by the controller.
+                        type: boolean
+                      id:
+                        description: id represents the id of the resource.
+                        type: string
+                    type: object
+                  vpcConnection:
+                    description: vpcConnection defines the vpc connection status in
+                      transit gateway.
+                    properties:
+                      controllerCreated:
+                        default: false
+                        description: controllerCreated indicates whether the resource
+                          is created by the controller.
+                        type: boolean
+                      id:
+                        description: id represents the id of the resource.
+                        type: string
+                    type: object
                 type: object
               vpc:
                 description: vpc is reference to IBM Cloud VPC resources.

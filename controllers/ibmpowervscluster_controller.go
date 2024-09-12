@@ -300,7 +300,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 		conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.TransitGatewayReadyCondition, infrav1beta2.TransitGatewayReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
-		clusterScope.Info("Transit gateway creation is pending, requeuing")
+		clusterScope.Info("Setting up Transit gateway is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 	conditions.MarkTrue(powerVSCluster.cluster, infrav1beta2.TransitGatewayReadyCondition)
@@ -366,11 +366,11 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	allErrs := []error{}
 	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.GetServiceInstanceID()})
 
-	clusterScope.Info("Deleting Transit Gateway")
+	clusterScope.Info("Clean up Transit Gateway")
 	if requeue, err := clusterScope.DeleteTransitGateway(); err != nil {
 		allErrs = append(allErrs, errors.Wrapf(err, "failed to delete transit gateway"))
 	} else if requeue {
-		clusterScope.Info("Transit gateway deletion is pending, requeuing")
+		clusterScope.Info("Cleaning up transit gateway is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 

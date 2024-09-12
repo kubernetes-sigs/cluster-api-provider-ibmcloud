@@ -181,6 +181,19 @@ type ResourceReference struct {
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }
 
+// TransitGatewayStatus defines the status of transit gateway as well as it's connection's status.
+type TransitGatewayStatus struct {
+	// id represents the id of the resource.
+	ID *string `json:"id,omitempty"`
+	// +kubebuilder:default=false
+	// controllerCreated indicates whether the resource is created by the controller.
+	ControllerCreated *bool `json:"controllerCreated,omitempty"`
+	// vpcConnection defines the vpc connection status in transit gateway.
+	VPCConnection *ResourceReference `json:"vpcConnection,omitempty"`
+	// powerVSConnection defines the powervs connection status in transit gateway.
+	PowerVSConnection *ResourceReference `json:"powerVSConnection,omitempty"`
+}
+
 // IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
 type IBMPowerVSClusterStatus struct {
 	// ready is true when the provider resource is ready.
@@ -209,7 +222,7 @@ type IBMPowerVSClusterStatus struct {
 	VPCSecurityGroups map[string]VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
 
 	// transitGateway is reference to IBM Cloud TransitGateway.
-	TransitGateway *ResourceReference `json:"transitGateway,omitempty"`
+	TransitGateway *TransitGatewayStatus `json:"transitGateway,omitempty"`
 
 	// cosInstance is reference to IBM Cloud COS Instance resource.
 	COSInstance *ResourceReference `json:"cosInstance,omitempty"`
