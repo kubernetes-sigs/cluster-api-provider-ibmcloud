@@ -150,12 +150,12 @@ func newDHCPServerDetails(serverID, leaseIP, instanceMac string) *models.DHCPSer
 func TestAPIServerPort(t *testing.T) {
 	testcases := []struct {
 		name               string
-		expectedportNumber int32
+		expectedPortNumber int32
 		machineScope       PowerVSMachineScope
 	}{
 		{
 			name:               "test assigned port number",
-			expectedportNumber: int32(6445),
+			expectedPortNumber: int32(6445),
 			machineScope: PowerVSMachineScope{
 				Cluster: &capiv1beta1.Cluster{
 					Spec: capiv1beta1.ClusterSpec{
@@ -167,7 +167,7 @@ func TestAPIServerPort(t *testing.T) {
 			},
 		}, {
 			name:               "test default api server port",
-			expectedportNumber: infrav1beta2.DefaultAPIServerPort,
+			expectedPortNumber: infrav1beta2.DefaultAPIServerPort,
 			machineScope: PowerVSMachineScope{
 				Cluster: &capiv1beta1.Cluster{
 					Spec: capiv1beta1.ClusterSpec{
@@ -182,7 +182,7 @@ func TestAPIServerPort(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			port := tc.machineScope.APIServerPort()
-			g.Expect(port).To(Equal(tc.expectedportNumber))
+			g.Expect(port).To(Equal(tc.expectedPortNumber))
 		})
 	}
 }
