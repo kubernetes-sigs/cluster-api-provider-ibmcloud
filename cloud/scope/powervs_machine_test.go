@@ -28,7 +28,6 @@ import (
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	corev1 "k8s.io/api/core/v1"
@@ -617,8 +616,7 @@ func TestGetNetworkID(t *testing.T) {
 			}
 			result, err := getNetworkID(networkResource, &scope)
 			g.Expect(result).To(BeNil())
-			//g.Expect(err).Error().Should(ConsistOf(fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkIName)))
-			require.EqualError(t, err, fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkIName))
+			g.Expect(err.Error()).To(Equal(fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkIName)))
 		})
 
 		t.Run("Fetch network ID with matching regex", func(t *testing.T) {
@@ -675,7 +673,7 @@ func TestGetNetworkID(t *testing.T) {
 			}
 			result, err := getNetworkID(networkResource, &scope)
 			g.Expect(result).To(BeNil())
-			require.EqualError(t, err, fmt.Sprintf("failed to find a network ID with RegEx %s", regex))
+			g.Expect(err.Error()).To(Equal(fmt.Sprintf("failed to find a network ID with RegEx %s", regex)))
 		})
 
 		t.Run("ID name and regex are all nil", func(t *testing.T) {
@@ -684,7 +682,7 @@ func TestGetNetworkID(t *testing.T) {
 			scope := PowerVSMachineScope{}
 			result, err := getNetworkID(networkResource, &scope)
 			g.Expect(result).To(BeNil())
-			require.EqualError(t, err, "ID, Name and RegEx can't be nil")
+			g.Expect(err.Error()).To(Equal("ID, Name and RegEx can't be nil"))
 		})
 	})
 }
@@ -766,7 +764,6 @@ func TestSetProviderID(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			options.ProviderIDFormat = string(options.ProviderIDFormatV2)
 			scope.SetProviderID(nil)
-			require.Nil(t, scope.IBMPowerVSMachine.Spec.ProviderID)
 			g.Expect(scope.IBMPowerVSMachine.Spec.ProviderID).To(BeNil())
 		})
 
@@ -840,7 +837,7 @@ func TestCreateCOSClient(t *testing.T) {
 			result, err := scope.createCOSClient()
 			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1beta2.ServiceInstanceStateProvisioning)
 			g.Expect(result).To(BeNil())
-			require.ErrorContains(t, err, expectedError)
+			g.Expect(err.Error()).To(ContainSubstring(expectedError))
 		})
 
 		t.Run("Create ignition data - bucket region not set", func(t *testing.T) {
@@ -858,7 +855,7 @@ func TestCreateCOSClient(t *testing.T) {
 			result, err := scope.createCOSClient()
 			expectedError := "failed to determine COS bucket region, both bucket region and VPC region not set"
 			g.Expect(result).To(BeNil())
-			require.ErrorContains(t, err, expectedError)
+			g.Expect(err.Error()).To(ContainSubstring(expectedError))
 		})
 		t.Run("Create ignition data - success", func(t *testing.T) {
 			g := NewWithT(t)
@@ -899,15 +896,17 @@ func TestClose(t *testing.T) {
 
 	t.Run("Test Close", func(t *testing.T) {
 		t.Run("IBMPowerVSMachine is not nil", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			patchHelper, _ := patch.NewHelper(scope.IBMPowerVSMachine, scope.Client)
 			scope.patchHelper = patchHelper
 			err := scope.Close()
-			require.Nil(t, err)
+			g.Expect(err).To(BeNil())
 		})
 		t.Run("IBMPowerVSMachine is nil", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -915,13 +914,14 @@ func TestClose(t *testing.T) {
 			scope.patchHelper = patchHelper
 			scope.IBMPowerVSMachine = nil
 			err := scope.Close()
-			require.NotNil(t, err)
+			g.Expect(err).ToNot(BeNil())
 		})
 	})
 }
 
 func TestSetInstanceID(t *testing.T) {
 	t.Run("Test Close", func(t *testing.T) {
+		g := NewWithT(t)
 		scope := PowerVSMachineScope{
 			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 				Status: infrav1beta2.IBMPowerVSMachineStatus{},
@@ -929,25 +929,27 @@ func TestSetInstanceID(t *testing.T) {
 		}
 		instanceID := "foo-instance-id"
 		scope.SetInstanceID(ptr.To(instanceID))
-		require.Equal(t, instanceID, scope.GetInstanceID())
+		g.Expect(scope.GetInstanceID()).To(Equal(instanceID))
 	})
 }
 
 func TestSetFailureReason(t *testing.T) {
 	t.Run("Test SetFailureReason", func(t *testing.T) {
+		g := NewWithT(t)
 		scope := PowerVSMachineScope{
 			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 				Status: infrav1beta2.IBMPowerVSMachineStatus{},
 			},
 		}
 		scope.SetFailureReason(capierrors.InvalidConfigurationMachineError)
-		require.Equal(t, *scope.IBMPowerVSMachine.Status.FailureReason, capierrors.InvalidConfigurationMachineError)
+		g.Expect(*scope.IBMPowerVSMachine.Status.FailureReason).To(Equal(capierrors.InvalidConfigurationMachineError))
 	})
 }
 
 func TestSetHealth(t *testing.T) {
 	t.Run("Test SetHealth", func(t *testing.T) {
 		t.Run("Test SetHealth - status healthy", func(t *testing.T) {
+			g := NewWithT(t)
 			scope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					Status: infrav1beta2.IBMPowerVSMachineStatus{},
@@ -957,22 +959,24 @@ func TestSetHealth(t *testing.T) {
 				Status: "healthy",
 			}
 			scope.SetHealth(healthStatus)
-			require.Equal(t, scope.IBMPowerVSMachine.Status.Health, healthStatus.Status)
+			g.Expect(scope.IBMPowerVSMachine.Status.Health).To(Equal(healthStatus.Status))
 		})
 		t.Run("Test SetHealth - nil health status", func(t *testing.T) {
+			g := NewWithT(t)
 			scope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					Status: infrav1beta2.IBMPowerVSMachineStatus{},
 				},
 			}
 			scope.SetHealth(nil)
-			require.Equal(t, scope.IBMPowerVSMachine.Status.Health, "")
+			g.Expect(scope.IBMPowerVSMachine.Status.Health).To(Equal(""))
 		})
 	})
 }
 
 func TestSetFailureMessage(t *testing.T) {
 	t.Run("Test SetFailureMessage", func(t *testing.T) {
+		g := NewWithT(t)
 		scope := PowerVSMachineScope{
 			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 				Status: infrav1beta2.IBMPowerVSMachineStatus{},
@@ -980,12 +984,13 @@ func TestSetFailureMessage(t *testing.T) {
 		}
 		failureMessage := "invalid configuration provided"
 		scope.SetFailureMessage(failureMessage)
-		require.Equal(t, *scope.IBMPowerVSMachine.Status.FailureMessage, failureMessage)
+		g.Expect(*scope.IBMPowerVSMachine.Status.FailureMessage).To(Equal(failureMessage))
 	})
 }
 func TestDeleteMachineIgnition(t *testing.T) {
 	t.Run("Delete machine ignition", func(t *testing.T) {
 		t.Run("Failed to retrieve bootstrap data: linked Machine's bootstrap.dataSecretName is nil", func(t *testing.T) {
+			g := NewWithT(t)
 			scope := PowerVSMachineScope{
 				Machine: &capiv1beta1.Machine{
 					Spec: capiv1beta1.MachineSpec{
@@ -996,9 +1001,10 @@ func TestDeleteMachineIgnition(t *testing.T) {
 				},
 			}
 			err := scope.DeleteMachineIgnition()
-			require.NotNil(t, err)
+			g.Expect(err).ToNot(BeNil())
 		})
 		t.Run("Machine is not using user data of type ignition", func(t *testing.T) {
+			g := NewWithT(t)
 			bootstrapSecret := newBootstrapSecret(clusterName, machineName)
 			initObjects := []client.Object{
 				bootstrapSecret,
@@ -1021,10 +1027,11 @@ func TestDeleteMachineIgnition(t *testing.T) {
 				},
 			}
 			err := scope.DeleteMachineIgnition()
-			require.Nil(t, err)
+			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error creating COS client", func(t *testing.T) {
+			g := NewWithT(t)
 			bootstrapSecret := newBootstrapSecret(clusterName, machineName)
 			initObjects := []client.Object{
 				bootstrapSecret,
@@ -1058,10 +1065,11 @@ func TestDeleteMachineIgnition(t *testing.T) {
 				},
 			}
 			err := scope.DeleteMachineIgnition()
-			require.NotNil(t, err)
+			g.Expect(err).ToNot(BeNil())
 		})
 
 		t.Run("Test creating COS client", func(t *testing.T) {
+			g := NewWithT(t)
 			bootstrapSecret := newBootstrapSecret(clusterName, machineName)
 			initObjects := []client.Object{
 				bootstrapSecret,
@@ -1108,7 +1116,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 			}
 			scope.SetRegion(region)
 			err := scope.DeleteMachineIgnition()
-			require.Nil(t, err)
+			g.Expect(err).To(BeNil())
 		})
 	})
 }
@@ -1177,7 +1185,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			out, err := scope.CreateMachine()
 			g.Expect(err).To(BeNil())
-			require.Equal(t, expectedOutput.ServerName, out.ServerName)
+			g.Expect(out.ServerName).To(Equal(expectedOutput.ServerName))
 		})
 
 		t.Run("Return NIL when Machine is not present in the Instance list and Machine state is unknown", func(t *testing.T) {
@@ -1193,7 +1201,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			out, err := scope.CreateMachine()
 			g.Expect(err).To(BeNil())
-			require.Equal(t, expectedOutput, out)
+			g.Expect(out).To(Equal(expectedOutput))
 		})
 
 		t.Run("Eror while getting instances", func(t *testing.T) {
@@ -1331,7 +1339,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, errors.New("Failed to create machine"))
 			_, err := scope.CreateMachine()
-			g.Expect(err).To((Not(BeNil())))
+			g.Expect(err).To(Not(BeNil()))
 		})
 	})
 }
@@ -1353,6 +1361,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 	loadBalancerID := "xyz-xyz-xyz"
 	t.Run("Create VPC Load Balancer Pool Member", func(t *testing.T) {
 		t.Run("No load balancer present", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := PowerVSMachineScope{
@@ -1364,11 +1373,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			}
 
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.Nil(t, result)
-			require.EqualError(t, err, "failed to find VPC load balancer ID")
+			g.Expect(result).To(BeNil())
+			g.Expect(err.Error()).To(Equal("failed to find VPC load balancer ID"))
 		})
 
 		t.Run("Error getting load balancers from VPC Client", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			mockClient := vpcmock.NewMockVpc(mockCtrl)
@@ -1395,11 +1405,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			}
 
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.Nil(t, result)
-			require.NotNil(t, err)
+			g.Expect(result).To(BeNil())
+			g.Expect(err).ToNot(BeNil())
 		})
 
 		t.Run("VPC load balancer is not in active state", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancers := &vpcv1.LoadBalancer{
@@ -1430,11 +1441,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			}
 
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.Nil(t, result)
-			require.EqualError(t, err, "VPC load balancer is not in active state")
+			g.Expect(result).To(BeNil())
+			g.Expect(err.Error()).To(Equal("VPC load balancer is not in active state"))
 		})
 
 		t.Run("No pools exist for the VPC load balancer", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancers := &vpcv1.LoadBalancer{
@@ -1464,11 +1476,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			}
 
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.Nil(t, result)
-			require.EqualError(t, err, "no pools exist for the VPC load balancer")
+			g.Expect(result).To(BeNil())
+			g.Expect(err.Error()).To(Equal("no pools exist for the VPC load balancer"))
 		})
 
 		t.Run("Created load balancer pool member", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancerName := "load-balancer-0"
@@ -1529,11 +1542,13 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: core.StringPtr(expectedLoadBalancerPoolMemberID)}
 			mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.Nil(t, err)
-			require.Equal(t, *result.ID, expectedLoadBalancerPoolMemberID)
+
+			g.Expect(err).To(BeNil())
+			g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
 		})
 
 		t.Run("Failed to find VPC load balancer ID", func(t *testing.T) {
+			g := NewWithT(t)
 			scope := PowerVSMachineScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -1549,11 +1564,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.EqualError(t, err, "failed to find VPC load balancer ID")
-			require.Nil(t, result)
+			g.Expect(err.Error()).To(Equal("failed to find VPC load balancer ID"))
+			g.Expect(result).To(BeNil())
 		})
 
 		t.Run("Created load balancer pool member", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancerName := "load-balancer-0"
@@ -1619,8 +1635,8 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: core.StringPtr(expectedLoadBalancerPoolMemberID)}
 			mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
 			result, err := scope.CreateVPCLoadBalancerPoolMember()
-			require.Nil(t, err)
-			require.Nil(t, result)
+			g.Expect(result).To(BeNil())
+			g.Expect(err).To(BeNil())
 		})
 	})
 }
