@@ -39,7 +39,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
@@ -154,7 +153,7 @@ func TestAPIServerPort(t *testing.T) {
 		machineScope       PowerVSMachineScope
 	}{
 		{
-			name:               "test assigned port number",
+			name:               "Assigned port number",
 			expectedPortNumber: int32(6445),
 			machineScope: PowerVSMachineScope{
 				Cluster: &capiv1beta1.Cluster{
@@ -166,7 +165,7 @@ func TestAPIServerPort(t *testing.T) {
 				},
 			},
 		}, {
-			name:               "test default api server port",
+			name:               "Default api server port",
 			expectedPortNumber: infrav1beta2.DefaultAPIServerPort,
 			machineScope: PowerVSMachineScope{
 				Cluster: &capiv1beta1.Cluster{
@@ -188,37 +187,43 @@ func TestAPIServerPort(t *testing.T) {
 }
 
 func TestBucketName(t *testing.T) {
-	var (
-		mockpowervs *mock.MockPowerVS
-		mockCtrl    *gomock.Controller
-	)
-
-	setup := func(t *testing.T) {
-		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	testcases := []struct {
+		name               string
+		expectedBucketName string
+		machineScope       PowerVSMachineScope
+	}{
+		{
+			name:               "Bucket exists in cos instance",
+			expectedBucketName: "foo-bucket",
+			machineScope: PowerVSMachineScope{
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						CosInstance: &infrav1beta2.CosInstance{
+							BucketName: "foo-bucket",
+						},
+					},
+				},
+			},
+		}, {
+			name:               "Cos bucket from PowerVS cluster name",
+			expectedBucketName: fmt.Sprintf("%s-%s", "foo-cluster", "cosbucket"),
+			machineScope: PowerVSMachineScope{
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "foo-cluster",
+					},
+				},
+			},
+		},
 	}
-	teardown := func() {
-		mockCtrl.Finish()
-	}
 
-	t.Run("Get Bucketname", func(t *testing.T) {
-		t.Run("Getting default BucketName", func(t *testing.T) {
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
-			expectedBucketName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosbucket")
-			require.Equal(t, expectedBucketName, scope.bucketName())
+	for _, tc := range testcases {
+		g := NewWithT(t)
+		t.Run(tc.name, func(_ *testing.T) {
+			bucketName := tc.machineScope.bucketName()
+			g.Expect(bucketName).To(Equal(tc.expectedBucketName))
 		})
-		t.Run("Getting existing bucketname", func(t *testing.T) {
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
-			expectedBucketName := "foo-bucket-1"
-			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1beta2.CosInstance{BucketName: expectedBucketName}
-			require.Equal(t, expectedBucketName, scope.bucketName())
-		})
-	})
+	}
 }
 
 func TestBucketRegion(t *testing.T) {
@@ -381,18 +386,20 @@ func TestGetServiceInstanceID(t *testing.T) {
 
 func TestSetReady(t *testing.T) {
 	t.Run("SetReady", func(t *testing.T) {
+		g := NewWithT(t)
 		machineScope := PowerVSMachineScope{
 			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 				Status: infrav1beta2.IBMPowerVSMachineStatus{},
 			},
 		}
 		machineScope.SetReady()
-		require.Equal(t, machineScope.IsReady(), true)
+		g.Expect(machineScope.IsReady()).To(Equal(true))
 	})
 }
 
 func TestSetNotReady(t *testing.T) {
 	t.Run("SetNotReady", func(t *testing.T) {
+		g := NewWithT(t)
 		machineScope := PowerVSMachineScope{
 			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 				Status: infrav1beta2.IBMPowerVSMachineStatus{
@@ -401,25 +408,27 @@ func TestSetNotReady(t *testing.T) {
 			},
 		}
 		machineScope.SetNotReady()
-		require.Equal(t, machineScope.IsReady(), false)
+		g.Expect(machineScope.IsReady()).To(Equal(false))
 	})
 }
 
 func TestGetRegion(t *testing.T) {
 	t.Run("Get region", func(t *testing.T) {
 		t.Run("Set region", func(t *testing.T) {
+			g := NewWithT(t)
 			machineScope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{},
 			}
 			expectedRegion := region
 			machineScope.SetRegion(expectedRegion)
-			require.Equal(t, expectedRegion, machineScope.GetRegion())
+			g.Expect(machineScope.GetRegion()).To(Equal(expectedRegion))
 		})
 		t.Run("Region not set", func(t *testing.T) {
+			g := NewWithT(t)
 			machineScope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{},
 			}
-			require.Equal(t, "", machineScope.GetRegion())
+			g.Expect(machineScope.GetRegion()).To(Equal(""))
 		})
 	})
 }
@@ -427,24 +436,27 @@ func TestGetRegion(t *testing.T) {
 func TestGetZone(t *testing.T) {
 	t.Run("Get zone", func(t *testing.T) {
 		t.Run("Set zone", func(t *testing.T) {
+			g := NewWithT(t)
 			machineScope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{},
 			}
 			expectedZone := "us-south-1"
 			machineScope.SetZone(expectedZone)
-			require.Equal(t, expectedZone, machineScope.GetZone())
+			g.Expect(machineScope.GetZone()).To(Equal(expectedZone))
 		})
 		t.Run("Zone not set", func(t *testing.T) {
+			g := NewWithT(t)
 			machineScope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{},
 			}
-			require.Equal(t, "", machineScope.GetZone())
+			g.Expect(machineScope.GetZone()).To(Equal(""))
 		})
 	})
 }
 
 func TestGetInstanceState(t *testing.T) {
 	t.Run("Get instance state", func(t *testing.T) {
+		g := NewWithT(t)
 		machineScope := PowerVSMachineScope{
 			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 				Status: infrav1beta2.IBMPowerVSMachineStatus{},
@@ -452,19 +464,21 @@ func TestGetInstanceState(t *testing.T) {
 		}
 		expectedState := "ready"
 		machineScope.SetInstanceState(ptr.To(expectedState))
-		require.Equal(t, infrav1beta2.PowerVSInstanceState(expectedState), machineScope.GetInstanceState())
+		g.Expect(machineScope.GetInstanceState()).To(Equal(infrav1beta2.PowerVSInstanceState(expectedState)))
 	})
 }
 
 func TestGetIgnitionVersion(t *testing.T) {
 	t.Run("Get Ignition version", func(t *testing.T) {
 		t.Run("Ignition version is nil", func(t *testing.T) {
+			g := NewWithT(t)
 			machineScope := PowerVSMachineScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			}
-			require.Equal(t, infrav1beta2.DefaultIgnitionVersion, getIgnitionVersion(&machineScope))
+			g.Expect(getIgnitionVersion(&machineScope)).To(Equal(infrav1beta2.DefaultIgnitionVersion))
 		})
 		t.Run("Custom Ignition Version", func(t *testing.T) {
+			g := NewWithT(t)
 			expectedIgnitionVersion := "3.4"
 			machineScope := PowerVSMachineScope{
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
@@ -475,7 +489,7 @@ func TestGetIgnitionVersion(t *testing.T) {
 					},
 				},
 			}
-			require.Equal(t, expectedIgnitionVersion, getIgnitionVersion(&machineScope))
+			g.Expect(getIgnitionVersion(&machineScope)).To(Equal(expectedIgnitionVersion))
 		})
 	})
 }
@@ -539,16 +553,18 @@ func TestGetNetworkID(t *testing.T) {
 	const networkID = "foo-network-id"
 	t.Run("Get Network ID", func(t *testing.T) {
 		t.Run("Fetch from Network spec's ID", func(t *testing.T) {
+			g := NewWithT(t)
 			scope := PowerVSMachineScope{}
 			expectedNetworkID := networkID
 			networkResource := infrav1beta2.IBMPowerVSResourceReference{
 				ID: core.StringPtr(expectedNetworkID),
 			}
 			result, err := getNetworkID(networkResource, &scope)
-			require.Nil(t, err)
-			require.Equal(t, *result, expectedNetworkID)
+			g.Expect(*result).To(Equal(expectedNetworkID))
+			g.Expect(err).To(BeNil())
 		})
 		t.Run("Fetch network ID from PowerVS Machine scope", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			networkName := "foo-network-name"
@@ -572,25 +588,26 @@ func TestGetNetworkID(t *testing.T) {
 				IBMPowerVSClient: mockResourceController,
 			}
 			result, err := getNetworkID(networkResource, &scope)
-			require.Nil(t, err)
-			require.Equal(t, *result, expectedNetworkID)
+			g.Expect(*result).To(Equal(expectedNetworkID))
+			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Failed to find network ID", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			expectedNetworkID := networkID
-			differentNetworkID := "diff-network-id"
+			expectedNetworkIName := "foo-network"
+			differentNetworkName := "diff-network-name"
 			networkReferences := []*models.NetworkReference{
 				{
-					Name: core.StringPtr(differentNetworkID),
+					Name: core.StringPtr(differentNetworkName),
 				},
 			}
 			networks := &models.Networks{
 				Networks: networkReferences,
 			}
 			networkResource := infrav1beta2.IBMPowerVSResourceReference{
-				Name: core.StringPtr(expectedNetworkID),
+				Name: core.StringPtr(expectedNetworkIName),
 			}
 
 			mockResourceController := mock.NewMockPowerVS(gomock.NewController(t))
@@ -599,11 +616,13 @@ func TestGetNetworkID(t *testing.T) {
 				IBMPowerVSClient: mockResourceController,
 			}
 			result, err := getNetworkID(networkResource, &scope)
-			require.Nil(t, result)
-			require.EqualError(t, err, fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkID))
+			g.Expect(result).To(BeNil())
+			//g.Expect(err).Error().Should(ConsistOf(fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkIName)))
+			require.EqualError(t, err, fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkIName))
 		})
 
 		t.Run("Fetch network ID with matching regex", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			networkName := "550e8400-e29b-41d4-a716-446655440000"
@@ -627,11 +646,12 @@ func TestGetNetworkID(t *testing.T) {
 				IBMPowerVSClient: mockResourceController,
 			}
 			result, err := getNetworkID(networkResource, &scope)
-			require.Equal(t, *result, expectedNetworkID)
-			require.Nil(t, err)
+			g.Expect(*result).To(Equal(expectedNetworkID))
+			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Failed to fetch network ID with matching regex", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			expectedNetworkID := "foo-netID"
@@ -654,15 +674,16 @@ func TestGetNetworkID(t *testing.T) {
 				IBMPowerVSClient: mockResourceController,
 			}
 			result, err := getNetworkID(networkResource, &scope)
-			require.Nil(t, result)
+			g.Expect(result).To(BeNil())
 			require.EqualError(t, err, fmt.Sprintf("failed to find a network ID with RegEx %s", regex))
 		})
 
 		t.Run("ID name and regex are all nil", func(t *testing.T) {
+			g := NewWithT(t)
 			networkResource := infrav1beta2.IBMPowerVSResourceReference{}
 			scope := PowerVSMachineScope{}
 			result, err := getNetworkID(networkResource, &scope)
-			require.Nil(t, result)
+			g.Expect(result).To(BeNil())
 			require.EqualError(t, err, "ID, Name and RegEx can't be nil")
 		})
 	})
@@ -671,6 +692,7 @@ func TestGetNetworkID(t *testing.T) {
 func TestGetMachineInternalIP(t *testing.T) {
 	t.Run("Get Machine Internal IP", func(t *testing.T) {
 		t.Run("Address type - Node Internal IP", func(t *testing.T) {
+			g := NewWithT(t)
 			expectedAddress := "10.0.0.1"
 			scope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
@@ -684,10 +706,11 @@ func TestGetMachineInternalIP(t *testing.T) {
 					},
 				},
 			}
-			require.Equal(t, expectedAddress, scope.GetMachineInternalIP())
+			g.Expect(expectedAddress).To(Equal(scope.GetMachineInternalIP()))
 		})
 
 		t.Run("Address type = node external IP", func(t *testing.T) {
+			g := NewWithT(t)
 			scope := PowerVSMachineScope{
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					Status: infrav1beta2.IBMPowerVSMachineStatus{
@@ -700,7 +723,7 @@ func TestGetMachineInternalIP(t *testing.T) {
 					},
 				},
 			}
-			require.Equal(t, "", scope.GetMachineInternalIP())
+			g.Expect("").To(Equal(scope.GetMachineInternalIP()))
 		})
 	})
 }
@@ -723,6 +746,7 @@ func TestSetProviderID(t *testing.T) {
 	t.Run("Set Provider ID", func(t *testing.T) {
 		providerID := core.StringPtr("foo-provider-id")
 		t.Run("Set Provider ID in v2 format", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -732,26 +756,29 @@ func TestSetProviderID(t *testing.T) {
 			scope.IBMPowerVSCluster.Spec.ServiceInstanceID = "service-instance-1"
 			scope.SetProviderID(providerID)
 			expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", scope.GetRegion(), scope.GetZone(), scope.GetServiceInstanceID(), *providerID))
-			require.Equal(t, *scope.IBMPowerVSMachine.Spec.ProviderID, *expectedProviderID)
+			g.Expect(*scope.IBMPowerVSMachine.Spec.ProviderID).To(Equal(*expectedProviderID))
 		})
 
 		t.Run("Provider ID is nil", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			options.ProviderIDFormat = string(options.ProviderIDFormatV2)
 			scope.SetProviderID(nil)
 			require.Nil(t, scope.IBMPowerVSMachine.Spec.ProviderID)
+			g.Expect(scope.IBMPowerVSMachine.Spec.ProviderID).To(BeNil())
 		})
 
 		t.Run("Set Provider ID in v1 format", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
 			options.ProviderIDFormat = string(options.ProviderIDFormatV1)
 			scope.SetProviderID(providerID)
 			expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", scope.Machine.Spec.ClusterName, scope.IBMPowerVSMachine.Name))
-			require.Equal(t, *scope.IBMPowerVSMachine.Spec.ProviderID, *expectedProviderID)
+			g.Expect(*scope.IBMPowerVSMachine.Spec.ProviderID).To(Equal(*expectedProviderID))
 		})
 	})
 }
@@ -774,6 +801,7 @@ func TestCreateCOSClient(t *testing.T) {
 	t.Run("Create COS client", func(t *testing.T) {
 		mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
 		t.Run("Create ignition data - error getting instance", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -781,12 +809,12 @@ func TestCreateCOSClient(t *testing.T) {
 			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, errors.New("error listing cos instances"))
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient()
-			var nilCosService *cos.Service
-			require.Equal(t, nilCosService, result)
-			require.NotNil(t, err)
+			g.Expect(result).To(BeNil())
+			g.Expect(err).ToNot(BeNil())
 		})
 
 		t.Run("Create ignition data - empty service instance", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -794,12 +822,12 @@ func TestCreateCOSClient(t *testing.T) {
 			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, nil)
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient()
-			var nilCosService *cos.Service
-			require.Equal(t, nilCosService, result)
-			require.Nil(t, err)
+			g.Expect(result).To(BeNil())
+			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Create ignition data - service instance is not in active state", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -811,12 +839,12 @@ func TestCreateCOSClient(t *testing.T) {
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient()
 			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1beta2.ServiceInstanceStateProvisioning)
-			var nilCosService *cos.Service
-			require.Equal(t, nilCosService, result)
+			g.Expect(result).To(BeNil())
 			require.ErrorContains(t, err, expectedError)
 		})
 
 		t.Run("Create ignition data - bucket region not set", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -829,11 +857,11 @@ func TestCreateCOSClient(t *testing.T) {
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient()
 			expectedError := "failed to determine COS bucket region, both bucket region and VPC region not set"
-			var nilCosService *cos.Service
-			require.Equal(t, nilCosService, result)
+			g.Expect(result).To(BeNil())
 			require.ErrorContains(t, err, expectedError)
 		})
 		t.Run("Create ignition data - success", func(t *testing.T) {
+			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, core.StringPtr(pvsImage), core.StringPtr(pvsNetwork), true, mockpowervs)
@@ -849,7 +877,7 @@ func TestCreateCOSClient(t *testing.T) {
 			expectedBucketRegion := region
 			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1beta2.CosInstance{BucketRegion: expectedBucketRegion}
 			_, err := scope.createCOSClient()
-			require.Nil(t, err)
+			g.Expect(err).To(BeNil())
 		})
 	})
 }
