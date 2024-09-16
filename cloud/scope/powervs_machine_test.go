@@ -133,18 +133,6 @@ func newDHCPServer(serverID, networkID string) models.DHCPServers {
 	}
 }
 
-func newDHCPServerDetails(serverID, leaseIP, instanceMac string) *models.DHCPServerDetail {
-	return &models.DHCPServerDetail{
-		ID: ptr.To(serverID),
-		Leases: []*models.DHCPServerLeases{
-			{
-				InstanceIP:         ptr.To(leaseIP),
-				InstanceMacAddress: ptr.To(instanceMac),
-			},
-		},
-	}
-}
-
 func TestAPIServerPort(t *testing.T) {
 	testcases := []struct {
 		name               string
