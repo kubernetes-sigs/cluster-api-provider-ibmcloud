@@ -367,6 +367,16 @@ func (s *VPCClusterScope) SetResourceStatus(resourceType infrav1beta2.ResourceTy
 			s.IBMVPCCluster.Status.Network.VPC = resource
 		}
 		s.NetworkStatus().VPC.Set(*resource)
+	case infrav1beta2.ResourceTypeCustomImage:
+		if s.IBMVPCCluster.Status.Image == nil {
+			s.IBMVPCCluster.Status.Image = &infrav1beta2.ResourceStatus{
+				ID:    resource.ID,
+				Name:  resource.Name,
+				Ready: resource.Ready,
+			}
+			return
+		}
+		s.IBMVPCCluster.Status.Image.Set(*resource)
 	default:
 		s.V(3).Info("unsupported resource type", "resourceType", resourceType)
 	}
@@ -493,4 +503,186 @@ func (s *VPCClusterScope) createVPC() (*vpcv1.VPC, error) {
 	}
 
 	return vpcDetails, nil
+}
+
+// ReconcileVPCCustomImage reconciles the VPC Custom Image.
+func (s *VPCClusterScope) ReconcileVPCCustomImage() (bool, error) {
+	// VPC Custom Image reconciliation is based on the following possibilities.
+	// 1. Check Status for ID or Name, from previous lookup in reconciliation loop.
+	// 2. If no Image spec is provided, assume the image is managed externally, thus no reconciliation required.
+	// 3. If Image name is provided, check if an existing VPC Custom Image exists with that name (unfortunately names may not be unique), checking status of the image, updating appropriately.
+	// 4. If Image CRN is provided, parse the ID from the CRN to perform lookup. CRN may be for another account, causing lookup to fail (permissions), may require better safechecks based on other CRN details.
+	// 5. If no Image ID has been identified, assume a VPC Custom Image needs to be created, do so.
+	var imageID *string
+	// Attempt to collect VPC Custom Image info from Status.
+	if s.IBMVPCCluster.Status.Image != nil {
+		if s.IBMVPCCluster.Status.Image.ID != "" {
+			imageID = ptr.To(s.IBMVPCCluster.Status.Image.ID)
+		}
+	} else if s.IBMVPCCluster.Spec.Image == nil {
+		// If no Image spec was defined, we expect it is maintained externally and continue without reconciling. For example, using a Catalog Offering Custom Image, which may be in another account, which means it cannot be looked up, but can be used when creating Instances.
+		s.V(3).Info("No VPC Custom Image defined, skipping reconciliation")
+		return false, nil
+	} else if s.IBMVPCCluster.Spec.Image.Name != nil {
+		// Attempt to retrieve the image details via the name, if it already exists
+		imageDetails, err := s.VPCClient.GetImageByName(*s.IBMVPCCluster.Spec.Image.Name)
+		if err != nil {
+			return false, fmt.Errorf("error checking vpc custom image by name: %w", err)
+		} else if imageDetails != nil && imageDetails.ID != nil {
+			// Prevent relookup (API request) of VPC Custom Image if we already have the necessary data
+			requeue := true
+			if imageDetails.Status != nil && *imageDetails.Status == string(vpcv1.ImageStatusAvailableConst) {
+				requeue = false
+			}
+			s.SetResourceStatus(infrav1beta2.ResourceTypeCustomImage, &infrav1beta2.ResourceStatus{
+				ID:   *imageDetails.ID,
+				Name: s.IBMVPCCluster.Spec.Image.Name,
+				// Ready status will be invert of the need to requeue.
+				Ready: !requeue,
+			})
+			return requeue, nil
+		}
+	} else if s.IBMVPCCluster.Spec.Image.CRN != nil {
+		// Parse the supplied Image CRN for Id, to perform image lookup.
+		imageCRN, err := ParseCRN(*s.IBMVPCCluster.Spec.Image.CRN)
+		if err != nil {
+			return false, fmt.Errorf("error parsing vpc custom image crn: %w", err)
+		}
+		// If the value provided isn't a CRN or is missing the Resource ID, raise an error.
+		if imageCRN == nil || imageCRN.Resource == "" {
+			return false, fmt.Errorf("error parsing vpc custom image crn, missing resource id")
+		}
+		// If we didn't hit an error during parsing, and Resource was set, set that as the Image ID.
+		imageID = ptr.To(imageCRN.Resource)
+	}
+
+	// Check status of VPC Custom Image.
+	if imageID != nil {
+		image, _, err := s.VPCClient.GetImage(&vpcv1.GetImageOptions{
+			ID: imageID,
+		})
+		if err != nil {
+			return false, fmt.Errorf("error retrieving vpc custom image by id: %w", err)
+		}
+		if image == nil {
+			return false, fmt.Errorf("error failed to retrieve vpc custom image with id %s", *imageID)
+		}
+		s.V(3).Info("Found VPC Custom Image with provided id", "imageID", imageID)
+
+		requeue := true
+		if image.Status != nil && *image.Status == string(vpcv1.ImageStatusAvailableConst) {
+			requeue = false
+		}
+		s.SetResourceStatus(infrav1beta2.ResourceTypeCustomImage, &infrav1beta2.ResourceStatus{
+			ID:   *imageID,
+			Name: image.Name,
+			// Ready status will be invert of the need to requeue.
+			Ready: !requeue,
+		})
+		return requeue, nil
+	}
+
+	// No VPC Custom Image exists or was found, so create the Custom Image.
+	s.V(3).Info("Creating a VPC Custom Image")
+	err := s.createCustomImage()
+	if err != nil {
+		return false, fmt.Errorf("error failure trying to create vpc custom image: %w", err)
+	}
+
+	s.V(3).Info("Successfully created VPC Custom Image")
+	return true, nil
+}
+
+// createCustomImage will create a new VPC Custom Image.
+func (s *VPCClusterScope) createCustomImage() error {
+	// TODO(cjschaef): Remove in favor of webhook validation.
+	if s.IBMVPCCluster.Spec.Image.OperatingSystem == nil {
+		return fmt.Errorf("error failed to create vpc custom image due to missing operatingSystem")
+	}
+
+	// Collect the Resource Group ID.
+	var resourceGroupID *string
+	// Check Resource Group in Image spec.
+	if s.IBMVPCCluster.Spec.Image.ResourceGroup != nil {
+		if s.IBMVPCCluster.Spec.Image.ResourceGroup.ID != "" {
+			resourceGroupID = ptr.To(s.IBMVPCCluster.Spec.Image.ResourceGroup.ID)
+		} else if s.IBMVPCCluster.Spec.Image.ResourceGroup.Name != nil {
+			id, err := s.ResourceManagerClient.GetResourceGroupByName(*s.IBMVPCCluster.Spec.Image.ResourceGroup.Name)
+			if err != nil {
+				return fmt.Errorf("error retrieving resource group by name: %w", err)
+			}
+			resourceGroupID = id.ID
+		}
+	} else {
+		// Otherwise, we will use the cluster Resource Group ID, as we expect to create all resources in that Resource Group.
+		id, err := s.GetResourceGroupID()
+		if err != nil {
+			return fmt.Errorf("error retrieving resource group id: %w", err)
+		}
+		resourceGroupID = ptr.To(id)
+	}
+
+	// Build the COS Object URL using the ImageSpec
+	fileHRef, err := s.buildCOSObjectHRef()
+	if err != nil {
+		return fmt.Errorf("error building vpc custom image file href: %w", err)
+	}
+
+	options := &vpcv1.CreateImageOptions{
+		ImagePrototype: &vpcv1.ImagePrototype{
+			Name: s.IBMVPCCluster.Spec.Image.Name,
+			File: &vpcv1.ImageFilePrototype{
+				Href: fileHRef,
+			},
+			OperatingSystem: &vpcv1.OperatingSystemIdentity{
+				Name: s.IBMVPCCluster.Spec.Image.OperatingSystem,
+			},
+			ResourceGroup: &vpcv1.ResourceGroupIdentity{
+				ID: resourceGroupID,
+			},
+		},
+	}
+
+	imageDetails, _, err := s.VPCClient.CreateImage(options)
+	if err != nil {
+		return fmt.Errorf("error unknown failure creating vpc custom image: %w", err)
+	}
+	if imageDetails == nil || imageDetails.ID == nil || imageDetails.Name == nil || imageDetails.CRN == nil {
+		return fmt.Errorf("error failed creating custom image")
+	}
+
+	// Initially populate the Image's status.
+	s.SetResourceStatus(infrav1beta2.ResourceTypeCustomImage, &infrav1beta2.ResourceStatus{
+		ID:   *imageDetails.ID,
+		Name: imageDetails.Name,
+		// We must wait for the image to be ready, on followup reconciliation loops.
+		Ready: false,
+	})
+
+	// NOTE: This tagging is only attempted once. We may wish to refactor in case this single attempt fails.
+	if err := s.TagResource(s.Name(), *imageDetails.CRN); err != nil {
+		return fmt.Errorf("error failure tagging vpc custom image: %w", err)
+	}
+	return nil
+}
+
+// buildCOSObjectHRef will build the HRef path to a COS Object that can be used for VPC Custom Image creation.
+func (s *VPCClusterScope) buildCOSObjectHRef() (*string, error) {
+	// TODO(cjschaef): Remove in favor of webhook validation.
+	// We need COS details in order to create the Custom Image from.
+	if s.IBMVPCCluster.Spec.Image.COSInstance == nil || s.IBMVPCCluster.Spec.Image.COSBucket == nil || s.IBMVPCCluster.Spec.Image.COSObject == nil {
+		return nil, fmt.Errorf("error failed to build cos object href, cos details missing")
+	}
+
+	// Get COS Bucket Region, defaulting to cluster Region if not specified.
+	bucketRegion := s.IBMVPCCluster.Spec.Region
+	if s.IBMVPCCluster.Spec.Image.COSBucketRegion != nil {
+		bucketRegion = *s.IBMVPCCluster.Spec.Image.COSBucketRegion
+	}
+
+	// Expected HRef format:
+	//   cos://<bucket_region>/<bucket_name>/<object_name>
+	href := fmt.Sprintf("cos://%s/%s/%s", bucketRegion, *s.IBMVPCCluster.Spec.Image.COSBucket, *s.IBMVPCCluster.Spec.Image.COSObject)
+	s.V(3).Info("building image ref", "href", href)
+	return ptr.To(href), nil
 }
