@@ -523,6 +523,21 @@ func (mr *MockVpcMockRecorder) GetVPCByName(vpcName any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCByName", reflect.TypeOf((*MockVpc)(nil).GetVPCByName), vpcName)
 }
 
+// GetVPCPublicGatewayByName mocks base method.
+func (m *MockVpc) GetVPCPublicGatewayByName(publicGatewayName, resourceGroupID string) (*vpcv1.PublicGateway, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPCPublicGatewayByName", publicGatewayName, resourceGroupID)
+	ret0, _ := ret[0].(*vpcv1.PublicGateway)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVPCPublicGatewayByName indicates an expected call of GetVPCPublicGatewayByName.
+func (mr *MockVpcMockRecorder) GetVPCPublicGatewayByName(publicGatewayName, resourceGroupID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCPublicGatewayByName", reflect.TypeOf((*MockVpc)(nil).GetVPCPublicGatewayByName), publicGatewayName, resourceGroupID)
+}
+
 // GetVPCSubnetByName mocks base method.
 func (m *MockVpc) GetVPCSubnetByName(subnetName string) (*vpcv1.Subnet, error) {
 	m.ctrl.T.Helper()
@@ -536,6 +551,21 @@ func (m *MockVpc) GetVPCSubnetByName(subnetName string) (*vpcv1.Subnet, error) {
 func (mr *MockVpcMockRecorder) GetVPCSubnetByName(subnetName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCSubnetByName", reflect.TypeOf((*MockVpc)(nil).GetVPCSubnetByName), subnetName)
+}
+
+// GetVPCZonesByRegion mocks base method.
+func (m *MockVpc) GetVPCZonesByRegion(region string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPCZonesByRegion", region)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVPCZonesByRegion indicates an expected call of GetVPCZonesByRegion.
+func (mr *MockVpcMockRecorder) GetVPCZonesByRegion(region any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCZonesByRegion", reflect.TypeOf((*MockVpc)(nil).GetVPCZonesByRegion), region)
 }
 
 // ListImages mocks base method.

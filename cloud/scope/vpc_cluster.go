@@ -50,6 +50,9 @@ import (
 const (
 	// LOGDEBUGLEVEL indicates the debug level of the logs.
 	LOGDEBUGLEVEL = 5
+
+	// vpcSubnetIPVersion4 defines the IP v4 string used for VPC Subnet generation.
+	vpcSubnetIPVersion4 = "ipv4"
 )
 
 // VPCClusterScopeParams defines the input parameters used to create a new VPCClusterScope.
@@ -307,10 +310,42 @@ func (s *VPCClusterScope) GetServiceName(resourceType infrav1beta2.ResourceType)
 		if s.NetworkSpec().VPC.Name != nil {
 			return s.NetworkSpec().VPC.Name
 		}
+	case infrav1beta2.ResourceTypeSubnet:
+		// Generate a generic subnet name based off the cluster name, which can be extended as necessary (for Zones).
+		return ptr.To(fmt.Sprintf("%s-subnet", s.IBMVPCCluster.Name))
+	case infrav1beta2.ResourceTypePublicGateway:
+		// Generate a generic public gateway name based off the cluster name, which can be extedned as necessary (for Zone).
+		return ptr.To(fmt.Sprintf("%s-pgateway", s.IBMVPCCluster.Name))
 	default:
 		s.V(3).Info("unsupported resource type", "resourceType", resourceType)
 	}
 	return nil
+}
+
+// GetSubnetID returns the ID of a subnet, provided the name.
+func (s *VPCClusterScope) GetSubnetID(name string) (*string, error) {
+	// Check Status first
+	if s.NetworkStatus() != nil {
+		if s.NetworkStatus().ControlPlaneSubnets != nil {
+			if subnet, ok := s.NetworkStatus().ControlPlaneSubnets[name]; ok {
+				return &subnet.ID, nil
+			}
+		}
+		if s.NetworkStatus().WorkerSubnets != nil {
+			if subnet, ok := s.NetworkStatus().WorkerSubnets[name]; ok {
+				return &subnet.ID, nil
+			}
+		}
+	}
+	// Otherwise, if no Status, or not found, attempt to look it up via IBM Cloud API.
+	subnet, err := s.VPCClient.GetVPCSubnetByName(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed subnet id lookup by name %s: %w", name, err)
+	}
+	if subnet == nil {
+		return nil, nil
+	}
+	return subnet.ID, nil
 }
 
 // GetVPCID returns the VPC id, if available.
@@ -377,6 +412,30 @@ func (s *VPCClusterScope) SetResourceStatus(resourceType infrav1beta2.ResourceTy
 			return
 		}
 		s.IBMVPCCluster.Status.Image.Set(*resource)
+	case infrav1beta2.ResourceTypeControlPlaneSubnet:
+		if s.NetworkStatus() == nil {
+			s.IBMVPCCluster.Status.Network = &infrav1beta2.VPCNetworkStatus{}
+		}
+		if s.NetworkStatus().ControlPlaneSubnets == nil {
+			s.IBMVPCCluster.Status.Network.ControlPlaneSubnets = make(map[string]*infrav1beta2.ResourceStatus)
+		}
+		if subnet, ok := s.NetworkStatus().ControlPlaneSubnets[*resource.Name]; ok {
+			subnet.Set(*resource)
+		} else {
+			s.IBMVPCCluster.Status.Network.ControlPlaneSubnets[*resource.Name] = resource
+		}
+	case infrav1beta2.ResourceTypeWorkerSubnet:
+		if s.NetworkStatus() == nil {
+			s.IBMVPCCluster.Status.Network = &infrav1beta2.VPCNetworkStatus{}
+		}
+		if s.NetworkStatus().WorkerSubnets == nil {
+			s.IBMVPCCluster.Status.Network.WorkerSubnets = make(map[string]*infrav1beta2.ResourceStatus)
+		}
+		if subnet, ok := s.NetworkStatus().WorkerSubnets[*resource.Name]; ok {
+			subnet.Set(*resource)
+		} else {
+			s.IBMVPCCluster.Status.Network.WorkerSubnets[*resource.Name] = resource
+		}
 	default:
 		s.V(3).Info("unsupported resource type", "resourceType", resourceType)
 	}
@@ -685,4 +744,329 @@ func (s *VPCClusterScope) buildCOSObjectHRef() (*string, error) {
 	href := fmt.Sprintf("cos://%s/%s/%s", bucketRegion, *s.IBMVPCCluster.Spec.Image.COSBucket, *s.IBMVPCCluster.Spec.Image.COSObject)
 	s.V(3).Info("building image ref", "href", href)
 	return ptr.To(href), nil
+}
+
+// ReconcileSubnets reconciles the VPC Subnet(s).
+// For Subnets, we collect all of the required subnets, for each Plane, and reconcile them individually. Requeing if one is missing or just created. Reconciliation is attempted on all subnets each loop, to prevent single subnet creation per reconciliation loop.
+func (s *VPCClusterScope) ReconcileSubnets() (bool, error) {
+	var subnets []infrav1beta2.Subnet
+	var err error
+	// If no ControlPlane Subnets were supplied, we default to create one in each availability zone of the region.
+	if len(s.IBMVPCCluster.Spec.Network.ControlPlaneSubnets) == 0 {
+		subnets, err = s.buildSubnetsForZones()
+		if err != nil {
+			return false, fmt.Errorf("error failed building control plane subnets: %w", err)
+		}
+	} else {
+		subnets = s.IBMVPCCluster.Spec.Network.ControlPlaneSubnets
+	}
+
+	// Reconcile Control Plane subnets.
+	requeue := false
+	for _, subnet := range subnets {
+		if requiresRequeue, err := s.reconcileSubnet(subnet, true); err != nil {
+			return false, fmt.Errorf("error failed reconciling control plane subnet: %w", err)
+		} else if requiresRequeue {
+			// If the reconcile of the subnet requires further reconciliation, plan to requeue entire ReconcileSubnets call, but attempt to further reconcile additional Subnets (attempt all subnet reconciliation).
+			requeue = true
+		}
+	}
+
+	// If no Worker subnets were supplied, attempt to create one in each zone.
+	if len(s.IBMVPCCluster.Spec.Network.WorkerSubnets) == 0 {
+		// Build subnets for Workers if none were provided, but only if Control Plane subnets were.
+		// Otherwise, if neither Control Plane nor Worker subnets were supplied, we rely on both Planes using the same subnet per zone, and we will re-reconcile those subnets below, for IBMVPCCluster Status updates.
+		if len(s.IBMVPCCluster.Spec.Network.ControlPlaneSubnets) != 0 {
+			subnets, err = s.buildSubnetsForZones()
+			if err != nil {
+				return false, fmt.Errorf("error failed building worker subnets: %w", err)
+			}
+		}
+	} else {
+		subnets = s.IBMVPCCluster.Spec.Network.WorkerSubnets
+	}
+
+	// Reconcile Worker subnets.
+	for _, subnet := range subnets {
+		if requiresRequeue, err := s.reconcileSubnet(subnet, false); err != nil {
+			return false, fmt.Errorf("error failed reconciling worker subnet: %w", err)
+		} else if requiresRequeue {
+			// If the reconcile of the subnet requires further reconciliation, plan to requeue entire ReconcileSubnets call, but attempt to further reconcile additional Subnets (attempt all subnet reconciliation).
+			requeue = true
+		}
+	}
+
+	// Return whether or not one or more subnets required further reconciling after attempting to process all Control Plane and Worker subnets.
+	return requeue, nil
+}
+
+// reconcileSubnet will attempt to find the existing subnet, or create it if necessary.
+// The logic can handle either Control Plane or Worker subnets, but must distinguish between them for Status updates.
+func (s *VPCClusterScope) reconcileSubnet(subnet infrav1beta2.Subnet, isControlPlane bool) (bool, error) { //nolint: gocyclo
+	// If no ID or name was provided, that is an error to be raised. One or the other must be specified when subnets are supplied.
+	if subnet.ID == nil && subnet.Name == nil {
+		return false, fmt.Errorf("error subnet has no defined id or name, one is required")
+	}
+
+	// Check Status first and update as necessary.
+	if s.NetworkStatus() != nil {
+		var subnetMap map[string]*infrav1beta2.ResourceStatus
+		var subnetID, subnetName *string
+		if isControlPlane && s.NetworkStatus().ControlPlaneSubnets != nil {
+			subnetMap = s.NetworkStatus().ControlPlaneSubnets
+		} else if !isControlPlane && s.NetworkStatus().WorkerSubnets != nil {
+			subnetMap = s.NetworkStatus().WorkerSubnets
+		}
+		// Based on Network Status, setup either the name or ID for lookup of the subnet's current status.
+		if subnet.Name != nil {
+			if _, ok := subnetMap[*subnet.Name]; ok {
+				subnetName = subnet.Name
+			}
+		} else if subnet.ID != nil {
+			for _, statusSubnet := range subnetMap {
+				if statusSubnet.ID == *subnet.ID {
+					subnetID = subnet.ID
+				}
+			}
+		}
+
+		// Perform current status lookup of subnet, using ID or name if one was found in Network Status.
+		if subnetID != nil {
+			options := &vpcv1.GetSubnetOptions{
+				ID: subnetID,
+			}
+			subnetDetails, _, err := s.VPCClient.GetSubnet(options)
+			if err != nil {
+				return false, fmt.Errorf("error retrieving existing subnet by id %s: %w", *subnetID, err)
+			} else if subnetDetails == nil {
+				return false, fmt.Errorf("error failed to find existing subnet by id %s", *subnetID)
+			}
+			return s.updateSubnetStatus(subnetDetails, isControlPlane)
+		} else if subnetName != nil {
+			subnetDetails, err := s.VPCClient.GetVPCSubnetByName(*subnetName)
+			if err != nil {
+				return false, fmt.Errorf("error retrieving existing subnet by name %s: %w", *subnetName, err)
+			} else if subnetDetails == nil {
+				return false, fmt.Errorf("error failed to find existing subnet by name: %s", *subnetName)
+			}
+			return s.updateSubnetStatus(subnetDetails, isControlPlane)
+		}
+	}
+
+	// Otherwise, if these is an ID or name, attempt to lookup the subnet and update status as necessary.
+	if subnet.ID != nil {
+		options := &vpcv1.GetSubnetOptions{
+			ID: subnet.ID,
+		}
+		subnetDetails, _, err := s.VPCClient.GetSubnet(options)
+		if err != nil {
+			return false, fmt.Errorf("error retrieving subnet by id %s: %w", *subnet.ID, err)
+		} else if subnetDetails == nil {
+			// If the subnet was not found with provided ID, that is an error and a new subnet will not be created.
+			return false, fmt.Errorf("error failed to find subnet with id: %s", *subnet.ID)
+		}
+		return s.updateSubnetStatus(subnetDetails, isControlPlane)
+	} else if subnet.Name != nil {
+		// Attempt to check if a subnet exists with the name and update status as necessary.
+		subnetDetails, err := s.VPCClient.GetVPCSubnetByName(*subnet.Name)
+		if err != nil {
+			return false, fmt.Errorf("error retrieving subnet by name %s: %w", *subnet.Name, err)
+		} else if subnetDetails != nil {
+			// Update status if subnet was found.
+			return s.updateSubnetStatus(subnetDetails, isControlPlane)
+		}
+		// If subnet was not found, expect that it needs to be created.
+	}
+
+	// If the subnet has not yet been at this point, assume it needs to be created.
+	s.V(3).Info("creating subnet", "subnetName", subnet.Name)
+	err := s.createSubnet(subnet, isControlPlane)
+	if err != nil {
+		return false, err
+	}
+	s.V(3).Info("Successfully created subnet", "subnetName", subnet.Name)
+
+	// Recommend we requeue reconciliation after subnet was successfully created
+	return true, nil
+}
+
+// buildSubnetsForZones will create a set of Subnets, using default names, for each availability zone within a Region. This is typically used when no subnets were provided, so a set of default subnets gets created.
+func (s *VPCClusterScope) buildSubnetsForZones() ([]infrav1beta2.Subnet, error) {
+	subnets := make([]infrav1beta2.Subnet, 0)
+	zones, err := s.VPCClient.GetVPCZonesByRegion(s.IBMVPCCluster.Spec.Region)
+	if err != nil {
+		return subnets, fmt.Errorf("error unknown failure retrieving zones for region %s: %w", s.IBMVPCCluster.Spec.Region, err)
+	}
+	if len(zones) == 0 {
+		return subnets, fmt.Errorf("error retrieving subnet zones, no zones found in %s", s.IBMVPCCluster.Spec.Region)
+	}
+	for _, zone := range zones {
+		name := fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1beta2.ResourceTypeSubnet), zone)
+		subnets = append(subnets, infrav1beta2.Subnet{
+			Name: ptr.To(name),
+			Zone: ptr.To(zone),
+		})
+	}
+	return subnets, nil
+}
+
+// updateSubnetStatus will check the status of a IBM Cloud Subnet and update the Network Status.
+func (s *VPCClusterScope) updateSubnetStatus(subnetDetails *vpcv1.Subnet, isControlPlane bool) (bool, error) {
+	requeue := true
+	if subnetDetails.Status != nil && *subnetDetails.Status == string(vpcv1.SubnetStatusAvailableConst) {
+		requeue = false
+	}
+
+	resourceStatus := &infrav1beta2.ResourceStatus{
+		ID:   *subnetDetails.ID,
+		Name: subnetDetails.Name,
+		// Ready status will be invert of the need to requeue
+		Ready: !requeue,
+	}
+	if isControlPlane {
+		s.SetResourceStatus(infrav1beta2.ResourceTypeControlPlaneSubnet, resourceStatus)
+	} else {
+		s.SetResourceStatus(infrav1beta2.ResourceTypeWorkerSubnet, resourceStatus)
+	}
+	return requeue, nil
+}
+
+// createSubnet creates a new VPC subnet.
+func (s *VPCClusterScope) createSubnet(subnet infrav1beta2.Subnet, isControlPlane bool) error {
+	// TODO(cjschaef): Move to webhook validation.
+	if subnet.Zone == nil {
+		return fmt.Errorf("error subnet zone must be defined for subnet %s", *subnet.Name)
+	}
+
+	// Created resources should be placed in the cluster Resource Group (not Network, if it exists).
+	resourceGroupID, err := s.GetResourceGroupID()
+	if err != nil {
+		return fmt.Errorf("error retrieving resource group id for subnet creation: %w", err)
+	} else if resourceGroupID == "" {
+		return fmt.Errorf("error retrieving resource group id for resource group %s", s.IBMVPCCluster.Spec.ResourceGroup)
+	}
+
+	vpcID, err := s.GetVPCID()
+	if err != nil {
+		return fmt.Errorf("error retrieving vpc id for subnet creation: %w", err)
+	}
+
+	// NOTE(cjschaef): We likely will want to add support to use custom Address Prefixes.
+	// For now, we rely on the API to assign us prefixes, as we request via IP count.
+	var ipCount int64 = 256
+	// We currnetly only support IP v4.
+	ipVersion := vpcSubnetIPVersion4
+
+	// Find or create a Public Gateway in this zone for the subnet, only one Public Gateway is required for each zone, for this cluster.
+	// NOTE(cjschaef): We may need to add support to not attach Public Gateways to subnets.
+	publicGateway, err := s.findOrCreatePublicGateway(*subnet.Zone)
+	if err != nil {
+		return fmt.Errorf("error failed to find or create public gateway for subnet %s: %w", *subnet.Name, err)
+	}
+
+	options := &vpcv1.CreateSubnetOptions{}
+	options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
+		IPVersion:             ptr.To(ipVersion),
+		TotalIpv4AddressCount: ptr.To(ipCount),
+		Name:                  subnet.Name,
+		VPC: &vpcv1.VPCIdentity{
+			ID: vpcID,
+		},
+		Zone: &vpcv1.ZoneIdentity{
+			Name: subnet.Zone,
+		},
+		ResourceGroup: &vpcv1.ResourceGroupIdentity{
+			ID: ptr.To(resourceGroupID),
+		},
+		PublicGateway: &vpcv1.PublicGatewayIdentity{
+			ID: publicGateway.ID,
+		},
+	})
+
+	// Create subnet.
+	subnetDetails, _, err := s.VPCClient.CreateSubnet(options)
+	if err != nil {
+		return fmt.Errorf("error unknown failure creating vpc subnet: %w", err)
+	}
+	if subnetDetails == nil || subnetDetails.ID == nil || subnetDetails.CRN == nil {
+		return fmt.Errorf("error failed creating subnet: %s", *subnet.Name)
+	}
+
+	// Initially populate subnet's status.
+	resourceStatus := &infrav1beta2.ResourceStatus{
+		ID:    *subnetDetails.ID,
+		Name:  subnetDetails.Name,
+		Ready: false,
+	}
+	if isControlPlane {
+		s.SetResourceStatus(infrav1beta2.ResourceTypeControlPlaneSubnet, resourceStatus)
+	} else {
+		s.SetResourceStatus(infrav1beta2.ResourceTypeWorkerSubnet, resourceStatus)
+	}
+
+	// Add a tag to the subnet for the cluster.
+	err = s.TagResource(s.IBMVPCCluster.Name, *subnetDetails.CRN)
+	if err != nil {
+		return fmt.Errorf("error failed to tag subnet %s: %w", *subnetDetails.Name, err)
+	}
+
+	return nil
+}
+
+// findOrCreatePublicGateway will attempt to find if there is an existing Public Gateway for a specific zone, for the cluster (in cluster's Resource Group and VPC), or create a new one. Only one Public Gateway is required in each zone, for any subnets in that zone.
+func (s *VPCClusterScope) findOrCreatePublicGateway(zone string) (*vpcv1.PublicGateway, error) {
+	publicGatewayName := fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1beta2.ResourceTypePublicGateway), zone)
+	// We will use the cluster Resource Group ID, as we expect to create all resources (Public Gateways and Subnets) in that Resource Group.
+	resourceGroupID, err := s.GetResourceGroupID()
+	if err != nil {
+		return nil, fmt.Errorf("error unknown failure retrieving resource group id for public gateway: %w", err)
+	}
+	publicGateway, err := s.VPCClient.GetVPCPublicGatewayByName(publicGatewayName, resourceGroupID)
+	if err != nil {
+		return nil, fmt.Errorf("error unknown failure retrieving public gateway for zone %s: %w", zone, err)
+	}
+
+	// If we found the Public Gateway, with an ID, for the zone, return it.
+	// NOTE(cjschaef): We may wish to confirm the PublicGateway, by checking Tags (Global Tagging), but this might be sufficient, as we don't expect to have duplicate PG's or existing PG's, as we wouldn't create subnets and PG's for existing Network Infrastructure.
+	if publicGateway != nil && publicGateway.ID != nil {
+		return publicGateway, nil
+	}
+
+	// Otherwise, create a new Public Gateway for the zone.
+	vpcID, err := s.GetVPCID()
+	if err != nil {
+		return nil, fmt.Errorf("error failed retrieving vpc id for public gateway creation: %w", err)
+	}
+	if vpcID == nil {
+		return nil, fmt.Errorf("error failed to retrieve vpc id for public gateway creation")
+	}
+
+	publicGatewayDetails, _, err := s.VPCClient.CreatePublicGateway(&vpcv1.CreatePublicGatewayOptions{
+		Name: ptr.To(publicGatewayName),
+		ResourceGroup: &vpcv1.ResourceGroupIdentity{
+			ID: ptr.To(resourceGroupID),
+		},
+		VPC: &vpcv1.VPCIdentity{
+			ID: vpcID,
+		},
+		Zone: &vpcv1.ZoneIdentity{
+			Name: ptr.To(zone),
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error unknown failure creating public gateway: %w", err)
+	}
+	if publicGatewayDetails == nil || publicGatewayDetails.ID == nil || publicGatewayDetails.CRN == nil {
+		return nil, fmt.Errorf("error failed creating public gateway for zone %s", zone)
+	}
+
+	s.V(3).Info("created public gateway", "id", publicGatewayDetails.ID)
+
+	// Add a tag to the public gateway for the cluster
+	err = s.TagResource(s.IBMVPCCluster.Name, *publicGatewayDetails.CRN)
+	if err != nil {
+		return nil, fmt.Errorf("error failed to tag public gateway %s: %w", *publicGatewayDetails.Name, err)
+	}
+
+	return publicGatewayDetails, nil
 }
