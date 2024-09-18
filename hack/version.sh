@@ -71,7 +71,7 @@ version::get_version_vars() {
         fi
     fi
 
-    GIT_RELEASE_TAG=$(git describe --abbrev=0 --tags)
+    GIT_RELEASE_TAG=$(git describe --abbrev=0 --tags 2>/dev/null)
     GIT_RELEASE_COMMIT=$(git rev-list -n 1  "${GIT_RELEASE_TAG}")
 }
 
