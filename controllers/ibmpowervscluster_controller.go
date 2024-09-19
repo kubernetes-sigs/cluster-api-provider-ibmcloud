@@ -297,7 +297,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 	clusterScope.Info("Reconciling Transit Gateway")
 	if requeue, err := clusterScope.ReconcileTransitGateway(); err != nil {
 		clusterScope.Error(err, "failed to reconcile transit gateway")
-		conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.TransitGatewayReadyCondition, infrav1beta2.TransitGatewayReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.TransitGatewayReadyCondition, infrav1beta2.TransitGatewayReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("Setting up Transit gateway is pending, requeuing")
@@ -309,7 +309,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 	if clusterScope.IBMPowerVSCluster.Spec.Ignition != nil {
 		clusterScope.Info("Reconciling COS service instance")
 		if err := clusterScope.ReconcileCOSInstance(); err != nil {
-			conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.COSInstanceReadyCondition, infrav1beta2.COSInstanceReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+			conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.COSInstanceReadyCondition, infrav1beta2.COSInstanceReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
 			return reconcile.Result{}, err
 		}
 		conditions.MarkTrue(powerVSCluster.cluster, infrav1beta2.COSInstanceReadyCondition)
