@@ -239,7 +239,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling VPC")
 	if requeue, err := clusterScope.ReconcileVPC(); err != nil {
 		clusterScope.Error(err, "failed to reconcile VPC")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition, infrav1beta2.VPCReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition, infrav1beta2.VPCReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("VPC creation is pending, requeuing")
@@ -252,7 +252,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling VPC Custom Image")
 	if requeue, err := clusterScope.ReconcileVPCCustomImage(); err != nil {
 		clusterScope.Error(err, "failed to reconcile VPC Custom Image")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("VPC Custom Image creation is pending, requeueing")
@@ -351,7 +351,7 @@ func (r *IBMVPCClusterReconciler) reconcileLBState(clusterScope *scope.ClusterSc
 	case infrav1beta2.VPCLoadBalancerStateCreatePending:
 		clusterScope.Logger.V(3).Info("LoadBalancer is in create state")
 		clusterScope.SetNotReady()
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.LoadBalancerReadyCondition, string(infrav1beta2.VPCLoadBalancerStateCreatePending), capiv1beta1.ConditionSeverityInfo, *loadBalancer.OperatingStatus)
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.LoadBalancerReadyCondition, string(infrav1beta2.VPCLoadBalancerStateCreatePending), capiv1beta1.ConditionSeverityInfo, "%s", *loadBalancer.OperatingStatus)
 	case infrav1beta2.VPCLoadBalancerStateActive:
 		clusterScope.Logger.V(3).Info("LoadBalancer is in active state")
 		clusterScope.SetReady()
