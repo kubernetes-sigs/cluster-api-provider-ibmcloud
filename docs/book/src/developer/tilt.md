@@ -155,6 +155,42 @@ kustomize_substitutions:
   IBMCLOUD_AUTH_URL: "https://iam.test.cloud.ibm.com"
 ```
 
+### 4.  Configuration to use observability tools
+
+- cluster-api provides support for deploying observability tools, More information about it is available in cluster-api [book](https://cluster-api.sigs.k8s.io/developer/logging#developing-and-testing-logs).
+
+```yaml
+default_registry: "gcr.io/you-project-name-here"
+deploy_observability:
+   - promtail
+   - loki
+   - grafana
+   - prometheus
+provider_repos:
+  - ../cluster-api-provider-ibmcloud
+enable_providers:
+  - ibmcloud
+  - kubeadm-bootstrap
+  - kubeadm-control-plane
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
+  PROVIDER_ID_FORMAT: "v2"
+  EXP_CLUSTER_RESOURCE_SET: "true"
+extra_args:
+   core:
+      - "--logging-format=json"
+      - "--v=5"
+   kubeadm-bootstrap:
+      - "--v=5"
+      - "--logging-format=json"
+   kubeadm-control-plane:
+      - "--v=5"
+      - "--logging-format=json"
+   ibmcloud:
+      - "--v=5"
+      - "--logging-format=json"
+```
+
 **NOTE**: For information about all the fields that can be used in the `tilt-settings.yaml` file, check them [here](https://cluster-api.sigs.k8s.io/developer/tilt.html#tilt-settings-fields).
 
 ## Run Tilt
