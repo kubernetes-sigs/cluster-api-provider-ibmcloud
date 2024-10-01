@@ -1615,8 +1615,10 @@ func (s *PowerVSClusterScope) validateVPCSecurityGroup(securityGroup infrav1beta
 		}
 	} else {
 		securityGroupDet, err = s.IBMVPCClient.GetSecurityGroupByName(*securityGroup.Name)
-		if err != nil && err.Error() != vpc.SecurityGroupByNameNotFound(*securityGroup.Name).Error() {
-			return nil, nil, err
+		if err != nil {
+			if _, ok := err.(*vpc.SecurityGroupByNameNotFound); !ok {
+				return nil, nil, err
+			}
 		}
 		if securityGroupDet == nil {
 			return nil, nil, nil
