@@ -58,6 +58,7 @@ type Vpc interface {
 	GetVPC(*vpcv1.GetVPCOptions) (*vpcv1.VPC, *core.DetailedResponse, error)
 	GetVPCByName(vpcName string) (*vpcv1.VPC, error)
 	GetImageByName(imageName string) (*vpcv1.Image, error)
+	GetVPCPublicGatewayByName(publicGatewayName string, resourceGroupID string) (*vpcv1.PublicGateway, error)
 	GetSubnet(*vpcv1.GetSubnetOptions) (*vpcv1.Subnet, *core.DetailedResponse, error)
 	GetVPCSubnetByName(subnetName string) (*vpcv1.Subnet, error)
 	GetLoadBalancerByName(loadBalancerName string) (*vpcv1.LoadBalancer, error)
@@ -68,4 +69,5 @@ type Vpc interface {
 	GetSecurityGroup(options *vpcv1.GetSecurityGroupOptions) (*vpcv1.SecurityGroup, *core.DetailedResponse, error)
 	GetSecurityGroupByName(name string) (*vpcv1.SecurityGroup, error)
 	GetSecurityGroupRule(options *vpcv1.GetSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error)
+	GetVPCZonesByRegion(region string) ([]string, error)
 }

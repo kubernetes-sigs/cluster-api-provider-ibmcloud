@@ -258,10 +258,10 @@ var (
 	ResourceTypeVPC = ResourceType("vpc")
 	// ResourceTypeSubnet is VPC subnet resource.
 	ResourceTypeSubnet = ResourceType("subnet")
-	// ResourceTypeComputeSubnet is a VPC subnet resource designated for the Compute (Data) Plane.
-	ResourceTypeComputeSubnet = ResourceType("computeSubnet")
 	// ResourceTypeControlPlaneSubnet is a VPC subnet resource designated for the Control Plane.
 	ResourceTypeControlPlaneSubnet = ResourceType("controlPlaneSubnet")
+	// ResourceTypeWorkerSubnet is a VPC subnet resource designated for the Worker (Data) Plane.
+	ResourceTypeWorkerSubnet = ResourceType("workerSubnet")
 	// ResourceTypeSecurityGroup is a VPC Security Group resource.
 	ResourceTypeSecurityGroup = ResourceType("securityGroup")
 	// ResourceTypeCOSInstance is IBM COS instance resource.

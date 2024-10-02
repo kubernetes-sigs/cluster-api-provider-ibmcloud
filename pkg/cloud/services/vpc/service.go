@@ -262,6 +262,45 @@ func (s *Service) GetImageByName(imageName string) (*vpcv1.Image, error) {
 	return image, nil
 }
 
+// GetVPCPublicGatewayByName returns the VPC Public Gateway with given name. If not found, returns nil.
+func (s *Service) GetVPCPublicGatewayByName(publicGatewayName string, resourceGroupID string) (*vpcv1.PublicGateway, error) {
+	var publicGateway *vpcv1.PublicGateway
+	f := func(start string) (bool, string, error) {
+		// check for existing public gateways
+		listPublicGatewaysOptions := s.vpcService.NewListPublicGatewaysOptions().SetResourceGroupID(resourceGroupID)
+		if start != "" {
+			listPublicGatewaysOptions.Start = &start
+		}
+
+		publicGatewaysList, _, err := s.vpcService.ListPublicGateways(listPublicGatewaysOptions)
+		if err != nil {
+			return false, "", err
+		}
+
+		if publicGatewaysList == nil {
+			return false, "", fmt.Errorf("public gateways list returned is nil")
+		}
+
+		for index, pg := range publicGatewaysList.PublicGateways {
+			if *pg.Name == publicGatewayName {
+				publicGateway = &publicGatewaysList.PublicGateways[index]
+				return true, "", nil
+			}
+		}
+
+		if publicGatewaysList.Next != nil && *publicGatewaysList.Next.Href != "" {
+			return false, *publicGatewaysList.Next.Href, nil
+		}
+		return true, "", nil
+	}
+
+	if err := utils.PagingHelper(f); err != nil {
+		return nil, err
+	}
+
+	return publicGateway, nil
+}
+
 // GetSubnet return subnet.
 func (s *Service) GetSubnet(options *vpcv1.GetSubnetOptions) (*vpcv1.Subnet, *core.DetailedResponse, error) {
 	return s.vpcService.GetSubnet(options)
@@ -439,6 +478,20 @@ func (s *Service) GetSecurityGroupByName(name string) (*vpcv1.SecurityGroup, err
 // GetSecurityGroupRule gets a specific security group rule.
 func (s *Service) GetSecurityGroupRule(options *vpcv1.GetSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error) {
 	return s.vpcService.GetSecurityGroupRule(options)
+}
+
+// GetVPCZonesByRegion gets the VPC availability zones for a specific IBM Cloud region.
+func (s *Service) GetVPCZonesByRegion(region string) ([]string, error) {
+	zones := make([]string, 0)
+	options := s.vpcService.NewListRegionZonesOptions(region)
+	result, _, err := s.vpcService.ListRegionZones(options)
+	if err != nil {
+		return zones, err
+	}
+	for _, zone := range result.Zones {
+		zones = append(zones, *zone.Name)
+	}
+	return zones, nil
 }
 
 // NewService returns a new VPC Service.
