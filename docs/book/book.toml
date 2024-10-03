@@ -10,6 +10,9 @@ curly-quotes = true
 git-repository-url = "https://sigs.k8s.io/cluster-api-provider-ibmcloud"
 additional-css = ["theme/css/custom.css"]
 
+[output.html.redirect]
+"/agenda.html" = "https://docs.google.com/document/d/1oWnqXy1VFv0E3kovQoZfS6IlVP0L4eaQsN-2HYC_6_A"
+
 [preprocessor.tabulate]
 command = "mdbook-tabulate"
 
