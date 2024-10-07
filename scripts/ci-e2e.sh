@@ -93,7 +93,7 @@ create_powervs_network_instance(){
     # Install power-iaas command-line plug-in and target the required service instance
     ibmcloud plugin install power-iaas -f -v ${POWER_PLUGIN_VERSION}
     CRN=$(ibmcloud resource service-instance ${IBMPOWERVS_SERVICE_INSTANCE_ID} --output json | jq -r '.[].crn')
-    ibmcloud pi service-target ${CRN}
+    ibmcloud pi workspace target ${CRN}
 
     # Create the network instance
     ${capibmadm} powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --dns-servers 1.1.1.1,8.8.8.8,9.9.9.9 --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${ZONE}
