@@ -43,12 +43,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const (
-	KubernetesVersion = "KUBERNETES_VERSION"
-	CNIPath           = "CNI"
-	CNIResources      = "CNI_RESOURCES"
-)
-
 // Test suite flags.
 var (
 	// configPath is the path to the e2e config file.

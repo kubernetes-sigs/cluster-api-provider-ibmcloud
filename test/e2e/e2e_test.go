@@ -33,8 +33,17 @@ import (
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
 	"sigs.k8s.io/cluster-api/util"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
+
+const (
+	// powervsRemediationFlavor represents the flavor of PowerVS cluster creation being tested.
+	powervsRemediationFlavor = "powervs-md-remediation"
+	kubernetesVersion        = "KUBERNETES_VERSION"
+	serviceInstanceID        = "IBMPOWERVS_SERVICE_INSTANCE_ID"
 )
 
 var _ = Describe("Workload cluster creation", func() {
@@ -55,7 +64,7 @@ var _ = Describe("Workload cluster creation", func() {
 		Expect(bootstrapClusterProxy).ToNot(BeNil(), "Invalid argument. bootstrapClusterProxy can't be nil when calling %s spec", specName)
 		Expect(os.MkdirAll(artifactFolder, 0750)).To(Succeed(), "Invalid argument. artifactFolder can't be created for %s spec", specName)
 
-		Expect(e2eConfig.Variables).To(HaveKey(KubernetesVersion))
+		Expect(e2eConfig.Variables).To(HaveKey(kubernetesVersion))
 
 		clusterName = fmt.Sprintf("capibm-e2e-%s", util.RandomString(6))
 
@@ -70,6 +79,14 @@ var _ = Describe("Workload cluster creation", func() {
 		// Path to the CNI file is defined in the config
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath), "Missing %s variable in the config", capi_e2e.CNIPath)
 		cniPath = e2eConfig.GetVariable(capi_e2e.CNIPath)
+
+		// When e2e falvour is powervs-md-remediation, check if virtual server instances are cleaned up
+		// before proceeding with cluster creation.
+		if flavor == powervsRemediationFlavor {
+			Expect(e2eConfig.Variables).To(HaveKey(serviceInstanceID))
+			err := helpers.VerifyServerInstancesDeletion(e2eConfig.GetVariable(serviceInstanceID))
+			Expect(err).To(BeNil())
+		}
 	})
 
 	AfterEach(func() {
@@ -100,7 +117,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.GetVariable(kubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
@@ -121,7 +138,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.GetVariable(kubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(3)),
 				},
@@ -146,7 +163,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.GetVariable(kubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(3)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
