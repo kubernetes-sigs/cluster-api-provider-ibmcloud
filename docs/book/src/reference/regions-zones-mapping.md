@@ -13,7 +13,7 @@
 | Europe       | London, UK         |       lon       |   lon04<br>lon06   |     lon.power-iaas.cloud.ibm.com      |        eu-gb         |     eu-gb-1<br>eu-gb-2<br>eu-gb-3      |     eu-gb.iaas.cloud.ibm.com      | eu-gb                     |
 | Europe       | Madrid             |       mad       |     mad02          |     mad.power-iaas.cloud.ibm.com      |        eu-es         |     eu-es-1<br>eu-es-2<br>eu-es-3      |     eu-es.iaas.cloud.ibm.com      | eu-es                     |
 | Asia Pacific | Sydney, Australia  |       syd       |   syd04<br>syd05   |     syd.power-iaas.cloud.ibm.com      |        au-syd        |    au-syd-1<br>au-syd-2<br>au-syd-3    |     au-syd.iaas.cloud.ibm.com     | au-syd                    |
-| Asia Pacific | Tokyo, Japan       |       tok       |       tok04        |     tok.power-iaas.cloud.ibm.com      |        jp-tok        |    jp-tok-1<br>jp-tok-2<br>jp-tok-3    |     jp-tok.iaas.cloud.ibm.com     | jp-rok                    |
+| Asia Pacific | Tokyo, Japan       |       tok       |       tok04        |     tok.power-iaas.cloud.ibm.com      |        jp-tok        |    jp-tok-1<br>jp-tok-2<br>jp-tok-3    |     jp-tok.iaas.cloud.ibm.com     | jp-tok                    |
 | Asia Pacific | Osaka, Japan       |       osa       |       osa21        |     osa.power-iaas.cloud.ibm.com      |        jp-osa        |    jp-osa-1<br>jp-osa-2<br>jp-osa-3    |     jp-osa.iaas.cloud.ibm.com     | jp-osa                    | 
 
 
