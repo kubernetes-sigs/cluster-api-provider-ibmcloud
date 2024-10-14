@@ -1,6 +1,7 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.22.0
+toolchain go1.22.8
 
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.4
 
@@ -18,7 +19,7 @@ require (
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20241008052423-3cce0d973682
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20211110210527-619e6b92dab9
 	sigs.k8s.io/controller-tools v0.15.0
-	sigs.k8s.io/kustomize/kustomize/v5 v5.4.3
+	sigs.k8s.io/kustomize/kustomize/v5 v5.5.0
 )
 
 require (
@@ -476,7 +477,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
-	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
 	go.uber.org/automaxprocs v1.5.3 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
@@ -536,9 +536,9 @@ require (
 	sigs.k8s.io/cluster-api v0.0.0-00010101000000-000000000000 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20211028165026-57688c578b5d // indirect
-	sigs.k8s.io/kustomize/api v0.17.3 // indirect
-	sigs.k8s.io/kustomize/cmd/config v0.14.2 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.17.2 // indirect
+	sigs.k8s.io/kustomize/api v0.18.0 // indirect
+	sigs.k8s.io/kustomize/cmd/config v0.15.0 // indirect
+	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
