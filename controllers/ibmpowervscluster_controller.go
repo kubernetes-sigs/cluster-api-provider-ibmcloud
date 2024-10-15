@@ -330,20 +330,18 @@ func (r *IBMPowerVSClusterReconciler) reconcile(clusterScope *scope.PowerVSClust
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
-	// update cluster object with loadbalancer host
-	loadBalancer := clusterScope.PublicLoadBalancer()
-	if loadBalancer == nil {
-		return reconcile.Result{}, fmt.Errorf("failed to fetch public loadbalancer")
-	}
-
 	clusterScope.Info("Getting load balancer host")
-	hostName := clusterScope.GetLoadBalancerHostName(loadBalancer.Name)
+	hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+	if err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to fetch public loadbalancer: %w", err)
+	}
 	if hostName == nil || *hostName == "" {
 		clusterScope.Info("LoadBalancer hostname is not yet available, requeuing")
 		return reconcile.Result{RequeueAfter: time.Minute}, nil
 	}
 
-	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Host = *clusterScope.GetLoadBalancerHostName(loadBalancer.Name)
+	// update cluster object with loadbalancer host name
+	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Host = *hostName
 	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Port = clusterScope.APIServerPort()
 	clusterScope.IBMPowerVSCluster.Status.Ready = true
 	return ctrl.Result{}, nil
