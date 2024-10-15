@@ -1726,7 +1726,6 @@ func TestIsDHCPServerActive(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		// TODO: check why Status is checked here instead of spec?
 		clusterScope := PowerVSClusterScope{
 			IBMPowerVSClient:  mockPowerVS,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Status: infrav1beta2.IBMPowerVSClusterStatus{DHCPServer: &infrav1beta2.ResourceReference{ID: ptr.To("dhcpID")}}},
@@ -1777,22 +1776,22 @@ func TestCheckDHCPServerStatus(t *testing.T) {
 		expectedStatus bool
 	}{
 		{
-			name:           "test DHCP server state build",
+			name:           "DHCP server is in build state",
 			dhcpServer:     models.DHCPServerDetail{ID: ptr.To("dhcpIDBuild"), Status: ptr.To(string(infrav1beta2.DHCPServerStateBuild))},
 			expectedStatus: false,
 		},
 		{
-			name:           "test DHCP server state active",
+			name:           "DHCP server is in active state",
 			dhcpServer:     models.DHCPServerDetail{ID: ptr.To("dhcpIDActive"), Status: ptr.To(string(infrav1beta2.DHCPServerStateActive))},
 			expectedStatus: true,
 		},
 		{
-			name:           "test DHCP server state error",
+			name:           "DHCP server is in error state",
 			dhcpServer:     models.DHCPServerDetail{ID: ptr.To("dhcpIDError"), Status: ptr.To(string(infrav1beta2.DHCPServerStateError))},
 			expectedStatus: false,
 		},
 		{
-			name:           "test DHCP server state invalid value",
+			name:           "DHCP server is in invalid state",
 			dhcpServer:     models.DHCPServerDetail{ID: ptr.To("dhcpIDError"), Status: ptr.To("InvalidState")},
 			expectedStatus: false,
 		},
