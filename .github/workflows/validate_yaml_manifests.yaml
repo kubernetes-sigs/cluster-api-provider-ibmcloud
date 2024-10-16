@@ -1,0 +1,26 @@
+name: Lint
+
+on: [push, pull_request]
+
+jobs:
+  yamllint:
+    name: Run yamllint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Calculate go version
+        run: make go-version
+
+      - name: Install yamllint
+        run: make install-yamllint
+
+      - name: Run yamllint
+        run: make lint-yaml
