@@ -1633,7 +1633,7 @@ func (s *PowerVSClusterScope) validateVPCSecurityGroup(securityGroup infrav1beta
 		return nil, nil, fmt.Errorf("failed to validate VPC security group rules: %v", err)
 	}
 	if !ok {
-		if _, _, controllerCreated := s.GetVPCSecurityGroupByName(*securityGroup.Name); !*controllerCreated {
+		if _, _, controllerCreated := s.GetVPCSecurityGroupByName(*securityGroup.Name); controllerCreated != nil && !*controllerCreated {
 			return nil, nil, fmt.Errorf("VPC security group by name exists but rules are not matching")
 		}
 		return nil, nil, s.createVPCSecurityGroupRulesAndSetStatus(securityGroup.Rules, securityGroupDet.ID, securityGroupDet.Name)
