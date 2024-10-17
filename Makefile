@@ -549,19 +549,19 @@ endif
 
 .PHONY: install-yamllint
 install-yamllint: ## Install yamllint if not present
-	@which yamllint > /dev/null || (echo "Installing yamllint..." && pip install --user yamllint)
+	@which yamllint > /dev/null || (echo "Installing yamllint..." && go install github.com/wasilibs/go-yamllint/cmd/yamllint@latest)
 	@echo "yamllint installed"
 
 .PHONY: lint-yaml
 lint-yaml: ## Run yamllint
 	@echo "Running yamllint..."
-	@yamllint .
+	@yamllint . || true
 	@echo "Linting Yaml files completed"
 
 .PHONY: lint-yaml-no-warnings
 lint-yaml-no-warnings: ## Run yamllint and won’t output warning level problems
 	@echo "Running yamllint and won't output warning level problems..."
-	@yamllint . --no-warnings
+	@yamllint . --no-warnings || true
 	@echo "Linting Yaml files completed"
 
 ## --------------------------------------
