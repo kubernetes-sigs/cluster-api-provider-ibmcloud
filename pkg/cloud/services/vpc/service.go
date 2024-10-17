@@ -26,8 +26,14 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
-// SecurityGroupByNameNotFound returns an appropriate error when security group by name not found.
-var SecurityGroupByNameNotFound = func(name string) error { return fmt.Errorf("failed to find security group by name '%s'", name) }
+// SecurityGroupByNameNotFound represents an error when security group is not found by name.
+type SecurityGroupByNameNotFound struct {
+	Name string
+}
+
+func (s *SecurityGroupByNameNotFound) Error() string {
+	return fmt.Sprintf("failed to find security group by name: %s", s.Name)
+}
 
 // Service holds the VPC Service specific information.
 type Service struct {
@@ -472,12 +478,17 @@ func (s *Service) GetSecurityGroupByName(name string) (*vpcv1.SecurityGroup, err
 		}
 	}
 
-	return nil, SecurityGroupByNameNotFound(name)
+	return nil, &SecurityGroupByNameNotFound{Name: name}
 }
 
 // GetSecurityGroupRule gets a specific security group rule.
 func (s *Service) GetSecurityGroupRule(options *vpcv1.GetSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error) {
 	return s.vpcService.GetSecurityGroupRule(options)
+}
+
+// ListSecurityGroupRules returns a list of security group rules.
+func (s *Service) ListSecurityGroupRules(options *vpcv1.ListSecurityGroupRulesOptions) (*vpcv1.SecurityGroupRuleCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListSecurityGroupRules(options)
 }
 
 // GetVPCZonesByRegion gets the VPC availability zones for a specific IBM Cloud region.

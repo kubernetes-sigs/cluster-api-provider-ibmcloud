@@ -274,6 +274,19 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciliation of VPC Subnets complete")
 	conditions.MarkTrue(clusterScope.IBMVPCCluster, infrav1beta2.VPCSubnetReadyCondition)
 
+	// Reconcile the cluster's Security Groups (and Security Group Rules)
+	clusterScope.Info("Reconciling Security Groups")
+	if requeue, err := clusterScope.ReconcileSecurityGroups(); err != nil {
+		clusterScope.Error(err, "failed to reconcile Security Groups")
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCSecurityGroupReadyCondition, infrav1beta2.VPCSecurityGroupReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		return reconcile.Result{}, err
+	} else if requeue {
+		clusterScope.Info("Security Groups creation is pending, requeueing")
+		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
+	}
+	clusterScope.Info("Reconciliation of Security Groups complete")
+	conditions.MarkTrue(clusterScope.IBMVPCCluster, infrav1beta2.VPCSecurityGroupReadyCondition)
+
 	// TODO(cjschaef): add remaining resource reconciliation.
 
 	// Mark cluster as ready.

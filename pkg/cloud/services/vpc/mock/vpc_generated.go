@@ -648,6 +648,22 @@ func (mr *MockVpcMockRecorder) ListLoadBalancers(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLoadBalancers", reflect.TypeOf((*MockVpc)(nil).ListLoadBalancers), options)
 }
 
+// ListSecurityGroupRules mocks base method.
+func (m *MockVpc) ListSecurityGroupRules(options *vpcv1.ListSecurityGroupRulesOptions) (*vpcv1.SecurityGroupRuleCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSecurityGroupRules", options)
+	ret0, _ := ret[0].(*vpcv1.SecurityGroupRuleCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListSecurityGroupRules indicates an expected call of ListSecurityGroupRules.
+func (mr *MockVpcMockRecorder) ListSecurityGroupRules(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecurityGroupRules", reflect.TypeOf((*MockVpc)(nil).ListSecurityGroupRules), options)
+}
+
 // ListSecurityGroups mocks base method.
 func (m *MockVpc) ListSecurityGroups(options *vpcv1.ListSecurityGroupsOptions) (*vpcv1.SecurityGroupCollection, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()

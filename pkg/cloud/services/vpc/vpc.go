@@ -69,5 +69,6 @@ type Vpc interface {
 	GetSecurityGroup(options *vpcv1.GetSecurityGroupOptions) (*vpcv1.SecurityGroup, *core.DetailedResponse, error)
 	GetSecurityGroupByName(name string) (*vpcv1.SecurityGroup, error)
 	GetSecurityGroupRule(options *vpcv1.GetSecurityGroupRuleOptions) (vpcv1.SecurityGroupRuleIntf, *core.DetailedResponse, error)
+	ListSecurityGroupRules(options *vpcv1.ListSecurityGroupRulesOptions) (*vpcv1.SecurityGroupRuleCollection, *core.DetailedResponse, error)
 	GetVPCZonesByRegion(region string) ([]string, error)
 }
