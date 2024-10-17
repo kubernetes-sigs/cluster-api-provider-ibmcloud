@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/IBM-Cloud/power-go-client/power/models"
 	"go.uber.org/mock/gomock"
 
 	corev1 "k8s.io/api/core/v1"
@@ -44,7 +43,11 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
+	mockVPC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
+	"github.com/IBM-Cloud/power-go-client/power/models"
+	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/vpc-go-sdk/vpcv1"
 	. "github.com/onsi/gomega"
 )
 
@@ -368,12 +371,14 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		mockCtrl     *gomock.Controller
 		machineScope *scope.PowerVSMachineScope
 		reconciler   IBMPowerVSMachineReconciler
+		mockvpc      *mockVPC.MockVpc
 	)
 
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
 		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+		mockvpc = mockVPC.NewMockVpc(mockCtrl)
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSMachineReconciler{
 			Client:   testEnv.Client,
@@ -492,6 +497,303 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityError, infrav1beta2.InstanceProvisionFailedReason}})
 		})
+
+		t.Run("Should fail reconcile if creation of the load balancer pool member is unsuccessful", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						capiv1beta1.ClusterNameLabel: "powervs-cluster",
+					},
+					Name:      "bootsecret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"value": []byte("user data"),
+				},
+			}
+
+			pvsmachine := &infrav1beta2.IBMPowerVSMachine{
+
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       *ptr.To("capi-test-machine"),
+					Finalizers: []string{infrav1beta2.IBMPowerVSMachineFinalizer},
+				},
+				Status: infrav1beta2.IBMPowerVSMachineStatus{
+					Ready: true,
+				},
+				Spec: infrav1beta2.IBMPowerVSMachineSpec{
+					MemoryGiB:  8,
+					Processors: intstr.FromString("0.5"),
+					Image: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-image-id"),
+					},
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					ServiceInstanceID: *ptr.To("service-instance-1"),
+				},
+			}
+
+			machine := &capiv1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "owner-machine",
+					Namespace: "default",
+					Labels: map[string]string{
+						"cluster.x-k8s.io/control-plane": "true",
+					},
+				},
+
+				Spec: capiv1beta1.MachineSpec{
+					Bootstrap: capiv1beta1.Bootstrap{
+						DataSecretName: ptr.To("bootsecret"),
+					},
+				},
+			}
+
+			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
+			machineScope = &scope.PowerVSMachineScope{
+				Logger: klog.Background(),
+				Client: mockclient,
+
+				Cluster: &capiv1beta1.Cluster{
+					Status: capiv1beta1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+				Machine:           machine,
+				IBMPowerVSMachine: pvsmachine,
+				IBMPowerVSImage: &infrav1beta2.IBMPowerVSImage{
+					Status: infrav1beta2.IBMPowerVSImageStatus{
+						Ready: true,
+					},
+				},
+				IBMVPCClient:     mockvpc,
+				IBMPowerVSClient: mockpowervs,
+				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"powervs.cluster.x-k8s.io/create-infra": "true",
+						},
+					},
+					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+							{
+								Name: "capi-test-lb",
+							},
+						},
+					},
+					Status: infrav1beta2.IBMPowerVSClusterStatus{
+						LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+							"capi-test-lb": {
+								ID: ptr.To("capi-test-lb-id"),
+							},
+						},
+					},
+				},
+			}
+
+			instanceReferences := &models.PVMInstances{
+				PvmInstances: []*models.PVMInstanceReference{
+					{
+						PvmInstanceID: ptr.To("capi-test-machine-id"),
+						ServerName:    ptr.To("capi-test-machine"),
+					},
+				},
+			}
+			instance := &models.PVMInstance{
+				PvmInstanceID: ptr.To("capi-test-machine-id"),
+				ServerName:    ptr.To("capi-test-machine"),
+				Status:        ptr.To("ACTIVE"),
+				Networks: []*models.PVMInstanceNetwork{
+					{
+						IPAddress: "192.168.7.1",
+					},
+				},
+			}
+
+			loadBalancer := &vpcv1.LoadBalancer{
+				ID:                 core.StringPtr("capi-test-lb-id"),
+				ProvisioningStatus: core.StringPtr("active"),
+				Name:               core.StringPtr("capi-test-lb-name"),
+				Pools:              []vpcv1.LoadBalancerPoolReference{},
+			}
+
+			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
+			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			result, err := reconciler.reconcileNormal(machineScope)
+			g.Expect(err).ToNot(BeNil())
+			g.Expect(result.Requeue).To((BeFalse()))
+			g.Expect(result.RequeueAfter).To(BeZero())
+			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
+			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionTrue, "", ""}})
+		})
+
+		t.Run("Should requeue if the load balancer pool member is created successfully, but its provisioning status is not active", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			secret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						capiv1beta1.ClusterNameLabel: "powervs-cluster",
+					},
+					Name:      "bootsecret",
+					Namespace: "default",
+				},
+				Data: map[string][]byte{
+					"value": []byte("user data"),
+				},
+			}
+
+			pvsmachine := &infrav1beta2.IBMPowerVSMachine{
+
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       *ptr.To("capi-test-machine"),
+					Finalizers: []string{infrav1beta2.IBMPowerVSMachineFinalizer},
+				},
+				Status: infrav1beta2.IBMPowerVSMachineStatus{
+					Ready: true,
+				},
+				Spec: infrav1beta2.IBMPowerVSMachineSpec{
+					MemoryGiB:  8,
+					Processors: intstr.FromString("0.5"),
+					Image: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-image-id"),
+					},
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					ServiceInstanceID: *ptr.To("service-instance-1"),
+				},
+			}
+
+			machine := &capiv1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "owner-machine",
+					Namespace: "default",
+					Labels: map[string]string{
+						"cluster.x-k8s.io/control-plane": "true",
+					},
+				},
+
+				Spec: capiv1beta1.MachineSpec{
+					Bootstrap: capiv1beta1.Bootstrap{
+						DataSecretName: ptr.To("bootsecret"),
+					},
+				},
+			}
+
+			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
+			machineScope = &scope.PowerVSMachineScope{
+				Logger: klog.Background(),
+				Client: mockclient,
+
+				Cluster: &capiv1beta1.Cluster{
+					Status: capiv1beta1.ClusterStatus{
+						InfrastructureReady: true,
+					},
+				},
+				Machine:           machine,
+				IBMPowerVSMachine: pvsmachine,
+				IBMPowerVSImage: &infrav1beta2.IBMPowerVSImage{
+					Status: infrav1beta2.IBMPowerVSImageStatus{
+						Ready: true,
+					},
+				},
+				IBMVPCClient:     mockvpc,
+				IBMPowerVSClient: mockpowervs,
+				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							"powervs.cluster.x-k8s.io/create-infra": "true",
+						},
+					},
+					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+							{
+								Name: "capi-test-lb",
+							},
+						},
+					},
+					Status: infrav1beta2.IBMPowerVSClusterStatus{
+						LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+							"capi-test-lb": {
+								ID: ptr.To("capi-test-lb-id"),
+							},
+						},
+					},
+				},
+			}
+
+			instanceReferences := &models.PVMInstances{
+				PvmInstances: []*models.PVMInstanceReference{
+					{
+						PvmInstanceID: ptr.To("capi-test-machine-id"),
+						ServerName:    ptr.To("capi-test-machine"),
+					},
+				},
+			}
+			instance := &models.PVMInstance{
+				PvmInstanceID: ptr.To("capi-test-machine-id"),
+				ServerName:    ptr.To("capi-test-machine"),
+				Status:        ptr.To("ACTIVE"),
+				Networks: []*models.PVMInstanceNetwork{
+					{
+						IPAddress: "192.168.7.1",
+					},
+				},
+			}
+
+			loadBalancer := &vpcv1.LoadBalancer{
+				ID:                 core.StringPtr("capi-test-lb-id"),
+				ProvisioningStatus: core.StringPtr("active"),
+				Name:               core.StringPtr("capi-test-lb-name"),
+				Pools: []vpcv1.LoadBalancerPoolReference{
+					{
+						ID:   core.StringPtr("capi-test-lb-pool-id"),
+						Name: core.StringPtr("capi-test-lb-pool-name"),
+					},
+				},
+			}
+
+			loadBalancerPoolMemberCollection := &vpcv1.LoadBalancerPoolMemberCollection{
+				Members: []vpcv1.LoadBalancerPoolMember{
+					{
+						Port: core.Int64Ptr(int64(infrav1beta2.DefaultAPIServerPort)),
+						Target: &vpcv1.LoadBalancerPoolMemberTarget{
+							Address: core.StringPtr("192.168.1.1"),
+						},
+						ID: core.StringPtr("capi-test-lb-pool-id"),
+					},
+				},
+			}
+
+			loadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
+				ID:                 core.StringPtr("capi-test-lb-pool-member-id"),
+				Port:               core.Int64Ptr(int64(infrav1beta2.DefaultAPIServerPort)),
+				ProvisioningStatus: core.StringPtr("update-pending"),
+			}
+
+			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
+			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			result, err := reconciler.reconcileNormal(machineScope)
+			g.Expect(err).To(BeNil())
+			g.Expect(result.RequeueAfter).To(Not(BeZero()))
+			g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
+			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
+			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionTrue, "", ""}})
+		})
+
 		t.Run("Should reconcile IBMPowerVSMachine instance creation in different states", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
@@ -628,6 +930,134 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{conditionType: infrav1beta2.InstanceReadyCondition, status: corev1.ConditionUnknown}})
 			})
 		})
+	})
+
+	t.Run("Should skip creation of loadbalancer pool member if not control plane machine", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: map[string]string{
+					capiv1beta1.ClusterNameLabel: "powervs-cluster",
+				},
+				Name:      "bootsecret",
+				Namespace: "default",
+			},
+			Data: map[string][]byte{
+				"value": []byte("user data"),
+			},
+		}
+
+		pvsmachine := &infrav1beta2.IBMPowerVSMachine{
+
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       *ptr.To("capi-test-machine"),
+				Finalizers: []string{infrav1beta2.IBMPowerVSMachineFinalizer},
+				Labels: map[string]string{
+					"node-role.kubernetes.io/worker": "true",
+				},
+			},
+			Status: infrav1beta2.IBMPowerVSMachineStatus{
+				Ready: true,
+			},
+			Spec: infrav1beta2.IBMPowerVSMachineSpec{
+				MemoryGiB:  8,
+				Processors: intstr.FromString("0.5"),
+				Image: &infrav1beta2.IBMPowerVSResourceReference{
+					ID: ptr.To("capi-image-id"),
+				},
+				Network: infrav1beta2.IBMPowerVSResourceReference{
+					ID: ptr.To("capi-net-id"),
+				},
+				ServiceInstanceID: *ptr.To("service-instance-1"),
+			},
+		}
+
+		machine := &capiv1beta1.Machine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "owner-machine",
+				Namespace: "default",
+			},
+
+			Spec: capiv1beta1.MachineSpec{
+				Bootstrap: capiv1beta1.Bootstrap{
+					DataSecretName: ptr.To("bootsecret"),
+				},
+			},
+		}
+
+		mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
+
+		machineScope = &scope.PowerVSMachineScope{
+			Logger: klog.Background(),
+			Client: mockclient,
+
+			Cluster: &capiv1beta1.Cluster{
+				Status: capiv1beta1.ClusterStatus{
+					InfrastructureReady: true,
+				},
+			},
+			Machine:           machine,
+			IBMPowerVSMachine: pvsmachine,
+			IBMPowerVSImage: &infrav1beta2.IBMPowerVSImage{
+				Status: infrav1beta2.IBMPowerVSImageStatus{
+					Ready: true,
+				},
+			},
+			IBMPowerVSClient: mockpowervs,
+			DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						"powervs.cluster.x-k8s.io/create-infra": "true",
+					},
+				},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "capi-test-lb",
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						"capi-test-lb": {
+							ID: ptr.To("capi-test-lb-id"),
+						},
+					},
+				},
+			},
+		}
+
+		instanceReferences := &models.PVMInstances{
+			PvmInstances: []*models.PVMInstanceReference{
+				{
+					PvmInstanceID: ptr.To("capi-test-machine-id"),
+					ServerName:    ptr.To("capi-test-machine"),
+				},
+			},
+		}
+		instance := &models.PVMInstance{
+			PvmInstanceID: ptr.To("capi-test-machine-id"),
+			ServerName:    ptr.To("capi-test-machine"),
+			Status:        ptr.To("ACTIVE"),
+			Networks: []*models.PVMInstanceNetwork{
+				{
+					IPAddress: "192.168.7.1",
+				},
+			},
+		}
+
+		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
+		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+		result, err := reconciler.reconcileNormal(machineScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result.Requeue).To(BeFalse())
+		g.Expect(result.RequeueAfter).To(BeZero())
+		g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
+		g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
+		expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionTrue, "", ""}})
 	})
 }
 
