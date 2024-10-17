@@ -1,5 +1,6 @@
 name: Lint
 
+# Trigger the workflow on push and pull request
 on: [push, pull_request]
 
 jobs:
