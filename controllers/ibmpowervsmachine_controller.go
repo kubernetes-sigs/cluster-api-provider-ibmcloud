@@ -198,6 +198,23 @@ func (r *IBMPowerVSMachineReconciler) getOrCreate(scope *scope.PowerVSMachineSco
 	return instance, err
 }
 
+// handleLoadBalancerPoolMemberConfiguration handles loadbalancer pool member creation flow.
+func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
+	if !util.IsControlPlaneMachine(machineScope.Machine) {
+		return ctrl.Result{}, nil
+	}
+	machineScope.Info("Configuring control plane machine to backend LoadBalancer pool", "machine name", machineScope.IBMPowerVSMachine.Name)
+	poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember()
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed CreateVPCLoadBalancerPoolMember %s: %w", machineScope.IBMPowerVSMachine.Name, err)
+	}
+	if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
+
+	return ctrl.Result{}, nil
+}
+
 func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
 	machineScope.Info("Reconciling IBMPowerVSMachine")
 
@@ -289,12 +306,10 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		machineScope.Info("Unable to update the LoadBalancer, Machine internal IP not yet set", "machine name", machineScope.IBMPowerVSMachine.Name)
 		return ctrl.Result{}, nil
 	}
-	poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember()
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed CreateVPCLoadBalancerPoolMember %s: %w", machineScope.IBMPowerVSMachine.Name, err)
+
+	if poolMemberReconcileResult, err := r.handleLoadBalancerPoolMemberConfiguration(machineScope); err != nil || poolMemberReconcileResult.RequeueAfter > 0 {
+		return poolMemberReconcileResult, err
 	}
-	if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
-		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
-	}
+
 	return ctrl.Result{}, nil
 }
