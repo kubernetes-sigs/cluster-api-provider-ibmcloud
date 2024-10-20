@@ -1374,7 +1374,6 @@ func TestReconcileLoadBalancers(t *testing.T) {
 							ID:   nil,
 						},
 					},
-					VPCSubnets: nil,
 				},
 			},
 		}
@@ -1424,7 +1423,7 @@ func TestReconcileLoadBalancers(t *testing.T) {
 		}
 
 		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, nil)
-		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(nil, nil, errors.New("Failed loadBalancer creation"))
+		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(nil, nil, errors.New("failed loadBalancer creation"))
 
 		requeue, err := clusterScope.ReconcileLoadBalancers()
 		g.Expect(requeue).To(BeFalse())
@@ -1472,6 +1471,7 @@ func TestReconcileLoadBalancers(t *testing.T) {
 		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
 			ID:                 core.StringPtr("test-lb-id"),
 			ProvisioningStatus: core.StringPtr("active"),
+			Hostname:           core.StringPtr("test-lb-hostname"),
 		}, nil, nil)
 
 		requeue, err := clusterScope.ReconcileLoadBalancers()
@@ -1481,6 +1481,8 @@ func TestReconcileLoadBalancers(t *testing.T) {
 		loadBalancer, ok := clusterScope.IBMPowerVSCluster.Status.LoadBalancers["test-lb"]
 		g.Expect(ok).To(BeTrue())
 		g.Expect(loadBalancer.State).To(BeEquivalentTo(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancer.ControllerCreated).To(Equal(core.BoolPtr(true)))
+		g.Expect(loadBalancer.Hostname).To(Equal(core.StringPtr("test-lb-hostname")))
 	})
 }
 
