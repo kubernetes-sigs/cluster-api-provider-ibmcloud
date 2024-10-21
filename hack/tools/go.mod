@@ -11,7 +11,7 @@ require (
 	github.com/itchyny/gojq v0.12.16
 	github.com/joelanford/go-apidiff v0.8.2
 	github.com/onsi/ginkgo/v2 v2.19.1
-	go.uber.org/mock v0.4.0
+	go.uber.org/mock v0.5.0
 	golang.org/x/vuln v1.1.3
 	gotest.tools/gotestsum v1.12.0
 	k8s.io/code-generator v0.30.3
