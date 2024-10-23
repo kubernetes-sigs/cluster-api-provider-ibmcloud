@@ -17,9 +17,11 @@ limitations under the License.
 package scope
 
 import (
+	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -85,6 +87,18 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 		},
 		Data: map[string][]byte{
 			"value": []byte("user data"),
+		},
+	}
+}
+
+func newDHCPServerDetails(serverID, leaseIP, instanceMac string) *models.DHCPServerDetail {
+	return &models.DHCPServerDetail{
+		ID: ptr.To(serverID),
+		Leases: []*models.DHCPServerLeases{
+			{
+				InstanceIP:         ptr.To(leaseIP),
+				InstanceMacAddress: ptr.To(instanceMac),
+			},
 		},
 	}
 }
