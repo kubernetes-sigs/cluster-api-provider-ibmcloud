@@ -53,12 +53,12 @@ spec:
             ref:
               apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
               kind: KubeadmConfigTemplate
-              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
+              name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
           infrastructure:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: IBMPowerVSMachineTemplate
-              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+              name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSClusterTemplate
