@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"github.com/go-logr/logr"
@@ -221,6 +222,24 @@ func (s *VPCClusterScope) CheckTagExists(tagName string) (bool, error) {
 	return exists != nil, nil
 }
 
+// GetControlPlaneSubnetIDs returns all of the Control Plane subnet Id's.
+func (s *VPCClusterScope) GetControlPlaneSubnetIDs() ([]string, error) {
+	subnets := make([]string, 0)
+	// Retrieve the subnet Id's from Status.
+	if s.NetworkStatus() != nil {
+		if s.NetworkStatus().ControlPlaneSubnets != nil {
+			for _, subnet := range s.NetworkStatus().ControlPlaneSubnets {
+				subnets = append(subnets, subnet.ID)
+			}
+			// NOTE(cjschaef): We assume all Subnets are in Status at this point, we could perhaps reconcile Status with any defined in Spec (preventing duplicates) to be safe.
+			return subnets, nil
+		}
+	}
+
+	// NOTE(cjschaef): If Status was not set or ControlPlaneSubnets was empty, the Control Plane subnet ID's could be retrieved from Spec. However, for now consider this an error, since Subnet reconciliation should have run prior and no tracked Control Plane subnets would be a major issue.
+	return subnets, fmt.Errorf("error no control plane subnets available in status")
+}
+
 // GetNetworkResourceGroupID returns the Resource Group ID for the Network Resources if it is present. Otherwise, it defaults to the cluster's Resource Group ID.
 func (s *VPCClusterScope) GetNetworkResourceGroupID() (string, error) {
 	// Check if the ID is available from Status first.
@@ -300,6 +319,25 @@ func (s *VPCClusterScope) GetResourceGroupID() (string, error) {
 	return *resourceGroup.ID, nil
 }
 
+// GetSecurityGroupID returns the ID of a security group, provided the name.
+// This will first check Status for the Security Group (by name), but as the Security Group may not be tracked by CAPI, a lookup of the Security Group by name is made via the VPC API.
+func (s *VPCClusterScope) GetSecurityGroupID(name string) (*string, error) {
+	// Check Status first.
+	if id := s.getSecurityGroupIDFromStatus(name); id != nil {
+		return id, nil
+	}
+
+	// Otherwise, if no Status, or not found, attempt to look it up via VPC API.
+	securityGroup, err := s.VPCClient.GetSecurityGroupByName(name)
+	if err != nil {
+		return nil, err
+	}
+	if securityGroup == nil {
+		return nil, nil
+	}
+	return securityGroup.ID, nil
+}
+
 func (s *VPCClusterScope) getSecurityGroupIDFromStatus(name string) *string {
 	if s.NetworkStatus() != nil && s.NetworkStatus().SecurityGroups != nil {
 		if sg, ok := s.NetworkStatus().SecurityGroups[name]; ok {
@@ -328,6 +366,9 @@ func (s *VPCClusterScope) GetServiceName(resourceType infrav1beta2.ResourceType)
 	case infrav1beta2.ResourceTypePublicGateway:
 		// Generate a generic public gateway name based off the cluster name, which can be extedned as necessary (for Zone).
 		return ptr.To(fmt.Sprintf("%s-pgateway", s.IBMVPCCluster.Name))
+	case infrav1beta2.ResourceTypeLoadBalancerPool:
+		// Generate a generic load balancer pool name based off the cluster name, which can be extended as necessary (for LB).
+		return ptr.To(fmt.Sprintf("%s-lbpool", s.IBMVPCCluster.Name))
 	default:
 		s.V(3).Info("unsupported resource type", "resourceType", resourceType)
 	}
@@ -388,6 +429,30 @@ func (s *VPCClusterScope) GetVPCID() (*string, error) {
 		}
 	}
 	return nil, nil
+}
+
+// SetLoadBalancerStatus sets the status for a Load Balancer.
+func (s *VPCClusterScope) SetLoadBalancerStatus(loadBalancer *infrav1beta2.VPCLoadBalancerStatus) {
+	// Ignore attempts to set status without a load balancer.
+	if loadBalancer == nil {
+		return
+	}
+
+	s.V(3).Info("Setting status for Load Balancer", "loadBalancer", loadBalancer)
+	if s.NetworkStatus() == nil {
+		s.IBMVPCCluster.Status.Network = &infrav1beta2.VPCNetworkStatus{}
+	}
+	if s.NetworkStatus().LoadBalancers == nil {
+		s.IBMVPCCluster.Status.Network.LoadBalancers = make(map[string]*infrav1beta2.VPCLoadBalancerStatus)
+	}
+	if lb, ok := s.NetworkStatus().LoadBalancers[*loadBalancer.ID]; ok {
+		// ID should not change, update remaining fields.
+		lb.State = loadBalancer.State
+		// Hostname likely should not change either, but may not be available initially, so may need to be set later.
+		lb.Hostname = loadBalancer.Hostname
+	} else {
+		s.IBMVPCCluster.Status.Network.LoadBalancers[*loadBalancer.ID] = loadBalancer
+	}
 }
 
 // SetResourceStatus sets the status for the provided ResourceType.
@@ -1645,4 +1710,341 @@ func (s *VPCClusterScope) createSecurityGroupRuleRemote(remote infrav1beta2.VPCS
 	}
 
 	return remotePrototype, nil
+}
+
+// ReconcileLoadBalancers reconciles Load Balancers.
+func (s *VPCClusterScope) ReconcileLoadBalancers() (bool, error) {
+	// TODO(cjschaef): Determine if we want to use default LB configuration or require at least one is defined in Cluster spec.
+	if len(s.IBMVPCCluster.Spec.Network.LoadBalancers) == 0 {
+		// We currently don't support any default LB configuration, they must be specified within the Cluster spec.
+		return false, fmt.Errorf("error no load balancers specified for cluster")
+	}
+
+	// Attempt to reconcile each Load Balancer before requeing, if necessary.
+	requeue := false
+	for _, loadBalancer := range s.IBMVPCCluster.Spec.Network.LoadBalancers {
+		// Attempt to retrieve the Load Balancer by Name or ID.
+		lbStatus, err := s.getLoadBalancer(loadBalancer)
+		if err != nil {
+			return false, fmt.Errorf("error retrieving load balancer: %w", err)
+		}
+
+		// If the Load Balancer was found, update Status and move on.
+		if lbStatus != nil {
+			s.SetLoadBalancerStatus(lbStatus)
+			// If the Load Balancer status isn't ready, flag for requeue and continue to next Load Balancer.
+			if isReady := s.isLoadBalancerReady(string(lbStatus.State)); !isReady {
+				requeue = true
+			}
+			continue
+		}
+
+		// Otherwise, create the Load Balancer.
+		err = s.createLoadBalancer(loadBalancer)
+		if err != nil {
+			return false, err
+		}
+		// Assume a new Load Balancer will not be ready immediately, due to the complexity and time it takes.
+		requeue = true
+	}
+	return requeue, nil
+}
+
+// isLoadBalancerReady checks the state of a Load Balancer.
+// If state is active, true is returned (no requeue required).
+// In all other cases, it returns false, indicating a requeue for reconciliation.
+// NOTE(cjschaef): May wish to extend this function to check all Load Balancer details (pools, listeners, etc.) as part of status condition.
+func (s *VPCClusterScope) isLoadBalancerReady(status string) bool {
+	switch status {
+	case string(infrav1beta2.VPCLoadBalancerStateActive):
+		s.V(3).Info("load balancer is in active state")
+		return true
+	case string(infrav1beta2.VPCLoadBalancerStateCreatePending):
+		s.V(3).Info("load balancer is in create pending state")
+	default:
+		s.V(3).Info("load balancer is in unexpected state", "loadBalancerStatus", status)
+	}
+	return false
+}
+
+// getLoadBalancer attempts to retrieve the Load Balancer, otherwise returns nil if it doesn't exist.
+func (s *VPCClusterScope) getLoadBalancer(lb infrav1beta2.VPCLoadBalancerSpec) (*infrav1beta2.VPCLoadBalancerStatus, error) {
+	var loadBalancer *vpcv1.LoadBalancer
+	var err error
+	if lb.ID != nil {
+		var detailedResponse *core.DetailedResponse
+		getLBOptions := &vpcv1.GetLoadBalancerOptions{
+			ID: lb.ID,
+		}
+		loadBalancer, detailedResponse, err = s.VPCClient.GetLoadBalancer(getLBOptions)
+		if detailedResponse != nil && detailedResponse.StatusCode == http.StatusNotFound {
+			return nil, nil
+		}
+	} else {
+		loadBalancer, err = s.VPCClient.GetLoadBalancerByName(lb.Name)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error attempting to retrieve load balancer: %w", err)
+	}
+	if loadBalancer == nil {
+		return nil, nil
+	}
+	return &infrav1beta2.VPCLoadBalancerStatus{
+		ID:       loadBalancer.ID,
+		State:    infrav1beta2.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
+		Hostname: loadBalancer.Hostname,
+	}, nil
+}
+
+// createLoadBalancer creates a Load Balancer.
+func (s *VPCClusterScope) createLoadBalancer(loadBalancer infrav1beta2.VPCLoadBalancerSpec) error {
+	options := &vpcv1.CreateLoadBalancerOptions{}
+	resourceGroupID, err := s.GetResourceGroupID()
+	if err != nil {
+		return err
+	}
+	if resourceGroupID == "" {
+		return fmt.Errorf("error getting resource group id for resource group %v, id is empty", s.IBMVPCCluster.Spec.ResourceGroup)
+	}
+
+	isPublic := true
+	// Load Balancer is private if defined that way (defaults to Public)
+	if loadBalancer.Public != nil && !*loadBalancer.Public {
+		isPublic = false
+	}
+
+	options.SetIsPublic(isPublic)
+	options.SetName(loadBalancer.Name)
+	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
+		ID: &resourceGroupID,
+	})
+
+	// Build the load balancer's subnets, requiring subnet ID's.
+	subnetIDs, err := s.getLoadBalancerSubnetIDs(loadBalancer)
+	if err != nil {
+		return fmt.Errorf("error collecting load balancer subnets: %w", err)
+	}
+	for _, subnetID := range subnetIDs {
+		subnet := &vpcv1.SubnetIdentityByID{
+			ID: ptr.To(subnetID),
+		}
+		s.V(3).Info("adding subnet to load balancer", "loadBalancerName", loadBalancer.Name, "subnetID", subnetID)
+		options.Subnets = append(options.Subnets, subnet)
+	}
+
+	// Build the load balancer's security groups, requiring security group ID's.
+	securityGroupIDs, err := s.getLoadBalancerSecurityGroupIDs(loadBalancer)
+	if err != nil {
+		return fmt.Errorf("error collecting load balancer security groups: %w", err)
+	}
+	for _, securityGroupID := range securityGroupIDs {
+		sg := &vpcv1.SecurityGroupIdentityByID{
+			ID: ptr.To(securityGroupID),
+		}
+		s.V(3).Info("adding security group to load balancer", "loadBalancerName", loadBalancer.Name, "securityGroupID", securityGroupID)
+		options.SecurityGroups = append(options.SecurityGroups, sg)
+	}
+
+	// Build the load balancer's backend pools.
+	backendPools := make([]vpcv1.LoadBalancerPoolPrototype, 0)
+	// If BackendPools is populated, use those. Otherwise, use default.
+	// TODO(cjschaef): Determine if a default Pool should be auto generated, or allow "empty" pools for LB's.
+	if loadBalancer.BackendPools != nil {
+		for _, pool := range loadBalancer.BackendPools {
+			backendPool := s.buildLoadBalancerBackendPool(pool)
+
+			s.V(3).Info("added pool to load balancer", "loadBalancerName", loadBalancer.Name, "backendPoolName", pool.Name)
+			backendPools = append(backendPools, backendPool)
+		}
+	} else {
+		s.V(3).Info("using default backend pools for load balancer", "loadBalancerName", loadBalancer.Name)
+		backendPools = append(backendPools, s.getDefaultLoadBalancerBackendPools()...)
+	}
+	options.SetPools(backendPools)
+
+	// Build the load balancer's listeners.
+	listeners := make([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext, 0)
+	// If AdditionalListeners is populated, use those. Otherwise, use default.
+	// TODO(cjschaef): Determine if a default Listener should be auto generated or allow "empty" listeners for LB's.
+	if loadBalancer.AdditionalListeners != nil {
+		for _, additionalListener := range loadBalancer.AdditionalListeners {
+			listener := s.buildLoadBalancerListener(additionalListener)
+
+			s.V(3).Info("addd listener to load balancer", "loadBalancerName", loadBalancer.Name, "listenerPort", listener.Port)
+			listeners = append(listeners, listener)
+		}
+	} else {
+		s.V(3).Info("using default listeners for load balancer", "loadBalancerName", loadBalancer.Name)
+		listeners = append(listeners, s.getDefaultLoadBalancerListeners(loadBalancer.BackendPools == nil)...)
+	}
+	options.SetListeners(listeners)
+
+	// Create the load balancer.
+	loadBalancerDetails, _, err := s.VPCClient.CreateLoadBalancer(options)
+	if err != nil {
+		return fmt.Errorf("error creating load balancer: %w", err)
+	}
+
+	// Initially populate the Load Balancer's status.
+	s.SetLoadBalancerStatus(&infrav1beta2.VPCLoadBalancerStatus{
+		ID:                loadBalancerDetails.ID,
+		ControllerCreated: ptr.To(true),
+		Hostname:          loadBalancerDetails.Hostname,
+		State:             infrav1beta2.VPCLoadBalancerState(*loadBalancerDetails.ProvisioningStatus),
+	})
+
+	// NOTE: This tagging is only attempted once. We may wish to refactor in case this single attempt fails.
+	if err = s.TagResource(s.IBMVPCCluster.Name, *loadBalancerDetails.CRN); err != nil {
+		return fmt.Errorf("error tagging load balancer: %w", err)
+	}
+
+	return nil
+}
+
+// getLoadBalancerSubnetIDs builds the set of subnet ID's for a load balancer, or defaults to the Control Plane subnet ID's if no subnets were provided. This will attempt to transform subnet names into their respective ID's.
+func (s *VPCClusterScope) getLoadBalancerSubnetIDs(loadBalancer infrav1beta2.VPCLoadBalancerSpec) ([]string, error) {
+	subnetIDs := make([]string, 0)
+	// If Subnets were provided for the load balancer, find ID's, if necessary, and use them.
+	// Otherwise, default to trying to use the Control Plane subnets.
+	if loadBalancer.Subnets != nil {
+		for _, subnet := range loadBalancer.Subnets {
+			if subnet.ID != nil {
+				subnetIDs = append(subnetIDs, *subnet.ID)
+				continue
+			}
+			if subnet.Name != nil {
+				subnetID, err := s.GetSubnetID(*subnet.Name)
+				if err != nil {
+					return nil, fmt.Errorf("error looking up load balancer subnet by name %s: %w", *subnet.Name, err)
+				} else if subnetID == nil {
+					return nil, fmt.Errorf("error load balancer subnet not found: %s", *subnet.Name)
+				}
+				subnetIDs = append(subnetIDs, *subnetID)
+			} else {
+				return nil, fmt.Errorf("error parsing load balancer subnet, no id or name provided: %s", loadBalancer.Name)
+			}
+		}
+	} else {
+		var err error
+		subnetIDs, err = s.GetControlPlaneSubnetIDs()
+		if err != nil {
+			return nil, fmt.Errorf("error collecting subnet IDs for load balancer creation: %w", err)
+		}
+	}
+	return subnetIDs, nil
+}
+
+// getLoadBalancerSecurityGroupIDs will collect the ID's of the desired Security Groups for a Load Balancer.
+func (s *VPCClusterScope) getLoadBalancerSecurityGroupIDs(loadBalancer infrav1beta2.VPCLoadBalancerSpec) ([]string, error) {
+	securityGroupIDs := make([]string, 0)
+	// If SecurityGroups were provided for the load balancer, find ID's, if necessary, and use them.
+	if loadBalancer.SecurityGroups != nil {
+		for _, securityGroup := range loadBalancer.SecurityGroups {
+			if securityGroup.ID != nil {
+				securityGroupIDs = append(securityGroupIDs, *securityGroup.ID)
+				continue
+			}
+			if securityGroup.Name != nil {
+				// A Security Group may not be managed or tracked by CAPI (an existing Security Group), so do not expect it must exist in Status.
+				securityGroupID, err := s.GetSecurityGroupID(*securityGroup.Name)
+				if err != nil {
+					return nil, fmt.Errorf("error looking up load balancer security group by name %s: %w", *securityGroup.Name, err)
+				} else if securityGroupID == nil {
+					return nil, fmt.Errorf("error load balancer security group not found: %s", *securityGroup.Name)
+				}
+				securityGroupIDs = append(securityGroupIDs, *securityGroupID)
+			} else {
+				return nil, fmt.Errorf("error parsing load balancer security group, no id or name provided: %s", loadBalancer.Name)
+			}
+		}
+	}
+	return securityGroupIDs, nil
+}
+
+// buildLoadBalancerBackendPool will build a Load Balancer Pool based on the provided spec.
+func (s *VPCClusterScope) buildLoadBalancerBackendPool(pool infrav1beta2.VPCLoadBalancerBackendPoolSpec) vpcv1.LoadBalancerPoolPrototype {
+	monitor := &vpcv1.LoadBalancerPoolHealthMonitorPrototype{
+		Delay:      ptr.To(pool.HealthMonitor.Delay),
+		MaxRetries: ptr.To(pool.HealthMonitor.Retries),
+		Timeout:    ptr.To(pool.HealthMonitor.Timeout),
+		Type:       ptr.To(string(pool.HealthMonitor.Type)),
+	}
+	if pool.HealthMonitor.Port != nil {
+		monitor.Port = pool.HealthMonitor.Port
+	}
+	if pool.HealthMonitor.URLPath != nil {
+		monitor.URLPath = pool.HealthMonitor.URLPath
+	}
+	backendPool := vpcv1.LoadBalancerPoolPrototype{
+		Algorithm:     ptr.To(string(pool.Algorithm)),
+		HealthMonitor: monitor,
+		Protocol:      ptr.To(string(pool.Protocol)),
+	}
+	// Only apply a name if one was provided (otherwise rely on generated name from VPC service).
+	if pool.Name != nil {
+		backendPool.Name = pool.Name
+	}
+
+	return backendPool
+}
+
+// getDefaultBalancerBackendPools returns a list of default Load Balancer Backend Pools for a Load Balancer.
+func (s *VPCClusterScope) getDefaultLoadBalancerBackendPools() []vpcv1.LoadBalancerPoolPrototype {
+	defaultPools := make([]vpcv1.LoadBalancerPoolPrototype, 0)
+
+	// For now, only one default pool is expected.
+	defaultPool := infrav1beta2.VPCLoadBalancerBackendPoolSpec{
+		Algorithm: infrav1beta2.VPCLoadBalancerBackendPoolAlgorithmRoundRobin,
+		HealthMonitor: infrav1beta2.VPCLoadBalancerHealthMonitorSpec{
+			Delay:   5,
+			Retries: 2,
+			Timeout: 2,
+			Type:    infrav1beta2.VPCLoadBalancerBackendPoolHealthMonitorTypeTCP,
+		},
+		// Use default backend pool service name.
+		Name:     s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancerPool),
+		Protocol: infrav1beta2.VPCLoadBalancerBackendPoolProtocolTCP,
+	}
+
+	defaultPools = append(defaultPools, s.buildLoadBalancerBackendPool(defaultPool))
+	return defaultPools
+}
+
+// buildLoadBalancerListener will create a Load Balancer Listener based on the provided spec.
+func (s *VPCClusterScope) buildLoadBalancerListener(additionalListener infrav1beta2.AdditionalListenerSpec) vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext {
+	listener := vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
+		Port: ptr.To(additionalListener.Port),
+		// Default protocol to TCP.
+		Protocol: ptr.To(string(infrav1beta2.VPCLoadBalancerListenerProtocolTCP)),
+	}
+	// Override protocol if it was defined.
+	if additionalListener.Protocol != nil {
+		listener.Protocol = ptr.To(string(*additionalListener.Protocol))
+	}
+	// Set the Pool name for the listener if it was defined.
+	if additionalListener.DefaultPoolName != nil {
+		listener.DefaultPool = &vpcv1.LoadBalancerPoolIdentityByName{
+			Name: additionalListener.DefaultPoolName,
+		}
+	}
+
+	return listener
+}
+
+// getDefaultLoadBalancerListeners returns a list of default Load Balancer Listeners for a Load Balancer.
+func (s *VPCClusterScope) getDefaultLoadBalancerListeners(defaultBackendPool bool) []vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext {
+	defaultListeners := make([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext, 0)
+
+	// For now only one default listener is expected.
+	defaultListener := infrav1beta2.AdditionalListenerSpec{
+		Port:     int64(infrav1beta2.DefaultAPIServerPort),
+		Protocol: ptr.To(infrav1beta2.VPCLoadBalancerListenerProtocolTCP),
+	}
+
+	if defaultBackendPool {
+		defaultListener.DefaultPoolName = s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancerPool)
+	}
+
+	defaultListeners = append(defaultListeners, s.buildLoadBalancerListener(defaultListener))
+	return defaultListeners
 }
