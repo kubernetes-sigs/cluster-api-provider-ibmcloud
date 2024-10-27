@@ -6,21 +6,19 @@ jobs:
   yamllint:
     name: Run yamllint
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # tag=v4.1.7
         with:
-          go-version: '1.22'
-
+          ref: ${{ matrix.branch }}
       - name: Calculate go version
-        run: make go-version
-
-      - name: Install yamllint
-        run: make install-yamllint
-
+        id: vars
+        run: echo "go_version=$(make go-version)" >> $GITHUB_OUTPUT
+      - name: Set up Go
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # tag=v5.0.2
+        with:
+          go-version: ${{ steps.vars.outputs.go_version }}
+      # - name: Install yamllint
+      #   run: make install-yamllint
       - name: Run yamllint
         run: make lint-yaml

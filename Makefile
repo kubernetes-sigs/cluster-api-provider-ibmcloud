@@ -50,6 +50,7 @@ CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
 TRIVY := $(TOOLS_BIN_DIR)/trivy
+YAMLLINT := $(TOOLS_BIN_DIR)/yamllint
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -547,16 +548,14 @@ else
 endif
 
 
-.PHONY: install-yamllint
-install-yamllint: ## Install yamllint if not present
-	@which yamllint > /dev/null || (echo "Installing yamllint..." && go install github.com/wasilibs/go-yamllint/cmd/yamllint@latest)
-	@echo "yamllint installed"
+# .PHONY: install-yamllint
+# install-yamllint: ## Install yamllint if not present
+# 	@which yamllint > /dev/null || (echo "Installing yamllint..." && go install github.com/wasilibs/go-yamllint/cmd/yamllint@latest)
+# 	@echo "yamllint installed"
 
 .PHONY: lint-yaml
-lint-yaml: ## Run yamllint
-	@echo "Running yamllint..."
-	@yamllint . || true
-	@echo "Linting Yaml files completed"
+lint-yaml: $(YAMLLINT) ## Lint YAML files
+	$(YAMLLINT) .
 
 .PHONY: lint-yaml-no-warnings
 lint-yaml-no-warnings: ## Run yamllint and won’t output warning level problems

@@ -60,6 +60,10 @@ GOLANGCI_LINT := $(BIN_DIR)/golangci-lint
 $(GOLANGCI_LINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of golangci-lint.
 	go build -tags=capibmtools -o $@ github.com/golangci/golangci-lint/cmd/golangci-lint
 
+YAMLLINT := $(BIN_DIR)/yamllint
+$(YAMLLINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of yamllint.
+	go build -tags=capibmtools -o $@ github.com/wasilibs/go-yamllint/cmd/yamllint
+
 GOTESTSUM := $(BIN_DIR)/gotestsum
 $(GOTESTSUM): $(BIN_DIR) go.mod go.sum
 	go build -tags=capibmtools -o $@ gotest.tools/gotestsum
