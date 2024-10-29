@@ -17,9 +17,15 @@ limitations under the License.
 package controllers
 
 import (
+	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
+
+	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/google/go-cmp/cmp"
+	"go.uber.org/mock/gomock"
 
 	"github.com/IBM/go-sdk-core/v5/core"
 
@@ -32,6 +38,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
@@ -39,6 +46,7 @@ import (
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
 )
@@ -431,6 +439,341 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			g.Expect(clusterScope.Client.Update(ctx, powervsImage2)).To(Not(Succeed()))
 		})
 	})
+}
+
+func TestReconcileVPCResources(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
+		reconcileResult         reconcileResult
+		conditions              capiv1beta1.Conditions
+	}{
+		{
+			name: "when ReconcileVPC returns error",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, errors.New("vpc not found"))
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				error: errors.New("vpc not found"),
+			},
+			conditions: capiv1beta1.Conditions{
+				capiv1beta1.Condition{
+					Type:               infrav1beta2.VPCReadyCondition,
+					Status:             "False",
+					Severity:           capiv1beta1.ConditionSeverityError,
+					LastTransitionTime: metav1.Time{},
+					Reason:             infrav1beta2.VPCReconciliationFailedReason,
+					Message:            "vpc not found",
+				},
+			},
+		},
+		{
+			name: "when ReconcileVPC returns requeue",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							VPC: &infrav1beta2.ResourceReference{
+								ID: ptr.To("vpcID"),
+							},
+						},
+					},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("pending")}, nil, nil)
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				Result: reconcile.Result{
+					Requeue: true,
+				},
+			},
+		},
+		{
+			name: "when Reconciling VPC subnets returns error",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							VPC: &infrav1beta2.VPCResourceReference{
+								Region: ptr.To("us-south"),
+							},
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							VPC: &infrav1beta2.ResourceReference{
+								ID: ptr.To("vpcID"),
+							},
+						},
+					},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("vpc subnet not found"))
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				error: errors.New("vpc subnet not found"),
+			},
+
+			conditions: capiv1beta1.Conditions{
+				getVPCReadyCondition(),
+				capiv1beta1.Condition{
+					Type:               infrav1beta2.VPCSubnetReadyCondition,
+					Status:             "False",
+					Severity:           capiv1beta1.ConditionSeverityError,
+					LastTransitionTime: metav1.Time{},
+					Reason:             infrav1beta2.VPCSubnetReconciliationFailedReason,
+					Message:            "vpc subnet not found",
+				},
+			},
+		},
+		{
+			name: "when Reconciling VPC subnets returns requeue",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+								ID: ptr.To("rg-id"),
+							},
+							VPC: &infrav1beta2.VPCResourceReference{
+								Region: ptr.To("us-south"),
+							},
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							VPC: &infrav1beta2.ResourceReference{
+								ID: ptr.To("vpcID"),
+							},
+						},
+					},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
+				mockVPC.EXPECT().GetSubnetAddrPrefix(gomock.Any(), gomock.Any()).Return("cidr", nil)
+				mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(&vpcv1.Subnet{Status: ptr.To("active")}, nil, nil)
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				Result: reconcile.Result{
+					Requeue: true,
+				},
+			},
+			conditions: capiv1beta1.Conditions{
+				getVPCReadyCondition(),
+			},
+		},
+		{
+			name: "when Reconciling VPC security group returns error",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							VPC: &infrav1beta2.VPCResourceReference{
+								Region: ptr.To("us-south"),
+							},
+							VPCSubnets: []infrav1beta2.Subnet{
+								{
+									ID: ptr.To("subnet-id"),
+								},
+							},
+							VPCSecurityGroups: []infrav1beta2.VPCSecurityGroup{
+								{
+									Name: ptr.To("security-group"),
+								},
+							},
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							VPC: &infrav1beta2.ResourceReference{
+								ID: ptr.To("vpcID"),
+							},
+						},
+					},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("vpc security group not found"))
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				error: fmt.Errorf("failed to validate existing security group: vpc security group not found"),
+			},
+
+			conditions: capiv1beta1.Conditions{
+				getVPCReadyCondition(),
+				capiv1beta1.Condition{
+					Type:               infrav1beta2.VPCSecurityGroupReadyCondition,
+					Status:             "False",
+					Severity:           capiv1beta1.ConditionSeverityError,
+					LastTransitionTime: metav1.Time{},
+					Reason:             infrav1beta2.VPCSecurityGroupReconciliationFailedReason,
+					Message:            "failed to validate existing security group: vpc security group not found",
+				},
+				getVPCSubnetReadyCondition(),
+			},
+		},
+		{
+			name: "when Reconciling LoadBalancer returns error",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							VPC: &infrav1beta2.VPCResourceReference{
+								Region: ptr.To("us-south"),
+							},
+							VPCSubnets: []infrav1beta2.Subnet{
+								{
+									ID: ptr.To("subnet-id"),
+								},
+							},
+							LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+								{
+									ID: ptr.To("lb-id"),
+								},
+							},
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							VPC: &infrav1beta2.ResourceReference{
+								ID: ptr.To("vpcID"),
+							},
+						},
+					},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(nil, nil, errors.New("loadbalancer not found"))
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				error: fmt.Errorf("loadbalancer not found"),
+			},
+
+			conditions: capiv1beta1.Conditions{
+				capiv1beta1.Condition{
+					Type:               infrav1beta2.LoadBalancerReadyCondition,
+					Status:             "False",
+					Severity:           capiv1beta1.ConditionSeverityError,
+					LastTransitionTime: metav1.Time{},
+					Reason:             infrav1beta2.LoadBalancerReconciliationFailedReason,
+					Message:            "loadbalancer not found",
+				},
+				getVPCReadyCondition(),
+				getVPCSGReadyCondition(),
+				getVPCSubnetReadyCondition(),
+			},
+		},
+		{
+			name: "when Reconciling LoadBalancer and loadbalancer is ready",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							VPC: &infrav1beta2.VPCResourceReference{
+								Region: ptr.To("us-south"),
+							},
+							VPCSubnets: []infrav1beta2.Subnet{
+								{
+									ID: ptr.To("subnet-id"),
+								},
+							},
+							LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+								{
+									ID: ptr.To("lb-id"),
+								},
+							},
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							VPC: &infrav1beta2.ResourceReference{
+								ID: ptr.To("vpcID"),
+							},
+						},
+					},
+				}
+				mockVPC := mock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+					ID:                 ptr.To("lb-id"),
+					Name:               ptr.To("lb"),
+					ProvisioningStatus: ptr.To("active"),
+				}, nil, nil)
+				clusterScope.IBMVPCClient = mockVPC
+				return clusterScope
+			},
+			conditions: capiv1beta1.Conditions{
+				getVPCLBReadyCondition(),
+				getVPCReadyCondition(),
+				getVPCSGReadyCondition(),
+				getVPCSubnetReadyCondition(),
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			reconciler := &IBMPowerVSClusterReconciler{
+				Client: testEnv.Client,
+			}
+			clusterScope := tc.powerVSClusterScopeFunc()
+			ch := make(chan reconcileResult, 1)
+			pvsCluster := &powerVSCluster{
+				cluster: clusterScope.IBMPowerVSCluster,
+			}
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+			reconciler.reconcileVPCResources(clusterScope, pvsCluster, ch, wg)
+			wg.Wait()
+			close(ch)
+			g.Expect(<-ch).To(Equal(tc.reconcileResult))
+			if len(tc.conditions) > 0 {
+				ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
+					return metav1.Time{}
+				})
+				g.Expect(pvsCluster.cluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			}
+		})
+	}
+}
+
+func getVPCReadyCondition() capiv1beta1.Condition {
+	return capiv1beta1.Condition{
+		Type:   infrav1beta2.VPCReadyCondition,
+		Status: "True",
+	}
+}
+
+func getVPCSubnetReadyCondition() capiv1beta1.Condition {
+	return capiv1beta1.Condition{
+		Type:   infrav1beta2.VPCSubnetReadyCondition,
+		Status: "True",
+	}
+}
+
+func getVPCSGReadyCondition() capiv1beta1.Condition {
+	return capiv1beta1.Condition{
+		Type:   infrav1beta2.VPCSecurityGroupReadyCondition,
+		Status: "True",
+	}
+}
+
+func getVPCLBReadyCondition() capiv1beta1.Condition {
+	return capiv1beta1.Condition{
+		Type:   infrav1beta2.LoadBalancerReadyCondition,
+		Status: "True",
+	}
 }
 
 func createCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, namespace string) {
