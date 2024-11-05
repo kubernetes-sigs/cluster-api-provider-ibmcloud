@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/platform-services-go-sdk/globaltaggingv1"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"go.uber.org/mock/gomock"
 
@@ -37,7 +38,8 @@ import (
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
+	gtmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging/mock"
+	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
 )
@@ -211,7 +213,7 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 
 func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 	var (
-		mockvpc      *mock.MockVpc
+		mockvpc      *vpcmock.MockVpc
 		mockCtrl     *gomock.Controller
 		machineScope *scope.MachineScope
 		reconciler   IBMVPCMachineReconciler
@@ -220,7 +222,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
+		mockvpc = vpcmock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCMachineReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
@@ -276,9 +278,10 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 }
 
 func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *gtmock.MockGlobalTagging, *scope.MachineScope, IBMVPCMachineReconciler) {
 		t.Helper()
-		mockvpc := mock.NewMockVpc(gomock.NewController(t))
+		mockvpc := vpcmock.NewMockVpc(gomock.NewController(t))
+		mockgt := gtmock.NewMockGlobalTagging(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
@@ -317,10 +320,11 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 					},
 				},
 			},
-			Cluster:      &capiv1beta1.Cluster{},
-			IBMVPCClient: mockvpc,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockvpc,
+			GlobalTaggingClient: mockgt,
 		}
-		return gomock.NewController(t), mockvpc, machineScope, reconciler
+		return gomock.NewController(t), mockvpc, mockgt, machineScope, reconciler
 	}
 
 	t.Run("Reconcile creating IBMVPCMachine associated with LoadBalancer", func(t *testing.T) {
@@ -329,12 +333,14 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				{
 					Name: ptr.To("capi-machine"),
 					ID:   ptr.To("capi-machine-id"),
+					CRN:  ptr.To("capi-machine-crn"),
 					PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
 						PrimaryIP: &vpcv1.ReservedIPReference{
 							Address: ptr.To("192.129.11.50"),
 						},
 						ID: ptr.To("capi-net"),
 					},
+					Status: ptr.To(vpcv1.InstanceStatusRunningConst),
 				},
 			},
 		}
@@ -347,81 +353,222 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				},
 			},
 		}
+		existingTag := &globaltaggingv1.Tag{
+			Name: ptr.To("capi-cluster"),
+		}
 
 		t.Run("Invalid primary ip address", func(t *testing.T) {
 			g := NewWithT(t)
-			mockController, mockvpc, machineScope, reconciler := setup(t)
+			mockController, mockvpc, mockgt, machineScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
+
 			customInstancelist := &vpcv1.InstanceCollection{
 				Instances: []vpcv1.Instance{
 					{
 						Name: ptr.To("capi-machine"),
 						ID:   ptr.To("capi-machine-id"),
+						CRN:  ptr.To("capi-machine-crn"),
 						PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
 							PrimaryIP: &vpcv1.ReservedIPReference{
 								Address: ptr.To("0.0.0.0"),
 							},
 							ID: ptr.To("capi-net"),
 						},
+						Status: ptr.To(vpcv1.InstanceStatusRunningConst),
 					},
 				},
 			}
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
+			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil)
+			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil)
+
 			_, err := reconciler.reconcileNormal(machineScope)
 			g.Expect(err).To((Not(BeNil())))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
 		t.Run("Should fail to bind loadBalancer IP to control plane", func(t *testing.T) {
 			g := NewWithT(t)
-			mockController, mockvpc, machineScope, reconciler := setup(t)
+			mockController, mockvpc, mockgt, machineScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
+
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
+			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil)
+			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("failed to list loadBalancerPoolMembers"))
+
 			_, err := reconciler.reconcileNormal(machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
-		t.Run("Should successfully reconcile IBMVPCMachine and set machine status as NotReady when PoolMember is not in active state", func(t *testing.T) {
+		t.Run("Should successfully reconcile IBMVPCMachine but its status should be set to Not Ready when the PoolMember is not yet in the active state requiring a requeue", func(t *testing.T) {
 			g := NewWithT(t)
-			mockController, mockvpc, machineScope, reconciler := setup(t)
+			mockController, mockvpc, mockgt, machineScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
 			customloadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
 				ID:                 core.StringPtr("foo-member-id"),
 				ProvisioningStatus: core.StringPtr("create_pending"),
 			}
+
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
+			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil)
+			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(customloadBalancerPoolMember, &core.DetailedResponse{}, nil)
-			_, err := reconciler.reconcileNormal(machineScope)
+
+			result, err := reconciler.reconcileNormal(machineScope)
+			// Requeue should be set when the Pool Member is found, but not yet ready (active).
+			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
+			// Machine Status should not be ready (running but LB Member Pools not active).
 			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
 		})
 		t.Run("Should successfully reconcile IBMVPCMachine", func(t *testing.T) {
 			g := NewWithT(t)
-			mockController, mockvpc, machineScope, reconciler := setup(t)
+			mockController, mockvpc, mockgt, machineScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
 			loadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
 				ID:                 core.StringPtr("foo-member-id"),
 				ProvisioningStatus: core.StringPtr("active"),
 			}
+
 			mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(instancelist, &core.DetailedResponse{}, nil)
+			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil)
+			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
+
 			_, err := reconciler.reconcileNormal(machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
+		})
+
+		t.Run("Should reconcile IBMVPCMachine instance creation in different states", func(t *testing.T) {
+			g := NewWithT(t)
+			mockController, mockvpc, mockgt, machineScope, reconciler := setup(t)
+			t.Cleanup(mockController.Finish)
+
+			loadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
+				ID:                 core.StringPtr("foo-member-id"),
+				ProvisioningStatus: core.StringPtr("active"),
+			}
+
+			// Mocks setup for each test (4) below.
+			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil).MaxTimes(4)
+			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil).MaxTimes(4)
+			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil).MaxTimes(4)
+			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil).MaxTimes(4)
+			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil).MaxTimes(4)
+
+			t.Run("When VPC instance is pending", func(_ *testing.T) {
+				customInstancelist := &vpcv1.InstanceCollection{
+					Instances: []vpcv1.Instance{
+						{
+							Name: ptr.To("capi-machine"),
+							ID:   ptr.To("capi-machine-id"),
+							CRN:  ptr.To("capi-machine-crn"),
+							PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
+								PrimaryIP: &vpcv1.ReservedIPReference{
+									Address: ptr.To("10.0.0.0"),
+								},
+								ID: ptr.To("capi-net"),
+							},
+							Status: ptr.To(vpcv1.InstanceStatusPendingConst),
+						},
+					},
+				}
+				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
+
+				result, err := reconciler.reconcileNormal(machineScope)
+				g.Expect(err).To(BeNil())
+				g.Expect(result.RequeueAfter).To(Not(BeZero()))
+				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
+			})
+
+			t.Run("When VPC instance is running", func(_ *testing.T) {
+				customInstancelist := &vpcv1.InstanceCollection{
+					Instances: []vpcv1.Instance{
+						{
+							Name: ptr.To("capi-machine"),
+							ID:   ptr.To("capi-machine-id"),
+							CRN:  ptr.To("capi-machine-crn"),
+							PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
+								PrimaryIP: &vpcv1.ReservedIPReference{
+									Address: ptr.To("10.0.0.0"),
+								},
+								ID: ptr.To("capi-net"),
+							},
+							Status: ptr.To(vpcv1.InstanceStatusRunningConst),
+						},
+					},
+				}
+				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
+
+				_, err := reconciler.reconcileNormal(machineScope)
+				g.Expect(err).To(BeNil())
+				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
+			})
+
+			t.Run("When VPC instance is stopped", func(_ *testing.T) {
+				customInstancelist := &vpcv1.InstanceCollection{
+					Instances: []vpcv1.Instance{
+						{
+							Name: ptr.To("capi-machine"),
+							ID:   ptr.To("capi-machine-id"),
+							CRN:  ptr.To("capi-machine-crn"),
+							PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
+								PrimaryIP: &vpcv1.ReservedIPReference{
+									Address: ptr.To("10.0.0.0"),
+								},
+								ID: ptr.To("capi-net"),
+							},
+							Status: ptr.To(vpcv1.InstanceStatusStoppedConst),
+						},
+					},
+				}
+				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
+
+				result, err := reconciler.reconcileNormal(machineScope)
+				g.Expect(err).To(BeNil())
+				g.Expect(result.RequeueAfter).To(Not(BeZero()))
+				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
+			})
+
+			t.Run("When VPC instance is failed", func(_ *testing.T) {
+				customInstancelist := &vpcv1.InstanceCollection{
+					Instances: []vpcv1.Instance{
+						{
+							Name: ptr.To("capi-machine"),
+							ID:   ptr.To("capi-machine-id"),
+							CRN:  ptr.To("capi-machine-crn"),
+							PrimaryNetworkInterface: &vpcv1.NetworkInterfaceInstanceContextReference{
+								PrimaryIP: &vpcv1.ReservedIPReference{
+									Address: ptr.To("10.0.0.0"),
+								},
+								ID: ptr.To("capi-net"),
+							},
+							Status: ptr.To(vpcv1.InstanceStatusFailedConst),
+						},
+					},
+				}
+				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
+
+				result, err := reconciler.reconcileNormal(machineScope)
+				g.Expect(err).To(BeNil())
+				g.Expect(result.RequeueAfter).To(BeZero())
+				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
+			})
 		})
 	})
 }
 
 func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 	var (
-		mockvpc      *mock.MockVpc
+		mockvpc      *vpcmock.MockVpc
 		mockCtrl     *gomock.Controller
 		machineScope *scope.MachineScope
 		reconciler   IBMVPCMachineReconciler
@@ -430,7 +577,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
-		mockvpc = mock.NewMockVpc(mockCtrl)
+		mockvpc = vpcmock.NewMockVpc(mockCtrl)
 		reconciler = IBMVPCMachineReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
@@ -478,9 +625,9 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 }
 
 func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
 		t.Helper()
-		mockvpc := mock.NewMockVpc(gomock.NewController(t))
+		mockvpc := vpcmock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),

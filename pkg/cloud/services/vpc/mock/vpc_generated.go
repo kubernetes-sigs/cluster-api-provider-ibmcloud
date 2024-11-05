@@ -304,6 +304,21 @@ func (mr *MockVpcMockRecorder) DeleteVPC(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVPC", reflect.TypeOf((*MockVpc)(nil).DeleteVPC), options)
 }
 
+// GetDedicatedHostByName mocks base method.
+func (m *MockVpc) GetDedicatedHostByName(dHostName string) (*vpcv1.DedicatedHost, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDedicatedHostByName", dHostName)
+	ret0, _ := ret[0].(*vpcv1.DedicatedHost)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDedicatedHostByName indicates an expected call of GetDedicatedHostByName.
+func (mr *MockVpcMockRecorder) GetDedicatedHostByName(dHostName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDedicatedHostByName", reflect.TypeOf((*MockVpc)(nil).GetDedicatedHostByName), dHostName)
+}
+
 // GetImage mocks base method.
 func (m *MockVpc) GetImage(options *vpcv1.GetImageOptions) (*vpcv1.Image, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -396,6 +411,21 @@ func (m *MockVpc) GetLoadBalancerByName(loadBalancerName string) (*vpcv1.LoadBal
 func (mr *MockVpcMockRecorder) GetLoadBalancerByName(loadBalancerName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerByName", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerByName), loadBalancerName)
+}
+
+// GetLoadBalancerPoolByName mocks base method.
+func (m *MockVpc) GetLoadBalancerPoolByName(loadBalancerID, poolName string) (*vpcv1.LoadBalancerPool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLoadBalancerPoolByName", loadBalancerID, poolName)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancerPool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLoadBalancerPoolByName indicates an expected call of GetLoadBalancerPoolByName.
+func (mr *MockVpcMockRecorder) GetLoadBalancerPoolByName(loadBalancerID, poolName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerPoolByName", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerPoolByName), loadBalancerID, poolName)
 }
 
 // GetSecurityGroup mocks base method.
