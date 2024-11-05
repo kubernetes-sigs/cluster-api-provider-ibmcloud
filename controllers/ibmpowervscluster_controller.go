@@ -160,12 +160,12 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(clusterScope *sc
 
 	// reconcile network
 	powerVSLog.Info("Reconciling network")
-	if dhcpServerActive, err := clusterScope.ReconcileNetwork(); err != nil {
+	if networkActive, err := clusterScope.ReconcileNetwork(); err != nil {
 		powerVSLog.Error(err, "failed to reconcile PowerVS network")
 		powerVSCluster.updateCondition(false, infrav1beta2.NetworkReadyCondition, infrav1beta2.NetworkReconciliationFailedReason, capiv1beta1.ConditionSeverityError, err.Error())
 		ch <- reconcileResult{reconcile.Result{}, err}
 		return
-	} else if dhcpServerActive {
+	} else if networkActive {
 		powerVSCluster.updateCondition(true, infrav1beta2.NetworkReadyCondition)
 		return
 	}
