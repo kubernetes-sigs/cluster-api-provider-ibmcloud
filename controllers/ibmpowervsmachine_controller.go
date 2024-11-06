@@ -289,9 +289,11 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 	}
 
-	if !scope.CheckCreateInfraAnnotation(*machineScope.IBMPowerVSCluster) {
+	if machineScope.IBMPowerVSCluster.Spec.VPC == nil || machineScope.IBMPowerVSCluster.Spec.VPC.Region == nil {
+		machineScope.Info("Skipping configuring machine to loadbalancer as VPC is not set")
 		return ctrl.Result{}, nil
 	}
+
 	// Register instance with load balancer
 	machineScope.Info("updating loadbalancer for machine", "name", machineScope.IBMPowerVSMachine.Name)
 	internalIP := machineScope.GetMachineInternalIP()

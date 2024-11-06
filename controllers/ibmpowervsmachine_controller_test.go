@@ -512,6 +512,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						VPC: &infrav1beta2.VPCResourceReference{
+							Region: ptr.To("us-south"),
+						},
 						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
 							{
 								Name: "capi-test-lb",
@@ -603,6 +606,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						VPC: &infrav1beta2.VPCResourceReference{
+							Region: ptr.To("us-south"),
+						},
 						LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
 							{
 								Name: "capi-test-lb",
