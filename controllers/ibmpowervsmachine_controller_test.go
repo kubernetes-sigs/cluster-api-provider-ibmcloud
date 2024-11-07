@@ -512,6 +512,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+							ID: ptr.To("serviceInstanceID"),
+						},
 						VPC: &infrav1beta2.VPCResourceReference{
 							Region: ptr.To("us-south"),
 						},
@@ -606,6 +609,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+							ID: ptr.To("serviceInstanceID"),
+						},
 						VPC: &infrav1beta2.VPCResourceReference{
 							Region: ptr.To("us-south"),
 						},
@@ -708,9 +714,15 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						Ready: true,
 					},
 				},
-				IBMPowerVSClient:  mockpowervs,
-				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
+				IBMPowerVSClient: mockpowervs,
+				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+							ID: ptr.To("serviceInstanceID"),
+						},
+					},
+				},
 			}
 
 			instanceReferences := &models.PVMInstances{
@@ -822,6 +834,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("serviceInstanceID"),
+					},
 					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
 						{
 							Name: "capi-test-lb",

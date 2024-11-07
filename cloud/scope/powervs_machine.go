@@ -929,29 +929,45 @@ func (m *PowerVSMachineScope) GetZone() string {
 }
 
 // GetServiceInstanceID returns the service instance id.
-func (m *PowerVSMachineScope) GetServiceInstanceID() string {
+func (m *PowerVSMachineScope) GetServiceInstanceID() (string, error) {
 	if m.IBMPowerVSCluster.Status.ServiceInstance != nil && m.IBMPowerVSCluster.Status.ServiceInstance.ID != nil {
-		return *m.IBMPowerVSCluster.Status.ServiceInstance.ID
+		return *m.IBMPowerVSCluster.Status.ServiceInstance.ID, nil
 	}
 	if m.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
-		return m.IBMPowerVSCluster.Spec.ServiceInstanceID
+		return m.IBMPowerVSCluster.Spec.ServiceInstanceID, nil
 	}
 	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
-		return *m.IBMPowerVSCluster.Spec.ServiceInstance.ID
+		return *m.IBMPowerVSCluster.Spec.ServiceInstance.ID, nil
 	}
-	return ""
+	// If we are not able to find service instance id, derive it from name if defined.
+	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.Name == nil {
+		return "", fmt.Errorf("failed to find service instance id as both name and id are not set")
+	}
+	serviceInstance, err := m.ResourceClient.GetServiceInstance("", *m.IBMPowerVSCluster.Spec.ServiceInstance.Name, ptr.To(m.GetZone()))
+	if err != nil {
+		m.Error(err, "failed to get Power VS service instance id", "serviceInstanceName", *m.IBMPowerVSCluster.Spec.ServiceInstance.Name)
+		return "", err
+	}
+	// It's safe to directly dereference GUID as its already done in NewPowerVSMachineScope
+	return *serviceInstance.GUID, nil
 }
 
 // SetProviderID will set the provider id for the machine.
-func (m *PowerVSMachineScope) SetProviderID(id *string) {
+func (m *PowerVSMachineScope) SetProviderID(instanceID string) error {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
-	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
-		if id != nil {
-			m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), m.GetServiceInstanceID(), *id))
-		}
-	} else {
+	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV1 {
 		m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
+		return nil
 	}
+	m.V(3).Info("setting provider id in v2 format")
+
+	serviceInstanceID, err := m.GetServiceInstanceID()
+	if err != nil {
+		m.Error(err, "failed to get service instance ID")
+		return err
+	}
+	m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), serviceInstanceID, instanceID))
+	return nil
 }
 
 // GetMachineInternalIP returns the machine's internal IP.
