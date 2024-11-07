@@ -1156,6 +1156,793 @@ func TestGetResourceGroupID(t *testing.T) {
 	}
 }
 
+func TestReconcileLoadBalancers(t *testing.T) {
+	var (
+		mockVpc  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVpc = mock.NewMockVpc(mockCtrl)
+	}
+
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When LoadBalancer ID is set and GetLoadbalancer fails to fetch loadbalancer details", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: ptr.To("test-lb-instanceid"),
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(nil, nil, errors.New("failed to fetch VPC load balancer details"))
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(loadBalancerReady).To(BeFalse())
+	})
+
+	t.Run("When LoadBalancer ID is set and the checkLoadBalancerStatus returns status is not active, indicating that load balancer is still not ready", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: ptr.To("test-lb-instanceid"),
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test-lb-instanceid"),
+			ProvisioningStatus: ptr.To("update_pending"),
+			Name:               ptr.To("test-lb"),
+		}, nil, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(err).To(BeNil())
+		g.Expect(loadBalancerReady).To(BeFalse())
+	})
+
+	t.Run("Reconcile should not requeue when one load balancer is ready but another is still initializing or inactive", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: ptr.To("test-active-lb-instanceid"),
+						},
+						{
+							ID: ptr.To("test-inactive-lb-instanceid"),
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To("test-active-lb-instanceid")}).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test- active-lb-instanceid"),
+			ProvisioningStatus: ptr.To("active"),
+			Name:               ptr.To("test-active-lb"),
+		}, nil, nil)
+
+		mockVpc.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To("test-inactive-lb-instanceid")}).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test-inactive-lb-instanceid"),
+			ProvisioningStatus: ptr.To("update_pending"),
+			Name:               ptr.To("test-inactive-lb"),
+		}, nil, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(err).To(BeNil())
+		g.Expect(loadBalancerReady).To(BeFalse())
+	})
+
+	t.Run("When LoadBalancer ID is set, checkLoadBalancerStatus returns status active", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: ptr.To("test-lb-instanceid"),
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test-lb-instanceid"),
+			Hostname:           ptr.To("test-lb-hostname"),
+			ProvisioningStatus: ptr.To("active"),
+			Name:               ptr.To("test-lb"),
+		}, nil, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeTrue())
+		g.Expect(err).To(BeNil())
+
+		loadBalancerStatus, ok := clusterScope.IBMPowerVSCluster.Status.LoadBalancers["test-lb"]
+		g.Expect(ok).To(BeTrue())
+		g.Expect(loadBalancerStatus.ID).To(Equal(ptr.To("test-lb-instanceid")))
+		g.Expect(loadBalancerStatus.State).To(BeEquivalentTo(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancerStatus.Hostname).To(Equal(ptr.To("test-lb-hostname")))
+	})
+
+	t.Run("When LoadBalancer ID is not set and checkLoadBalancer fails to fetch load balancer", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: nil,
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, errors.New("failed to get load balancer by name"))
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeFalse())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When LoadBalancer ID is not set, the checkLoadBalancer function returns nil, indicating that the load balancer does not exist in the cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: nil,
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeFalse())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When LoadBalancer ID is not set, the checkLoadBalancer function still returns a valid loadBalancerStatus, indicating that the load balancer exists in the cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ProvisioningStatus: ptr.To("active"),
+			Hostname:           ptr.To("test-lb-hostname"),
+			Name:               ptr.To("test-lb"),
+			ID:                 ptr.To("test-lb-instanceid"),
+		}, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeTrue())
+		g.Expect(err).To(BeNil())
+
+		loadBalancerStatus, ok := clusterScope.IBMPowerVSCluster.Status.LoadBalancers["test-lb"]
+		g.Expect(ok).To(BeTrue())
+		g.Expect(loadBalancerStatus.State).To(BeEquivalentTo(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancerStatus.ID).To(Equal(ptr.To("test-lb-instanceid")))
+		g.Expect(loadBalancerStatus.Hostname).To(Equal(ptr.To("test-lb-hostname")))
+	})
+
+	t.Run("when checkLoadBalancerPort returns an error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterNetworkAPIServerPort := int32(9090)
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port: 9090,
+								},
+							},
+						},
+					},
+				},
+			},
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: &clusterNetworkAPIServerPort,
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeFalse())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When createLoadBalancer fails to create load balancer", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterAPIServerPort := int32(9090)
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-gid"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{
+							Name: ptr.To("test-subnet"),
+							ID:   ptr.To("test-subnetid"),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPCSubnet: map[string]infrav1beta2.ResourceReference{
+						"test-subnet": {
+							ID: ptr.To("test-resource-reference-id"),
+						},
+					},
+				},
+			},
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: &clusterAPIServerPort,
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, nil)
+		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(nil, nil, errors.New("failed loadBalancer creation"))
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeFalse())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When createLoadBalancer successfully creates load balancer", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterAPIServerPort := int32(9090)
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-gid"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{
+							Name: ptr.To("test-subnet"),
+							ID:   ptr.To("test-subnetid"),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPCSubnet: map[string]infrav1beta2.ResourceReference{
+						"test-subnet": {
+							ID: ptr.To("test-resource-reference-id"),
+						},
+					},
+				},
+			},
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: &clusterAPIServerPort,
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, nil)
+		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test-lb-id"),
+			ProvisioningStatus: ptr.To("active"),
+			Hostname:           ptr.To("test-lb-hostname"),
+		}, nil, nil)
+
+		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers()
+		g.Expect(loadBalancerReady).To(BeFalse())
+		g.Expect(err).To(BeNil())
+
+		loadBalancer, ok := clusterScope.IBMPowerVSCluster.Status.LoadBalancers["test-lb"]
+		g.Expect(ok).To(BeTrue())
+		g.Expect(loadBalancer.State).To(BeEquivalentTo(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancer.ControllerCreated).To(Equal(ptr.To(true)))
+		g.Expect(loadBalancer.Hostname).To(Equal(ptr.To("test-lb-hostname")))
+	})
+}
+
+func TestCreateLoadbalancer(t *testing.T) {
+	var (
+		mockVpc  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVpc = mock.NewMockVpc(mockCtrl)
+	}
+
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When createLoadBalancer returns error as resource group id is empty", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+			AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+				{
+					Port: int64(9090),
+				},
+			},
+		}
+
+		loadBalancerStatus, err := clusterScope.createLoadBalancer(lb)
+		g.Expect(loadBalancerStatus).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When createLoadBalancer returns error as no subnets present for load balancer creation", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-gid"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+			AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+				{
+					Port: int64(9090),
+				},
+			},
+		}
+
+		loadbalancerStatus, err := clusterScope.createLoadBalancer(lb)
+		g.Expect(loadbalancerStatus).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When IBMVPCClient client CreateLoadBalancer returns error due to failed load balancer creation in cloud", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterAPIServerPort := int32(9090)
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-gid"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{
+							Name: ptr.To("test-subnet"),
+							ID:   ptr.To("test-subnetid"),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPCSubnet: map[string]infrav1beta2.ResourceReference{
+						"test-subnet": {
+							ID: ptr.To("test-resource-reference-id"),
+						},
+					},
+				},
+			},
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: &clusterAPIServerPort,
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+			AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+				{
+					Port: int64(9090),
+				},
+			},
+		}
+
+		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(nil, nil, errors.New("failed loadBalancer creation"))
+		loadBalancerStatus, err := clusterScope.createLoadBalancer(lb)
+		g.Expect(loadBalancerStatus).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When IBMVPCClient client CreateLoadBalancer successfully creates load balancer in cloud", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterAPIServerPort := int32(9090)
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-gid"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{
+							Name: ptr.To("test-subnet"),
+							ID:   ptr.To("test-subnetid"),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPCSubnet: map[string]infrav1beta2.ResourceReference{
+						"test-subnet": {
+							ID: ptr.To("test-resource-reference-id"),
+						},
+					},
+				},
+			},
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: &clusterAPIServerPort,
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+			AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+				{
+					Port: int64(9090),
+				},
+			},
+		}
+
+		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test-lb-id"),
+			ProvisioningStatus: ptr.To("active"),
+			Hostname:           ptr.To("test-lb-hostname"),
+		}, nil, nil)
+
+		loadBalancerStatus, err := clusterScope.createLoadBalancer(lb)
+		g.Expect(err).To(BeNil())
+		g.Expect(loadBalancerStatus.State).To(BeEquivalentTo(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancerStatus.ControllerCreated).To(Equal(ptr.To(true)))
+		g.Expect(loadBalancerStatus.Hostname).To(Equal(ptr.To("test-lb-hostname")))
+	})
+}
+
+func TestCheckLoadBalancerPort(t *testing.T) {
+	t.Run("When load balancer listener port and powerVS API server port are same", func(t *testing.T) {
+		g := NewWithT(t)
+		lbName := "test-loadbalancer"
+		port := 9090
+		expectedErr := fmt.Errorf("port %d for the %s load balancer cannot be used as an additional listener port, as it is already assigned to the API server", port, lbName)
+
+		clusterScope := PowerVSClusterScope{
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: ptr.To(int32(port)),
+					},
+				},
+			},
+		}
+
+		loadBalancer := infrav1beta2.VPCLoadBalancerSpec{Name: lbName, AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+			{
+				Port: int64(port),
+			},
+		}}
+
+		err := clusterScope.checkLoadBalancerPort(loadBalancer)
+		g.Expect(err).To(MatchError(expectedErr))
+	})
+
+	t.Run("When load balancer listener port and powerVS API server port are different", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope := PowerVSClusterScope{
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: ptr.To(int32(8080)),
+					},
+				},
+			},
+		}
+
+		loadBalancer := infrav1beta2.VPCLoadBalancerSpec{Name: "test-loadbalancer", AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+			{
+				Port: int64(9090),
+			},
+		}}
+
+		err := clusterScope.checkLoadBalancerPort(loadBalancer)
+		g.Expect(err).To(BeNil())
+	})
+}
+func TestCheckLoadBalancer(t *testing.T) {
+	var (
+		mockVpc  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVpc = mock.NewMockVpc(mockCtrl)
+	}
+
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When checkLoadBalancer returns error due to failure in fetching load balancer details from cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: nil,
+						},
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, errors.New("failed to get load balancer by name"))
+		loadBalancerStatus, err := clusterScope.checkLoadBalancer(lb)
+		g.Expect(loadBalancerStatus).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When checkLoadBalancer fails to returns load balancer status, indicating that load balancer does not exist in the cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							ID: nil,
+						},
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(nil, nil)
+
+		loadBalancerStatus, err := clusterScope.checkLoadBalancer(lb)
+		g.Expect(loadBalancerStatus).To(BeNil())
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When checkLoadBalancer returns valid load balancer status, indicating that load balancer exists in the cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVpc,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+				},
+			},
+		}
+
+		mockVpc.EXPECT().GetLoadBalancerByName(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ProvisioningStatus: ptr.To("active"),
+			Hostname:           ptr.To("test-lb-hostname"),
+			Name:               ptr.To("test-lb"),
+			ID:                 ptr.To("test-lb-instanceid"),
+		}, nil)
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+		}
+
+		loadBalancerStatus, err := clusterScope.checkLoadBalancer(lb)
+		g.Expect(err).To(BeNil())
+		g.Expect(loadBalancerStatus.ID).To(Equal(ptr.To("test-lb-instanceid")))
+		g.Expect(loadBalancerStatus.State).To(Equal(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancerStatus.Hostname).To(Equal(ptr.To("test-lb-hostname")))
+	})
+}
+
+func TestCheckLoadBalancerStatus(t *testing.T) {
+	testcases := []struct {
+		name           string
+		loadbalancer   vpcv1.LoadBalancer
+		expectedStatus bool
+	}{
+		{
+			name:           "VPC load balancer is in active state",
+			loadbalancer:   vpcv1.LoadBalancer{Name: ptr.To("loadbalancer-active"), ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive))},
+			expectedStatus: true,
+		},
+		{
+			name:           "VPC load balancer creation is in pending state",
+			loadbalancer:   vpcv1.LoadBalancer{Name: ptr.To("loadbalancer-createPending"), ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateCreatePending))},
+			expectedStatus: false,
+		},
+		{
+			name:           "VPC load balancer is in updating state",
+			loadbalancer:   vpcv1.LoadBalancer{Name: ptr.To("loadbalancer-updatePending"), ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateUpdatePending))},
+			expectedStatus: false,
+		},
+	}
+
+	for _, tc := range testcases {
+		g := NewWithT(t)
+		clusterScope := PowerVSClusterScope{}
+		t.Run(tc.name, func(_ *testing.T) {
+			isReady := clusterScope.checkLoadBalancerStatus(tc.loadbalancer)
+			g.Expect(isReady).To(Equal(tc.expectedStatus))
+		})
+	}
+}
 func TestReconcilePowerVSServiceInstance(t *testing.T) {
 	var (
 		mockResourceController *mockRC.MockResourceController
