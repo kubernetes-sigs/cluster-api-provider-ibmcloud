@@ -64,6 +64,10 @@ YAMLLINT := $(BIN_DIR)/yamllint
 $(YAMLLINT): $(BIN_DIR) go.mod go.sum ## Build a local copy of yamllint.
 	go build -tags=capibmtools -o $@ github.com/wasilibs/go-yamllint/cmd/yamllint
 
+YAMLFMT := $(BIN_DIR)/yamlfmt
+$(YAMLFMT): $(BIN_DIR) go.mod go.sum ## Build a local copy of yamlfmt.
+	go build -tags=capibmtools -o $@ github.com/google/yamlfmt/cmd/yamlfmt@latest
+
 GOTESTSUM := $(BIN_DIR)/gotestsum
 $(GOTESTSUM): $(BIN_DIR) go.mod go.sum
 	go build -tags=capibmtools -o $@ gotest.tools/gotestsum

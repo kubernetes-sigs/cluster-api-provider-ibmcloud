@@ -1,7 +1,5 @@
 name: Lint
-
 on: [push, pull_request]
-
 jobs:
   yamllint:
     name: Run yamllint
@@ -18,7 +16,7 @@ jobs:
         uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # tag=v5.0.2
         with:
           go-version: ${{ steps.vars.outputs.go_version }}
-      # - name: Install yamllint
-      #   run: make install-yamllint
       - name: Run yamllint
         run: make lint-yaml
+      - name: Format Yaml files
+        run: make format-yaml-files

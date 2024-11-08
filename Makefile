@@ -51,6 +51,7 @@ SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
 TRIVY := $(TOOLS_BIN_DIR)/trivy
 YAMLLINT := $(TOOLS_BIN_DIR)/yamllint
+YAMLFMT := $(TOOLS_BIN_DIR)/yamlfmt
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -562,6 +563,12 @@ lint-yaml-no-warnings: ## Run yamllint and won’t output warning level problems
 	@echo "Running yamllint and won't output warning level problems..."
 	@yamllint . --no-warnings || true
 	@echo "Linting Yaml files completed"
+
+.PHONY: format-yaml-files
+format-yaml-files: ## Run yamllint and won’t output warning level problems
+	@echo "Running yamlfmt"
+	$(YAMLFMT) . || true
+	@echo "Formating Yaml files completed"
 
 ## --------------------------------------
 ## Cleanup / Verification
