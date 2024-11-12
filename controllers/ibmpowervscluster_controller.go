@@ -384,7 +384,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 
 	clusterScope.Info("Deleting VPC security group")
 	if err := clusterScope.DeleteVPCSecurityGroups(); err != nil {
-		allErrs = append(allErrs, errors.Wrapf(err, "failed to delete VPC subnet"))
+		allErrs = append(allErrs, errors.Wrapf(err, "failed to delete VPC security group"))
 	}
 
 	clusterScope.Info("Deleting VPC subnet")

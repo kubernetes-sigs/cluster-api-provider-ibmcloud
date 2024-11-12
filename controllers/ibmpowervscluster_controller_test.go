@@ -36,7 +36,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -739,17 +738,50 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 
 func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	var (
-		reconciler   IBMPowerVSClusterReconciler
-		clusterScope *scope.PowerVSClusterScope
+		reconciler          IBMPowerVSClusterReconciler
+		clusterScope        *scope.PowerVSClusterScope
+		mockPowerVS         *powervsmock.MockPowerVS
+		mockTransitGateway  *tgmock.MockTransitGateway
+		mockVpc             *vpcmock.MockVpc
+		mockResourceClient  *resourceclientmock.MockResourceController
+		powervsClusterScope func() *scope.PowerVSClusterScope
 	)
 	reconciler = IBMPowerVSClusterReconciler{
 		Client: testEnv.Client,
 	}
+	powervsClusterScope = func() *scope.PowerVSClusterScope {
+		return &scope.PowerVSClusterScope{
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "IBMPowerVSCluster",
+					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:        "capi-powervs-cluster",
+					Annotations: map[string]string{"powervs.cluster.x-k8s.io/create-infra": "true"},
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: capiv1beta1.GroupVersion.String(),
+							Kind:       "Cluster",
+							Name:       "capi-test",
+							UID:        "1",
+						}},
+				},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("serviceInstanceID"),
+					},
+				},
+			},
+			Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
+		}
+	}
+
 	t.Run("Reconciling delete IBMPowerVSCluster", func(t *testing.T) {
 		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				Logger: klog.Background(),
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -764,6 +796,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
 			}
+
 			result, err := reconciler.reconcileDelete(ctx, clusterScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(BeZero())
@@ -771,7 +804,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile with requeue by deleting the cluster descendants", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				Logger: klog.Background(),
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -838,6 +870,400 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			g.Expect(clusterScope.Client.Update(ctx, powervsImage1)).To(Not(Succeed()))
 			g.Expect(clusterScope.Client.Update(ctx, powervsImage2)).To(Not(Succeed()))
 		})
+	})
+
+	t.Run("When delete TransitGateway returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1beta2.TransitGatewayStatus{
+			ID:                ptr.To("transitgatewayID"),
+			ControllerCreated: ptr.To(true),
+			PowerVSConnection: &infrav1beta2.ResourceReference{
+				ControllerCreated: ptr.To(true),
+				ID:                ptr.To("connectionID"),
+			},
+			VPCConnection: &infrav1beta2.ResourceReference{
+				ControllerCreated: ptr.To(true),
+				ID:                ptr.To("connectionID"),
+			},
+		}
+		tgw := &tgapiv1.TransitGateway{
+			Name:   ptr.To("transitGateway"),
+			ID:     ptr.To("transitGatewayID"),
+			Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		mockTransitGateway.EXPECT().GetTransitGateway(gomock.Any()).Return(tgw, nil, nil)
+		mockTransitGateway.EXPECT().GetTransitGatewayConnection(gomock.Any()).Return(nil, &core.DetailedResponse{StatusCode: 404}, nil).Times(2)
+		mockTransitGateway.EXPECT().DeleteTransitGateway(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete transit gateway"))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete TransitGateway returns requeue as true", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1beta2.TransitGatewayStatus{
+			ID:                ptr.To("transitgatewayID"),
+			ControllerCreated: ptr.To(true),
+			PowerVSConnection: &infrav1beta2.ResourceReference{
+				ControllerCreated: ptr.To(true),
+				ID:                ptr.To("connectionID"),
+			},
+			VPCConnection: &infrav1beta2.ResourceReference{
+				ControllerCreated: ptr.To(true),
+				ID:                ptr.To("connectionID"),
+			},
+		}
+		tgw := &tgapiv1.TransitGateway{
+			Name:   ptr.To("transitGateway"),
+			ID:     ptr.To("transitGatewayID"),
+			Status: ptr.To(string(infrav1beta2.TransitGatewayStateDeletePending))}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		mockTransitGateway.EXPECT().GetTransitGateway(gomock.Any()).Return(tgw, nil, nil)
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+	})
+
+	t.Run("When delete LoadBalancer returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1beta2.VPCLoadBalancerStatus{
+			"lb": {
+				ID:                ptr.To("lb-id"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("lb-id"),
+			Name:               ptr.To("lb"),
+			ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive)),
+		}, nil, nil)
+		mockVpc.EXPECT().DeleteLoadBalancer(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete load balancer"))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete LoadBalancer returns requeue as true", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1beta2.VPCLoadBalancerStatus{
+			"lb": {
+				ID:                ptr.To("lb-id"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("lb-id"),
+			Name:               ptr.To("lb"),
+			ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateDeletePending)),
+		}, nil, nil)
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+	})
+
+	t.Run("When delete VPC security group returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1beta2.VPCSecurityGroupStatus{
+			"sc": {
+				ID:                ptr.To("sc-id"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{
+			ID:   ptr.To("sc-id"),
+			Name: ptr.To("sc"),
+		}, nil, nil)
+		mockVpc.EXPECT().DeleteSecurityGroup(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete VPC security group"))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete VPC subnet returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1beta2.ResourceReference{
+			"subent1": {
+				ID:                ptr.To("subent1"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+		mockVpc.EXPECT().DeleteSubnet(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete VPC subnet"))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete VPC subnet returns requeue as true", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1beta2.ResourceReference{
+			"subent1": {
+				ID:                ptr.To("subent1"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To(string(infrav1beta2.VPCSubnetStateDeleting))}, nil, nil)
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: 15 * time.Second}))
+	})
+
+	t.Run("When delete VPC returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1beta2.ResourceReference{
+			ID:                ptr.To("vpcid"),
+			ControllerCreated: ptr.To(true),
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{ID: ptr.To("vpcid"), Status: ptr.To("active")}, nil, nil)
+		mockVpc.EXPECT().DeleteVPC(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete VPC"))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete VPC returns requeue as true", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1beta2.ResourceReference{
+			ID:                ptr.To("vpcid"),
+			ControllerCreated: ptr.To(true),
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVpc.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{ID: ptr.To("vpcid"), Status: ptr.To(string(infrav1beta2.VPCStateDeleting))}, nil, nil)
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: 15 * time.Second}))
+	})
+
+	t.Run("When delete DHCP returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1beta2.ResourceReference{
+				ID:                ptr.To("serviceInstanceID"),
+				ControllerCreated: ptr.To(false),
+			},
+			DHCPServer: &infrav1beta2.ResourceReference{
+				ID:                ptr.To("DHCPServerID"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(&models.DHCPServerDetail{
+			ID:     ptr.To("dhcpID"),
+			Status: ptr.To(string(infrav1beta2.DHCPServerStateActive)),
+		}, nil)
+		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any()).Return(errors.New("failed to delete DHCP server"))
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete ServiceInstance returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1beta2.ResourceReference{
+				ID:                ptr.To("serviceInstanceID"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("serviceInstanceName"),
+			ID:    ptr.To("serviceInstanceID"),
+			State: ptr.To("active"),
+			CRN:   ptr.To("powervs_crn"),
+		}, nil, nil)
+		mockResourceClient.EXPECT().DeleteResourceInstance(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete service instance"))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When delete ServiceInstance returns requeue as true", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1beta2.ResourceReference{
+				ID:                ptr.To("serviceInstanceID"),
+				ControllerCreated: ptr.To(true),
+			},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("serviceInstanceName"),
+			ID:    ptr.To("serviceInstanceID"),
+			State: ptr.To("active"),
+			CRN:   ptr.To("powervs_crn"),
+		}, nil, nil)
+		mockResourceClient.EXPECT().DeleteResourceInstance(gomock.Any()).Return(&core.DetailedResponse{}, nil)
+		clusterScope.ResourceClient = mockResourceClient
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{RequeueAfter: time.Minute}))
+	})
+
+	t.Run("When delete COSInstance returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status.COSInstance = &infrav1beta2.ResourceReference{
+			ID:                ptr.To("CosInstanceID"),
+			ControllerCreated: ptr.To(true),
+		}
+		clusterScope.IBMPowerVSCluster.Spec = infrav1beta2.IBMPowerVSClusterSpec{
+			ServiceInstanceID: "service-instance-1",
+			Ignition:          &infrav1beta2.Ignition{Version: "3.4"},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("COSInstanceName"),
+			ID:    ptr.To("COSInstanceID"),
+			State: ptr.To("active"),
+		}, nil, nil)
+		mockResourceClient.EXPECT().DeleteResourceInstance(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete COS service instance"))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(Not(BeNil()))
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("When reconcile delete is successful", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1beta2.ResourceReference{
+				ID: ptr.To("serviceInstanceID"),
+			},
+		}
+		clusterScope.IBMPowerVSCluster.Spec = infrav1beta2.IBMPowerVSClusterSpec{
+			ServiceInstanceID: "service-instance-1",
+			Ignition:          &infrav1beta2.Ignition{Version: "3.4"},
+		}
+		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
+		mockPowerVS.EXPECT().WithClients(gomock.Any())
+		clusterScope.IBMPowerVSClient = mockPowerVS
+		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
+		clusterScope.ResourceClient = mockResourceClient
+		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
+		clusterScope.TransitGatewayClient = mockTransitGateway
+		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
+		clusterScope.IBMVPCClient = mockVpc
+		result, err := reconciler.reconcileDelete(ctx, clusterScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result.RequeueAfter).To(BeZero())
 	})
 }
 
