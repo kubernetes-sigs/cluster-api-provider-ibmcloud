@@ -1146,16 +1146,159 @@ func TestReconcileVPCResources(t *testing.T) {
 	}
 }
 
-func getServiceInstanceReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
-		Type:   infrav1beta2.ServiceInstanceReadyCondition,
-		Status: "True",
+func TestReconcilePowerVSResources(t *testing.T) {
+	testCases := []struct {
+		name                    string
+		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
+		reconcileResult         reconcileResult
+		conditions              capiv1beta1.Conditions
+	}{
+		{
+			name: "When Reconciling PowerVS service instance returns error",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1beta2.ResourceReference{
+								ID: ptr.To("serviceInstanceID"),
+							},
+						},
+					},
+				}
+				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, fmt.Errorf("error getting resource instance"))
+				clusterScope.ResourceClient = mockResourceController
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				error: errors.New("error getting resource instance"),
+			},
+
+			conditions: capiv1beta1.Conditions{
+				capiv1beta1.Condition{
+					Type:               infrav1beta2.ServiceInstanceReadyCondition,
+					Status:             "False",
+					Severity:           capiv1beta1.ConditionSeverityError,
+					LastTransitionTime: metav1.Time{},
+					Reason:             infrav1beta2.ServiceInstanceReconciliationFailedReason,
+					Message:            "error getting resource instance",
+				},
+			},
+		},
+		{
+			name: "When Reconciling PowerVS service instance returns requeue as true",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1beta2.ResourceReference{
+								ID: ptr.To("serviceInstanceID"),
+							},
+						},
+					},
+				}
+				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1beta2.ServiceInstanceStateProvisioning)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				clusterScope.ResourceClient = mockResourceController
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				Result: reconcile.Result{
+					Requeue: true,
+				},
+			},
+		},
+		{
+			name: "When Reconciling network returns error",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							ServiceInstanceID: "serviceInstanceID",
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							DHCPServer:      &infrav1beta2.ResourceReference{ID: ptr.To("DHCPServerID")},
+							ServiceInstance: &infrav1beta2.ResourceReference{ID: ptr.To("serviceInstanceID")},
+						},
+					},
+				}
+				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
+				dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpID"), Status: ptr.To(string(infrav1beta2.DHCPServerStateError))}
+				mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(dhcpServer, nil)
+				mockPowerVS.EXPECT().WithClients(gomock.Any())
+				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				clusterScope.ResourceClient = mockResourceController
+				clusterScope.IBMPowerVSClient = mockPowerVS
+				return clusterScope
+			},
+			reconcileResult: reconcileResult{
+				error: errors.New("DHCP server creation failed and is in error state"),
+			},
+			conditions: capiv1beta1.Conditions{
+				capiv1beta1.Condition{
+					Type:               infrav1beta2.NetworkReadyCondition,
+					Status:             "False",
+					Severity:           capiv1beta1.ConditionSeverityError,
+					LastTransitionTime: metav1.Time{},
+					Reason:             infrav1beta2.NetworkReconciliationFailedReason,
+					Message:            "DHCP server creation failed and is in error state",
+				},
+				getServiceInstanceReadyCondition(),
+			},
+		},
+		{
+			name: "When reconcile network returns with DHCP server in active state",
+			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
+				clusterScope := &scope.PowerVSClusterScope{
+					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+							ServiceInstanceID: "serviceInstanceID",
+						},
+						Status: infrav1beta2.IBMPowerVSClusterStatus{
+							DHCPServer:      &infrav1beta2.ResourceReference{ID: ptr.To("DHCPServerID")},
+							ServiceInstance: &infrav1beta2.ResourceReference{ID: ptr.To("serviceInstanceID")},
+						},
+					},
+				}
+				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
+				dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpID"), Status: ptr.To(string(infrav1beta2.DHCPServerStateActive))}
+				mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(dhcpServer, nil)
+				mockPowerVS.EXPECT().WithClients(gomock.Any())
+				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				clusterScope.ResourceClient = mockResourceController
+				clusterScope.IBMPowerVSClient = mockPowerVS
+				return clusterScope
+			},
+			conditions: capiv1beta1.Conditions{
+				getNetworkReadyCondition(),
+				getServiceInstanceReadyCondition(),
+			},
+		},
 	}
-}
-func getNetworkReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
-		Type:   infrav1beta2.NetworkReadyCondition,
-		Status: "True",
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			reconciler := &IBMPowerVSClusterReconciler{
+				Client: testEnv.Client,
+			}
+			clusterScope := tc.powerVSClusterScopeFunc()
+			ch := make(chan reconcileResult, 1)
+			pvsCluster := &powerVSCluster{
+				cluster: clusterScope.IBMPowerVSCluster,
+			}
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+			reconciler.reconcilePowerVSResources(clusterScope, pvsCluster, ch, wg)
+			wg.Wait()
+			close(ch)
+			g.Expect(<-ch).To(Equal(tc.reconcileResult))
+			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
+				return metav1.Time{}
+			})
+			g.Expect(pvsCluster.cluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+		})
 	}
 }
 
@@ -1326,5 +1469,18 @@ func cleanupCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, na
 		func(do ...client.Object) {
 			g.Expect(testEnv.Cleanup(ctx, do...)).To(Succeed())
 		}(powervsCluster, namespace)
+	}
+}
+
+func getServiceInstanceReadyCondition() capiv1beta1.Condition {
+	return capiv1beta1.Condition{
+		Type:   infrav1beta2.ServiceInstanceReadyCondition,
+		Status: "True",
+	}
+}
+func getNetworkReadyCondition() capiv1beta1.Condition {
+	return capiv1beta1.Condition{
+		Type:   infrav1beta2.NetworkReadyCondition,
+		Status: "True",
 	}
 }
