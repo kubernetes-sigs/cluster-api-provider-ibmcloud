@@ -19,10 +19,12 @@ package scope
 import (
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
+	"github.com/IBM/ibm-cos-sdk-go/aws/awserr"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"go.uber.org/mock/gomock"
@@ -36,6 +38,7 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	mockRC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
@@ -45,6 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
+	"github.com/IBM/ibm-cos-sdk-go/service/s3"
 	. "github.com/onsi/gomega"
 )
 
@@ -4626,5 +4630,703 @@ func TestDeleteTransitGatewayConnections(t *testing.T) {
 		requeue, err := clusterScope.deleteTransitGatewayConnections(tg)
 		g.Expect(err).To(BeNil())
 		g.Expect(requeue).To(BeFalse())
+	})
+}
+func TestReconcileCOSInstance(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When fetch for COS service instance fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-region",
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error fetching instance by name"))
+
+		err = clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance).To(BeNil())
+	})
+
+	t.Run("When COS service instance is found in IBM Cloud and cluster status is updated", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-region",
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+					Zone: ptr.To("test-zone"),
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-cos-resource-name"),
+			State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)),
+			GUID:  ptr.To("test-cos-instance-guid"),
+		}, nil)
+
+		err = clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-cos-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(bool(false))))
+	})
+
+	t.Run("When COS service instance is not found in IBM Cloud and hence creates COS instance in cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-region",
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+					Zone: ptr.To("test-zone"),
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			ID:   ptr.To("test-resource-instance-id"),
+			GUID: ptr.To("test-resource-instance-guid"),
+			Name: ptr.To("test-resource-instance-name"),
+		}, nil, nil)
+
+		err = clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-resource-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(bool(true))))
+	})
+
+	t.Run("When COS service instance is not found in IBM Cloud and hence creates COS instance in cloud but fails during the creation", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-region",
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+					Zone: ptr.To("test-zone"),
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to create COS service instance"))
+
+		err = clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance).To(BeNil())
+	})
+
+	t.Run("When fetch for API_KEY fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-region",
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-cos-resource-name"),
+			State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)),
+			GUID:  ptr.To("test-cos-instance-guid"),
+		}, nil)
+
+		err := clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-cos-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(bool(false))))
+	})
+
+	t.Run("When COS bucket region is failed to be determined", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			ID:   ptr.To("test-resource-instance-id"),
+			GUID: ptr.To("test-resource-instance-guid"),
+			Name: ptr.To("test-resource-instance-name"),
+		}, nil, nil)
+
+		err = clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-resource-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(bool(true))))
+	})
+
+	t.Run("When checkCOSBucket fails to determine whether bucket exist in cloud due to an unexpected error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-bucket-region",
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			ID:   ptr.To("test-resource-instance-id"),
+			GUID: ptr.To("test-resource-instance-guid"),
+			Name: ptr.To("test-resource-instance-name"),
+		}, nil, nil)
+
+		err = clusterScope.ReconcileCOSInstance()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-resource-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(bool(true))))
+	})
+
+	//TODO: Complete cases to cover control flow on checkCOSBucket and createCOSBucket
+	// Github issue: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/2034
+}
+
+func TestCheckCOSServiceInstance(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When fetching of cos service instance returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error listing COS instances"))
+
+		cosResourceInstance, err := clusterScope.checkCOSServiceInstance()
+		g.Expect(cosResourceInstance).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When COS service instance is not found in IBM Cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		cosResourceInstance, err := clusterScope.checkCOSServiceInstance()
+		g.Expect(cosResourceInstance).To(BeNil())
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When COS service instance exists but state is not active", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-cos-resource-name"),
+			State: ptr.To("failed"),
+		}, nil)
+
+		cosResourceInstance, err := clusterScope.checkCOSServiceInstance()
+		g.Expect(cosResourceInstance).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(err).To(MatchError(fmt.Errorf("COS service instance is not in active state, current state: %s", "failed")))
+	})
+	t.Run("When COS service instance exists and state is active", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			Name:  ptr.To("test-cos-resource-name"),
+			State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)),
+		}, nil)
+
+		cosResourceInstance, err := clusterScope.checkCOSServiceInstance()
+		g.Expect(cosResourceInstance.Name).To(Equal(ptr.To("test-cos-resource-name")))
+		g.Expect(cosResourceInstance.State).To(Equal(ptr.To(string(infrav1beta2.ServiceInstanceStateActive))))
+		g.Expect(err).To(BeNil())
+	})
+}
+
+func TestCreateCOSBucket(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCOSController      *mockcos.MockCos
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+		mockCOSController = mockcos.NewMockCos(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When COS bucket creation fails in cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			COSClient:      mockCOSController,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(nil, fmt.Errorf("failed to create COS bucket"))
+		err := clusterScope.createCOSBucket()
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When COS bucket already exists and is owned by the user", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			COSClient:      mockCOSController,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(nil, awserr.New(s3.ErrCodeBucketAlreadyOwnedByYou, "Bucket already owned by user", nil))
+
+		err := clusterScope.createCOSBucket()
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When COS bucket already exists but is owned by someone else", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			COSClient:      mockCOSController,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(nil, awserr.New(s3.ErrCodeBucketAlreadyExists, "Bucket already exists", nil))
+		err := clusterScope.createCOSBucket()
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When an unexpected error occurs during COS bucket creation", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			COSClient:      mockCOSController,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(nil, awserr.New("UnexpectedError", "An unexpected error occurred", nil))
+
+		err := clusterScope.createCOSBucket()
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("failed to create COS bucket"))
+	})
+
+	t.Run("When COS bucket is created successfully", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			COSClient:      mockCOSController,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(&s3.CreateBucketOutput{}, nil)
+
+		err := clusterScope.createCOSBucket()
+		g.Expect(err).To(BeNil())
+	})
+}
+
+func TestCheckCOSBucket(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCOSController      *mockcos.MockCos
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+		mockCOSController = mockcos.NewMockCos(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+	t.Run("When checking if COS bucket exists in cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			COSClient:      mockCOSController,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		testScenarios := []struct {
+			name         string
+			mockError    error
+			bucketExists bool
+			expectErr    bool
+		}{
+			{
+				name:         "NoSuchBucket error",
+				mockError:    awserr.New(s3.ErrCodeNoSuchBucket, "NoSuchBucket", nil),
+				bucketExists: false,
+				expectErr:    false,
+			},
+			{
+				name:         "Forbidden error",
+				mockError:    awserr.New("Forbidden", "Forbidden", nil),
+				bucketExists: false,
+				expectErr:    false,
+			},
+			{
+				name:         "NotFound error",
+				mockError:    awserr.New("NotFound", "NotFound", nil),
+				bucketExists: false,
+				expectErr:    false,
+			},
+			{
+				name:         "Other aws error",
+				mockError:    awserr.New("OtherAWSError", "OtherAWSError", nil),
+				bucketExists: false,
+				expectErr:    true,
+			},
+			{
+				name:         "Bucket exists",
+				mockError:    nil,
+				bucketExists: true,
+				expectErr:    false,
+			},
+		}
+
+		for _, scenario := range testScenarios {
+			t.Run(scenario.name, func(_ *testing.T) {
+				mockCOSController.EXPECT().GetBucketByName(gomock.Any()).Return(nil, scenario.mockError)
+				exists, err := clusterScope.checkCOSBucket()
+				g.Expect(exists).To(Equal(scenario.bucketExists))
+				if scenario.expectErr {
+					g.Expect(err).ToNot(BeNil())
+				} else {
+					g.Expect(err).To(BeNil())
+				}
+			})
+		}
+	})
+}
+
+func TestCreateCOSServiceInstance(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("When creating COS resource instance fails due to missing resource group id", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		cosResourceInstance, err := clusterScope.createCOSServiceInstance()
+		g.Expect(cosResourceInstance).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When creating COS resource instance fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resourcegroup-id"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, fmt.Errorf("error creating resource instance"))
+
+		cosResourceInstance, err := clusterScope.createCOSServiceInstance()
+		g.Expect(cosResourceInstance).To(BeNil())
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When COS resource instance creation is successful", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resourcegroup-id"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			ID: ptr.To("new-resource-instance-id"),
+		}, nil, nil)
+
+		cosResourceInstance, err := clusterScope.createCOSServiceInstance()
+		g.Expect(err).To(BeNil())
+		g.Expect(cosResourceInstance.ID).To(Equal(ptr.To("new-resource-instance-id")))
 	})
 }
