@@ -548,12 +548,6 @@ else
 	echo "Versions are different across Makefiles. Please ensure to keep them uniform."
 endif
 
-
-# .PHONY: install-yamllint
-# install-yamllint: ## Install yamllint if not present
-# 	@which yamllint > /dev/null || (echo "Installing yamllint..." && go install github.com/wasilibs/go-yamllint/cmd/yamllint@latest)
-# 	@echo "yamllint installed"
-
 .PHONY: lint-yaml
 lint-yaml: $(YAMLLINT) ## Lint YAML files
 	$(YAMLLINT) .

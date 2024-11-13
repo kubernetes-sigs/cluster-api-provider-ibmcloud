@@ -4,17 +4,17 @@ kind: ClusterRole
 metadata:
   name: ibmpowervscluster-viewer-role
 rules:
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ibmpowervsclusters
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ibmpowervsclusters/status
-  verbs:
-  - get
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - ibmpowervsclusters
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - ibmpowervsclusters/status
+    verbs:
+      - get

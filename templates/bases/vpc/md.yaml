@@ -31,4 +31,4 @@ spec:
       zone: "${IBMVPC_ZONE}"
       profile: "${IBMVPC_PROFILE}"
       sshKeys:
-      - name: "${IBMVPC_SSHKEY_NAME}"
+        - name: "${IBMVPC_SSHKEY_NAME}"

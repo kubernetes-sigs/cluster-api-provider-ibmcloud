@@ -4,21 +4,21 @@ kind: ClusterRole
 metadata:
   name: ibmpowervsclustertemplate-editor-role
 rules:
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ibmpowervsclustertemplates
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - infrastructure.cluster.x-k8s.io
-  resources:
-  - ibmpowervsclustertemplates/status
-  verbs:
-  - get
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - ibmpowervsclustertemplates
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - ibmpowervsclustertemplates/status
+    verbs:
+      - get

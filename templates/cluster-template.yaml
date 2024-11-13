@@ -10,11 +10,11 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - ${POD_CIDR:="192.168.0.0/16"}
+        - ${POD_CIDR:="192.168.0.0/16"}
     serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
     services:
       cidrBlocks:
-      - ${SERVICE_CIDR:="10.128.0.0/12"}
+        - ${SERVICE_CIDR:="10.128.0.0/12"}
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -50,8 +50,8 @@ spec:
     clusterConfiguration:
       apiServer:
         certSANs:
-        - localhost
-        - 127.0.0.1
+          - localhost
+          - 127.0.0.1
         extraArgs:
           cloud-provider: external
       controllerManager:
@@ -98,7 +98,7 @@ spec:
         name: ${IBMVPC_IMAGE_NAME}
       profile: ${IBMVPC_PROFILE}
       sshKeys:
-      - name: ${IBMVPC_SSHKEY_NAME}
+        - name: ${IBMVPC_SSHKEY_NAME}
       zone: ${IBMVPC_ZONE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta1
@@ -135,7 +135,7 @@ spec:
         name: ${IBMVPC_IMAGE_NAME}
       profile: ${IBMVPC_PROFILE}
       sshKeys:
-      - name: ${IBMVPC_SSHKEY_NAME}
+        - name: ${IBMVPC_SSHKEY_NAME}
       zone: ${IBMVPC_ZONE}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
@@ -160,12 +160,12 @@ spec:
     matchLabels:
       ccm: external
   resources:
-  - kind: Secret
-    name: ibm-credential
-  - kind: ConfigMap
-    name: ibm-cfg
-  - kind: ConfigMap
-    name: cloud-controller-manager-addon
+    - kind: Secret
+      name: ibm-credential
+    - kind: ConfigMap
+      name: ibm-cfg
+    - kind: ConfigMap
+      name: cloud-controller-manager-addon
   strategy: ApplyOnce
 ---
 apiVersion: v1

@@ -156,8 +156,10 @@ require (
 	github.com/spf13/viper v1.19.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tetratelabs/wazero v1.7.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
+	github.com/wasilibs/go-yamllint v1.35.1 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect

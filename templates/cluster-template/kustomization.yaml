@@ -1,13 +1,11 @@
 resources:
-- ../bases/vpc
-- ../addons/crs.yaml
-
+  - ../bases/vpc
+  - ../addons/crs.yaml
 patches:
-- path: cluster.yaml
-- path: vpc-cluster.yaml
-- path: kcp.yaml
-- path: vpc-cp-machine-template.yaml
-- path: md.yaml
-
+  - path: cluster.yaml
+  - path: vpc-cluster.yaml
+  - path: kcp.yaml
+  - path: vpc-cp-machine-template.yaml
+  - path: md.yaml
 sortOptions:
   order: fifo

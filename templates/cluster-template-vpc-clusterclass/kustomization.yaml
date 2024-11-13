@@ -1,7 +1,6 @@
 resources:
-- cluster-with-kcp.yaml
-- md.yaml
-- ../addons/crs.yaml
-
+  - cluster-with-kcp.yaml
+  - md.yaml
+  - ../addons/crs.yaml
 sortOptions:
   order: fifo

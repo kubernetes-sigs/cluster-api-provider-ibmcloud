@@ -24,7 +24,7 @@ spec:
         name: ${IBMVPC_IMAGE_NAME}
       profile: ${IBMVPC_PROFILE}
       sshKeys:
-      - name: ${IBMVPC_SSHKEY_NAME}
+        - name: ${IBMVPC_SSHKEY_NAME}
       zone: ${IBMVPC_ZONE}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2

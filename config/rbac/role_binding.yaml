@@ -7,6 +7,6 @@ roleRef:
   kind: ClusterRole
   name: manager-role
 subjects:
-- kind: ServiceAccount
-  name: manager
-  namespace: system
+  - kind: ServiceAccount
+    name: manager
+    namespace: system

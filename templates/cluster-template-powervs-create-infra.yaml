@@ -10,11 +10,11 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - ${POD_CIDR:="192.168.0.0/16"}
+        - ${POD_CIDR:="192.168.0.0/16"}
     serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
     services:
       cidrBlocks:
-      - ${SERVICE_CIDR:="10.128.0.0/12"}
+        - ${SERVICE_CIDR:="10.128.0.0/12"}
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1beta1
     kind: KubeadmControlPlane
@@ -43,11 +43,11 @@ spec:
     name: ${CLUSTER_NAME}-vpc
     region: ${IBMVPC_REGION}
   vpcSubnets:
-  - name: ${CLUSTER_NAME}-vpcsubnet
+    - name: ${CLUSTER_NAME}-vpcsubnet
   transitGateway:
     name: ${CLUSTER_NAME}-transitgateway
   loadBalancers:
-  - name: ${CLUSTER_NAME}-loadbalancer
+    - name: ${CLUSTER_NAME}-loadbalancer
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta1
 kind: KubeadmControlPlane
@@ -79,11 +79,11 @@ spec:
           eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
         name: '{{ v1.local_hostname }}'
     preKubeadmCommands:
-    - hostname "{{ v1.local_hostname }}"
-    - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
-    - echo "127.0.0.1   localhost" >>/etc/hosts
-    - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
-    - echo "{{ v1.local_hostname }}" >/etc/hostname
+      - hostname "{{ v1.local_hostname }}"
+      - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+      - echo "127.0.0.1   localhost" >>/etc/hosts
+      - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+      - echo "{{ v1.local_hostname }}" >/etc/hostname
     useExperimentalRetryJoin: true
   machineTemplate:
     infrastructureRef:
@@ -170,11 +170,11 @@ spec:
             eviction-hard: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
           name: '{{ v1.local_hostname }}'
       preKubeadmCommands:
-      - hostname "{{ v1.local_hostname }}"
-      - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
-      - echo "127.0.0.1   localhost" >>/etc/hosts
-      - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
-      - echo "{{ v1.local_hostname }}" >/etc/hostname
+        - hostname "{{ v1.local_hostname }}"
+        - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
+        - echo "127.0.0.1   localhost" >>/etc/hosts
+        - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
+        - echo "{{ v1.local_hostname }}" >/etc/hostname
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSImage
@@ -202,12 +202,12 @@ spec:
     matchLabels:
       ccm: external
   resources:
-  - kind: Secret
-    name: ibmpowervs-credential
-  - kind: ConfigMap
-    name: ibmpowervs-cfg
-  - kind: ConfigMap
-    name: cloud-controller-manager-addon
+    - kind: Secret
+      name: ibmpowervs-credential
+    - kind: ConfigMap
+      name: ibmpowervs-cfg
+    - kind: ConfigMap
+      name: cloud-controller-manager-addon
   strategy: ApplyOnce
 ---
 apiVersion: v1

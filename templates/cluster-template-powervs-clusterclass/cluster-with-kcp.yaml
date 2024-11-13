@@ -236,6 +236,6 @@ spec:
           - echo "127.0.0.1   localhost" >>/etc/hosts
           - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
           - echo "{{ v1.local_hostname }}" >/etc/hostname
-          - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort);
-            do echo "Running script $script"; "$script"; done
+          - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort); do echo "Running
+            script $script"; "$script"; done
         useExperimentalRetryJoin: true

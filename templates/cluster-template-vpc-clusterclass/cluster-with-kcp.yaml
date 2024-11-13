@@ -10,11 +10,11 @@ spec:
   clusterNetwork:
     pods:
       cidrBlocks:
-      - ${POD_CIDR:="192.168.0.0/16"}
+        - ${POD_CIDR:="192.168.0.0/16"}
     serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
     services:
       cidrBlocks:
-      - ${SERVICE_CIDR:="10.128.0.0/12"}
+        - ${SERVICE_CIDR:="10.128.0.0/12"}
   topology:
     class: ${IBMVPC_CLUSTER_CLASS_NAME}
     controlPlane:
