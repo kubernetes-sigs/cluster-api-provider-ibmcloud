@@ -1060,6 +1060,35 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 					}
 				}
 			}
+
+			for _, al := range lb.AdditionalListeners {
+				var shouldAdd bool
+
+				machineType, ok := m.IBMPowerVSMachine.ObjectMeta.Labels["powervs.cluster.x-k8s.io/node-type"]
+				m.V(3).Info("Testing additional listener", "Add", al.Add, "Port", al.Port, "machineType", machineType, "ok", ok)
+
+				if al.Add == "" || !ok {
+					continue
+				}
+
+				switch al.Add {
+				case infrav1beta2.VPCLoadBalancerPoolAddAll:
+					shouldAdd = true
+				case infrav1beta2.VPCLoadBalancerPoolAddBootstrapOnly:
+					shouldAdd = machineType == "bootstrap"
+				case infrav1beta2.VPCLoadBalancerPoolAddMastersOnly:
+					shouldAdd = machineType == "master"
+				default:
+					return nil, fmt.Errorf("unknown VPCLoadBalancerPoolAdd type: %s", al.Add)
+				}
+				m.V(3).Info("Testing additional listener", "targetPort", targetPort, "shouldAdd", shouldAdd)
+				if al.Port == targetPort && !shouldAdd {
+					m.V(3).Info("Skipping PoolMember because of Add value of", "Add", al.Add, "name", m.IBMPowerVSMachine.Name)
+					alreadyRegistered = true
+					continue
+				}
+			}
+
 			if alreadyRegistered {
 				m.V(3).Info("PoolMember already exist", "pool", *pool.Name, "targetip", internalIP, "port", targetPort)
 				continue
@@ -1089,7 +1118,7 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 			if err != nil {
 				return nil, fmt.Errorf("failed to create VPC load balancer %s pool member %v", *loadBalancer.Name, err)
 			}
-			m.Info("Created VPC load balancer pool member", "id", *loadBalancerPoolMember.ID)
+			m.Info("Created VPC load balancer pool member", "id", *loadBalancerPoolMember.ID, "pool", *pool.Name)
 			return loadBalancerPoolMember, nil
 		}
 	}

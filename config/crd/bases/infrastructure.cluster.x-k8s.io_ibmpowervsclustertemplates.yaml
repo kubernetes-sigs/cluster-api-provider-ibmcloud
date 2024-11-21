@@ -305,6 +305,20 @@ spec:
                                   AdditionalListenerSpec defines the desired state of an
                                   additional listener on an VPC load balancer.
                                 properties:
+                                  add:
+                                    allOf:
+                                    - enum:
+                                      - all
+                                      - bootstrap_only
+                                      - masters_only
+                                    - enum:
+                                      - all
+                                      - bootstrap_only
+                                      - masters_only
+                                    description: Add defines which VMs are added to
+                                      this pool.  If empty, it will default to all
+                                      VMs.
+                                    type: string
                                   defaultPoolName:
                                     description: defaultPoolName defines the name
                                       of a VPC Load Balancer Backend Pool to use for

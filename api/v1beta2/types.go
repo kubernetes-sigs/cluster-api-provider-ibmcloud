@@ -117,6 +117,21 @@ var (
 	TransitGatewayConnectionStateDeleting = TransitGatewayConnectionState("deleting")
 )
 
+// VPCLoadBalancerPoolAdd describes which VMs are added to the pool.
+// +kubebuilder:validation:Enum=all;bootstrap_only;masters_only
+type VPCLoadBalancerPoolAdd string
+
+var (
+	// VPCLoadBalancerPoolAddAll is the string representing that every VM should be added to the pool.
+	VPCLoadBalancerPoolAddAll = VPCLoadBalancerPoolAdd("all")
+
+	// VPCLoadBalancerPoolAddBootstrapOnly is the string representing that only the bootstrap VM should be added to the pool.
+	VPCLoadBalancerPoolAddBootstrapOnly = VPCLoadBalancerPoolAdd("bootstrap_only")
+
+	// VPCLoadBalancerPoolAddMastersOnly is the string representing that only master VMs should be added to the pool.
+	VPCLoadBalancerPoolAddMastersOnly = VPCLoadBalancerPoolAdd("masters_only")
+)
+
 // VPCLoadBalancerBackendPoolAlgorithm describes the backend pool's load balancing algorithm.
 // +kubebuilder:validation:Enum=least_connections;round_robin;weighted_round_robin
 type VPCLoadBalancerBackendPoolAlgorithm string

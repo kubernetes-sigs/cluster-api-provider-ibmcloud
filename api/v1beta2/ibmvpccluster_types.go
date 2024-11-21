@@ -127,6 +127,11 @@ type AdditionalListenerSpec struct {
 	// Will default to TCP protocol if not specified.
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
+
+	// Add defines which VMs are added to this pool.  If empty, it will default to all VMs.
+	// +kubebuilder:validation:Enum=all;bootstrap_only;masters_only
+	// +optional
+	Add VPCLoadBalancerPoolAdd `json:"add,omitempty"`
 }
 
 // VPCLoadBalancerBackendPoolSpec defines the desired configuration of a VPC Load Balancer Backend Pool.
