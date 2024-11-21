@@ -275,6 +275,10 @@ spec:
                           AdditionalListenerSpec defines the desired state of an
                           additional listener on an VPC load balancer.
                         properties:
+                          bootstrapOnly:
+                            description: BootstrapOnly signifies that only the bootstrap
+                              IP will be added to this pool.
+                            type: boolean
                           defaultPoolName:
                             description: defaultPoolName defines the name of a VPC
                               Load Balancer Backend Pool to use for the VPC Load Balancer
