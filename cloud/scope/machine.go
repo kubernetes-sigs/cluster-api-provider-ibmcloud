@@ -36,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -1055,7 +1054,7 @@ func (m *MachineScope) SetFailureMessage(message string) {
 }
 
 // SetFailureReason will set the Machine's Failure Reason.
-func (m *MachineScope) SetFailureReason(reason capierrors.MachineStatusError) {
+func (m *MachineScope) SetFailureReason(reason string) {
 	m.IBMVPCMachine.Status.FailureReason = ptr.To(reason)
 }
 
