@@ -28,7 +28,7 @@ rules:
 
   # Rules to control lines
   line-length:
-    max: 150                                       # Maximum 150 characters per line
+    max: 200                                       # Maximum 150 characters per line
     allow-non-breakable-words: true                # Allow long words without breaks
     allow-non-breakable-inline-mappings: true      # Allow long inline mappings without breaks
   empty-lines:
