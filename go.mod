@@ -4,9 +4,9 @@ go 1.22.0
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
-	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.19.0
-	github.com/onsi/gomega => github.com/onsi/gomega v1.33.1
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.4
+	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.19.1
+	github.com/onsi/gomega => github.com/onsi/gomega v1.34.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.5
 )
 
 require (
@@ -41,8 +41,8 @@ require (
 	k8s.io/component-base v0.30.3
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661
-	sigs.k8s.io/cluster-api v1.8.4
-	sigs.k8s.io/cluster-api/test v1.8.4
+	sigs.k8s.io/cluster-api v1.8.5
+	sigs.k8s.io/cluster-api/test v1.8.5
 	sigs.k8s.io/controller-runtime v0.18.5
 	sigs.k8s.io/yaml v1.4.0
 )
