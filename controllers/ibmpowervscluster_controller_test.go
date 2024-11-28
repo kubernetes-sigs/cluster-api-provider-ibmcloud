@@ -31,6 +31,7 @@ import (
 	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1378,11 +1379,11 @@ func TestReconcileVPCResources(t *testing.T) {
 						},
 					},
 				}
+				vpcZones, _ := regionUtil.VPCZonesForVPCRegion("us-south")
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
-				mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
-				mockVPC.EXPECT().GetSubnetAddrPrefix(gomock.Any(), gomock.Any()).Return("cidr", nil)
-				mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(&vpcv1.Subnet{Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(len(vpcZones))
+				mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(&vpcv1.Subnet{Status: ptr.To("active")}, nil, nil).Times(len(vpcZones))
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},

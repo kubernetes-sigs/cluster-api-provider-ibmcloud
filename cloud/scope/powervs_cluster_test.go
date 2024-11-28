@@ -27,6 +27,7 @@ import (
 	"github.com/IBM/ibm-cos-sdk-go/aws/awserr"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 	"go.uber.org/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -3556,6 +3557,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					VPC:        &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets: []infrav1beta2.Subnet{{ID: ptr.To("subnet1ID"), Name: ptr.To("subnet1Name")}, {ID: ptr.To("subnet2ID"), Name: ptr.To("subnet2Name")}}},
 			},
 		}
@@ -3571,8 +3573,122 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet1Details.Name].ID).To(Equal(subnet1Details.ID))
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet2Details.Name].ID).To(Equal(subnet2Details.ID))
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet1Details.Name].ControllerCreated).To(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet2Details.Name].ControllerCreated).To(BeNil())
 	})
 
+	t.Run("When more VPCSubnets are set in the spec than the available VPC zones with zone explicitly mentioned for few subnets", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		var subnetZone *string
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")},
+				},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					VPC:           &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{Name: ptr.To("subnet1Name"), Zone: ptr.To("eu-de-2")},
+						{Name: ptr.To("subnet2Name")},
+						{Name: ptr.To("subnet3Name")},
+						{Name: ptr.To("subnet4Name")},
+						{Name: ptr.To("subnet5Name")},
+					}},
+			},
+		}
+
+		vpcZones, err := regionUtil.VPCZonesForVPCRegion(*clusterScope.IBMPowerVSCluster.Spec.VPC.Region)
+		g.Expect(err).To(BeNil())
+		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets))
+		for i := 0; i < len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets); i++ {
+			subnet1Options := &vpcv1.CreateSubnetOptions{}
+			if clusterScope.IBMPowerVSCluster.Spec.VPCSubnets[i].Zone != nil {
+				subnetZone = clusterScope.IBMPowerVSCluster.Spec.VPCSubnets[i].Zone
+			} else {
+				subnetZone = &vpcZones[i%len(vpcZones)]
+			}
+			subnet1Options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
+				IPVersion:             ptr.To("ipv4"),
+				TotalIpv4AddressCount: ptr.To(vpcSubnetIPAddressCount),
+				Name:                  clusterScope.IBMPowerVSCluster.Spec.VPCSubnets[i].Name,
+				VPC: &vpcv1.VPCIdentity{
+					ID: clusterScope.IBMPowerVSCluster.Status.VPC.ID,
+				},
+				Zone: &vpcv1.ZoneIdentity{
+					Name: subnetZone,
+				},
+				ResourceGroup: &vpcv1.ResourceGroupIdentity{
+					ID: clusterScope.IBMPowerVSCluster.Spec.ResourceGroup.ID,
+				},
+			})
+			subnetDetails := &vpcv1.Subnet{ID: ptr.To(fmt.Sprintf("subnet%dID", i+1)), Name: ptr.To(fmt.Sprintf("subnet%dName", i+1))}
+			mockVPC.EXPECT().CreateSubnet(subnet1Options).Return(subnetDetails, nil, nil)
+		}
+		requeue, err := clusterScope.ReconcileVPCSubnets()
+		g.Expect(requeue).To(BeTrue())
+		g.Expect(err).To(BeNil())
+		for i := 1; i <= len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets); i++ {
+			g.Expect(*clusterScope.IBMPowerVSCluster.Status.VPCSubnet[fmt.Sprintf("subnet%dName", i)].ID).To(Equal(fmt.Sprintf("subnet%dID", i)))
+			g.Expect(*clusterScope.IBMPowerVSCluster.Status.VPCSubnet[fmt.Sprintf("subnet%dName", i)].ControllerCreated).To(BeTrue())
+		}
+	})
+
+	t.Run("When VPCSubnets are set in the spec along with the zones", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")},
+				},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					VPC:           &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{Name: ptr.To("subnet1Name"), Zone: ptr.To("eu-de-1")},
+						{Name: ptr.To("subnet2Name"), Zone: ptr.To("eu-de-2")},
+						{Name: ptr.To("subnet3Name"), Zone: ptr.To("eu-de-3")},
+					}},
+			},
+		}
+
+		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets))
+		for i := 0; i < len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets); i++ {
+			subnet1Options := &vpcv1.CreateSubnetOptions{}
+			subnet1Options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
+				IPVersion:             ptr.To("ipv4"),
+				TotalIpv4AddressCount: ptr.To(vpcSubnetIPAddressCount),
+				Name:                  clusterScope.IBMPowerVSCluster.Spec.VPCSubnets[i].Name,
+				VPC: &vpcv1.VPCIdentity{
+					ID: clusterScope.IBMPowerVSCluster.Status.VPC.ID,
+				},
+				Zone: &vpcv1.ZoneIdentity{
+					Name: clusterScope.IBMPowerVSCluster.Spec.VPCSubnets[i].Zone,
+				},
+				ResourceGroup: &vpcv1.ResourceGroupIdentity{
+					ID: clusterScope.IBMPowerVSCluster.Spec.ResourceGroup.ID,
+				},
+			})
+			subnetDetails := &vpcv1.Subnet{ID: ptr.To(fmt.Sprintf("subnet%dID", i+1)), Name: ptr.To(fmt.Sprintf("subnet%dName", i+1))}
+			mockVPC.EXPECT().CreateSubnet(subnet1Options).Return(subnetDetails, nil, nil)
+		}
+		requeue, err := clusterScope.ReconcileVPCSubnets()
+		g.Expect(requeue).To(BeTrue())
+		g.Expect(err).To(BeNil())
+		for i := 1; i <= len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets); i++ {
+			g.Expect(*clusterScope.IBMPowerVSCluster.Status.VPCSubnet[fmt.Sprintf("subnet%dName", i)].ID).To(Equal(fmt.Sprintf("subnet%dID", i)))
+			g.Expect(*clusterScope.IBMPowerVSCluster.Status.VPCSubnet[fmt.Sprintf("subnet%dName", i)].ControllerCreated).To(BeTrue())
+		}
+	})
 	t.Run("When VPCSubnets are not set in spec and subnet doesnot exist in cloud", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
@@ -3591,13 +3707,41 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			},
 		}
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
-		mockVPC.EXPECT().GetSubnetAddrPrefix(gomock.Any(), "eu-de-1").Return("10.240.20.0/18", nil)
-		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
+		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(3)
+		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil).Times(3)
 		requeue, err := clusterScope.ReconcileVPCSubnets()
 		g.Expect(requeue).To(BeTrue())
 		g.Expect(err).To(BeNil())
-		g.Expect(len(clusterScope.IBMPowerVSCluster.Status.VPCSubnet)).To(Equal(1))
+		g.Expect(len(clusterScope.IBMPowerVSCluster.Status.VPCSubnet)).To(Equal(3))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet1Details.Name].ID).To(Equal(subnet1Details.ID))
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet1Details.Name].ControllerCreated).To(BeTrue())
+	})
+
+	t.Run("When VPCSubnets are set in spec but zone is not specified", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")},
+				},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					VPC:           &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
+					VPCSubnets:    []infrav1beta2.Subnet{{Name: ptr.To("subnet1Name")}}},
+			},
+		}
+		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("subnet1Name")}
+		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
+		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
+
+		requeue, err := clusterScope.ReconcileVPCSubnets()
+		g.Expect(requeue).To(BeTrue())
+		g.Expect(err).To(BeNil())
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet1Details.Name].ID).To(Equal(subnet1Details.ID))
 		g.Expect(*clusterScope.IBMPowerVSCluster.Status.VPCSubnet[*subnet1Details.Name].ControllerCreated).To(BeTrue())
 	})
@@ -3633,7 +3777,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		g.Expect(requeue).To(BeFalse())
 		g.Expect(err).ToNot(BeNil())
 	})
-	t.Run("When subnetID and subnetName is nil", func(t *testing.T) {
+	t.Run("When subnetID and subnetName is nil and vpc subnet exists in cloud", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -3643,7 +3787,9 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
-					VPCSubnets: []infrav1beta2.Subnet{{}}},
+					VPC:        &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
+					VPCSubnets: []infrav1beta2.Subnet{{Zone: ptr.To("eu-de-1")}},
+				},
 				Status: infrav1beta2.IBMPowerVSClusterStatus{
 					VPCSubnet: map[string]infrav1beta2.ResourceReference{
 						"subnet1Name": {ID: ptr.To("subnet1ID"), ControllerCreated: ptr.To(true)},
@@ -3652,7 +3798,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		}
 		vpcSubnet1Name := fmt.Sprintf("%s-vpcsubnet-0", clusterScope.IBMPowerVSCluster.ObjectMeta.Name)
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: &vpcSubnet1Name}
-		mockVPC.EXPECT().GetVPCSubnetByName(vpcSubnet1Name).Return(subnet1Details, nil)
+		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(subnet1Details, nil)
 
 		requeue, err := clusterScope.ReconcileVPCSubnets()
 		g.Expect(requeue).To(BeFalse())
@@ -3671,6 +3817,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					VPC: &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets: []infrav1beta2.Subnet{
 						{
 							ID:   ptr.To("subnet1ID"),
@@ -3696,6 +3843,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					VPC: &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets: []infrav1beta2.Subnet{
 						{
 							ID:   ptr.To("subnet1ID"),
@@ -3721,7 +3869,8 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
-					VPCSubnets: []infrav1beta2.Subnet{{}}},
+					VPC: &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
+				},
 			},
 		}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, fmt.Errorf("GetVPCSubnetByName returns error"))
@@ -3740,7 +3889,8 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
-					VPCSubnets: []infrav1beta2.Subnet{{}}},
+					VPC: &infrav1beta2.VPCResourceReference{Region: ptr.To("eu-de")},
+				},
 			},
 		}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
@@ -3773,7 +3923,7 @@ func TestSetVPCSubnetStatus(t *testing.T) {
 					Status: infrav1beta2.IBMPowerVSClusterStatus{
 						VPCSubnet: map[string]infrav1beta2.ResourceReference{
 							"subnet1Name": {
-								ControllerCreated: ptr.To(false),
+								ControllerCreated: ptr.To(true),
 							},
 						},
 					},
@@ -3878,7 +4028,6 @@ func TestCreateVPCSubnet(t *testing.T) {
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
 
-		mockVPC.EXPECT().GetSubnetAddrPrefix(*clusterScope.IBMPowerVSCluster.Status.VPC.ID, *subnet.Zone).Return("10.240.20.0/18", nil)
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
 		subnetID, err := clusterScope.createVPCSubnet(subnet)
 		g.Expect(subnetID).To(Equal(subnet1Details.ID))
@@ -3902,7 +4051,6 @@ func TestCreateVPCSubnet(t *testing.T) {
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
 
-		mockVPC.EXPECT().GetSubnetAddrPrefix(*clusterScope.IBMPowerVSCluster.Status.VPC.ID, "eu-de-1").Return("10.240.20.0/18", nil)
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
 		subnetID, err := clusterScope.createVPCSubnet(subnet)
 		g.Expect(subnetID).To(Equal(subnet1Details.ID))
@@ -3932,26 +4080,9 @@ func TestCreateVPCSubnet(t *testing.T) {
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-				Spec: infrav1beta2.IBMPowerVSClusterSpec{ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}, Status: infrav1beta2.IBMPowerVSClusterStatus{}},
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
-		g.Expect(subnetID).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When GetSubnetAddrPrefix returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-
-		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-				Spec:   infrav1beta2.IBMPowerVSClusterSpec{ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}},
-				Status: infrav1beta2.IBMPowerVSClusterStatus{VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")}}},
-		}
-		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
-		mockVPC.EXPECT().GetSubnetAddrPrefix(gomock.Any(), gomock.Any()).Return("", fmt.Errorf("GetSubnetAddrPrefix returns error"))
 		subnetID, err := clusterScope.createVPCSubnet(subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
@@ -3969,8 +4100,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 				Status: infrav1beta2.IBMPowerVSClusterStatus{VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")}}},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
-		mockVPC.EXPECT().GetSubnetAddrPrefix(gomock.Any(), gomock.Any()).Return("10.10.1.10/24", nil)
-		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(nil, nil, fmt.Errorf("GetSubnetAddrPrefix returns error"))
+		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(nil, nil, fmt.Errorf("error creating subnet"))
 		subnetID, err := clusterScope.createVPCSubnet(subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
@@ -3987,42 +4117,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 				Status: infrav1beta2.IBMPowerVSClusterStatus{VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")}}},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
-		mockVPC.EXPECT().GetSubnetAddrPrefix(gomock.Any(), gomock.Any()).Return("10.10.1.10/24", nil)
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(nil, nil, nil)
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
-		g.Expect(subnetID).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When VPCZonesForVPCRegion returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-
-		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-				Spec: infrav1beta2.IBMPowerVSClusterSpec{ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					VPC: &infrav1beta2.VPCResourceReference{Region: ptr.To("aadd")}},
-			},
-		}
-		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
-		g.Expect(subnetID).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When VPCZonesForVPCRegion returns zero zones for the region set in spec", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-
-		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-				Spec: infrav1beta2.IBMPowerVSClusterSpec{ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					VPC: &infrav1beta2.VPCResourceReference{Region: ptr.To("")}},
-			},
-		}
-		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
 		subnetID, err := clusterScope.createVPCSubnet(subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
