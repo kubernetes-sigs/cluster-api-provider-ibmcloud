@@ -120,6 +120,10 @@ func getTGPowerVSConnectionName(tgName string) string { return fmt.Sprintf("%s-p
 
 func getTGVPCConnectionName(tgName string) string { return fmt.Sprintf("%s-vpc-con", tgName) }
 
+func dhcpNetworkName(dhcpServerName string) string {
+	return fmt.Sprintf("DHCPSERVER%s_Private", dhcpServerName)
+}
+
 // NewPowerVSClusterScope creates a new PowerVSClusterScope from the supplied parameters.
 func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterScope, error) {
 	if params.Client == nil {
@@ -457,6 +461,14 @@ func (s *PowerVSClusterScope) SetStatus(resourceType infrav1beta2.ResourceType, 
 		}
 		s.IBMPowerVSCluster.Status.ResourceGroup.Set(resource)
 	}
+}
+
+// GetNetworkID returns the Network id from status of IBMPowerVSCluster object. If it doesn't exist, returns nil.
+func (s *PowerVSClusterScope) GetNetworkID() *string {
+	if s.IBMPowerVSCluster.Status.Network != nil {
+		return s.IBMPowerVSCluster.Status.Network.ID
+	}
+	return nil
 }
 
 // Network returns the cluster Network.
@@ -847,18 +859,33 @@ func (s *PowerVSClusterScope) createServiceInstance() (*resourcecontrollerv2.Res
 	return serviceInstance, nil
 }
 
-// ReconcileNetwork reconciles network.
+// ReconcileNetwork reconciles network
+// If only IBMPowerVSCluster.Spec.Network is set, network would be validated and if exists already will get used as cluster’s network or a new network will be created via DHCP service.
+// If only IBMPowerVSCluster.Spec.DHCPServer is set, DHCP server would be validated and if exists already, will use DHCP server’s network as cluster network. If not a new DHCP service will be created and it’s network will be used.
+// If both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer is set, network and DHCP server would be validated and if both exists already then network is belongs to given DHCP server or not would be validated.
+// If both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer is not set, by default DHCP service will be created to setup cluster's network.
 func (s *PowerVSClusterScope) ReconcileNetwork() (bool, error) {
-	if s.GetDHCPServerID() != nil {
+	if s.GetNetworkID() != nil {
+		// Check the network exists
+		if _, err := s.IBMPowerVSClient.GetNetworkByID(*s.GetNetworkID()); err != nil {
+			return false, err
+		}
+
+		if s.GetDHCPServerID() == nil {
+			// If only network is set, return once network is validated to be ok
+			return true, nil
+		}
+
 		s.V(3).Info("DHCP server ID is set, fetching details", "dhcpServerID", s.GetDHCPServerID())
 		active, err := s.isDHCPServerActive()
 		if err != nil {
 			return false, err
 		}
-		// if dhcp server exist and in active state, its assumed that dhcp network exist
-		// TODO(Phase 2): Verify that dhcp network is exist.
-		return active, nil
-		//	TODO(karthik-k-n): If needed set dhcp status here
+		// DHCP server still not active, skip checking network for now
+		if !active {
+			return false, nil
+		}
+		return true, nil
 	}
 	// check network exist in cloud
 	networkID, err := s.checkNetwork()
@@ -868,10 +895,20 @@ func (s *PowerVSClusterScope) ReconcileNetwork() (bool, error) {
 	if networkID != nil {
 		s.V(3).Info("Found PowerVS network in IBM Cloud", "networkID", networkID)
 		s.SetStatus(infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: networkID, ControllerCreated: ptr.To(false)})
+	}
+	dhcpServerID, err := s.checkDHCPServer()
+	if err != nil {
+		return false, err
+	}
+	if dhcpServerID != nil {
+		s.V(3).Info("Found DHCP server in IBM Cloud", "dhcpServerID", dhcpServerID)
+		s.SetStatus(infrav1beta2.ResourceTypeDHCPServer, infrav1beta2.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(false)})
+	}
+	if s.GetNetworkID() != nil {
 		return true, nil
 	}
 
-	dhcpServerID, err := s.createDHCPServer()
+	dhcpServerID, err = s.createDHCPServer()
 	if err != nil {
 		s.Error(err, "Error creating DHCP server")
 		return false, err
@@ -882,37 +919,84 @@ func (s *PowerVSClusterScope) ReconcileNetwork() (bool, error) {
 	return false, nil
 }
 
-// checkNetwork checks if network exists in cloud with given name or ID mentioned in spec.
+// checkDHCPServer checks if DHCP server exists in cloud with given DHCPServer's ID or name mentioned in spec.
+// If exists and s.IBMPowerVSCluster.Status.Network is not populated will set DHCP server's network as cluster's network.
+// If exists and s.IBMPowerVSCluster.Status.Network is populated already will validate the DHCP server's network and cluster networks are matching, if not will throw an error.
+func (s *PowerVSClusterScope) checkDHCPServer() (*string, error) {
+	if s.DHCPServer() != nil && s.DHCPServer().ID != nil {
+		dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(*s.DHCPServer().ID)
+		if err != nil {
+			return nil, err
+		}
+		if s.GetNetworkID() == nil {
+			if dhcpServer.Network != nil {
+				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
+					return nil, err
+				}
+				s.SetStatus(infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
+			} else {
+				return nil, fmt.Errorf("found DHCP server with ID `%s`, but network is nil", *s.DHCPServer().ID)
+			}
+		} else if dhcpServer.Network != nil && *dhcpServer.Network.ID != *s.GetNetworkID() {
+			return nil, fmt.Errorf("network details set via spec and DHCP server's network are not matching")
+		}
+		return dhcpServer.ID, nil
+	}
+
+	// if user provides DHCP server name then we can use network name to match the existing DHCP server
+	var networkName string
+	if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
+		networkName = dhcpNetworkName(*s.DHCPServer().Name)
+	} else {
+		networkName = dhcpNetworkName(s.InfraCluster())
+	}
+
+	s.V(3).Info("Checking DHCP server's network list by network name", "name", networkName)
+	dhcpServers, err := s.IBMPowerVSClient.GetAllDHCPServers()
+	if err != nil {
+		return nil, err
+	}
+	for _, dhcpServer := range dhcpServers {
+		if dhcpServer.Network != nil && *dhcpServer.Network.Name == networkName {
+			if s.GetNetworkID() == nil {
+				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
+					return nil, err
+				}
+				s.SetStatus(infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
+			} else if *dhcpServer.Network.ID != *s.GetNetworkID() {
+				return nil, fmt.Errorf("error network set via spec and DHCP server's networkID are not matching")
+			}
+			return dhcpServer.ID, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// checkNetwork checks if network exists in cloud with given network's ID or name mentioned in spec.
 func (s *PowerVSClusterScope) checkNetwork() (*string, error) {
-	if s.IBMPowerVSCluster.Spec.Network.ID != nil {
-		s.V(3).Info("Checking if PowerVS network exists in IBM Cloud with ID", "networkID", *s.IBMPowerVSCluster.Spec.Network.ID)
-		network, err := s.IBMPowerVSClient.GetNetworkByID(*s.IBMPowerVSCluster.Spec.Network.ID)
+	if s.Network().ID != nil {
+		s.V(3).Info("Checking if PowerVS network exists in IBM Cloud with ID", "networkID", *s.Network().ID)
+		network, err := s.IBMPowerVSClient.GetNetworkByID(*s.Network().ID)
 		if err != nil {
 			return nil, err
 		}
 		return network.NetworkID, nil
 	}
 
-	// if the user has provided the already existing dhcp server name then there might exist network name
-	// with format DHCPSERVER<DHCPServer.Name>_Private , try fetching that
-	var networkName string
-	if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
-		networkName = fmt.Sprintf("DHCPSERVER%s_Private", *s.DHCPServer().Name)
-	} else {
-		networkName = *s.GetServiceName(infrav1beta2.ResourceTypeNetwork)
+	if s.Network().Name != nil {
+		s.V(3).Info("Checking if PowerVS network exists in IBM Cloud with network name", "name", s.Network().Name)
+		network, err := s.IBMPowerVSClient.GetNetworkByName(*s.Network().Name)
+		if err != nil {
+			return nil, err
+		}
+		if network == nil || network.NetworkID == nil {
+			s.V(3).Info("Unable to find PowerVS network in IBM Cloud", "network", s.IBMPowerVSCluster.Spec.Network)
+			return nil, nil
+		}
+		return network.NetworkID, nil
 	}
-
-	s.V(3).Info("Checking if PowerVS network exists in IBM Cloud with name", "name", networkName)
-	// fetch the network associated with name
-	network, err := s.IBMPowerVSClient.GetNetworkByName(networkName)
-	if err != nil {
-		return nil, err
-	}
-	if network == nil || network.NetworkID == nil {
-		s.V(3).Info("Unable to find PowerVS network in IBM Cloud", "network", s.IBMPowerVSCluster.Spec.Network)
-		return nil, nil
-	}
-	return network.NetworkID, nil
+	return nil, nil
 }
 
 // isDHCPServerActive checks if the DHCP server status is active.
