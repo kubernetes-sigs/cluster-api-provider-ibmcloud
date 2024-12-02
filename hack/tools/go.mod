@@ -2,6 +2,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.22.0
 
+toolchain go1.22.9
+
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.4
 
 require (
