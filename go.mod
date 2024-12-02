@@ -2,6 +2,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.22.0
 
+toolchain go1.22.9
+
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.19.0
