@@ -10,7 +10,7 @@ require (
 	github.com/aquasecurity/trivy v0.55.1
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golangci/golangci-lint v1.59.1
-	github.com/itchyny/gojq v0.12.16
+	github.com/itchyny/gojq v0.12.17
 	github.com/joelanford/go-apidiff v0.8.2
 	github.com/onsi/ginkgo/v2 v2.19.1
 	go.uber.org/mock v0.4.0
