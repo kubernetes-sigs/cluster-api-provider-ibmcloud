@@ -13,7 +13,7 @@ The following periodic jobs are being run on main branch once every day.
 1. [periodic-capi-provider-ibmcloud-e2e-powervs](https://prow.ppc64le-cloud.cis.ibm.net/job-history/gs/ppc64le-kubernetes/logs/periodic-capi-provider-ibmcloud-e2e-powervs)
 2. [periodic-capi-provider-ibmcloud-e2e-vpc](https://prow.ppc64le-cloud.cis.ibm.net/job-history/gs/ppc64le-kubernetes/logs/periodic-capi-provider-ibmcloud-e2e-vpc)
 
-We also test the last two releases, `release-0.5` and `release-0.6` once every week.
+We also test the last two releases, once every week.
 
 ### Running the end-to-end tests locally
 
