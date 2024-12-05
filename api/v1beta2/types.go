@@ -24,6 +24,9 @@ const (
 
 	// DefaultAPIServerPort is defuault API server port number.
 	DefaultAPIServerPort int32 = 6443
+
+	// UpdateMachineError indicates an error while trying to update a machine.
+	UpdateMachineError string = "UpdateError"
 )
 
 // PowerVSInstanceState describes the state of an IBM Power VS instance.

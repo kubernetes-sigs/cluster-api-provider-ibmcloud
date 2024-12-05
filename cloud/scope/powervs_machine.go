@@ -53,7 +53,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 
@@ -728,7 +727,7 @@ func (m *PowerVSMachineScope) SetNotReady() {
 }
 
 // SetFailureReason will set status FailureReason for the machine.
-func (m *PowerVSMachineScope) SetFailureReason(reason capierrors.MachineStatusError) {
+func (m *PowerVSMachineScope) SetFailureReason(reason string) {
 	m.IBMPowerVSMachine.Status.FailureReason = &reason
 }
 

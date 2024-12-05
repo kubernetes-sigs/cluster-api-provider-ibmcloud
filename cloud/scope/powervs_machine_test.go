@@ -45,7 +45,6 @@ import (
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capierrors "sigs.k8s.io/cluster-api/errors"
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -1119,8 +1118,8 @@ func TestSetFailureReason(t *testing.T) {
 				Status: infrav1beta2.IBMPowerVSMachineStatus{},
 			},
 		}
-		scope.SetFailureReason(capierrors.InvalidConfigurationMachineError)
-		g.Expect(*scope.IBMPowerVSMachine.Status.FailureReason).To(Equal(capierrors.InvalidConfigurationMachineError))
+		scope.SetFailureReason(infrav1beta2.UpdateMachineError)
+		g.Expect(*scope.IBMPowerVSMachine.Status.FailureReason).To(Equal(infrav1beta2.UpdateMachineError))
 	})
 }
 
