@@ -8,7 +8,7 @@ toolchain go1.22.9
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.35.1
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.9.0-rc.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.9.0-rc.1
 )
 
 require (
@@ -45,7 +45,7 @@ require (
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 	sigs.k8s.io/cluster-api v1.9.0-beta.1
 	sigs.k8s.io/cluster-api/test v1.9.0-beta.1
-	sigs.k8s.io/controller-runtime v0.19.2
+	sigs.k8s.io/controller-runtime v0.19.3
 	sigs.k8s.io/yaml v1.4.0
 )
 
