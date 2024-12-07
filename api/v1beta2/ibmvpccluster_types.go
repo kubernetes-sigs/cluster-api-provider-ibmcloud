@@ -127,6 +127,10 @@ type AdditionalListenerSpec struct {
 	// Will default to TCP protocol if not specified.
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
+
+	// BootstrapOnly signifies that only the bootstrap IP will be added to this pool.
+	// +optional
+	BootstrapOnly bool `json:"bootstrapOnly,omitempty"`
 }
 
 // VPCLoadBalancerBackendPoolSpec defines the desired configuration of a VPC Load Balancer Backend Pool.
