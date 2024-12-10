@@ -108,6 +108,20 @@ type VPCLoadBalancerSpec struct {
 	Subnets []VPCResource `json:"subnets,omitempty"`
 }
 
+// AdditionalListenerEnabled defines what category of VMs are added to the listener pool.
+type AdditionalListenerEnabled int
+
+const (
+	// AdditionalListenerAll add every VM to the listener pool.
+	AdditionalListenerAll AdditionalListenerEnabled = iota
+
+	// AdditionalListenerBootstrapOnly add only the bootstrap VM to the listener pool.
+	AdditionalListenerBootstrapOnly
+
+	// AdditionalListenerMastersOnly add only the master VMs to the listener pool.
+	AdditionalListenerMastersOnly
+)
+
 // AdditionalListenerSpec defines the desired state of an
 // additional listener on an VPC load balancer.
 type AdditionalListenerSpec struct {
@@ -127,6 +141,11 @@ type AdditionalListenerSpec struct {
 	// Will default to TCP protocol if not specified.
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
+
+	// Enabled defines which VMs are added to this pool.  Choices can be all, bootstrap only, or mastersonly.
+	// Will default to all VMs.
+	// +optional
+	Enabled AdditionalListenerEnabled `json:"enabled,omitempty"`
 }
 
 // VPCLoadBalancerBackendPoolSpec defines the desired configuration of a VPC Load Balancer Backend Pool.

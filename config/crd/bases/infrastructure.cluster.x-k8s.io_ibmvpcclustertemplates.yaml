@@ -116,6 +116,11 @@ spec:
                                   minLength: 1
                                   pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                   type: string
+                                enabled:
+                                  description: |-
+                                    Enabled defines which VMs are added to this pool.  Choices can be all, bootstrap only, or mastersonly.
+                                    Will default to all VMs.
+                                  type: integer
                                 port:
                                   description: Port sets the port for the additional
                                     listener.
@@ -397,6 +402,11 @@ spec:
                                         minLength: 1
                                         pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                         type: string
+                                      enabled:
+                                        description: |-
+                                          Enabled defines which VMs are added to this pool.  Choices can be all, bootstrap only, or mastersonly.
+                                          Will default to all VMs.
+                                        type: integer
                                       port:
                                         description: Port sets the port for the additional
                                           listener.
