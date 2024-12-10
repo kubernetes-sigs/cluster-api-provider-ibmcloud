@@ -1060,6 +1060,16 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 					}
 				}
 			}
+
+			for _, al := range lb.AdditionalListeners {
+				ib := strings.Contains(m.IBMPowerVSMachine.Name, "-bootstrap")
+				if al.BootstrapOnly && al.Port == targetPort && !ib {
+					m.V(3).Info("Skipping PoolMember because BootstrapOnly specified")
+					alreadyRegistered = true
+					continue
+				}
+			}
+
 			if alreadyRegistered {
 				m.V(3).Info("PoolMember already exist", "pool", *pool.Name, "targetip", internalIP, "port", targetPort)
 				continue
