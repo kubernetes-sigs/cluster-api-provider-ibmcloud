@@ -717,7 +717,11 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			powerVSClusterScope := tc.powervsClusterScope()
 			res, err := reconciler.reconcile(powerVSClusterScope)
 			if tc.expectedError != nil {
-				g.Expect(err).To(Equal(tc.expectedError))
+				if errAggregate, ok := err.(kerrors.Aggregate); ok {
+					g.Expect(errAggregate.Errors()).To(ConsistOf(tc.expectedError))
+				} else {
+					g.Expect(err).To(Equal(tc.expectedError))
+				}
 			} else {
 				g.Expect(err).To(BeNil())
 			}
