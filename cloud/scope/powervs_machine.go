@@ -1060,6 +1060,25 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 					}
 				}
 			}
+
+			for _, al := range lb.AdditionalListeners {
+				var shouldAdd bool
+
+				switch al.Enabled {
+				case infrav1beta2.AdditionalListenerAll:
+					shouldAdd = true
+				case infrav1beta2.AdditionalListenerBootstrapOnly:
+					shouldAdd = strings.Contains(m.IBMPowerVSMachine.Name, "-bootstrap")
+				case infrav1beta2.AdditionalListenerMastersOnly:
+					shouldAdd = strings.Contains(m.IBMPowerVSMachine.Name, "-master")
+				}
+				if al.Port == targetPort && !shouldAdd {
+					m.V(3).Info("Skipping PoolMember because of Enabled value of", "Enabled", al.Enabled, "name", m.IBMPowerVSMachine.Name)
+					alreadyRegistered = true
+					continue
+				}
+			}
+
 			if alreadyRegistered {
 				m.V(3).Info("PoolMember already exist", "pool", *pool.Name, "targetip", internalIP, "port", targetPort)
 				continue
