@@ -26,14 +26,14 @@ spec:
     initConfiguration:
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs: 
+        kubeletExtraArgs:
           cloud-provider: external
           eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
     joinConfiguration:
       discovery: {}
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
-        kubeletExtraArgs: 
+        kubeletExtraArgs:
           cloud-provider: external
           eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
 ---
