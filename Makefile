@@ -546,6 +546,11 @@ else
 	echo "Versions are different across Makefiles. Please ensure to keep them uniform."
 endif
 
+
+.PHONY: yamllint
+yamllint:
+	@docker run --rm $$(tty -s && echo "-it" || echo) -v $(PWD):/data cytopia/yamllint:latest /data --config-file /data/.yamllint --no-warnings
+
 ## --------------------------------------
 ## Cleanup / Verification
 ## --------------------------------------
