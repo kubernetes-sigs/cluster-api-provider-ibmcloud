@@ -1967,7 +1967,7 @@ func (s *VPCClusterScope) createLoadBalancer(loadBalancer infrav1beta2.VPCLoadBa
 		for _, additionalListener := range loadBalancer.AdditionalListeners {
 			listener := s.buildLoadBalancerListener(additionalListener)
 
-			s.V(3).Info("addd listener to load balancer", "loadBalancerName", loadBalancer.Name, "listenerPort", listener.Port)
+			s.V(3).Info("added listener to load balancer", "loadBalancerName", loadBalancer.Name, "listenerPort", listener.Port)
 			listeners = append(listeners, listener)
 		}
 	} else {
