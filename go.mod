@@ -8,7 +8,7 @@ toolchain go1.22.9
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.35.1
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.9.0-rc.1
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.9.3
 )
 
 require (
@@ -43,8 +43,8 @@ require (
 	k8s.io/component-base v0.31.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
-	sigs.k8s.io/cluster-api v1.9.0-beta.1
-	sigs.k8s.io/cluster-api/test v1.9.0-beta.1
+	sigs.k8s.io/cluster-api v1.9.3
+	sigs.k8s.io/cluster-api/test v1.9.3
 	sigs.k8s.io/controller-runtime v0.19.3
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -190,6 +190,6 @@ require (
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/kind v0.24.0 // indirect
+	sigs.k8s.io/kind v0.25.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
