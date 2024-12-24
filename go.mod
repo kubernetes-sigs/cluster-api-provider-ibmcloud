@@ -6,7 +6,7 @@ go 1.22.0
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.19.1
 	github.com/onsi/gomega => github.com/onsi/gomega v1.34.0
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.5
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.8.8
 )
 
 require (
@@ -30,9 +30,9 @@ require (
 	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/crypto v0.29.0
-	golang.org/x/net v0.31.0
-	golang.org/x/text v0.20.0
+	golang.org/x/crypto v0.31.0
+	golang.org/x/net v0.33.0
+	golang.org/x/text v0.21.0
 	k8s.io/api v0.30.3
 	k8s.io/apiextensions-apiserver v0.30.3
 	k8s.io/apimachinery v0.30.3
@@ -41,9 +41,9 @@ require (
 	k8s.io/component-base v0.30.3
 	k8s.io/klog/v2 v2.120.1
 	k8s.io/utils v0.0.0-20231127182322-b307cd553661
-	sigs.k8s.io/cluster-api v1.8.5
-	sigs.k8s.io/cluster-api/test v1.8.5
-	sigs.k8s.io/controller-runtime v0.18.5
+	sigs.k8s.io/cluster-api v1.8.8
+	sigs.k8s.io/cluster-api/test v1.8.8
+	sigs.k8s.io/controller-runtime v0.18.6
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -167,9 +167,9 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.9.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/term v0.27.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
