@@ -1,7 +1,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-commonLabels:
-  cluster.x-k8s.io/v1beta1: v1beta1_v1beta2
 
 # This kustomization.yaml is not intended to be run by itself,
 # since it depends on service name and namespace that are out of this kustomize package.
@@ -18,29 +16,14 @@ resources:
 - bases/infrastructure.cluster.x-k8s.io_ibmvpcclustertemplates.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
-patchesStrategicMerge:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
-- patches/webhook_in_ibmvpcclusters.yaml
-- patches/webhook_in_ibmvpcmachines.yaml
-- patches/webhook_in_ibmpowervsclusters.yaml
-- patches/webhook_in_ibmpowervsmachines.yaml
-- patches/webhook_in_ibmpowervsmachinetemplates.yaml
-- patches/webhook_in_ibmvpcmachinetemplates.yaml
-- patches/webhook_in_ibmpowervsimages.yaml
 #- patches/webhook_in_ibmpowervsclustertemplates.yaml
 #- patches/webhook_in_ibmvpcclustertemplates.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [CERTMANAGER] To enable webhook, uncomment all the sections with [CERTMANAGER] prefix.
 # patches here are for enabling the CA injection for each CRD
-- patches/cainjection_in_ibmvpcclusters.yaml
-- patches/cainjection_in_ibmvpcmachines.yaml
-- patches/cainjection_in_ibmpowervsclusters.yaml
-- patches/cainjection_in_ibmpowervsmachines.yaml
-- patches/cainjection_in_ibmpowervsmachinetemplates.yaml
-- patches/cainjection_in_ibmvpcmachinetemplates.yaml
-- patches/cainjection_in_ibmpowervsimages.yaml
 #- patches/cainjection_in_ibmpowervsclustertemplates.yaml
 #- patches/cainjection_in_ibmvpcclustertemplates.yaml
 # +kubebuilder:scaffold:crdkustomizecainjectionpatch
@@ -48,3 +31,22 @@ patchesStrategicMerge:
 # the following config is for teaching kustomize how to do kustomization for CRDs.
 configurations:
 - kustomizeconfig.yaml
+labels:
+- includeSelectors: true
+  pairs:
+    cluster.x-k8s.io/v1beta1: v1beta1_v1beta2
+patches:
+- path: patches/webhook_in_ibmvpcclusters.yaml
+- path: patches/webhook_in_ibmvpcmachines.yaml
+- path: patches/webhook_in_ibmpowervsclusters.yaml
+- path: patches/webhook_in_ibmpowervsmachines.yaml
+- path: patches/webhook_in_ibmpowervsmachinetemplates.yaml
+- path: patches/webhook_in_ibmvpcmachinetemplates.yaml
+- path: patches/webhook_in_ibmpowervsimages.yaml
+- path: patches/cainjection_in_ibmvpcclusters.yaml
+- path: patches/cainjection_in_ibmvpcmachines.yaml
+- path: patches/cainjection_in_ibmpowervsclusters.yaml
+- path: patches/cainjection_in_ibmpowervsmachines.yaml
+- path: patches/cainjection_in_ibmpowervsmachinetemplates.yaml
+- path: patches/cainjection_in_ibmvpcmachinetemplates.yaml
+- path: patches/cainjection_in_ibmpowervsimages.yaml
