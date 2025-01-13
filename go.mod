@@ -1,8 +1,7 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.22.0
-
-toolchain go1.22.9
+toolchain go1.23.4
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
@@ -15,7 +14,7 @@ require (
 	github.com/IBM-Cloud/power-go-client v1.9.0
 	github.com/IBM/go-sdk-core/v5 v5.18.5
 	github.com/IBM/ibm-cos-sdk-go v1.12.0
-	github.com/IBM/networking-go-sdk v0.45.0
+	github.com/IBM/networking-go-sdk v0.51.0
 	github.com/IBM/platform-services-go-sdk v0.73.0
 	github.com/IBM/vpc-go-sdk v0.64.0
 	github.com/blang/semver/v4 v4.0.0
@@ -83,7 +82,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/analysis v0.21.5 // indirect
@@ -97,7 +96,7 @@ require (
 	github.com/go-openapi/validate v0.22.4 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.19.0 // indirect
+	github.com/go-playground/validator/v10 v10.23.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -157,7 +156,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mongodb.org/mongo-driver v1.14.0 // indirect
+	go.mongodb.org/mongo-driver v1.17.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.28.0 // indirect
