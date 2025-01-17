@@ -53,12 +53,12 @@ spec:
             ref:
               apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
               kind: KubeadmConfigTemplate
-              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
+              name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-md-0"
           infrastructure:
             ref:
               apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
               kind: IBMPowerVSMachineTemplate
-              name:  "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
+              name: "${IBMPOWERVS_CLUSTER_CLASS_NAME}-worker-machinetemplate"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: IBMPowerVSClusterTemplate
@@ -166,7 +166,7 @@ spec:
             permissions: "0644"
           - content: |
               #!/bin/bash
-      
+
               # Copyright 2020 The Kubernetes Authors.
               #
               # Licensed under the Apache License, Version 2.0 (the "License");
@@ -180,30 +180,30 @@ spec:
               # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
               # See the License for the specific language governing permissions and
               # limitations under the License.
-      
+
               set -e
-      
+
               # Configure the workaround required for kubeadm init with kube-vip:
               # xref: https://github.com/kube-vip/kube-vip/issues/684
-      
+
               # Nothing to do for kubernetes < v1.29
               KUBEADM_MINOR="$(kubeadm version -o short | cut -d '.' -f 2)"
               if [[ "$KUBEADM_MINOR" -lt "29" ]]; then
                 exit 0
               fi
-      
+
               IS_KUBEADM_INIT="false"
-      
+
               # cloud-init kubeadm init
               if [[ -f /run/kubeadm/kubeadm.yaml ]]; then
                 IS_KUBEADM_INIT="true"
               fi
-      
+
               # ignition kubeadm init
               if [[ -f /etc/kubeadm.sh ]] && grep -q -e "kubeadm init" /etc/kubeadm.sh; then
                 IS_KUBEADM_INIT="true"
               fi
-      
+
               if [[ "$IS_KUBEADM_INIT" == "true" ]]; then
                 sed -i 's#path: /etc/kubernetes/admin.conf#path: /etc/kubernetes/super-admin.conf#' \
                   /etc/kubernetes/manifests/kube-vip.yaml
