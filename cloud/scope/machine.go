@@ -1077,14 +1077,14 @@ func (m *MachineScope) SetNotReady() {
 func (m *MachineScope) SetProviderID(id *string) error {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
 	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
-		accountID, err := utils.GetAccountID()
+		accountID, err := utils.GetAccountIDWrapper()
 		if err != nil {
 			m.Logger.Error(err, "failed to get cloud account id", err.Error())
 			return err
 		}
 		m.IBMVPCMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibm://%s///%s/%s", accountID, m.Machine.Spec.ClusterName, *id))
 	} else {
-		m.IBMVPCMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmvpc://%s/%s", m.Machine.Spec.ClusterName, m.IBMVPCMachine.Name))
+		return fmt.Errorf("invalid value for ProviderIDFormat")
 	}
 	return nil
 }

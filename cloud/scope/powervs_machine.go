@@ -954,9 +954,8 @@ func (m *PowerVSMachineScope) GetServiceInstanceID() (string, error) {
 // SetProviderID will set the provider id for the machine.
 func (m *PowerVSMachineScope) SetProviderID(instanceID string) error {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
-	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV1 {
-		m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", m.Machine.Spec.ClusterName, m.IBMPowerVSMachine.Name))
-		return nil
+	if options.ProviderIDFormatType(options.ProviderIDFormat) != options.ProviderIDFormatV2 {
+		return fmt.Errorf("invalid value for ProviderIDFormat")
 	}
 	m.V(3).Info("setting provider id in v2 format")
 

@@ -39,6 +39,7 @@ import (
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	gtmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging/mock"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
@@ -325,6 +326,10 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			GlobalTaggingClient: mockgt,
 		}
 		return gomock.NewController(t), mockvpc, mockgt, machineScope, reconciler
+	}
+
+	utils.GetAccountIDFunc = func() (string, error) {
+		return "dummy-account-id", nil // Return dummy value
 	}
 
 	t.Run("Reconcile creating IBMVPCMachine associated with LoadBalancer", func(t *testing.T) {

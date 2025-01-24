@@ -46,6 +46,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	mockVPC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
@@ -374,6 +375,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		mockCtrl.Finish()
 	}
 	t.Run("Reconciling creating IBMPowerVSMachine ", func(t *testing.T) {
+		options.ProviderIDFormat = string("v2")
 		t.Run("Should requeue if Cluster infrastructure status is not ready", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)

@@ -912,14 +912,12 @@ func TestGetMachineInternalIP(t *testing.T) {
 func TestSetProviderID(t *testing.T) {
 	providerID := "foo-provider-id"
 
-	t.Run("Set Provider ID in v1 format", func(t *testing.T) {
+	t.Run("Set Provider ID in invalid format", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, nil)
-		options.ProviderIDFormat = string(options.ProviderIDFormatV1)
-		err := scope.SetProviderID("foo-providerID")
-		expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s", scope.Machine.Spec.ClusterName, scope.IBMPowerVSMachine.Name))
-		g.Expect(*scope.IBMPowerVSMachine.Spec.ProviderID).To(Equal(*expectedProviderID))
-		g.Expect(err).To(BeNil())
+		options.ProviderIDFormat = string("v1")
+		err := scope.SetProviderID(providerID)
+		g.Expect(err).ToNot(BeNil())
 	})
 
 	t.Run("failed to get service instance ID", func(t *testing.T) {
