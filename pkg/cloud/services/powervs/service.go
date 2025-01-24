@@ -27,6 +27,7 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
@@ -59,7 +60,7 @@ func NewService(options ServiceOptions) (PowerVS, error) {
 		options.Authenticator = auth
 	}
 	if options.UserAccount == "" {
-		account, err := utils.GetAccount(options.Authenticator)
+		account, err := utils.GetAccount(options.Authenticator, parser.NewJWTService())
 		if err != nil {
 			return nil, err
 		}

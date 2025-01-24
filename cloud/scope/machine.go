@@ -40,6 +40,7 @@ import (
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -1074,10 +1075,10 @@ func (m *MachineScope) SetNotReady() {
 }
 
 // SetProviderID will set the provider id for the machine.
-func (m *MachineScope) SetProviderID(id *string) error {
+func (m *MachineScope) SetProviderID(id *string, jwtParser parser.TokenParser) error {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
 	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
-		accountID, err := utils.GetAccountID()
+		accountID, err := utils.GetAccountID(jwtParser)
 		if err != nil {
 			m.Logger.Error(err, "failed to get cloud account id", err.Error())
 			return err

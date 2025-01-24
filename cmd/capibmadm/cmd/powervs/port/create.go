@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser"
 	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 )
 
@@ -68,7 +69,7 @@ capibmadm powervs port create --network <netword-id/network-name> --description 
 func createPort(ctx context.Context, portCreateOption portCreateOptions) error {
 	logger := log.Log
 	logger.Info("Creating Port ", "Network ID/Name", portCreateOption.network, "IP Address", portCreateOption.ipAddress, "Description", portCreateOption.description, "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
-	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
+	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth(), parser.NewJWTService())
 	if err != nil {
 		return err
 	}
