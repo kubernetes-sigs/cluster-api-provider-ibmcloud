@@ -19,10 +19,13 @@ package scope
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
+	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -30,12 +33,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	mockParser "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 
 	. "github.com/onsi/gomega"
 )
@@ -1057,5 +1063,66 @@ func TestDeleteVPCLoadBalancerPoolMember(t *testing.T) {
 			err := scope.DeleteVPCLoadBalancerPoolMember()
 			g.Expect(err).To(BeNil())
 		})
+	})
+}
+
+func TestSetProviderID_Machine(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mockParser.MockTokenParser, *mock.MockVpc) {
+		t.Helper()
+		return gomock.NewController(t), mockParser.NewMockTokenParser(gomock.NewController(t)), mock.NewMockVpc(gomock.NewController(t))
+	}
+
+	t.Run("Set Provider ID in v1 format", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockparser, mockvpc := setup(t)
+		t.Cleanup(mockController.Finish)
+		scope := setupMachineScope(clusterName, machineName, mockvpc)
+		err := scope.SetProviderID(ptr.To("foo-providerID"), mockparser)
+		expectedProviderID := ptr.To(fmt.Sprintf("ibmvpc://%s/%s", scope.Machine.Spec.ClusterName, scope.IBMVPCMachine.Name))
+		g.Expect(*scope.IBMVPCMachine.Spec.ProviderID).To(Equal(*expectedProviderID))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("Set Provider ID in v2 format, returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockparser, mockvpc := setup(t)
+		t.Cleanup(mockController.Finish)
+		err := os.Setenv("IBMCLOUD", "IBMCLOUD")
+		g.Expect(err).To(BeNil())
+		err = os.Setenv("IBMCLOUD_AUTH_TYPE", "bearerToken")
+		g.Expect(err).To(BeNil())
+		err = os.Setenv("IBMCLOUD_BEARER_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.1DhH-W1bP_u1mEU8UXYQkh6XP1P0TNILV5TVSbWlk74")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD")
+		defer os.Unsetenv("IBMCLOUD_AUTH_TYPE")
+		defer os.Unsetenv("IBMCLOUD_BEARER_TOKEN")
+		mockparser.EXPECT().Parse(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("parse error"))
+		scope := setupMachineScope(clusterName, machineName, mockvpc)
+		options.ProviderIDFormat = string(options.ProviderIDFormatV2)
+		err = scope.SetProviderID(ptr.To("foo-providerID"), mockparser)
+		g.Expect(err).NotTo(BeNil())
+	})
+
+	t.Run("Set Provider ID in v2 format", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockparser, mockvpc := setup(t)
+		t.Cleanup(mockController.Finish)
+		err := os.Setenv("IBMCLOUD", "IBMCLOUD")
+		g.Expect(err).To(BeNil())
+		err = os.Setenv("IBMCLOUD_AUTH_TYPE", "bearerToken")
+		g.Expect(err).To(BeNil())
+		err = os.Setenv("IBMCLOUD_BEARER_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.1DhH-W1bP_u1mEU8UXYQkh6XP1P0TNILV5TVSbWlk74")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD")
+		defer os.Unsetenv("IBMCLOUD_AUTH_TYPE")
+		defer os.Unsetenv("IBMCLOUD_BEARER_TOKEN")
+		mp := make(map[string]interface{})
+		mp["bss"] = "accountID"
+		mockparser.EXPECT().Parse(gomock.Any(), gomock.Any()).Return(&jwt.Token{Claims: jwt.MapClaims{"account": mp}}, nil)
+		scope := setupMachineScope(clusterName, machineName, mockvpc)
+		options.ProviderIDFormat = string(options.ProviderIDFormatV2)
+		err = scope.SetProviderID(ptr.To("foo-providerID"), mockparser)
+		expectedProviderID := ptr.To(fmt.Sprintf("ibm://%s///%s/%s", "accountID", scope.Machine.Spec.ClusterName, "foo-providerID"))
+		g.Expect(*scope.IBMVPCMachine.Spec.ProviderID).To(Equal(*expectedProviderID))
+		g.Expect(err).To(BeNil())
 	})
 }

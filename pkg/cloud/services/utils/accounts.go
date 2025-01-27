@@ -26,10 +26,11 @@ import (
 	"github.com/IBM/go-sdk-core/v5/core"
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser"
 )
 
 // GetAccount is function parses the account number from the token and returns it.
-func GetAccount(auth core.Authenticator) (string, error) {
+func GetAccount(auth core.Authenticator, jwtParser parser.TokenParser) (string, error) {
 	// fake request to get a barer token from the request header
 	ctx := context.TODO()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://example.com", http.NoBody)
@@ -44,7 +45,7 @@ func GetAccount(auth core.Authenticator) (string, error) {
 	if strings.HasPrefix(bearerToken, "Bearer") {
 		bearerToken = bearerToken[7:]
 	}
-	token, err := jwt.Parse(bearerToken, func(_ *jwt.Token) (interface{}, error) {
+	token, err := jwtParser.Parse(bearerToken, func(_ *jwt.Token) (interface{}, error) {
 		return "", nil
 	})
 	if err != nil && !strings.Contains(err.Error(), "key is of invalid type") {
@@ -55,10 +56,10 @@ func GetAccount(auth core.Authenticator) (string, error) {
 }
 
 // GetAccountID will parse and returns user cloud account ID.
-func GetAccountID() (string, error) {
+func GetAccountID(jwtParser parser.TokenParser) (string, error) {
 	auth, err := authenticator.GetAuthenticator()
 	if err != nil {
 		return "", err
 	}
-	return GetAccount(auth)
+	return GetAccount(auth, jwtParser)
 }

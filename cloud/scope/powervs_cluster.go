@@ -50,6 +50,7 @@ import (
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
@@ -2398,7 +2399,7 @@ func (s *PowerVSClusterScope) fetchResourceGroupID() (string, error) {
 		return "", err
 	}
 
-	account, err := utils.GetAccount(auth)
+	account, err := utils.GetAccount(auth, parser.NewJWTService())
 	if err != nil {
 		return "", err
 	}

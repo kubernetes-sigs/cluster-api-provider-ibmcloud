@@ -39,6 +39,7 @@ import (
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/parser"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
@@ -162,6 +163,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile VSI for IBMVPCMachine %s/%s: %w", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 	}
 
+	jwtParser := parser.NewJWTService()
 	machineRunning := false
 	if instance != nil {
 		// Attempt to tag the Instance.
@@ -171,7 +173,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 
 		// Set available status' for Machine.
 		machineScope.SetInstanceID(*instance.ID)
-		if err := machineScope.SetProviderID(instance.ID); err != nil {
+		if err := machineScope.SetProviderID(instance.ID, jwtParser); err != nil {
 			return ctrl.Result{}, fmt.Errorf("error failed to set machine provider id: %w", err)
 		}
 		machineScope.SetAddresses(instance)
@@ -236,7 +238,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 	} else {
 		// Otherwise, default to previous Load Balancer Pool Member configuration.
 		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]
-		if err = machineScope.SetProviderID(instance.ID); err != nil {
+		if err = machineScope.SetProviderID(instance.ID, jwtParser); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to set provider id IBMVPCMachine %s/%s: %w", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 		}
 		if ok {
