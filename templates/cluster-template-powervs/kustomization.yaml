@@ -1,9 +1,0 @@
-resources:
-- ../bases/powervs
-
-patches:
-- path: kcp.yaml
-- path: kubeadm-config.yaml
-
-sortOptions:
-  order: fifo
