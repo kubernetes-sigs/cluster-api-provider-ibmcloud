@@ -1536,6 +1536,337 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 
 	nodeAddress := "10.0.0.1"
 	loadBalancerID := "xyz-xyz-xyz"
+	t.Run("Skip adding listener if the machine label and listener label doesnot match", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		loadBalancerName := "load-balancer-0"
+		loadBalancers := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(loadBalancerID),
+			Name:               ptr.To(loadBalancerName),
+			ProvisioningStatus: (*string)(&infrav1beta2.VPCLoadBalancerStateActive),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{
+					ID:   ptr.To("pool-id-0"),
+					Name: ptr.To("pool-22"),
+				},
+			},
+			Listeners: []vpcv1.LoadBalancerListenerReference{
+				{
+					ID: ptr.To("pool-id-0"),
+				},
+			},
+		}
+		loadBalancerListener := &vpcv1.LoadBalancerListener{
+			DefaultPool: &vpcv1.LoadBalancerPoolReference{
+				Name: ptr.To("pool-22"),
+			},
+			ID:       ptr.To("pool-id-0"),
+			Port:     ptr.To(int64(22)),
+			Protocol: ptr.To("tcp"),
+		}
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+
+		scope := PowerVSMachineScope{
+			Machine: &capiv1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{},
+			},
+			IBMVPCClient: mockClient,
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "bootstrap",
+					},
+				},
+			},
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: loadBalancerName,
+							ID:   ptr.To(loadBalancerID),
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port: 22,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"name": "master",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						loadBalancerName: {
+							ID: ptr.To(loadBalancerID),
+						},
+					},
+				},
+			},
+		}
+
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
+		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
+		result, err := scope.CreateVPCLoadBalancerPoolMember()
+
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(BeNil())
+	})
+
+	t.Run("Add listener if the machine label and listener label matches", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		loadBalancerName := "load-balancer-0"
+		loadBalancers := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(loadBalancerID),
+			Name:               ptr.To(loadBalancerName),
+			ProvisioningStatus: (*string)(&infrav1beta2.VPCLoadBalancerStateActive),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{
+					ID:   ptr.To("pool-id-0"),
+					Name: ptr.To("pool-22"),
+				},
+			},
+			Listeners: []vpcv1.LoadBalancerListenerReference{
+				{
+					ID: ptr.To("pool-id-0"),
+				},
+				{
+					ID: ptr.To("pool-id-1"),
+				},
+			},
+		}
+		loadBalancerListener := &vpcv1.LoadBalancerListener{
+			DefaultPool: &vpcv1.LoadBalancerPoolReference{
+				Name: ptr.To("pool-22"),
+			},
+			ID:       ptr.To("pool-id-0"),
+			Port:     ptr.To(int64(22)),
+			Protocol: ptr.To("tcp"),
+		}
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+
+		scope := PowerVSMachineScope{
+			Machine: &capiv1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{},
+			},
+			IBMVPCClient: mockClient,
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "bootstrap",
+					},
+				},
+			},
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: loadBalancerName,
+							ID:   ptr.To(loadBalancerID),
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port: 22,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"name": "bootstrap",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						loadBalancerName: {
+							ID: ptr.To(loadBalancerID),
+						},
+					},
+				},
+			},
+		}
+
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
+		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
+		expectedLoadBalancerPoolMemberID := "pool-member-2"
+		expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
+		result, err := scope.CreateVPCLoadBalancerPoolMember()
+
+		g.Expect(err).To(BeNil())
+		g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
+	})
+
+	t.Run("Skip adding non control plane nodes if there is no selector", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		loadBalancerName := "load-balancer-0"
+		loadBalancers := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(loadBalancerID),
+			Name:               ptr.To(loadBalancerName),
+			ProvisioningStatus: (*string)(&infrav1beta2.VPCLoadBalancerStateActive),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{
+					ID:   ptr.To("pool-id-0"),
+					Name: ptr.To("pool-6443"),
+				},
+			},
+			Listeners: []vpcv1.LoadBalancerListenerReference{
+				{
+					ID: ptr.To("pool-id-0"),
+				},
+				{
+					ID: ptr.To("pool-id-1"),
+				},
+			},
+		}
+		loadBalancerListener := &vpcv1.LoadBalancerListener{
+			DefaultPool: &vpcv1.LoadBalancerPoolReference{
+				Name: ptr.To("pool-6443"),
+			},
+			ID:       ptr.To("pool-id-0"),
+			Port:     ptr.To(int64(6443)),
+			Protocol: ptr.To("tcp"),
+		}
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+
+		scope := PowerVSMachineScope{
+			Machine: &capiv1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{},
+			},
+			IBMVPCClient: mockClient,
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "bootstrap",
+					},
+				},
+			},
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: loadBalancerName,
+							ID:   ptr.To(loadBalancerID),
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port: 6443,
+								},
+							},
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						loadBalancerName: {
+							ID: ptr.To(loadBalancerID),
+						},
+					},
+				},
+			},
+		}
+
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
+		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
+		result, err := scope.CreateVPCLoadBalancerPoolMember()
+
+		g.Expect(err).To(BeNil())
+		g.Expect(result).To(BeNil())
+	})
+	t.Run("Adding control plane nodes even if there is no selector", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		loadBalancerName := "load-balancer-0"
+		loadBalancers := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(loadBalancerID),
+			Name:               ptr.To(loadBalancerName),
+			ProvisioningStatus: (*string)(&infrav1beta2.VPCLoadBalancerStateActive),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{
+					ID:   ptr.To("pool-id-0"),
+					Name: ptr.To("pool-6443"),
+				},
+			},
+			Listeners: []vpcv1.LoadBalancerListenerReference{
+				{
+					ID: ptr.To("pool-id-0"),
+				},
+				{
+					ID: ptr.To("pool-id-1"),
+				},
+			},
+		}
+		loadBalancerListener := &vpcv1.LoadBalancerListener{
+			DefaultPool: &vpcv1.LoadBalancerPoolReference{
+				Name: ptr.To("pool-6443"),
+			},
+			ID:       ptr.To("pool-id-0"),
+			Port:     ptr.To(int64(6443)),
+			Protocol: ptr.To("tcp"),
+		}
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+
+		scope := PowerVSMachineScope{
+			Machine: &capiv1beta1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"cluster.x-k8s.io/control-plane": "true",
+					},
+				},
+			},
+			IBMVPCClient: mockClient,
+			IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"name": "bootstrap",
+					},
+				},
+			},
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: loadBalancerName,
+							ID:   ptr.To(loadBalancerID),
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port: 6443,
+								},
+							},
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1beta2.VPCLoadBalancerStatus{
+						loadBalancerName: {
+							ID: ptr.To(loadBalancerID),
+						},
+					},
+				},
+			},
+		}
+
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
+		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
+		expectedLoadBalancerPoolMemberID := "pool-member-2"
+		expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).Times(1)
+		result, err := scope.CreateVPCLoadBalancerPoolMember()
+
+		g.Expect(err).To(BeNil())
+		g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
+	})
 	t.Run("Create VPC Load Balancer Pool Member", func(t *testing.T) {
 		t.Run("No load balancers present in status", func(t *testing.T) {
 			g := NewWithT(t)
