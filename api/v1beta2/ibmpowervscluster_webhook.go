@@ -95,8 +95,46 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSCluster() (admission.Warnings, err
 		r.Name, allErrs)
 }
 
+func (r *IBMPowerVSCluster) validateNetworkRegex() (bool, *field.Error) {
+	if r.Spec.Network.RegEx == nil {
+		return true, nil
+	}
+	var targetName string
+	var validationMessage string
+
+	// If only spec.Network.RegEx is set and no other network resources are specified,
+	// the controller will create a DHCP server and the corresponding network in the format:
+	// DHCPSERVER<dhcp_server_name>_Private.
+	if r.Spec.DHCPServer != nil && *r.Spec.DHCPServer.Name != "" {
+		targetName = *r.Spec.DHCPServer.Name
+		validationMessage = "The RegEx should match the DHCP server name when the DHCP server is set"
+	} else {
+		if r.GetObjectMeta().GetName() == "" {
+			return false, field.Required(
+				field.NewPath("metadata", "name"),
+				"Cluster name must be set when Network.RegEx is provided and DHCP server name is not set",
+			)
+		}
+		targetName = r.GetObjectMeta().GetName()
+		validationMessage = "The RegEx should match the cluster name when the DHCP server is not set"
+	}
+
+	if !regexMatches(*r.Spec.Network.RegEx, targetName) {
+		return false, field.Invalid(
+			field.NewPath("spec", "Network", "RegEx"),
+			r.Spec.Network.RegEx,
+			validationMessage,
+		)
+	}
+
+	return true, nil
+}
+
 func (r *IBMPowerVSCluster) validateIBMPowerVSClusterNetwork() *field.Error {
 	if res, err := validateIBMPowerVSNetworkReference(r.Spec.Network); !res {
+		return err
+	}
+	if res, err := r.validateNetworkRegex(); !res {
 		return err
 	}
 	return nil
