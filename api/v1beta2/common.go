@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"regexp"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -42,14 +43,22 @@ func validateIBMPowerVSResourceReference(res IBMPowerVSResourceReference, resTyp
 	if res.ID != nil && res.Name != nil {
 		return false, field.Invalid(field.NewPath("spec", resType), res, "Only one of "+resType+" - ID or Name may be specified")
 	}
+
 	return true, nil
 }
 
 func validateIBMPowerVSNetworkReference(res IBMPowerVSResourceReference) (bool, *field.Error) {
+	// Ensure only one of ID, Name, or RegEx is specified
 	if (res.ID != nil && res.Name != nil) || (res.ID != nil && res.RegEx != nil) || (res.Name != nil && res.RegEx != nil) {
 		return false, field.Invalid(field.NewPath("spec", "Network"), res, "Only one of Network - ID, Name or RegEx can be specified")
 	}
 	return true, nil
+}
+
+// regexMatches validates if a given regex matches the target string.
+func regexMatches(pattern, target string) bool {
+	matched, err := regexp.MatchString(pattern, target)
+	return err == nil && matched
 }
 
 func validateIBMPowerVSMemoryValues(resValue int32) bool {

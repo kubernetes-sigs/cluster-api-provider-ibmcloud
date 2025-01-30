@@ -68,6 +68,63 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Should error network regex and dhcp server name is set but does not match dhcp server name",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("test"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should allow if network regex, dhcp server name is set and matches dhcp server name",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should error if only network regex is set, dhcp server name is not set and does not match cluster name",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should allow if network regex is set, dhcp server name is not set and matches cluster name",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi-cluster-.*"),
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -141,6 +198,9 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 					Network: IBMPowerVSResourceReference{
 						RegEx: ptr.To("^capi-net-id$"),
 					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi-net-id"),
+					},
 				},
 			},
 			newPowervsCluster: &IBMPowerVSCluster{
@@ -148,6 +208,9 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 					ServiceInstanceID: "capi-si-id",
 					Network: IBMPowerVSResourceReference{
 						RegEx: ptr.To("^capi-net-id$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi-net-id"),
 					},
 				},
 			},
@@ -174,6 +237,107 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name: "Should error if network regex and dhcp server name is set but network regex does not match dhcp server name",
+			oldPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi"),
+					},
+				},
+			},
+			newPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("test"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should allow if network regex, dhcp server name is set and network regex matches dhcp server name",
+			oldPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi"),
+					},
+				},
+			},
+			newPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should error if network regex is set, dhcp server name is not set and network regex does not match cluster name",
+			oldPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi"),
+					},
+				},
+			},
+			newPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi",
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should allow if network regex is set, dhcp server name is not set and network regex matches cluster name",
+			oldPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi$"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi"),
+					},
+				},
+			},
+			newPowervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						RegEx: ptr.To("^capi-cluster-.*"),
+					},
+				},
+			},
+			wantErr: false,
 		},
 	}
 
