@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"os"
@@ -62,6 +63,7 @@ var (
 	logOptions           = logs.NewOptions()
 	webhookPort          int
 	webhookCertDir       string
+	disableHTTP2         bool
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -130,6 +132,9 @@ func initFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
 		"The webhook certificate directory, where the server should find the TLS certificate and key.")
 
+	fs.BoolVar(&disableHTTP2, "disable-http2", false, "http/2 should be disabled due to its vulnerabilities. More specifically, disabling http/2 will"+
+		" prevent from being vulnerable to the HTTP/2 Stream Cancellation and Rapid Reset CVEs.")
+
 	logsv1.AddFlags(logOptions, fs)
 	flags.AddManagerOptions(fs, &managerOptions)
 }
@@ -193,6 +198,13 @@ func main() {
 		watchNamespaces = map[string]cache.Config{
 			watchNamespace: {},
 		}
+	}
+
+	if disableHTTP2 {
+		metricsOptions.TLSOpts = append(metricsOptions.TLSOpts, func(c *tls.Config) {
+			setupLog.Info("disabling http/2")
+			c.NextProtos = []string{"http/1.1"}
+		})
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
