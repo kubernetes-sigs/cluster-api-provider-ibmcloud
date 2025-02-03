@@ -52,3 +52,11 @@
     ```
    ssh -J root@<public_ip> root@<dhcp_ip>
    ```
+
+### 3. Failed to apply a cluster template with release not found error
+
+While trying to apply a cluster template from unreleased version like from main branch, we will run into error like `release not found for version vX.XX.XX`. In that case, instead of `--flavor` we need to use `--from=<path_to_cluster_template>`.
+
+Here are some examples for the same:
+- While creating a PowerVS cluster instead of `--flavor=powervs-create-infra` use `--from=./templates/cluster-template-powervs-create-infra.yaml`. 
+- While creating a VPC cluster instead of `--flavor=vpc-clusterclass` use `--from ./templates/cluster-template-vpc-clusterclass.yaml`.

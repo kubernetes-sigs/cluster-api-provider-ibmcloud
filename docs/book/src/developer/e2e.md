@@ -4,7 +4,7 @@
 
 * The end-to-end tests for `VPC` and `PowerVS` run on an internal prow cluster on IBM Cloud.
 * Resource management is handled via [boskos](https://github.com/kubernetes-sigs/boskos) which is an efficient way to lease infra and clean up after every run.
-* The E2E tests use the Cluster API test framework. For more information on developing E2E tests, refer [here](https://cluster-api.sigs.k8s.io/developer/e2e).
+* The E2E tests use the Cluster API test framework. For more information on developing E2E tests, refer [here](https://cluster-api.sigs.k8s.io/developer/core/e2e).
 
 ### Jobs
 
