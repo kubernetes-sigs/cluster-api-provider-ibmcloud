@@ -12,8 +12,9 @@ following the steps below.
 
 1. Using clusterctl, render the yaml through templates and deploy the cluster
 
-
-    **Note:** the `IBMVPC_IMAGE_NAME` value below should reflect the name of the custom qcow2 image
+    > **Note:**
+    > - The `IBMVPC_IMAGE_NAME` value below should reflect the name of the custom qcow2 image.
+    > - While working with unreleased versions like from main branch, instead of `--flavor=vpc-clusterclass` use `--from ./templates/cluster-template-vpc-clusterclass.yaml`.
 
     ```console
     IBMCLOUD_API_KEY="XXXXXXXXXXXXXXXXXX" \
