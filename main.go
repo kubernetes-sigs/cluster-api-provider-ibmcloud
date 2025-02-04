@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"os"
@@ -64,6 +65,7 @@ var (
 	webhookPort          int
 	webhookCertDir       string
 	watchFilterValue     string
+	disableHTTP2         bool
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -134,6 +136,8 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&watchFilterValue, "watch-filter", "",
 		fmt.Sprintf("Label value that the controller watches to reconcile cluster-api objects. Label key is always %s. If unspecified, the controller watches for all cluster-api objects.", capiv1beta1.WatchLabel))
+	fs.BoolVar(&disableHTTP2, "disable-http2", true, "http/2 should be disabled due to its vulnerabilities. More specifically, disabling http/2 will"+
+		" prevent from being vulnerable to the HTTP/2 Stream Cancellation and Rapid Reset CVEs.")
 
 	logsv1.AddFlags(logOptions, fs)
 	flags.AddManagerOptions(fs, &managerOptions)
@@ -198,6 +202,15 @@ func main() {
 		watchNamespaces = map[string]cache.Config{
 			watchNamespace: {},
 		}
+	}
+
+	if disableHTTP2 {
+		metricsOptions.TLSOpts = append(metricsOptions.TLSOpts, func(c *tls.Config) {
+			setupLog.Info("disabling http/2")
+			c.NextProtos = []string{"http/1.1"}
+		})
+	} else {
+		setupLog.Info("WARNING: It is not recommended to enable http/2 due to https://github.com/kubernetes/kubernetes/issues/121197")
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
