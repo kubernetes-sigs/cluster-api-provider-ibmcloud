@@ -41,6 +41,7 @@ following the steps below.
     > - Set `EXP_CLUSTER_RESOURCE_SET` to `true` as the cluster will be deployed with external cloud provider which will create the resources to run the cloud controller manager.
     > - The `IBMPOWERVS_IMAGE_NAME` value below should reflect the name of the custom image and the `kubernetes-version` value below should reflect the kubernetes version of the custom image.
     > - While working with unreleased versions like from main branch, instead of `--flavor=powervs` use `--from=./templates/cluster-template-powervs.yaml`.
+    > - Refer detailed information on POWERVS variables [here](/topics/powervs/creating-a-cluster#note-refer-below-for-more-detailed-information-on-powervs-variables)
 
     ```console
     IBMPOWERVS_SSHKEY_NAME="my-pub-key" \
@@ -187,3 +188,19 @@ following the steps below.
   --worker-machine-count=1 \
   --flavor=powervs-clusterclass | kubectl apply -f -
   ```
+
+#### Note: Refer below for more detailed information on POWERVS variables.
+- IBMPOWERVS_CLUSTER_CLASS_NAME : Name of the cluster that user want to keep.
+- [IBMPOWERVS_SSHKEY_NAME](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-ssh-key)
+- [IBMPOWERVS_VIP](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create)
+- [IBMPOWERVS_VIP_EXTERNAL](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create)
+- [IBMPOWERVS_VIP_CIDR](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create)
+- [IBMPOWERVS_IMAGE_NAME](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-conn-COS-custom-image)
+- [IBMPOWERVS_SERVICE_INSTANCE_ID](/topics/capibmadm/powervs/image.html)
+- [IBMACCOUNT_ID](https://cloud.ibm.com/docs/account?topic=account-accountfaqs#account-details)
+- [IBMPOWERVS_NETWORK_NAME](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create.html)
+- [IBMPOWERVS_REGION](/reference/regions-zones-mapping.html)
+- [IBMPOWERVS_ZONE](/reference/regions-zones-mapping.html)
+- [COS_BUCKET_REGION](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-endpoints#endpoints-region)
+- [COS_BUCKET_NAME](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-getting-started-cloud-object-storage#gs-create-buckets)
+- [COS_OBJECT_NAME](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-getting-started-cloud-object-storage#gs-add-objects)
