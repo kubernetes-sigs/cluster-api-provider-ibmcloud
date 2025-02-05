@@ -84,6 +84,7 @@ enable_providers:
 - kubeadm-control-plane
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
+  EXP_CLUSTER_RESOURCE_SET: "true"
 ```
 
 Add following extra_args to log PowerVS REST API Requests/Responses
@@ -96,29 +97,11 @@ extra_args:
 ---
 ## Different flavors of deploying workload clusters using CAPIBM.
 
-> **Note:** Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental features.
+> **Note:** Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental features. By default, the workload cluster is deployed using the external Cloud Controller Manager (CCM).
 
-### 1.  Configuration to deploy workload cluster with external cloud controller manager
+### 1.  Configuration to deploy workload cluster from ClusterClass template
 
-To deploy workload cluster with cloud controller manager, set `PROVIDER_ID_FORMAT` to `v2` and enable cluster resourceset feature gate by setting `EXP_CLUSTER_RESOURCE_SET` to `true under kustomize_substitutions.
-
-```yaml
-default_registry: "gcr.io/you-project-name-here"
-provider_repos:
-- ../cluster-api-provider-ibmcloud
-enable_providers:
-- ibmcloud
-- kubeadm-bootstrap
-- kubeadm-control-plane
-kustomize_substitutions:
-  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  PROVIDER_ID_FORMAT: "v2"
-  EXP_CLUSTER_RESOURCE_SET: "true"
-```
-
-### 2.  Configuration to deploy workload cluster from ClusterClass template
-
-To deploy workload cluster with [clusterclass-template](/topics/powervs/clusterclass-cluster.html), set the `PROVIDER_ID_FORMAT` to `v2` and enable the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true`under kustomize_substitutions.
+To deploy workload cluster with [clusterclass-template](/topics/powervs/clusterclass-cluster.html), enable the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
 
 ```yaml
 default_registry: "gcr.io/you-project-name-here"
@@ -130,12 +113,11 @@ enable_providers:
 - kubeadm-control-plane
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  PROVIDER_ID_FORMAT: "v2"
   EXP_CLUSTER_RESOURCE_SET: "true"
   CLUSTER_TOPOLOGY: "true"
 ```
 
-### 3.  Configuration to deploy workload cluster with Custom Service Endpoint
+### 2.  Configuration to deploy workload cluster with Custom Service Endpoint
 
 To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format: `${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2...}`
 ```yaml
@@ -152,7 +134,7 @@ kustomize_substitutions:
   IBMCLOUD_AUTH_URL: "https://iam.test.cloud.ibm.com"
 ```
 
-### 4.  Configuration to use observability tools
+### 3.  Configuration to use observability tools
 
 - cluster-api provides support for deploying observability tools, More information about it is available in cluster-api [book](https://cluster-api.sigs.k8s.io/developer/logging#developing-and-testing-logs).
 
@@ -171,7 +153,6 @@ enable_providers:
   - kubeadm-control-plane
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  PROVIDER_ID_FORMAT: "v2"
   EXP_CLUSTER_RESOURCE_SET: "true"
 extra_args:
    core:

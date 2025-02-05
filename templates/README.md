@@ -1,6 +1,9 @@
 Render the template via clusterctl
 ==================================
 
+> **Note:**
+> Set `EXP_CLUSTER_RESOURCE_SET` to `true` as the cluster will be deployed with external cloud provider for both VPC and PowerVS, which will create the resources to run the cloud controller manager.
+
 ## VPC
 
 ```
@@ -20,15 +23,19 @@ clusterctl generate cluster ibm-vpc-1 --kubernetes-version v1.14.3 \
 
 ## Power VS
 
-```shell
-IBMPOWERVS_SSHKEY_NAME="mkumatag-pub-key" \
-IBMPOWERVS_VIP="192.168.150.125" \
-IBMPOWERVS_VIP_EXTERNAL="158.175.161.125" \
+```
+IBMPOWERVS_SSHKEY_NAME="my-pub-key" \
+IBMPOWERVS_VIP="192.168.167.6" \
+IBMPOWERVS_VIP_EXTERNAL="163.68.65.6" \
 IBMPOWERVS_VIP_CIDR="29" \
-IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-8-1-22-4" \
-IBMPOWERVS_SERVICE_INSTANCE_ID="e449d86e-c3a0-4c07-959e-8557fdf55482" \
-IBMPOWERVS_NETWORK_NAME="capi-test-3" \
-clusterctl generate cluster ibm-powervs-1 --kubernetes-version v1.21.2 \
+IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams8-1-26-2" \
+IBMPOWERVS_SERVICE_INSTANCE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
+IBMPOWERVS_NETWORK_NAME="capi-test" \
+IBMACCOUNT_ID="ibm-accountid" \
+IBMPOWERVS_REGION="osa" \
+IBMPOWERVS_ZONE="osa21" \
+BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
+clusterctl generate cluster ibm-powervs-1 --kubernetes-version v1.26.2 \
 --target-namespace default \
 --control-plane-machine-count=3 \
 --worker-machine-count=1 \
