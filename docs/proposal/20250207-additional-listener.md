@@ -1,16 +1,14 @@
-# Adding additional listeners to nodes based on the selector
+# Support configuring additional listeners to specific machines
 
 [Github Issue](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/1678)
 ## Motivation
-Currently, when a listener pool is configured for a specific port (e.g., port 22), all machines are added to the pool.
-This creates a challenge when debugging OpenShift cluster deployments, as access to the bootstrap node is necessary for
-retrieving log files and other diagnostic data. Since all machines are included in the pool, SSH access to the bootstrap
-node becomes impossible.
-To address this, there should be a mechanism to assign listeners to specific machines using label selector matching.
+At present, when setting up LoadBalancer's supplementary listeners, every machine within the cluster is automatically 
+incorporated into the listener pool. This situation poses a challenge when attempting to activate specific ports on 
+individual machines for debugging purposes. To overcome this limitation, it is advisable to introduce a feature that 
+enables the assignment of listeners to particular machines.
 
 ## Goal
-This proposal aims at providing the ability to configure additional listeners to specific machines based on label
-selectors.
+This proposal aims to enable the configuration of additional listeners for specific machines based on label selectors.
 
 ## Proposal
 
@@ -85,17 +83,13 @@ spec:
 The load balancer pool member configuration is now invoked for all machines inorder to provide the ability to assign
 the listeners to any machine based on the label selectors.
 
-The load balancer details are retrieved from the IBMPowerVSCluster.Spec.LoadBalancers. If no load balancers are
-specified in the Spec, the load balancer details are generated based on the IBMPowerVSCluster name.
-Loop through the load balancers, check the status of the IBMPowerVSCluster, and verify the load balancer's
-provisioning status. Proceed only if the status is Active and it contains backend pools.
-Loop through the load balancer pools, retrieve the associated pool members for each, and then verify the label selector
-specified in the listener.
+Iterate over the load balancer pools, obtain the corresponding pool members for each, and extract the selector from the 
+listener via the default pool name. Subsequently, compare the machine label against the listener's label selector. 
+Based on the comparison results, the process proceeds as follows:
 
-    - If the selector matches, continue with adding the listener to the machine.
-    - If it doesn't match, skip the listener and move on to the next pool member.
-    - If the selector is empty and the machine is a control plane, continue to add the listener, since all listeners
-    can be assigned to control plane machines.
+    - In the event of a match, proceed with the assignment of the listener to the machine.
+    - In the case of a mismatch, bypass the listener and progress to the subsequent pool member.
+    - If the selector is vacant and the machine is part of the control plane, continue with the listener assignment, as all listeners can be allocated to control plane machines.
 
 ### Workflow
 ![additional-listeners-workflow](../images/additional-listener-workflow.png)
