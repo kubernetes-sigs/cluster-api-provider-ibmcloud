@@ -190,15 +190,13 @@ following the steps below.
   ```
 
 #### Note: Refer below for more detailed information on POWERVS variables.
-- IBMPOWERVS_CLUSTER_CLASS_NAME : Name of the cluster that user want to keep.
+- IBMPOWERVS_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
 - [IBMPOWERVS_SSHKEY_NAME](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-ssh-key)
-- [IBMPOWERVS_VIP](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create)
-- [IBMPOWERVS_VIP_EXTERNAL](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create)
-- [IBMPOWERVS_VIP_CIDR](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create)
-- [IBMPOWERVS_IMAGE_NAME](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-conn-COS-custom-image)
-- [IBMPOWERVS_SERVICE_INSTANCE_ID](/topics/capibmadm/powervs/image.html)
+- IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](/topics/powervs/creating-a-cluster.html)
+- IBMPOWERVS_IMAGE_NAME : Name to imported image. Refer [here](/topics/capibmadm/powervs/image.html) to get image details.
+- IBMPOWERVS_SERVICE_INSTANCE_ID : IBMPOWERVS_SERVICE_INSTANCE_ID is workspace id. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace) how to get it.
 - [IBMACCOUNT_ID](https://cloud.ibm.com/docs/account?topic=account-accountfaqs#account-details)
-- [IBMPOWERVS_NETWORK_NAME](/topics/capibmadm/powervs/network#1-capibmadm-powervs-network-create.html)
+- IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](/topics/capibmadm/powervs/network.html) how to get the network details.
 - [IBMPOWERVS_REGION](/reference/regions-zones-mapping.html)
 - [IBMPOWERVS_ZONE](/reference/regions-zones-mapping.html)
 - [COS_BUCKET_REGION](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-endpoints#endpoints-region)

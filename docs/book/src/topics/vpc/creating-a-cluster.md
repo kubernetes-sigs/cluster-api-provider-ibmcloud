@@ -124,7 +124,7 @@ There are two following variables for controlling the volume size for the boot d
     clusterctl generate cluster ibm-vpc-clusterclass --kubernetes-version v1.26.2 --target-namespace default --control-plane-machine-count=1 --worker-machine-count=2 --from=./templates/cluster-template-vpc-clusterclass.yaml | kubectl apply -f -
  
 **Note:** Refer below for more detailed information on VPC variables.
-- IBMVPC_CLUSTER_CLASS_NAME : Name of the cluster that user want to keep.
+- IBMVPC_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
 - [IBMVPC_REGION](/reference/regions-zones-mapping.html)
 - [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
 - [IBMVPC_RESOURCEGROUP](https://cloud.ibm.com/docs/account?topic=account-rgs&interface=ui)
