@@ -40,6 +40,7 @@ following the steps below.
     > **Note:**
     > - Set `EXP_CLUSTER_RESOURCE_SET` to `true` as the cluster will be deployed with external cloud provider which will create the resources to run the cloud controller manager.
     > - The `IBMPOWERVS_IMAGE_NAME` value below should reflect the name of the custom image and the `kubernetes-version` value below should reflect the kubernetes version of the custom image.
+    > - While working with unreleased versions like from main branch, instead of `--flavor=powervs` use `--from=./templates/cluster-template-powervs.yaml`.
 
     ```console
     IBMPOWERVS_SSHKEY_NAME="my-pub-key" \
@@ -139,6 +140,8 @@ following the steps below.
 #### Prerequisites: 
 - Already existing infrasturcture resources can be used for cluster creation by setting either the ID or name in spec. If neither are specified, the cluster name will be used for constructing the resource name. For example, if cluster name is `capi-powervs`, PowerVS workspace will be created with name `capi-powervs-serviceInstance`.
 
+**Note:** While working with unreleased versions like from main branch, instead of `--flavor=powervs-create-infra` use `--from=./templates/cluster-template-powervs-create-infra.yaml`.
+
   ```
     IBMCLOUD_API_KEY=XXXXXXXXXXXX \
     IBMPOWERVS_SSHKEY_NAME="my-ssh-key" \
@@ -162,6 +165,8 @@ following the steps below.
 
 #### Prerequisites:
 - To deploy a cluster using [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html), set `CLUSTER_TOPOLOGY` environment variable to `true`.
+
+**Note:** While working with unreleased versions like from main branch, instead of `--flavor=powervs-clusterclass` use `--from=./templates/cluster-template-powervs-clusterclass.yaml`.
 
   ```
   IBMPOWERVS_CLUSTER_CLASS_NAME="powervs-cc" \
