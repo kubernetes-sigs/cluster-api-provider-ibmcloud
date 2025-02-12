@@ -1,6 +1,6 @@
 ---
 name: Release tracker
-about: Create an issue to track tasks for a Cluster API version update
+about: Create an issue to track tasks to be done after CAPIBM major version release
 title: Release tracker for v<>
 
 ---
