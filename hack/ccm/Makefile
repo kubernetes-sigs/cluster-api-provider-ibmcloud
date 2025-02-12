@@ -20,48 +20,34 @@ REGISTRY=gcr.io/k8s-staging-capi-ibmcloud
 IMG=powervs-cloud-controller-manager
 
 # POWERVS_CLOUD_CONTROLLER_COMMIT can be fetched from here https://github.com/openshift/cloud-provider-powervs/commits/main
-POWERVS_CLOUD_CONTROLLER_COMMIT?=7c51cd2
+POWERVS_CLOUD_CONTROLLER_COMMIT?=0b19baf
 TAG?=$(POWERVS_CLOUD_CONTROLLER_COMMIT)
 
 build-image-linux-amd64: init-buildx
-	{                                                                   \
-        set -e ;                                                            \
+	{ \
+        set -e ; \
         docker buildx build \
-                --build-arg golang_image=$(GO_CONTAINER_IMAGE)\
+                --build-arg golang_image=$(GO_CONTAINER_IMAGE) \
                 --build-arg TARGETPLATFORM=linux/amd64 --build-arg ARCH=amd64 \
-                --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
-                -t $(REGISTRY)/$(IMG):$(TAG)_linux_amd64 . --target centos-base; \
+                --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT) \
+                -t $(REGISTRY)/$(IMG):$(TAG)_linux_amd64 . --load --target centos-base; \
         }
 
 build-image-linux-ppc64le: init-buildx
-	{                                                                    \
-        set -e ;                                                             \
+	{ \
+        set -e ; \
         docker buildx build \
-                --build-arg golang_image=$(GO_CONTAINER_IMAGE)\
-                --build-arg TARGETPLATFORM=linux/ppc64le --build-arg ARCH=ppc64le\
-                --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
-                -t $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le . --target centos-base; \
+                --build-arg golang_image=$(GO_CONTAINER_IMAGE) \
+                --build-arg TARGETPLATFORM=linux/ppc64le --build-arg ARCH=ppc64le \
+                --build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT) \
+                -t $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le . --load --target centos-base; \
         }
 
-build-image-and-push-linux-amd64: init-buildx
-	{                                                                   \
-	set -e ;                                                            \
-	docker buildx build \
-		--build-arg golang_image=$(GO_CONTAINER_IMAGE)\
-		--build-arg TARGETPLATFORM=linux/amd64 --build-arg ARCH=amd64 \
-		--build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
-		-t $(REGISTRY)/$(IMG):$(TAG)_linux_amd64 . --push --target centos-base; \
-	}
+build-image-and-push-linux-amd64: build-image-linux-amd64
+	docker push $(REGISTRY)/$(IMG):$(TAG)_linux_amd64
 
-build-image-and-push-linux-ppc64le: init-buildx
-	{                                                                    \
-	set -e ;                                                             \
-	docker buildx build \
-		--build-arg golang_image=$(GO_CONTAINER_IMAGE)\
-		--build-arg TARGETPLATFORM=linux/ppc64le --build-arg ARCH=ppc64le\
-		--build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT)\
-		-t $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le . --push --target centos-base; \
-	}
+build-image-and-push-linux-ppc64le: build-image-linux-ppc64le
+	docker push $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le
 
 init-buildx:
 	# Ensure we use a builder that can leverage it (the default on linux will not)
@@ -75,4 +61,4 @@ init-buildx:
 
 build-and-push-multi-arch: build-image-and-push-linux-amd64 build-image-and-push-linux-ppc64le
 	docker manifest create --amend $(REGISTRY)/$(IMG):$(TAG) $(REGISTRY)/$(IMG):$(TAG)_linux_amd64 $(REGISTRY)/$(IMG):$(TAG)_linux_ppc64le
-	docker manifest push -p $(REGISTRY)/$(IMG):$(TAG)
+	docker manifest push $(REGISTRY)/$(IMG):$(TAG)
