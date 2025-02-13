@@ -4,8 +4,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/IBM-Cloud/power-go-client v1.9.0 h1:nnErpb/7TJQe8P7OfIlJPhSJVq5oyuCJlMje9Ry6XEY=
-github.com/IBM-Cloud/power-go-client v1.9.0/go.mod h1:UDyXeIKEp6r7yWUXYu3r0ZnFSlNZ2YeQTHwM2Tmlgv0=
+github.com/IBM-Cloud/power-go-client v1.10.0 h1:yBUHWwvNBmLkWpbZJQJEXoxBa1Dm+eJgMSbk9ljmXUU=
+github.com/IBM-Cloud/power-go-client v1.10.0/go.mod h1:UDyXeIKEp6r7yWUXYu3r0ZnFSlNZ2YeQTHwM2Tmlgv0=
 github.com/IBM/go-sdk-core/v5 v5.18.5 h1:g0JRl3sYXJczB/yuDlrN6x22LJ6jIxhp0Sa4ARNW60c=
 github.com/IBM/go-sdk-core/v5 v5.18.5/go.mod h1:KonTFRR+8ZSgw5cxBSYo6E4WZoY1+7n1kfHM82VcjFU=
 github.com/IBM/ibm-cos-sdk-go v1.12.1 h1:pWs5c5/j9PNJE1lIQhYtzpdCxu2fpvCq9PHs6/nDjyI=
