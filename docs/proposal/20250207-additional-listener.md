@@ -91,8 +91,11 @@ Based on the comparison results, the process proceeds as follows:
     - In the case of a mismatch, bypass the listener and progress to the subsequent pool member.
     - If the selector is vacant and the machine is part of the control plane, continue with the listener assignment, as all listeners can be allocated to control plane machines.
 
-### Workflow
-![additional-listeners-workflow](../images/additional-listener-workflow.png)
+### Design
+![additional-listeners-design](../images/additional-listener-design-diagram.png)
+
+### Code Workflow
+![additional-listeners-workflow](../images/additional-listener-code-workflow.png)
 
 ### Limitation
 The current limitation of this approach is that if a listener needs to be assigned to multiple nodes, we must choose
