@@ -45,7 +45,7 @@ type AdditionalListenerSpec struct {
 }
 
 ```
-The `LabelSelector` struct is part of [kubernetes/apimachinery](https://github.com/kubernetes/apimachinery/blob/master/pkg/apis/meta/v1/types.go#L1287) repository.
+The `LabelSelector` struct is part of [kubernetes/apimachinery](https://github.com/kubernetes/apimachinery/blob/b5eba295a2b20e0d9f72bdaeb90db91e588d2424/pkg/apis/meta/v1/types.go#L1287) repository.
 
 A sample VPCLoadBalancerSpec with Selectors in AdditionalListenerSpec is as follows:
 ```yaml
@@ -91,15 +91,18 @@ Based on the comparison results, the process proceeds as follows:
     - In the case of a mismatch, bypass the listener and progress to the subsequent pool member.
     - If the selector is vacant and the machine is part of the control plane, continue with the listener assignment, as all listeners can be allocated to control plane machines.
 
-### Workflow
-![additional-listeners-workflow](../images/additional-listener-workflow.png)
+### Design
+![additional-listeners-design](../images/additional-listener-design-diagram.png)
+
+### Code Workflow
+![additional-listeners-workflow](../images/additional-listener-code-workflow.png)
 
 ### Limitation
 The current limitation of this approach is that if a listener needs to be assigned to multiple nodes, we must choose
 one of the following methods:
 
-    1. Use unique keys for each machine in the listener labels.
-    2. Provide machine names as a comma-separated list.
+    1. Use unique entries for each machine in the listener labels.
+    2. Provide the label values as a comma-separated list.
 
 This limitation can be resolved in the future by improving the controller flow to better handle cases where a listener
 needs to be added to multiple machines.
