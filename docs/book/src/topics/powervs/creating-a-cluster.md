@@ -41,7 +41,7 @@ following the steps below.
     > - Set `EXP_CLUSTER_RESOURCE_SET` to `true` as the cluster will be deployed with external cloud provider which will create the resources to run the cloud controller manager.
     > - The `IBMPOWERVS_IMAGE_NAME` value below should reflect the name of the custom image and the `kubernetes-version` value below should reflect the kubernetes version of the custom image.
     > - While working with unreleased versions like from main branch, instead of `--flavor=powervs` use `--from=./templates/cluster-template-powervs.yaml`.
-    > - Refer detailed information on POWERVS variables [here](/topics/powervs/creating-a-cluster#note-refer-below-for-more-detailed-information-on-powervs-variables)
+    > - Refer detailed information on PowerVS variables [here](/topics/powervs/creating-a-cluster#note-refer-below-for-more-detailed-information-on-powervs-variables)
 
     ```console
     IBMPOWERVS_SSHKEY_NAME="my-pub-key" \
@@ -189,12 +189,12 @@ following the steps below.
   --flavor=powervs-clusterclass | kubectl apply -f -
   ```
 
-#### Note: Refer below for more detailed information on POWERVS variables.
+#### Note: Refer below for more detailed information on PowerVS variables.
 - IBMPOWERVS_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
 - [IBMPOWERVS_SSHKEY_NAME](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-ssh-key)
 - IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](/topics/powervs/creating-a-cluster.html)
-- IBMPOWERVS_IMAGE_NAME : Name to imported image. Refer [here](/topics/capibmadm/powervs/image.html) to get image details.
-- IBMPOWERVS_SERVICE_INSTANCE_ID : IBMPOWERVS_SERVICE_INSTANCE_ID is workspace id. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace) how to get it.
+- IBMPOWERVS_IMAGE_NAME : Name of the custom image. Refer [here](/topics/capibmadm/powervs/image.html) to get image details.
+- IBMPOWERVS_SERVICE_INSTANCE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
 - [IBMACCOUNT_ID](https://cloud.ibm.com/docs/account?topic=account-accountfaqs#account-details)
 - IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](/topics/capibmadm/powervs/network.html) how to get the network details.
 - [IBMPOWERVS_REGION](/reference/regions-zones-mapping.html)
