@@ -303,13 +303,8 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 		return ctrl.Result{}, nil
 	}
 
-	if util.IsControlPlaneMachine(machineScope.Machine) {
-		machineScope.Info("Configuring loadbalancer configuration for control plane machine", "machineName", machineScope.IBMPowerVSMachine.Name)
-		return r.handleLoadBalancerPoolMemberConfiguration(machineScope)
-	}
-	machineScope.Info("skipping loadbalancer configuration for worker machine", "machineName", machineScope.IBMPowerVSMachine.Name)
-
-	return ctrl.Result{}, nil
+	machineScope.Info("Configuring loadbalancer configuration for the machine if applicable", "machineName", machineScope.IBMPowerVSMachine.Name)
+	return r.handleLoadBalancerPoolMemberConfiguration(machineScope)
 }
 
 // IBMPowerVSClusterToIBMPowerVSMachines is a handler.ToRequestsFunc to be used to enqeue requests for reconciliation
