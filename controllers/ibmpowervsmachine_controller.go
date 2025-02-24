@@ -156,7 +156,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Handle non-deleted machines.
-	return r.reconcileNormal(machineScope)
+	return r.reconcileNormal(ctx, machineScope)
 }
 
 func (r *IBMPowerVSMachineReconciler) reconcileDelete(scope *scope.PowerVSMachineScope) (_ ctrl.Result, reterr error) {
@@ -207,18 +207,19 @@ func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
-	machineScope.Info("Reconciling IBMPowerVSMachine")
+func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.V(3).Info("Reconciling IBMPowerVSMachine")
 
 	if !machineScope.Cluster.Status.InfrastructureReady {
-		machineScope.Info("Cluster infrastructure is not ready yet")
+		log.V(3).Info("Cluster infrastructure is not ready yet")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.WaitingForClusterInfrastructureReason, capiv1beta1.ConditionSeverityInfo, "")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
 	if machineScope.IBMPowerVSImage != nil {
 		if !machineScope.IBMPowerVSImage.Status.Ready {
-			machineScope.Info("IBMPowerVSImage is not ready yet")
+			log.V(3).Info("IBMPowerVSImage is not ready yet")
 			conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.WaitingForIBMPowerVSImageReason, capiv1beta1.ConditionSeverityInfo, "")
 			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 		}
@@ -226,7 +227,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
-		machineScope.Info("Bootstrap data secret reference is not yet available")
+		log.V(3).Info("Bootstrap data secret reference is not yet available")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.WaitingForBootstrapDataReason, capiv1beta1.ConditionSeverityInfo, "")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
@@ -237,7 +238,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 
 	ins, err := r.getOrCreate(machineScope)
 	if err != nil {
-		machineScope.Error(err, "Unable to create instance")
+		log.V(3).Error(err, "Unable to create instance")
 		conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceProvisionFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile VSI for IBMPowerVSMachine %s/%s: %w", machineScope.IBMPowerVSMachine.Namespace, machineScope.IBMPowerVSMachine.Name, err)
 	}
@@ -278,7 +279,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 			return ctrl.Result{}, nil
 		default:
 			machineScope.SetNotReady()
-			machineScope.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
+			log.V(3).Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
 			conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition, "", "")
 		}
 	} else {
@@ -291,24 +292,23 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(machineScope *scope.PowerV
 	}
 
 	if machineScope.IBMPowerVSCluster.Spec.VPC == nil || machineScope.IBMPowerVSCluster.Spec.VPC.Region == nil {
-		machineScope.Info("Skipping configuring machine to loadbalancer as VPC is not set")
+		log.V(3).Info("Skipping configuring machine to loadbalancer as VPC is not set")
 		return ctrl.Result{}, nil
 	}
 
 	// Register instance with load balancer
-	machineScope.Info("updating loadbalancer for machine", "name", machineScope.IBMPowerVSMachine.Name)
+	log.V(3).Info("Updating loadbalancer for machine", "name", machineScope.IBMPowerVSMachine.Name)
 	internalIP := machineScope.GetMachineInternalIP()
 	if internalIP == "" {
-		machineScope.Info("Unable to update the LoadBalancer, Machine internal IP not yet set", "machineName", machineScope.IBMPowerVSMachine.Name)
+		log.V(3).Info("Unable to update the LoadBalancer, Machine internal IP not yet set", "machineName", machineScope.IBMPowerVSMachine.Name)
 		return ctrl.Result{}, nil
 	}
 
 	if util.IsControlPlaneMachine(machineScope.Machine) {
-		machineScope.Info("Configuring loadbalancer configuration for control plane machine", "machineName", machineScope.IBMPowerVSMachine.Name)
+		log.V(3).Info("Configuring loadbalancer configuration for control plane machine", "machineName", machineScope.IBMPowerVSMachine.Name)
 		return r.handleLoadBalancerPoolMemberConfiguration(machineScope)
 	}
-	machineScope.Info("skipping loadbalancer configuration for worker machine", "machineName", machineScope.IBMPowerVSMachine.Name)
-
+	log.V(3).Info("skipping loadbalancer configuration for worker machine", "machineName", machineScope.IBMPowerVSMachine.Name)
 	return ctrl.Result{}, nil
 }
 
