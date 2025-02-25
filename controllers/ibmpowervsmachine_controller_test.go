@@ -389,7 +389,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				},
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{},
 			}
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta2.WaitingForClusterInfrastructureReason}})
@@ -412,7 +412,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 			}
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta2.WaitingForIBMPowerVSImageReason}})
@@ -436,7 +436,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 			}
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta2.WaitingForBootstrapDataReason}})
@@ -468,7 +468,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			}
 			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
 
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(result.RequeueAfter).To(BeZero())
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
@@ -564,7 +564,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).ToNot(BeNil())
 			g.Expect(result.Requeue).To((BeFalse()))
 			g.Expect(result.RequeueAfter).To(BeZero())
@@ -683,7 +683,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
@@ -743,7 +743,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -754,7 +754,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Status = ptr.To("SHUTOFF")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -765,7 +765,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Status = ptr.To("ACTIVE")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
@@ -777,7 +777,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Fault = &models.PVMInstanceFault{Details: "Timeout creating instance"}
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -788,7 +788,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Status = ptr.To("UNKNOWN")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -876,7 +876,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-		result, err := reconciler.reconcileNormal(machineScope)
+		result, err := reconciler.reconcileNormal(ctx, machineScope)
 		g.Expect(err).To(BeNil())
 		g.Expect(result.Requeue).To(BeFalse())
 		g.Expect(result.RequeueAfter).To(BeZero())
