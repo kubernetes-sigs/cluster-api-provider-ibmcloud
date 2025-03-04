@@ -127,8 +127,8 @@ There are two following variables for controlling the volume size for the boot d
 - IBMVPC_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
 - [IBMVPC_REGION](/reference/regions-zones-mapping.html)
 - [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
-- [IBMVPC_RESOURCEGROUP](https://cloud.ibm.com/docs/account?topic=account-rgs&interface=ui)
-- [IBMVPC_IMAGE_NAME](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images)
-- [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=ui)
-- [IBMVPC_SSHKEY_NAME](https://cloud.ibm.com/docs/vpc?topic=vpc-managing-ssh-keys&interface=ui)
-- [IBMACCOUNT_ID](https://cloud.ibm.com/docs/account?topic=account-accountfaqs#account-details)
+- IBMVPC_RESOURCEGROUP : Go to Manage > Account > Account resources > Resource groups in the console to get reource group details.
+- IBMVPC_IMAGE_NAME : Name of the custom image. Refer [here](/topics/capibmadm/vpc/image#1-capibmadm-vpc-image-list)
+- [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=cli)
+- IBMVPC_SSHKEY_NAME : Name of the SSH Key. Refer [here](/topics/capibmadm/vpc/key#1-capibmadm-vpc-key-list) how to get the keys.
+- IBMACCOUNT_ID : Go to the Manage > Account > Account settings page in the console to view your account ID and type. The account ID is a 32 character, unique account identifier.

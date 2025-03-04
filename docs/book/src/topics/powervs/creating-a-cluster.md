@@ -191,14 +191,12 @@ following the steps below.
 
 #### Note: Refer below for more detailed information on PowerVS variables.
 - IBMPOWERVS_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
-- [IBMPOWERVS_SSHKEY_NAME](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-ssh-key)
-- IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](/topics/powervs/creating-a-cluster.html)
-- IBMPOWERVS_IMAGE_NAME : Name of the custom image. Refer [here](/topics/capibmadm/powervs/image.html) to get image details.
+- IBMPOWERVS_SSHKEY_NAME : Name of the SSH Key. Refer [here](/topics/capibmadm/powervs/key#3-capibmadm-powervs-key-list) how to get the keys.
+- IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](/topics/capibmadm/powervs/port#3-capibmadm-powervs-port-list)
+- IBMPOWERVS_IMAGE_NAME : Name of the custom image. Refer [here](/topics/capibmadm/powervs/image#2-capibmadm-powervs-image-list) to get image details.
 - IBMPOWERVS_SERVICE_INSTANCE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
-- [IBMACCOUNT_ID](https://cloud.ibm.com/docs/account?topic=account-accountfaqs#account-details)
-- IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](/topics/capibmadm/powervs/network.html) how to get the network details.
+- IBMACCOUNT_ID : Go to the Account settings page in the console to view your account ID and type. The account ID is a 32 character, unique account identifier.
+- IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](/topics/capibmadm/powervs/network#3-capibmadm-powervs-network-list) how to get the network details.
 - [IBMPOWERVS_REGION](/reference/regions-zones-mapping.html)
 - [IBMPOWERVS_ZONE](/reference/regions-zones-mapping.html)
-- [COS_BUCKET_REGION](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-endpoints#endpoints-region)
-- [COS_BUCKET_NAME](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-getting-started-cloud-object-storage#gs-create-buckets)
-- [COS_OBJECT_NAME](https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-getting-started-cloud-object-storage#gs-add-objects)
+- COS_BUCKET_REGION, COS_BUCKET_NAME and COS_OBJECT_NAME : Refer [here](/machine-images/powervs#powervs-images-with-dhcp-based-network) to get the COS details.
