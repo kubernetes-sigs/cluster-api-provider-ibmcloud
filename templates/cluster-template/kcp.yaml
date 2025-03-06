@@ -10,7 +10,3 @@ spec:
         extraArgs:
         - name: cloud-provider
           value: external
-      apiServer:
-        extraArgs:
-        - name: cloud-provider
-          value: external

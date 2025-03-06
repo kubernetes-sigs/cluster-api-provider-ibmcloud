@@ -92,8 +92,6 @@ spec:
             certSANs:
             - localhost
             - 127.0.0.1
-            extraArgs:
-              cloud-provider: external
           controllerManager:
             extraArgs:
               cloud-provider: external
