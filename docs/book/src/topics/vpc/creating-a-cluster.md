@@ -122,4 +122,13 @@ There are two following variables for controlling the volume size for the boot d
     IBMACCOUNT_ID="ibm-accountid" \
     BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
     clusterctl generate cluster ibm-vpc-clusterclass --kubernetes-version v1.26.2 --target-namespace default --control-plane-machine-count=1 --worker-machine-count=2 --from=./templates/cluster-template-vpc-clusterclass.yaml | kubectl apply -f -
-  
+ 
+**Note:** Refer below for more detailed information on VPC variables.
+- IBMVPC_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
+- [IBMVPC_REGION](/reference/regions-zones-mapping.html)
+- [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
+- IBMVPC_RESOURCEGROUP : To get reource group details go to Manage > Account > Account resources > Resource groups.
+- [IBMVPC_IMAGE_NAME](/topics/capibmadm/vpc/image#1-capibmadm-vpc-image-list)
+- [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=cli)
+- [IBMVPC_SSHKEY_NAME](/topics/capibmadm/vpc/key#1-capibmadm-vpc-key-list)
+- IBMACCOUNT_ID : Go to the Account settings page in the console to view your account ID and type. The account ID is a 32 character, unique account identifier.
