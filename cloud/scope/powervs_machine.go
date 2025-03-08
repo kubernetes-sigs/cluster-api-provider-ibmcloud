@@ -44,6 +44,8 @@ import (
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
@@ -56,6 +58,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/patch"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
@@ -1020,7 +1023,35 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 
 		internalIP := m.GetMachineInternalIP()
 
+		// TODO:SHILPA- handle multiple lbs as well
 		// Update each LoadBalancer pool
+		loadBalancerListeners := map[string]v1beta2.AdditionalListenerSpec{}
+		for _, additionalListener := range lb.AdditionalListeners {
+			// if additionalListener.Selector.MatchLabels == nil {
+			// 	continue
+			// }
+			// TODO:SHILPA- protocol is added irrespective of whats provided in the additionalListener protocol, need to handle this
+			if additionalListener.Protocol == nil {
+				additionalListener.Protocol = &v1beta2.VPCLoadBalancerListenerProtocolTCP
+			}
+			loadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener
+		}
+		for _, listener := range loadBalancer.Listeners {
+			listenerOptions := &vpcv1.GetLoadBalancerListenerOptions{}
+			listenerOptions.SetLoadBalancerID(*loadBalancer.ID)
+			listenerOptions.SetID(*listener.ID)
+			loadBalancerListener, _, err := m.IBMVPCClient.GetLoadBalancerListener(listenerOptions)
+			if err != nil {
+				return nil, fmt.Errorf("failed to list %s load balancer listener: %v", *listener.ID, err)
+			}
+			fmt.Println(*loadBalancerListener.Port, *loadBalancerListener.Protocol)
+			if additionalListener, ok := loadBalancerListeners[fmt.Sprintf("%d-%s", *loadBalancerListener.Port, *loadBalancerListener.Protocol)]; ok {
+				if loadBalancerListener.DefaultPool != nil {
+					loadBalancerListeners[*loadBalancerListener.DefaultPool.Name] = additionalListener
+				}
+			}
+		}
+		fmt.Println(loadBalancerListeners)
 		for _, pool := range loadBalancer.Pools {
 			m.V(3).Info("Updating LoadBalancer pool member", "pool", *pool.Name, "loadbalancer", *loadBalancer.Name, "ip", internalIP)
 			listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
@@ -1031,7 +1062,27 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 				return nil, fmt.Errorf("failed to list %s VPC load balancer pool error: %v", *pool.Name, err)
 			}
 			var targetPort int64
-			var alreadyRegistered bool
+			var alreadyRegistered, skipListener bool
+
+			if loadBalancerListener, ok := loadBalancerListeners[*pool.Name]; ok {
+				selector, err := metav1.LabelSelectorAsSelector(&loadBalancerListener.Selector)
+				if err != nil {
+					m.V(5).Info("Skipping listener addition, failed to get label selector from spec selector")
+					continue
+				}
+
+				if selector.Empty() && !util.IsControlPlaneMachine(m.Machine) {
+					continue
+				}
+				// Skip adding the listener if the selector does not match
+				if !selector.Empty() && !selector.Matches(labels.Set(m.IBMPowerVSMachine.Labels)) {
+					skipListener = true
+				}
+			}
+			if skipListener {
+				m.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "targetip", internalIP, "machine", m.IBMPowerVSMachine.Name, "clusterName", m.IBMPowerVSCluster.Name)
+				continue
+			}
 
 			if len(listLoadBalancerPoolMembers.Members) == 0 {
 				// For adding the first member to the pool we depend on the pool name to get the target port
@@ -1059,6 +1110,7 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember() (*vpcv1.LoadBala
 					}
 				}
 			}
+
 			if alreadyRegistered {
 				m.V(3).Info("PoolMember already exist", "pool", *pool.Name, "targetip", internalIP, "port", targetPort)
 				continue
