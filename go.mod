@@ -1,8 +1,7 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.22.0
-
-toolchain go1.22.9
+toolchain go1.23.7
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
@@ -34,7 +33,7 @@ require (
 	go.uber.org/mock v0.5.0
 	golang.org/x/crypto v0.33.0
 	golang.org/x/net v0.35.0
-	golang.org/x/text v0.22.0
+	golang.org/x/text v0.23.0
 	k8s.io/api v0.31.3
 	k8s.io/apiextensions-apiserver v0.31.3
 	k8s.io/apimachinery v0.31.3
@@ -170,7 +169,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
