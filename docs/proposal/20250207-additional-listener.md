@@ -57,9 +57,8 @@ spec:
     - port: 22
       protocol: tcp
       selector:
-        # Limitation: For now, only one machine name can be provided in the listener label selector
         matchLabels:
-          infrastructure.cluster.x-k8s.io/machine-name: "bootstrap"
+          listener-selector: "port-22"
   # Other VPCLoadBalancerSpec fields
 ```
 This selector value should match with the IBMPowerVSMachine `Labels` field inorder for the listener to be assigned.
@@ -71,38 +70,31 @@ metadata:
   name: "name"
   namespace: "namespace"
   labels:
-    infrastructure.cluster.x-k8s.io/machine-name: "bootstrap"
+    listener-selector: "port-22"
 spec:
   serviceInstanceID: "serviceInstance-id"
   systemType: "s922"
   # Other IBMPowerVSMachineSpec fields
 ```
 
+### Examples
+![additional-listeners-examples](../images/additional-listener-examples.png)
+
 ### Controller flow
 
 The load balancer pool member configuration is now invoked for all machines inorder to provide the ability to assign
 the listeners to any machine based on the label selectors.
 
-Iterate over the load balancer pools, obtain the corresponding pool members for each, and extract the selector from the 
-listener via the default pool name. Subsequently, compare the machine label against the listener's label selector. 
+Loop through the load balancer pools, get the pool members, and retrieve the selector from the listener using the default pool name. 
+Then, compare the machine label with the listener's selector.
 Based on the comparison results, the process proceeds as follows:
 
-    - In the event of a match, proceed with the assignment of the listener to the machine.
-    - In the case of a mismatch, bypass the listener and progress to the subsequent pool member.
-    - If the selector is vacant and the machine is part of the control plane, continue with the listener assignment, as all listeners can be allocated to control plane machines.
+    - In the event of a label match, proceed with the assignment of the listener to the machine.
+    - In the case of a label mismatch, bypass the listener and progress to the subsequent pool member.
+    - If the selector is empty and the machine is part of the control plane, continue with the listener assignment, as all listeners can be allocated to control plane machines.
 
 ### Design
 ![additional-listeners-design](../images/additional-listener-design-diagram.png)
 
 ### Code Workflow
 ![additional-listeners-workflow](../images/additional-listener-code-workflow.png)
-
-### Limitation
-The current limitation of this approach is that if a listener needs to be assigned to multiple nodes, we must choose
-one of the following methods:
-
-    1. Use unique entries for each machine in the listener labels.
-    2. Provide the label values as a comma-separated list.
-
-This limitation can be resolved in the future by improving the controller flow to better handle cases where a listener
-needs to be added to multiple machines.
