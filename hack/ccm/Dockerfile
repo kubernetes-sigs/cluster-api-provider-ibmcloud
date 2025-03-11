@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG TARGETPLATFORM=linux/amd64
-ARG ARCH=amd64
+ARG TARGETARCH
 
 # Build IBM cloud controller manager binary
 ARG golang_image
