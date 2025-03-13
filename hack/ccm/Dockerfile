@@ -14,16 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG TARGETARCH
-
 # Build IBM cloud controller manager binary
 ARG golang_image
-FROM ${golang_image} AS ccm-builder
-ARG ARCH
+FROM --platform=$BUILDPLATFORM ${golang_image} AS ccm-builder
+ARG TARGETARCH
 ARG POWERVS_CLOUD_CONTROLLER_COMMIT
 WORKDIR /build
 RUN git clone https://github.com/openshift/cloud-provider-powervs
-RUN cd cloud-provider-powervs && git checkout $POWERVS_CLOUD_CONTROLLER_COMMIT && CGO_ENABLED=0 GOARCH=$ARCH  go build \
+RUN cd cloud-provider-powervs && git checkout $POWERVS_CLOUD_CONTROLLER_COMMIT && CGO_ENABLED=0 GOARCH=$TARGETARCH go build \
      -ldflags "-s -w" -o /build/ibm-cloud-controller-manager .
 
 # Assemble the final image
