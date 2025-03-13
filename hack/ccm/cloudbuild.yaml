@@ -2,6 +2,7 @@
 timeout: 3000s
 options:
   substitution_option: ALLOW_LOOSE
+  machineType: 'E2_HIGHCPU_8'
 steps:
   - name: 'gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20241111-71c32dbdcc'
     dir: 'hack/ccm'
@@ -9,8 +10,9 @@ steps:
     env:
       - PULL_BASE_REF=${_PULL_BASE_REF}
       - HOME=/root
+      - DOCKER_BUILDKIT=1
     args:
-      - build-and-push-multi-arch
+      - build-image
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution
