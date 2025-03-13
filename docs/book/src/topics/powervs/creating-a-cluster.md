@@ -199,4 +199,5 @@ following the steps below.
 - IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](/topics/capibmadm/powervs/network#3-capibmadm-powervs-network-list) how to get the network details.
 - [IBMPOWERVS_REGION](/reference/regions-zones-mapping.html)
 - [IBMPOWERVS_ZONE](/reference/regions-zones-mapping.html)
+- IBM_RESOURCE_GROUP : Go to Manage > Account > Account resources > Resource groups in the console to get the resource group Name.
 - COS_BUCKET_REGION, COS_BUCKET_NAME and COS_OBJECT_NAME : Refer [here](/machine-images/powervs#powervs-images-with-dhcp-based-network) to get the COS details.
