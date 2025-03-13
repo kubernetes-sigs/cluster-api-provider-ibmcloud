@@ -257,7 +257,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
@@ -271,7 +271,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("capi-machine")
 			machineScope.IBMVPCCluster.Status.Subnet.ID = ptr.To("capi-subnet-id")
 			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, errors.New("Failed to create or fetch instance"))
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
@@ -387,7 +387,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil)
 			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil)
 
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To((Not(BeNil())))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
@@ -402,7 +402,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("failed to list loadBalancerPoolMembers"))
 
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 		})
@@ -422,7 +422,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(customloadBalancerPoolMember, &core.DetailedResponse{}, nil)
 
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			// Requeue should be set when the Pool Member is found, but not yet ready (active).
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(err).To(BeNil())
@@ -446,7 +446,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
 
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1beta2.MachineFinalizer))
 			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
@@ -488,7 +488,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				result, err := reconciler.reconcileNormal(machineScope)
+				result, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
@@ -513,7 +513,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				_, err := reconciler.reconcileNormal(machineScope)
+				_, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
 			})
@@ -537,7 +537,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				result, err := reconciler.reconcileNormal(machineScope)
+				result, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
@@ -562,7 +562,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				result, err := reconciler.reconcileNormal(machineScope)
+				result, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
