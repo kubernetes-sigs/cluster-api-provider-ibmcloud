@@ -18,6 +18,7 @@ package scope
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"testing"
 
@@ -37,8 +38,9 @@ var (
 
 func TestMain(m *testing.M) {
 	setup()
-	defer teardown()
-	m.Run()
+	result := m.Run()
+	teardown()
+	os.Exit(result)
 }
 
 // Setting up the test environment.
