@@ -195,9 +195,9 @@ following the steps below.
 - IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](/topics/capibmadm/powervs/port#3-capibmadm-powervs-port-list)
 - IBMPOWERVS_IMAGE_NAME : Name of the custom image. Refer [here](/topics/capibmadm/powervs/image#2-capibmadm-powervs-image-list) to get image details.
 - IBMPOWERVS_SERVICE_INSTANCE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
-- IBMACCOUNT_ID : Go to the Account settings page in the console to view your account ID and type. The account ID is a 32 character, unique account identifier.
+- IBMACCOUNT_ID : Go to the Account settings page in the IBM Cloud console to view your account ID and type. The account ID is a 32 character, unique account identifier.Refer [here](https://cloud.ibm.com/account/settings)
 - IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](/topics/capibmadm/powervs/network#3-capibmadm-powervs-network-list) how to get the network details.
 - [IBMPOWERVS_REGION](/reference/regions-zones-mapping.html)
 - [IBMPOWERVS_ZONE](/reference/regions-zones-mapping.html)
-- IBM_RESOURCE_GROUP : Go to Manage > Account > Account resources > Resource groups in the console to get the resource group Name.
+- IBM_RESOURCE_GROUP : Go to Manage > Account > Account resources > Resource groups in the IBM Cloud console to get the resource group Name.
 - COS_BUCKET_REGION, COS_BUCKET_NAME and COS_OBJECT_NAME : Refer [here](/machine-images/powervs#powervs-images-with-dhcp-based-network) to get the COS details.
