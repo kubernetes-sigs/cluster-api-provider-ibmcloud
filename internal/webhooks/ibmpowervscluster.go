@@ -104,6 +104,12 @@ func validateIBMPowerVSClusterNetwork(cluster *infrav1beta2.IBMPowerVSCluster) *
 	if res, err := validateIBMPowerVSNetworkReference(cluster.Spec.Network); !res {
 		return err
 	}
+	if (cluster.Spec.Network.Name != nil || cluster.Spec.Network.ID != nil) && (cluster.Spec.DHCPServer != nil && cluster.Spec.DHCPServer.Name != nil) {
+		return field.Invalid(field.NewPath("spec.dhcpServer.name"), cluster.Spec.DHCPServer.Name, "either one of network or dhcpServer details can be provided")
+	}
+	if (cluster.Spec.Network.Name != nil || cluster.Spec.Network.ID != nil) && (cluster.Spec.DHCPServer != nil && cluster.Spec.DHCPServer.ID != nil) {
+		return field.Invalid(field.NewPath("spec.dhcpServer.id"), cluster.Spec.DHCPServer.ID, "either one of network or dhcpServer details can be provided")
+	}
 	return nil
 }
 

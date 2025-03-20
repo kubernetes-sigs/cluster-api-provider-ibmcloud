@@ -872,10 +872,11 @@ func (s *PowerVSClusterScope) createServiceInstance(ctx context.Context) (*resou
 }
 
 // ReconcileNetwork reconciles network
-// If only IBMPowerVSCluster.Spec.Network is set, network would be validated and if exists already will get used as cluster’s network or a new network will be created via DHCP service.
+// If only IBMPowerVSCluster.Spec.Network is set, network would be validated and if exists already will get used as cluster’s network or DHCP network would be validated with this name if not exits then a new network will be created via DHCP service.
 // If only IBMPowerVSCluster.Spec.DHCPServer is set, DHCP server would be validated and if exists already, will use DHCP server’s network as cluster network. If not a new DHCP service will be created and it’s network will be used.
-// If both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer is set, network and DHCP server would be validated and if both exists already then network is belongs to given DHCP server or not would be validated.
-// If both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer is not set, by default DHCP service will be created to setup cluster's network.
+// Cannot set both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer since it will cause collision during network creation if both are provided.
+// If both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer is not set, by default DHCP service will be created with the cluster name to setup cluster's network.
+// Note: DHCP network name would be in `DHCPSERVER<Network.name or DHCPServer.name>_Private` this format.
 func (s *PowerVSClusterScope) ReconcileNetwork(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if s.GetNetworkID() != nil {
@@ -958,12 +959,7 @@ func (s *PowerVSClusterScope) checkDHCPServer(ctx context.Context) (*string, err
 	}
 
 	// if user provides DHCP server name then we can use network name to match the existing DHCP server
-	var networkName string
-	if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
-		networkName = dhcpNetworkName(*s.DHCPServer().Name)
-	} else {
-		networkName = dhcpNetworkName(s.InfraCluster())
-	}
+	networkName := dhcpNetworkName(*s.GetServiceName(infrav1beta2.ResourceTypeDHCPServer))
 
 	log.V(3).Info("Checking DHCP server's network list by network name", "name", networkName)
 	dhcpServers, err := s.IBMPowerVSClient.GetAllDHCPServers()
@@ -2491,11 +2487,14 @@ func (s *PowerVSClusterScope) GetServiceName(resourceType infrav1beta2.ResourceT
 			return ptr.To(fmt.Sprintf("%s-serviceInstance", s.InfraCluster()))
 		}
 		return s.ServiceInstance().Name
-	case infrav1beta2.ResourceTypeNetwork:
-		if s.Network() == nil || s.Network().Name == nil {
-			return ptr.To(fmt.Sprintf("DHCPSERVER%s_Private", s.InfraCluster()))
+	case infrav1beta2.ResourceTypeDHCPServer:
+		if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
+			return s.DHCPServer().Name
 		}
-		return s.Network().Name
+		if s.Network() != nil && s.Network().Name != nil {
+			return s.Network().Name
+		}
+		return ptr.To(s.InfraCluster())
 	case infrav1beta2.ResourceTypeVPC:
 		if s.VPC() == nil || s.VPC().Name == nil {
 			return ptr.To(fmt.Sprintf("%s-vpc", s.InfraCluster()))
@@ -2506,11 +2505,6 @@ func (s *PowerVSClusterScope) GetServiceName(resourceType infrav1beta2.ResourceT
 			return ptr.To(fmt.Sprintf("%s-transitgateway", s.InfraCluster()))
 		}
 		return s.TransitGateway().Name
-	case infrav1beta2.ResourceTypeDHCPServer:
-		if s.DHCPServer() == nil || s.DHCPServer().Name == nil {
-			return ptr.To(s.InfraCluster())
-		}
-		return s.DHCPServer().Name
 	case infrav1beta2.ResourceTypeCOSInstance:
 		if s.COSInstance() == nil || s.COSInstance().Name == "" {
 			return ptr.To(fmt.Sprintf("%s-cosinstance", s.InfraCluster()))
