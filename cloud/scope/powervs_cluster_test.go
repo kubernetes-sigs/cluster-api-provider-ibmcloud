@@ -2767,22 +2767,6 @@ func TestGetServiceName(t *testing.T) {
 			expectedName: ptr.To("ServiceInstanceName"),
 		},
 		{
-			name:         "Resource type is network and Network is nil",
-			resourceType: infrav1beta2.ResourceTypeNetwork,
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"}},
-			},
-			expectedName: ptr.To("DHCPSERVERClusterName_Private"),
-		},
-		{
-			name:         "Resource type is network and Network is not nil",
-			resourceType: infrav1beta2.ResourceTypeNetwork,
-			clusterScope: PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{Network: infrav1beta2.IBMPowerVSResourceReference{Name: ptr.To("NetworkName")}}},
-			},
-			expectedName: ptr.To("NetworkName"),
-		},
-		{
 			name:         "Resource type is vpc and VPC is nil",
 			resourceType: infrav1beta2.ResourceTypeVPC,
 			clusterScope: PowerVSClusterScope{
@@ -2829,6 +2813,14 @@ func TestGetServiceName(t *testing.T) {
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{DHCPServer: &infrav1beta2.DHCPServer{Name: ptr.To("DHCPServerName")}}},
 			},
 			expectedName: ptr.To("DHCPServerName"),
+		},
+		{
+			name:         "Resource type is dhcp server and dhcpserver is not nil and network is not nil",
+			resourceType: infrav1beta2.ResourceTypeDHCPServer,
+			clusterScope: PowerVSClusterScope{
+				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{Network: infrav1beta2.IBMPowerVSResourceReference{Name: ptr.To("NetworkName")}}},
+			},
+			expectedName: ptr.To("NetworkName"),
 		},
 		{
 			name:         "Resource type is cos instance and cos instance is nil",

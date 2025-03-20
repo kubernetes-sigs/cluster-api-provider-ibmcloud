@@ -68,6 +68,66 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Should error if both Network name and DHCP name are set",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						Name: ptr.To("capi-net"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi-dhcp"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should error if both Network id and DHCP name are set",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					DHCPServer: &DHCPServer{
+						Name: ptr.To("capi-dhcp"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should error if both Network name and DHCP id are set",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						Name: ptr.To("capi-net"),
+					},
+					DHCPServer: &DHCPServer{
+						ID: ptr.To("capi-dhcp-id"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should error if both Network id and DHCP id are set",
+			powervsCluster: &IBMPowerVSCluster{
+				Spec: IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					DHCPServer: &DHCPServer{
+						ID: ptr.To("capi-dhcp-id"),
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tc := range tests {
