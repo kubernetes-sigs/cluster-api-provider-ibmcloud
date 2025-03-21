@@ -30,8 +30,10 @@
     git tag -s -m "v0.1.0" v0.1.0
     git push origin v0.1.0
     ```
-- Wait for the google cloud build to be finished
-- Create a draft release with release notes for the tag
+- Wait for the google cloud build to finish, which is triggered once the tag is created.
+- Create a draft release with release notes for the tag.
+  - Remove any PR/Commits raised by dependabot.
+  - Update the controller image version towards the bottom of the release document.
 - Perform the [image promotion process](https://github.com/kubernetes/k8s.io/tree/main/k8s.gcr.io#image-promoter):
   - Clone and pull down the latest from [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io)
   - Create a new branch in your fork of `kubernetes/k8s.io`. 
@@ -42,10 +44,11 @@
   "sha256:6c92a6a337ca5152eda855ac27c9e4ca1f30bba0aa4de5c3a0b937270ead4363"
   ```
   - In your `kubernetes/k8s.io` branch edit `k8s.gcr.io/images/k8s-staging-capi-ibmcloud/images.yaml` and add an entry for the version using the sha256 value got from the above command. For example: `"sha256:6c92a6a337ca5152eda855ac27c9e4ca1f30bba0aa4de5c3a0b937270ead4363": ["v0.1.0"]`
-  - You can use [this PR](https://github.com/kubernetes/k8s.io/pull/3185) as example 
-  - Wait for the PR to be approved and merged
-  - Run `make release` command
-  - Copy the content from `out` directory to release asset 
-  - Publish the drafted release
+  - You can use [this PR](https://github.com/kubernetes/k8s.io/pull/7780) as example.
+  - Wait for the PR to be approved and merged.
+  - This should trigger a build job to build artifacts through cloud-build.
+  - Publish the drafted release and upload the binaries/files that are uploaded to Google cloud storage.
+  - Create an alpha tag for the `release-version+1` for allowing subsequent commits.
+  - Create a new `release tracker issue` for to manage the post release processes.
 
 > Note: In the above instructions, `v0.1.0` is the version/tag is being released
