@@ -128,7 +128,10 @@ type AdditionalListenerSpec struct {
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
 
-	Selector metav1.LabelSelector `json:"selector"`
+	// Selector is used to select the machines with same label to assign the listener
+    // +kubebuilder:validation:Optional
+    // +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Selector is immutable"
+	Selector metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // VPCLoadBalancerBackendPoolSpec defines the desired configuration of a VPC Load Balancer Backend Pool.
