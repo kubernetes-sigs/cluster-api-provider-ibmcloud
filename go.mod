@@ -2,6 +2,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.23.2
 
+toolchain go1.24.1
+
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.21.0
@@ -31,7 +33,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
 	golang.org/x/crypto v0.36.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/text v0.23.0
 	k8s.io/api v0.31.3
 	k8s.io/apiextensions-apiserver v0.31.3
