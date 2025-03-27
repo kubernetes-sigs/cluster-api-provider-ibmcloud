@@ -199,7 +199,7 @@ func (s *Service) ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoo
 	return s.vpcService.ListLoadBalancerPoolMembers(options)
 }
 
-// ListLoadBalancerPoolMembers returns members of a load balancer pool.
+// GetLoadBalancerListener returns the associated listeners of a load balancer.
 func (s *Service) GetLoadBalancerListener(options *vpcv1.GetLoadBalancerListenerOptions) (*vpcv1.LoadBalancerListener, *core.DetailedResponse, error) {
 	return s.vpcService.GetLoadBalancerListener(options)
 }

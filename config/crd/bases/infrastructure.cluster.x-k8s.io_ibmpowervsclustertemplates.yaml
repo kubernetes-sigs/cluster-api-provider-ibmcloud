@@ -337,10 +337,8 @@ spec:
                                     - udp
                                     type: string
                                   selector:
-                                    description: |-
-                                      A label selector is a label query over a set of resources. The result of matchLabels and
-                                      matchExpressions are ANDed. An empty label selector matches all objects. A null
-                                      label selector matches no objects.
+                                    description: Selector is used to select the machines
+                                      with same label to assign the listener
                                     properties:
                                       matchExpressions:
                                         description: matchExpressions is a list of
@@ -386,9 +384,11 @@ spec:
                                         type: object
                                     type: object
                                     x-kubernetes-map-type: atomic
+                                    x-kubernetes-validations:
+                                    - message: Selector is immutable
+                                      rule: self == oldSelf
                                 required:
                                 - port
-                                - selector
                                 type: object
                               type: array
                               x-kubernetes-list-map-keys:
