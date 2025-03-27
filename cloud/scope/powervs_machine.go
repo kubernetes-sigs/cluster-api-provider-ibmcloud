@@ -58,7 +58,6 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
@@ -1001,14 +1000,11 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 
 		// TODO:SHILPA- handle multiple lbs as well
 		// Update each LoadBalancer pool
-		loadBalancerListeners := map[string]v1beta2.AdditionalListenerSpec{}
+		loadBalancerListeners := map[string]infrav1beta2.AdditionalListenerSpec{}
 		for _, additionalListener := range lb.AdditionalListeners {
-			// if additionalListener.Selector.MatchLabels == nil {
-			// 	continue
-			// }
 			// TODO:SHILPA- protocol is added irrespective of whats provided in the additionalListener protocol, need to handle this
 			if additionalListener.Protocol == nil {
-				additionalListener.Protocol = &v1beta2.VPCLoadBalancerListenerProtocolTCP
+				additionalListener.Protocol = &infrav1beta2.VPCLoadBalancerListenerProtocolTCP
 			}
 			loadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener
 		}
@@ -1020,14 +1016,12 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 			if err != nil {
 				return nil, fmt.Errorf("failed to list %s load balancer listener: %v", *listener.ID, err)
 			}
-			fmt.Println(*loadBalancerListener.Port, *loadBalancerListener.Protocol)
 			if additionalListener, ok := loadBalancerListeners[fmt.Sprintf("%d-%s", *loadBalancerListener.Port, *loadBalancerListener.Protocol)]; ok {
 				if loadBalancerListener.DefaultPool != nil {
 					loadBalancerListeners[*loadBalancerListener.DefaultPool.Name] = additionalListener
 				}
 			}
 		}
-		fmt.Println(loadBalancerListeners)
 		for _, pool := range loadBalancer.Pools {
 			log.V(3).Info("Updating LoadBalancer pool member", "pool", *pool.Name, "loadBalancerName", *loadBalancer.Name, "IP", internalIP)
 			listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
@@ -1041,9 +1035,10 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 			var alreadyRegistered, skipListener bool
 
 			if loadBalancerListener, ok := loadBalancerListeners[*pool.Name]; ok {
+				targetPort = loadBalancerListener.Port
 				selector, err := metav1.LabelSelectorAsSelector(&loadBalancerListener.Selector)
 				if err != nil {
-					m.V(5).Info("Skipping listener addition, failed to get label selector from spec selector")
+					log.V(5).Info("Skipping listener addition, failed to get label selector from spec selector")
 					continue
 				}
 
@@ -1056,33 +1051,15 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 				}
 			}
 			if skipListener {
-				m.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "targetip", internalIP, "machine", m.IBMPowerVSMachine.Name, "clusterName", m.IBMPowerVSCluster.Name)
+				log.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "targetip", internalIP, "machine", m.IBMPowerVSMachine.Name, "clusterName", m.IBMPowerVSCluster.Name)
 				continue
 			}
 
-			if len(listLoadBalancerPoolMembers.Members) == 0 {
-				// For adding the first member to the pool we depend on the pool name to get the target port
-				// pool name will have port number appended at the end
-				lbNameSplit := strings.Split(*pool.Name, "-")
-				if len(lbNameSplit) == 0 {
-					// user might have created additional pool
-					log.V(3).Info("Not updating pool as it might be created externally", "poolName", *pool.Name)
-					continue
-				}
-				targetPort, err = strconv.ParseInt(lbNameSplit[len(lbNameSplit)-1], 10, 64)
-				if err != nil {
-					// user might have created additional pool
-					log.Error(err, "unable to fetch target port from pool name", "poolName", *pool.Name)
-					continue
-				}
-			} else {
-				for _, member := range listLoadBalancerPoolMembers.Members {
-					if target, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
-						targetPort = *member.Port
-						if *target.Address == internalIP {
-							alreadyRegistered = true
-							log.V(3).Info("Target IP already configured for pool", "IP", internalIP, "poolName", *pool.Name)
-						}
+			for _, member := range listLoadBalancerPoolMembers.Members {
+				if target, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
+					if *target.Address == internalIP {
+						alreadyRegistered = true
+						log.V(3).Info("Target IP already configured for pool", "IP", internalIP, "poolName", *pool.Name)
 					}
 				}
 			}
