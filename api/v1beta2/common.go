@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -80,8 +81,23 @@ func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {
 	}
 }
 
-func validateBootVolume(spec IBMVPCMachineSpec) field.ErrorList {
+func validateVolumes(spec IBMVPCMachineSpec) field.ErrorList {
 	var allErrs field.ErrorList
+	const customProfile = "custom"
+
+	for i := range spec.AdditionalVolumes {
+		if spec.AdditionalVolumes[i].Profile == customProfile {
+			if spec.AdditionalVolumes[i].Iops == 0 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath(fmt.Sprintf("spec.AdditionalVolumes[%d]", i)), spec, "iops has to be specified when profile is set to `custom` "))
+			}
+			if spec.AdditionalVolumes[i].SizeGiB == 0 {
+				allErrs = append(allErrs, field.Invalid(field.NewPath(fmt.Sprintf("spec.AdditionalVolumes[%d]", i)), spec, "sizeGiB has to be specified when profile is set to `custom` "))
+			}
+		}
+		if spec.AdditionalVolumes[i].Iops != 0 && spec.AdditionalVolumes[i].Profile != customProfile {
+			allErrs = append(allErrs, field.Invalid(field.NewPath(fmt.Sprintf("spec.AdditionalVolumes[%d]", i)), spec, "iops applicable only to volumes using a profile of type `custom`"))
+		}
+	}
 
 	if spec.BootVolume == nil {
 		return allErrs
@@ -91,7 +107,7 @@ func validateBootVolume(spec IBMVPCMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.bootVolume.sizeGiB"), spec, "valid Boot VPCVolume size is 10 - 250 GB"))
 	}
 
-	if spec.BootVolume.Iops != 0 && spec.BootVolume.Profile != "custom" {
+	if spec.BootVolume.Iops != 0 && spec.BootVolume.Profile != customProfile {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.bootVolume.iops"), spec, "iops applicable only to volumes using a profile of type `custom`"))
 	}
 
