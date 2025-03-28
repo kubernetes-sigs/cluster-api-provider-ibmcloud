@@ -72,5 +72,5 @@ func (r *IBMVPCMachineTemplate) ValidateDelete() (admission.Warnings, error) {
 }
 
 func (r *IBMVPCMachineTemplate) validateIBMVPCMachineBootVolume() field.ErrorList {
-	return validateBootVolume(r.Spec.Template.Spec)
+	return validateVolumes(r.Spec.Template.Spec)
 }
