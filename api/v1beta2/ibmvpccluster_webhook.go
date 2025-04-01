@@ -17,55 +17,58 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
+	"fmt"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-// log is for logging in this package.
-var ibmvpcclusterlog = logf.Log.WithName("ibmvpccluster-resource")
+//+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,verbs=create;update,versions=v1beta2,name=mibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+//+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,versions=v1beta2,name=vibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 func (r *IBMVPCCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(&IBMVPCCluster{}).
+		WithValidator(r).
+		WithDefaulter(r).
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,verbs=create;update,versions=v1beta2,name=mibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
+var _ webhook.CustomDefaulter = &IBMVPCCluster{}
+var _ webhook.CustomValidator = &IBMVPCCluster{}
 
-var _ webhook.Defaulter = &IBMVPCCluster{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (r *IBMVPCCluster) Default() {
-	ibmvpcclusterlog.Info("default", "name", r.Name)
+// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
+func (r *IBMVPCCluster) Default(_ context.Context, _ runtime.Object) error {
+	return nil
 }
 
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,versions=v1beta2,name=vibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
-
-var _ webhook.Validator = &IBMVPCCluster{}
-
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMVPCCluster) ValidateCreate() (admission.Warnings, error) {
-	ibmvpcclusterlog.Info("validate create", "name", r.Name)
-	return r.validateIBMVPCCluster()
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (r *IBMVPCCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+	objValue, ok := obj.(*IBMVPCCluster)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", obj))
+	}
+	return objValue.validateIBMVPCCluster()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMVPCCluster) ValidateUpdate(_ runtime.Object) (admission.Warnings, error) {
-	ibmvpcclusterlog.Info("validate update", "name", r.Name)
-	return r.validateIBMVPCCluster()
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
+func (r *IBMVPCCluster) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	objValue, ok := newObj.(*IBMVPCCluster)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", objValue))
+	}
+	return objValue.validateIBMVPCCluster()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (r *IBMVPCCluster) ValidateDelete() (admission.Warnings, error) {
-	ibmvpcclusterlog.Info("validate delete", "name", r.Name)
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
+func (r *IBMVPCCluster) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
 	return nil, nil
 }
 

@@ -78,7 +78,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(_ *testing.T) {
-			_, err := test.newTemplate.ValidateUpdate(test.oldTemplate)
+			_, err := test.newTemplate.ValidateUpdate(ctx, test.oldTemplate, test.newTemplate)
 			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {
