@@ -338,5 +338,5 @@ func (rf *ResourceReference) Set(resource ResourceReference) {
 }
 
 func init() {
-	SchemeBuilder.Register(&IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
+	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
