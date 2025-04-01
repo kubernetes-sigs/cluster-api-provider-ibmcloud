@@ -302,13 +302,13 @@ check-github-token:
 .PHONY: release
 release: clean-release check-release-tag $(RELEASE_DIR)  ## Build and push container images using the latest git tag for the commit
 	git checkout "${RELEASE_TAG}"
-	CORE_CONTROLLER_IMG=$(PROD_REGISTRY)/$(CORE_IMAGE_NAME) $(MAKE) release-manifests
+	$(MAKE) release-manifests
 	$(MAKE) release-templates
 	$(MAKE) release-binaries
 
 .PHONY: release-manifests
 release-manifests: ## Build the manifests to publish with a release
-	$(MAKE) $(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml TAG=$(RELEASE_TAG)
+	$(MAKE) $(RELEASE_DIR)/$(CORE_MANIFEST_FILE).yaml TAG=$(RELEASE_TAG) CORE_CONTROLLER_IMG=$(PROD_REGISTRY)/$(CORE_IMAGE_NAME)
 	# Add metadata to the release artifacts
 	cp metadata.yaml $(RELEASE_DIR)/metadata.yaml
 
