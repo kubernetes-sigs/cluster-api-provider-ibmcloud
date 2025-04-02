@@ -131,5 +131,5 @@ type IBMPowerVSImageList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&IBMPowerVSImage{}, &IBMPowerVSImageList{})
+	objectTypes = append(objectTypes, &IBMPowerVSImage{}, &IBMPowerVSImageList{})
 }

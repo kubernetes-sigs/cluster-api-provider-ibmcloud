@@ -271,5 +271,5 @@ type IBMPowerVSMachineList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&IBMPowerVSMachine{}, &IBMPowerVSMachineList{})
+	objectTypes = append(objectTypes, &IBMPowerVSMachine{}, &IBMPowerVSMachineList{})
 }
