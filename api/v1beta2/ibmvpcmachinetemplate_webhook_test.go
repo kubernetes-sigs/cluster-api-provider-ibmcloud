@@ -17,17 +17,16 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/cluster-api/util/defaulting"
 )
 
 func TestVPCMachineTemplate_default(t *testing.T) {
 	g := NewWithT(t)
 	vpcMachineTemplate := &IBMVPCMachineTemplate{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine-template", Namespace: "default"}}
-	t.Run("Defaults for IBMVPCMachineTemplate", defaulting.DefaultValidateTest(vpcMachineTemplate))
-	vpcMachineTemplate.Default()
+	g.Expect(vpcMachineTemplate.Default(context.Background(), vpcMachineTemplate)).ToNot(HaveOccurred())
 	g.Expect(vpcMachineTemplate.Spec.Template.Spec.Profile).To(BeEquivalentTo("bx2-2x8"))
 }

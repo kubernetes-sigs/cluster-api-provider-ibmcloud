@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/onsi/gomega"
@@ -24,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-	"sigs.k8s.io/cluster-api/util/defaulting"
 )
 
 func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
@@ -46,8 +46,7 @@ func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
 			},
 		},
 	}
-	t.Run("Defaults for IBMPowerVSMachineTemplate", defaulting.DefaultValidateTest(powervsMachineTemplate))
-	powervsMachineTemplate.Default()
+	g.Expect(powervsMachineTemplate.Default(context.Background(), powervsMachineTemplate)).ToNot(HaveOccurred())
 	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo("s922"))
 	g.Expect(powervsMachineTemplate.Spec.Template.Spec.ProcessorType).To(BeEquivalentTo(PowerVSProcessorTypeShared))
 }
