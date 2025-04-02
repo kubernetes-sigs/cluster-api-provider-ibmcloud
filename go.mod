@@ -2,6 +2,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud
 
 go 1.23.2
 
+toolchain go1.24.1
+
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.21.0
@@ -15,7 +17,7 @@ require (
 	github.com/IBM/ibm-cos-sdk-go v1.12.2
 	github.com/IBM/networking-go-sdk v0.51.3
 	github.com/IBM/platform-services-go-sdk v0.79.0
-	github.com/IBM/vpc-go-sdk v0.65.0
+	github.com/IBM/vpc-go-sdk v0.66.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.21.0
 	github.com/go-logr/logr v1.4.2
