@@ -168,7 +168,7 @@ data:
           serviceAccountName: cloud-controller-manager
           containers:
             - name: ibmpowervs-cloud-controller-manager
-              image: gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager:6256ccf
+              image: registry.k8s.io/capi-ibmcloud/powervs-cloud-controller-manager:6256ccf
               args:
                 - --v=2
                 - --cloud-provider=ibm
