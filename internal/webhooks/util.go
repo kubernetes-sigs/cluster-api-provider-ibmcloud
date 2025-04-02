@@ -14,19 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
-	"context"
-	"testing"
-
-	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 )
 
-func TestVPCMachineTemplate_default(t *testing.T) {
-	g := NewWithT(t)
-	vpcMachineTemplate := &IBMVPCMachineTemplate{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine-template", Namespace: "default"}}
-	g.Expect(vpcMachineTemplate.Default(context.Background(), vpcMachineTemplate)).ToNot(HaveOccurred())
-	g.Expect(vpcMachineTemplate.Spec.Template.Spec.Profile).To(BeEquivalentTo("bx2-2x8"))
+// aggregateObjErrors aggregates a list of field errors into a single Invalid API error.
+func aggregateObjErrors(gk schema.GroupKind, name string, allErrs field.ErrorList) error {
+	if len(allErrs) == 0 {
+		return nil
+	}
+
+	return apierrors.NewInvalid(
+		gk,
+		name,
+		allErrs,
+	)
 }

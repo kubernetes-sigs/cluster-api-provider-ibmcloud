@@ -14,59 +14,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
 	g := NewWithT(t)
-	powervsMachineTemplate := &IBMPowerVSMachineTemplate{
+	powervsMachineTemplate := &infrav1beta2.IBMPowerVSMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "capi-machine-template",
 			Namespace: "default",
 		},
-		Spec: IBMPowerVSMachineTemplateSpec{
-			Template: IBMPowerVSMachineTemplateResource{
-				Spec: IBMPowerVSMachineSpec{
+		Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+			Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+				Spec: infrav1beta2.IBMPowerVSMachineSpec{
 					MemoryGiB:  4,
 					Processors: intstr.FromString("0.5"),
-					Image: &IBMPowerVSResourceReference{
+					Image: &infrav1beta2.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-image"),
 					},
 				},
 			},
 		},
 	}
-	g.Expect(powervsMachineTemplate.Default(context.Background(), powervsMachineTemplate)).ToNot(HaveOccurred())
+	g.Expect((&IBMPowerVSMachineTemplate{}).Default(context.Background(), powervsMachineTemplate)).ToNot(HaveOccurred())
 	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo("s922"))
-	g.Expect(powervsMachineTemplate.Spec.Template.Spec.ProcessorType).To(BeEquivalentTo(PowerVSProcessorTypeShared))
+	g.Expect(powervsMachineTemplate.Spec.Template.Spec.ProcessorType).To(BeEquivalentTo(infrav1beta2.PowerVSProcessorTypeShared))
 }
 
 func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 	tests := []struct {
 		name                   string
-		powervsMachineTemplate *IBMPowerVSMachineTemplate
+		powervsMachineTemplate *infrav1beta2.IBMPowerVSMachineTemplate
 		wantErr                bool
 	}{
 		{
 			name: "Should fail to validate IBMPowerVSMachineTemplate - incorrect spec values",
-			powervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			powervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "a890",
 							ProcessorType:     "unknown",
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								ID:   ptr.To("capi-net-id"),
 								Name: ptr.To("capi-net"),
 							},
@@ -78,14 +81,14 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 		},
 		{
 			name: "Should fail to validate IBMPowerVSMachineTemplate - no Image or Imagref in Spec",
-			powervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			powervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
-							Network: IBMPowerVSResourceReference{
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
 						},
@@ -96,17 +99,17 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 		},
 		{
 			name: "Should fail to validate IBMPowerVSMachineTemplate - both Image and Imagref specified in Spec",
-			powervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			powervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
-							Network: IBMPowerVSResourceReference{
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image:    &IBMPowerVSResourceReference{},
+							Image:    &infrav1beta2.IBMPowerVSResourceReference{},
 							ImageRef: &corev1.LocalObjectReference{},
 						},
 					},
@@ -116,17 +119,17 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 		},
 		{
 			name: "Should fail to validate IBMPowerVSMachineTemplate - Both ID and Name specified for Image",
-			powervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			powervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
-							Network: IBMPowerVSResourceReference{
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID:   ptr.To("capi-image-id"),
 								Name: ptr.To("capi-image"),
 							},
@@ -138,17 +141,17 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 		},
 		{
 			name: "Should fail to validate IBMPowerVSMachineTemplate - invalid memory and processor values",
-			powervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			powervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
-							Network: IBMPowerVSResourceReference{
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-image"),
 							},
 							Processors: intstr.FromString("two"),
@@ -161,17 +164,17 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 		},
 		{
 			name: "Should successfully validate IBMPowerVSMachineTemplate - valid spec",
-			powervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			powervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
-							Network: IBMPowerVSResourceReference{
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 							Processors: intstr.FromString("0.25"),
@@ -202,44 +205,44 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 	tests := []struct {
 		name                      string
-		oldPowervsMachineTemplate *IBMPowerVSMachineTemplate
-		newPowervsMachineTemplate *IBMPowerVSMachineTemplate
+		oldPowervsMachineTemplate *infrav1beta2.IBMPowerVSMachineTemplate
+		newPowervsMachineTemplate *infrav1beta2.IBMPowerVSMachineTemplate
 		wantErr                   bool
 	}{
 		{
 			name: "Should fail to update IBMPowerVSMachineTemplate with invalid ProcessorType",
-			oldPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			oldPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
 					},
 				},
 			},
-			newPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			newPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "e980",
 							ProcessorType:     "invalid",
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
@@ -250,39 +253,39 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 		},
 		{
 			name: "Should fail to update IBMPowerVSMachineTemplate with invalid Network",
-			oldPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			oldPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
 					},
 				},
 			},
-			newPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			newPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 								ID:   ptr.To("capi-net-ID"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
@@ -293,38 +296,38 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 		},
 		{
 			name: "Should fail to update IBMPowerVSMachineTemplate with invalid Image",
-			oldPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			oldPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
 					},
 				},
 			},
-			newPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			newPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID:   ptr.To("capi-image-id"),
 								Name: ptr.To("capi-image"),
 							},
@@ -336,38 +339,38 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 		},
 		{
 			name: "Should fail to update IBMPowerVSMachineTemplate with invalid memory",
-			oldPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			oldPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
 					},
 				},
 			},
-			newPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			newPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         int32(-8),
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
@@ -378,38 +381,38 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 		},
 		{
 			name: "Should fail to update IBMPowerVSMachineTemplate with invalid processors",
-			oldPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			oldPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
 					},
 				},
 			},
-			newPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			newPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("two"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
@@ -420,38 +423,38 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 		},
 		{
 			name: "Should successfully update IBMPowerVSMachineTemplate",
-			oldPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			oldPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         4,
 							Processors:        intstr.FromString("0.25"),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},
 					},
 				},
 			},
-			newPowervsMachineTemplate: &IBMPowerVSMachineTemplate{
-				Spec: IBMPowerVSMachineTemplateSpec{
-					Template: IBMPowerVSMachineTemplateResource{
-						Spec: IBMPowerVSMachineSpec{
+			newPowervsMachineTemplate: &infrav1beta2.IBMPowerVSMachineTemplate{
+				Spec: infrav1beta2.IBMPowerVSMachineTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSMachineTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSMachineSpec{
 							ServiceInstanceID: "capi-si-id",
 							SystemType:        "s922",
-							ProcessorType:     PowerVSProcessorTypeShared,
+							ProcessorType:     infrav1beta2.PowerVSProcessorTypeShared,
 							MemoryGiB:         8,
 							Processors:        intstr.FromInt(2),
-							Network: IBMPowerVSResourceReference{
+							Network: infrav1beta2.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
 							},
-							Image: &IBMPowerVSResourceReference{
+							Image: &infrav1beta2.IBMPowerVSResourceReference{
 								ID: ptr.To("capi-image-id"),
 							},
 						},

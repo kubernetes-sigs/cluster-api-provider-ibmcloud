@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
@@ -28,6 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,verbs=create;update,versions=v1beta2,name=mibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -35,11 +37,14 @@ import (
 
 func (r *IBMVPCCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&IBMVPCCluster{}).
+		For(&infrav1beta2.IBMVPCCluster{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
 }
+
+// IBMVPCCluster implements a validation and defaulting webhook for IBMVPCCluster.
+type IBMVPCCluster struct{}
 
 var _ webhook.CustomDefaulter = &IBMVPCCluster{}
 var _ webhook.CustomValidator = &IBMVPCCluster{}
@@ -51,20 +56,20 @@ func (r *IBMVPCCluster) Default(_ context.Context, _ runtime.Object) error {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*IBMVPCCluster)
+	objValue, ok := obj.(*infrav1beta2.IBMVPCCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", obj))
 	}
-	return objValue.validateIBMVPCCluster()
+	return validateIBMVPCCluster(objValue)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCCluster) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*IBMVPCCluster)
+	objValue, ok := newObj.(*infrav1beta2.IBMVPCCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", objValue))
 	}
-	return objValue.validateIBMVPCCluster()
+	return validateIBMVPCCluster(objValue)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -72,9 +77,9 @@ func (r *IBMVPCCluster) ValidateDelete(_ context.Context, _ runtime.Object) (adm
 	return nil, nil
 }
 
-func (r *IBMVPCCluster) validateIBMVPCCluster() (admission.Warnings, error) {
+func validateIBMVPCCluster(vpcCluster *infrav1beta2.IBMVPCCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	if err := r.validateIBMVPCClusterControlPlane(); err != nil {
+	if err := validateIBMVPCClusterControlPlane(vpcCluster); err != nil {
 		allErrs = append(allErrs, err)
 	}
 	if len(allErrs) == 0 {
@@ -83,11 +88,11 @@ func (r *IBMVPCCluster) validateIBMVPCCluster() (admission.Warnings, error) {
 
 	return nil, apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMVPCCluster"},
-		r.Name, allErrs)
+		vpcCluster.Name, allErrs)
 }
 
-func (r *IBMVPCCluster) validateIBMVPCClusterControlPlane() *field.Error {
-	if r.Spec.ControlPlaneEndpoint.Host == "" && r.Spec.ControlPlaneLoadBalancer == nil {
+func validateIBMVPCClusterControlPlane(vpcCluster *infrav1beta2.IBMVPCCluster) *field.Error {
+	if vpcCluster.Spec.ControlPlaneEndpoint.Host == "" && vpcCluster.Spec.ControlPlaneLoadBalancer == nil {
 		return field.Invalid(field.NewPath(""), "", "One of - ControlPlaneEndpoint or ControlPlaneLoadBalancer must be specified")
 	}
 	return nil
