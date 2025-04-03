@@ -63,7 +63,7 @@ RELEASE_DIR := out
 OUTPUT_TYPE ?= type=registry
 
 # Go
-GO_VERSION ?=1.23.7
+GO_VERSION ?=1.23.8
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # kind
@@ -81,7 +81,7 @@ PULL_POLICY ?= Always
 # Set build time variables including version details
 LDFLAGS := $(shell ./hack/version.sh)
 
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.30.0
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.32.0
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
