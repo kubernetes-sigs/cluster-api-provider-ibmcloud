@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 func TestValidateIBMPowerVSMemoryValues(t *testing.T) {
@@ -113,48 +115,48 @@ func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
 func Test_validateBootVolume(t *testing.T) {
 	tests := []struct {
 		name      string
-		spec      IBMVPCMachineSpec
+		spec      infrav1beta2.IBMVPCMachineSpec
 		wantError bool
 	}{
 		{
 			name: "Nil bootvolume",
-			spec: IBMVPCMachineSpec{
+			spec: infrav1beta2.IBMVPCMachineSpec{
 				BootVolume: nil,
 			},
 			wantError: false,
 		},
 		{
 			name: "valid sizeGiB",
-			spec: IBMVPCMachineSpec{
-				BootVolume: &VPCVolume{SizeGiB: 20},
+			spec: infrav1beta2.IBMVPCMachineSpec{
+				BootVolume: &infrav1beta2.VPCVolume{SizeGiB: 20},
 			},
 			wantError: false,
 		},
 		{
 			name: "Invalid sizeGiB",
-			spec: IBMVPCMachineSpec{
-				BootVolume: &VPCVolume{SizeGiB: 1},
+			spec: infrav1beta2.IBMVPCMachineSpec{
+				BootVolume: &infrav1beta2.VPCVolume{SizeGiB: 1},
 			},
 			wantError: true,
 		},
 		{
 			name: "Valid Iops",
-			spec: IBMVPCMachineSpec{
-				BootVolume: &VPCVolume{Iops: 1000, Profile: "custom"},
+			spec: infrav1beta2.IBMVPCMachineSpec{
+				BootVolume: &infrav1beta2.VPCVolume{Iops: 1000, Profile: "custom"},
 			},
 			wantError: true,
 		},
 		{
 			name: "Invalid Iops",
-			spec: IBMVPCMachineSpec{
-				BootVolume: &VPCVolume{Iops: 1234, Profile: "general-purpose"},
+			spec: infrav1beta2.IBMVPCMachineSpec{
+				BootVolume: &infrav1beta2.VPCVolume{Iops: 1234, Profile: "general-purpose"},
 			},
 			wantError: true,
 		},
 		{
 			name: "Missing Iops for custom profile",
-			spec: IBMVPCMachineSpec{
-				BootVolume: &VPCVolume{Profile: "general-purpose"},
+			spec: infrav1beta2.IBMVPCMachineSpec{
+				BootVolume: &infrav1beta2.VPCVolume{Profile: "general-purpose"},
 			},
 			wantError: true,
 		},

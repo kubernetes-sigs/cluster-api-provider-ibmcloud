@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"testing"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 
 	. "github.com/onsi/gomega"
 )
@@ -27,25 +29,25 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		newTemplate *IBMPowerVSClusterTemplate
-		oldTemplate *IBMPowerVSClusterTemplate
+		newTemplate *infrav1beta2.IBMPowerVSClusterTemplate
+		oldTemplate *infrav1beta2.IBMPowerVSClusterTemplate
 		wantErr     bool
 	}{
 		{
 			name: "IBMPowerVSClusterTemplate with immutable spec",
-			newTemplate: &IBMPowerVSClusterTemplate{
-				Spec: IBMPowerVSClusterTemplateSpec{
-					Template: IBMPowerVSClusterTemplateResource{
-						Spec: IBMPowerVSClusterSpec{
+			newTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
+				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance1",
 						},
 					},
 				},
 			},
-			oldTemplate: &IBMPowerVSClusterTemplate{
-				Spec: IBMPowerVSClusterTemplateSpec{
-					Template: IBMPowerVSClusterTemplateResource{
-						Spec: IBMPowerVSClusterSpec{
+			oldTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
+				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance1",
 						},
 					},
@@ -55,19 +57,19 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: " IBMPowerVSClusterTemplate with mutable spec",
-			newTemplate: &IBMPowerVSClusterTemplate{
-				Spec: IBMPowerVSClusterTemplateSpec{
-					Template: IBMPowerVSClusterTemplateResource{
-						Spec: IBMPowerVSClusterSpec{
+			newTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
+				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance1",
 						},
 					},
 				},
 			},
-			oldTemplate: &IBMPowerVSClusterTemplate{
-				Spec: IBMPowerVSClusterTemplateSpec{
-					Template: IBMPowerVSClusterTemplateResource{
-						Spec: IBMPowerVSClusterSpec{
+			oldTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
+				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1beta2.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance2",
 						},
 					},
@@ -78,7 +80,8 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(_ *testing.T) {
-			_, err := test.newTemplate.ValidateUpdate(ctx, test.oldTemplate, test.newTemplate)
+			ibmPowerVSClusterTemplate := IBMPowerVSClusterTemplate{}
+			_, err := ibmPowerVSClusterTemplate.ValidateUpdate(ctx, test.oldTemplate, test.newTemplate)
 			if test.wantErr {
 				g.Expect(err).To(HaveOccurred())
 			} else {

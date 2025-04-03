@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"fmt"
 	"os"
 	"path"
+
 	"testing"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
 )
 
@@ -43,7 +45,7 @@ func TestMain(m *testing.M) {
 
 // Setting up the test environment.
 func setup() {
-	utilruntime.Must(AddToScheme(scheme.Scheme))
+	utilruntime.Must(infrav1beta2.AddToScheme(scheme.Scheme))
 	testEnvConfig := helpers.NewTestEnvironmentConfiguration([]string{
 		path.Join("config", "crd", "bases"),
 	},

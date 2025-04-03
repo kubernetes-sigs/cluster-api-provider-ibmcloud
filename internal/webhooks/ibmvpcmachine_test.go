@@ -14,46 +14,49 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
 	"testing"
 
-	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+
+	. "github.com/onsi/gomega"
 )
 
 func TestVPCMachine_default(t *testing.T) {
 	g := NewWithT(t)
-	vpcMachine := &IBMVPCMachine{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine", Namespace: "default"}}
-	g.Expect(vpcMachine.Default(context.Background(), vpcMachine)).ToNot(HaveOccurred())
+	vpcMachine := &infrav1beta2.IBMVPCMachine{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine", Namespace: "default"}}
+	g.Expect((&IBMVPCMachine{}).Default(context.Background(), vpcMachine)).ToNot(HaveOccurred())
 	g.Expect(vpcMachine.Spec.Profile).To(BeEquivalentTo("bx2-2x8"))
 }
 
 func TestIBMVPCMachine_Create(t *testing.T) {
 	tests := []struct {
 		name    string
-		machine *IBMVPCMachine
+		machine *infrav1beta2.IBMVPCMachine
 		wantErr bool
 	}{
 		{
 			name: "Create a IBMVPCMachine with valid SizeGiB BootVolume",
-			machine: &IBMVPCMachine{
-				Spec: IBMVPCMachineSpec{
-					BootVolume: &VPCVolume{
+			machine: &infrav1beta2.IBMVPCMachine{
+				Spec: infrav1beta2.IBMVPCMachineSpec{
+					BootVolume: &infrav1beta2.VPCVolume{
 						SizeGiB: 10,
 					},
-					Image: &IBMVPCResourceReference{},
+					Image: &infrav1beta2.IBMVPCResourceReference{},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Create a IBMVPCMachine with invalid SizeGiB BootVolume",
-			machine: &IBMVPCMachine{
-				Spec: IBMVPCMachineSpec{
-					BootVolume: &VPCVolume{
+			machine: &infrav1beta2.IBMVPCMachine{
+				Spec: infrav1beta2.IBMVPCMachineSpec{
+					BootVolume: &infrav1beta2.VPCVolume{
 						SizeGiB: 1,
 					},
 				},

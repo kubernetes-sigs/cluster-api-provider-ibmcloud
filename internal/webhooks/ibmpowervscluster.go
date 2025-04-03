@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
@@ -40,11 +41,14 @@ import (
 
 func (r *IBMPowerVSCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&IBMPowerVSCluster{}).
+		For(&infrav1beta2.IBMPowerVSCluster{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
 }
+
+// IBMPowerVSCluster implements a validation and defaulting webhook for IBMPowerVSCluster.
+type IBMPowerVSCluster struct{}
 
 var _ webhook.CustomDefaulter = &IBMPowerVSCluster{}
 var _ webhook.CustomValidator = &IBMPowerVSCluster{}
@@ -56,20 +60,20 @@ func (r *IBMPowerVSCluster) Default(_ context.Context, _ runtime.Object) error {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*IBMPowerVSCluster)
+	objValue, ok := obj.(*infrav1beta2.IBMPowerVSCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", obj))
 	}
-	return objValue.validateIBMPowerVSCluster()
+	return validateIBMPowerVSCluster(objValue)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSCluster) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*IBMPowerVSCluster)
+	objValue, ok := newObj.(*infrav1beta2.IBMPowerVSCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", newObj))
 	}
-	return objValue.validateIBMPowerVSCluster()
+	return validateIBMPowerVSCluster(objValue)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -77,13 +81,13 @@ func (r *IBMPowerVSCluster) ValidateDelete(_ context.Context, _ runtime.Object) 
 	return nil, nil
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSCluster() (admission.Warnings, error) {
+func validateIBMPowerVSCluster(cluster *infrav1beta2.IBMPowerVSCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	if err := r.validateIBMPowerVSClusterNetwork(); err != nil {
+	if err := validateIBMPowerVSClusterNetwork(cluster); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
-	if err := r.validateIBMPowerVSClusterCreateInfraPrereq(); err != nil {
+	if err := validateIBMPowerVSClusterCreateInfraPrereq(cluster); err != nil {
 		allErrs = append(allErrs, err...)
 	}
 
@@ -93,37 +97,37 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSCluster() (admission.Warnings, err
 
 	return nil, apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSCluster"},
-		r.Name, allErrs)
+		cluster.Name, allErrs)
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSClusterNetwork() *field.Error {
-	if res, err := validateIBMPowerVSNetworkReference(r.Spec.Network); !res {
+func validateIBMPowerVSClusterNetwork(cluster *infrav1beta2.IBMPowerVSCluster) *field.Error {
+	if res, err := validateIBMPowerVSNetworkReference(cluster.Spec.Network); !res {
 		return err
 	}
 	return nil
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSClusterLoadBalancers() (allErrs field.ErrorList) {
-	if err := r.validateIBMPowerVSClusterLoadBalancerNames(); err != nil {
+func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+	if err := validateIBMPowerVSClusterLoadBalancerNames(cluster); err != nil {
 		allErrs = append(allErrs, err...)
 	}
 
-	if len(r.Spec.LoadBalancers) == 0 {
+	if len(cluster.Spec.LoadBalancers) == 0 {
 		return allErrs
 	}
 
-	for _, loadbalancer := range r.Spec.LoadBalancers {
-		if *loadbalancer.Public {
+	for _, loadBalancer := range cluster.Spec.LoadBalancers {
+		if *loadBalancer.Public {
 			return allErrs
 		}
 	}
 
-	return append(allErrs, field.Invalid(field.NewPath("spec.LoadBalancers"), r.Spec.LoadBalancers, "Expect atleast one of the load balancer to be public"))
+	return append(allErrs, field.Invalid(field.NewPath("spec.LoadBalancers"), cluster.Spec.LoadBalancers, "Expect atleast one of the load balancer to be public"))
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSClusterLoadBalancerNames() (allErrs field.ErrorList) {
+func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	found := make(map[string]bool)
-	for i, loadbalancer := range r.Spec.LoadBalancers {
+	for i, loadbalancer := range cluster.Spec.LoadBalancers {
 		if loadbalancer.Name == "" {
 			continue
 		}
@@ -138,9 +142,9 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSClusterLoadBalancerNames() (allErr
 	return allErrs
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSClusterVPCSubnetNames() (allErrs field.ErrorList) {
+func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	found := make(map[string]bool)
-	for i, subnet := range r.Spec.VPCSubnets {
+	for i, subnet := range cluster.Spec.VPCSubnets {
 		if subnet.Name == nil {
 			continue
 		}
@@ -154,71 +158,71 @@ func (r *IBMPowerVSCluster) validateIBMPowerVSClusterVPCSubnetNames() (allErrs f
 	return allErrs
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSClusterTransitGateway() *field.Error {
-	if r.Spec.Zone == nil && r.Spec.VPC == nil {
+func validateIBMPowerVSClusterTransitGateway(cluster *infrav1beta2.IBMPowerVSCluster) *field.Error {
+	if cluster.Spec.Zone == nil && cluster.Spec.VPC == nil {
 		return nil
 	}
-	if r.Spec.TransitGateway == nil {
+	if cluster.Spec.TransitGateway == nil {
 		return nil
 	}
-	if _, globalRouting, _ := genUtil.GetTransitGatewayLocationAndRouting(r.Spec.Zone, r.Spec.VPC.Region); r.Spec.TransitGateway.GlobalRouting != nil && !*r.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
-		return field.Invalid(field.NewPath("spec.transitGateway.globalRouting"), r.Spec.TransitGateway.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
+	if _, globalRouting, _ := genUtil.GetTransitGatewayLocationAndRouting(cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.GlobalRouting != nil && !*cluster.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
+		return field.Invalid(field.NewPath("spec.transitGateway.globalRouting"), cluster.Spec.TransitGateway.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
 	}
 	return nil
 }
 
-func (r *IBMPowerVSCluster) validateIBMPowerVSClusterCreateInfraPrereq() (allErrs field.ErrorList) {
-	annotations := r.GetAnnotations()
+func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+	annotations := cluster.GetAnnotations()
 	if len(annotations) == 0 {
 		return nil
 	}
 
-	value, found := annotations[CreateInfrastructureAnnotation]
+	value, found := annotations[infrav1beta2.CreateInfrastructureAnnotation]
 	if !found {
 		return nil
 	}
 
 	createInfra, err := strconv.ParseBool(value)
 	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("annotations"), r.Annotations, "value of powervs.cluster.x-k8s.io/create-infra should be boolean"))
+		allErrs = append(allErrs, field.Invalid(field.NewPath("annotations"), cluster.Annotations, "value of powervs.cluster.x-k8s.io/create-infra should be boolean"))
 	}
 
 	if !createInfra {
 		return nil
 	}
 
-	if r.Spec.Zone == nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), r.Spec.Zone, "value of zone is empty"))
+	if cluster.Spec.Zone == nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, "value of zone is empty"))
 	}
 
-	if r.Spec.Zone != nil && !regionUtil.ValidateZone(*r.Spec.Zone) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), r.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", *r.Spec.Zone)))
+	if cluster.Spec.Zone != nil && !regionUtil.ValidateZone(*cluster.Spec.Zone) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", *cluster.Spec.Zone)))
 	}
 
-	if r.Spec.VPC == nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc"), r.Spec.VPC, "value of VPC is empty"))
+	if cluster.Spec.VPC == nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc"), cluster.Spec.VPC, "value of VPC is empty"))
 	}
 
-	if r.Spec.VPC != nil && r.Spec.VPC.Region == nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), r.Spec.VPC.Region, "value of VPC region is empty"))
+	if cluster.Spec.VPC != nil && cluster.Spec.VPC.Region == nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, "value of VPC region is empty"))
 	}
 
-	if r.Spec.VPC != nil && r.Spec.VPC.Region != nil && !regionUtil.ValidateVPCRegion(*r.Spec.VPC.Region) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), r.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", *r.Spec.VPC.Region)))
+	if cluster.Spec.VPC != nil && cluster.Spec.VPC.Region != nil && !regionUtil.ValidateVPCRegion(*cluster.Spec.VPC.Region) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", *cluster.Spec.VPC.Region)))
 	}
 
-	if r.Spec.ResourceGroup == nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.resourceGroup"), r.Spec.ResourceGroup, "value of resource group is empty"))
+	if cluster.Spec.ResourceGroup == nil {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.resourceGroup"), cluster.Spec.ResourceGroup, "value of resource group is empty"))
 	}
-	if err := r.validateIBMPowerVSClusterVPCSubnetNames(); err != nil {
+	if err := validateIBMPowerVSClusterVPCSubnetNames(cluster); err != nil {
 		allErrs = append(allErrs, err...)
 	}
 
-	if err := r.validateIBMPowerVSClusterLoadBalancers(); err != nil {
+	if err := validateIBMPowerVSClusterLoadBalancers(cluster); err != nil {
 		allErrs = append(allErrs, err...)
 	}
 
-	if err := r.validateIBMPowerVSClusterTransitGateway(); err != nil {
+	if err := validateIBMPowerVSClusterTransitGateway(cluster); err != nil {
 		allErrs = append(allErrs, err)
 	}
 

@@ -14,16 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
-func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
+func defaultIBMPowerVSMachineSpec(spec *infrav1beta2.IBMPowerVSMachineSpec) {
 	if spec.MemoryGiB == 0 {
 		spec.MemoryGiB = 2
 	}
@@ -34,18 +36,18 @@ func defaultIBMPowerVSMachineSpec(spec *IBMPowerVSMachineSpec) {
 		spec.SystemType = "s922"
 	}
 	if spec.ProcessorType == "" {
-		spec.ProcessorType = PowerVSProcessorTypeShared
+		spec.ProcessorType = infrav1beta2.PowerVSProcessorTypeShared
 	}
 }
 
-func validateIBMPowerVSResourceReference(res IBMPowerVSResourceReference, resType string) (bool, *field.Error) {
+func validateIBMPowerVSResourceReference(res infrav1beta2.IBMPowerVSResourceReference, resType string) (bool, *field.Error) {
 	if res.ID != nil && res.Name != nil {
 		return false, field.Invalid(field.NewPath("spec", resType), res, "Only one of "+resType+" - ID or Name may be specified")
 	}
 	return true, nil
 }
 
-func validateIBMPowerVSNetworkReference(res IBMPowerVSResourceReference) (bool, *field.Error) {
+func validateIBMPowerVSNetworkReference(res infrav1beta2.IBMPowerVSResourceReference) (bool, *field.Error) {
 	if (res.ID != nil && res.Name != nil) || (res.ID != nil && res.RegEx != nil) || (res.Name != nil && res.RegEx != nil) {
 		return false, field.Invalid(field.NewPath("spec", "Network"), res, "Only one of Network - ID, Name or RegEx can be specified")
 	}
@@ -74,13 +76,13 @@ func validateIBMPowerVSProcessorValues(resValue intstr.IntOrString) bool {
 	return true
 }
 
-func defaultIBMVPCMachineSpec(spec *IBMVPCMachineSpec) {
+func defaultIBMVPCMachineSpec(spec *infrav1beta2.IBMVPCMachineSpec) {
 	if spec.Profile == "" {
 		spec.Profile = "bx2-2x8"
 	}
 }
 
-func validateBootVolume(spec IBMVPCMachineSpec) field.ErrorList {
+func validateBootVolume(spec infrav1beta2.IBMVPCMachineSpec) field.ErrorList {
 	var allErrs field.ErrorList
 
 	if spec.BootVolume == nil {

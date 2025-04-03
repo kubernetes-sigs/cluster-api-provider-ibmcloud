@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
@@ -28,6 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsmachinetemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachinetemplates,verbs=create;update,versions=v1beta2,name=mibmpowervsmachinetemplate.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -35,18 +37,21 @@ import (
 
 func (r *IBMPowerVSMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&IBMPowerVSMachineTemplate{}).
+		For(&infrav1beta2.IBMPowerVSMachineTemplate{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
 }
+
+// IBMPowerVSMachineTemplate implements a validation and defaulting webhook for IBMPowerVSMachineTemplate.
+type IBMPowerVSMachineTemplate struct{}
 
 var _ webhook.CustomDefaulter = &IBMPowerVSMachineTemplate{}
 var _ webhook.CustomValidator = &IBMPowerVSMachineTemplate{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (r *IBMPowerVSMachineTemplate) Default(_ context.Context, obj runtime.Object) error {
-	objValue, ok := obj.(*IBMPowerVSMachineTemplate)
+	objValue, ok := obj.(*infrav1beta2.IBMPowerVSMachineTemplate)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSMachineTemplate but got a %T", obj))
 	}
@@ -56,20 +61,20 @@ func (r *IBMPowerVSMachineTemplate) Default(_ context.Context, obj runtime.Objec
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*IBMPowerVSMachineTemplate)
+	objValue, ok := obj.(*infrav1beta2.IBMPowerVSMachineTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSMachineTemplate but got a %T", obj))
 	}
-	return objValue.validateIBMPowerVSMachineTemplate()
+	return validateIBMPowerVSMachineTemplate(objValue)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSMachineTemplate) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*IBMPowerVSMachineTemplate)
+	objValue, ok := newObj.(*infrav1beta2.IBMPowerVSMachineTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSMachineTemplate but got a %T", newObj))
 	}
-	return objValue.validateIBMPowerVSMachineTemplate()
+	return validateIBMPowerVSMachineTemplate(objValue)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -77,18 +82,18 @@ func (r *IBMPowerVSMachineTemplate) ValidateDelete(_ context.Context, _ runtime.
 	return nil, nil
 }
 
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() (admission.Warnings, error) {
+func validateIBMPowerVSMachineTemplate(machineTemplate *infrav1beta2.IBMPowerVSMachineTemplate) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	if err := r.validateIBMPowerVSMachineTemplateNetwork(); err != nil {
+	if err := validateIBMPowerVSMachineTemplateNetwork(machineTemplate); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	if err := r.validateIBMPowerVSMachineTemplateImage(); err != nil {
+	if err := validateIBMPowerVSMachineTemplateImage(machineTemplate); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	if err := r.validateIBMPowerVSMachineTemplateMemory(); err != nil {
+	if err := validateIBMPowerVSMachineTemplateMemory(machineTemplate); err != nil {
 		allErrs = append(allErrs, err)
 	}
-	if err := r.validateIBMPowerVSMachineTemplateProcessors(); err != nil {
+	if err := validateIBMPowerVSMachineTemplateProcessors(machineTemplate); err != nil {
 		allErrs = append(allErrs, err)
 	}
 	if len(allErrs) == 0 {
@@ -97,18 +102,18 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplate() (admissi
 
 	return nil, apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSMachineTemplate"},
-		r.Name, allErrs)
+		machineTemplate.Name, allErrs)
 }
 
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateNetwork() *field.Error {
-	if res, err := validateIBMPowerVSNetworkReference(r.Spec.Template.Spec.Network); !res {
+func validateIBMPowerVSMachineTemplateNetwork(machineTemplate *infrav1beta2.IBMPowerVSMachineTemplate) *field.Error {
+	if res, err := validateIBMPowerVSNetworkReference(machineTemplate.Spec.Template.Spec.Network); !res {
 		return err
 	}
 	return nil
 }
 
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateImage() *field.Error {
-	mt := r.Spec.Template
+func validateIBMPowerVSMachineTemplateImage(machineTemplate *infrav1beta2.IBMPowerVSMachineTemplate) *field.Error {
+	mt := machineTemplate.Spec.Template
 
 	if mt.Spec.Image == nil && mt.Spec.ImageRef == nil {
 		return field.Invalid(field.NewPath(""), "", "One of - Image or ImageRef must be specified")
@@ -127,16 +132,16 @@ func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateImage() *fi
 	return nil
 }
 
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateMemory() *field.Error {
-	if res := validateIBMPowerVSMemoryValues(r.Spec.Template.Spec.MemoryGiB); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "memoryGiB"), r.Spec.Template.Spec.MemoryGiB, "Invalid Memory value - must be a positive integer no lesser than 2")
+func validateIBMPowerVSMachineTemplateMemory(machineTemplate *infrav1beta2.IBMPowerVSMachineTemplate) *field.Error {
+	if res := validateIBMPowerVSMemoryValues(machineTemplate.Spec.Template.Spec.MemoryGiB); !res {
+		return field.Invalid(field.NewPath("spec", "template", "spec", "memoryGiB"), machineTemplate.Spec.Template.Spec.MemoryGiB, "Invalid Memory value - must be a positive integer no lesser than 2")
 	}
 	return nil
 }
 
-func (r *IBMPowerVSMachineTemplate) validateIBMPowerVSMachineTemplateProcessors() *field.Error {
-	if res := validateIBMPowerVSProcessorValues(r.Spec.Template.Spec.Processors); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "processors"), r.Spec.Template.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
+func validateIBMPowerVSMachineTemplateProcessors(machineTemplate *infrav1beta2.IBMPowerVSMachineTemplate) *field.Error {
+	if res := validateIBMPowerVSProcessorValues(machineTemplate.Spec.Template.Spec.Processors); !res {
+		return field.Invalid(field.NewPath("spec", "template", "spec", "processors"), machineTemplate.Spec.Template.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
 	}
 	return nil
 }
