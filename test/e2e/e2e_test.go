@@ -69,19 +69,20 @@ var _ = Describe("Workload cluster creation", func() {
 
 		// Path to the CNI file is defined in the config
 		Expect(e2eConfig.Variables).To(HaveKey(capi_e2e.CNIPath), "Missing %s variable in the config", capi_e2e.CNIPath)
-		cniPath = e2eConfig.GetVariable(capi_e2e.CNIPath)
+		cniPath = e2eConfig.MustGetVariable(capi_e2e.CNIPath)
 	})
 
 	AfterEach(func() {
 		cleanInput := cleanupInput{
-			SpecName:        specName,
-			Cluster:         result.Cluster,
-			ClusterProxy:    bootstrapClusterProxy,
-			Namespace:       namespace,
-			CancelWatches:   cancelWatches,
-			IntervalsGetter: e2eConfig.GetIntervals,
-			SkipCleanup:     skipCleanup,
-			ArtifactFolder:  artifactFolder,
+			SpecName:          specName,
+			Cluster:           result.Cluster,
+			ClusterProxy:      bootstrapClusterProxy,
+			ClusterConfigPath: clusterctlConfigPath,
+			Namespace:         namespace,
+			CancelWatches:     cancelWatches,
+			IntervalsGetter:   e2eConfig.GetIntervals,
+			SkipCleanup:       skipCleanup,
+			ArtifactFolder:    artifactFolder,
 		}
 
 		dumpSpecResourcesAndCleanup(ctx, cleanInput)
@@ -100,7 +101,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
@@ -121,7 +122,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(1)),
 					WorkerMachineCount:       ptr.To(int64(3)),
 				},
@@ -146,7 +147,7 @@ var _ = Describe("Workload cluster creation", func() {
 					Flavor:                   flavor,
 					Namespace:                namespace.Name,
 					ClusterName:              clusterName,
-					KubernetesVersion:        e2eConfig.GetVariable(KubernetesVersion),
+					KubernetesVersion:        e2eConfig.MustGetVariable(KubernetesVersion),
 					ControlPlaneMachineCount: ptr.To(int64(3)),
 					WorkerMachineCount:       ptr.To(int64(1)),
 				},
@@ -166,6 +167,7 @@ func Byf(format string, a ...interface{}) {
 type cleanupInput struct {
 	SpecName          string
 	ClusterProxy      framework.ClusterProxy
+	ClusterConfigPath string
 	ArtifactFolder    string
 	Namespace         *corev1.Namespace
 	CancelWatches     context.CancelFunc
@@ -213,8 +215,9 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 
 	Byf("Deleting all clusters in the %s namespace", input.Namespace.Name)
 	framework.DeleteAllClustersAndWait(ctx, framework.DeleteAllClustersAndWaitInput{
-		Client:    input.ClusterProxy.GetClient(),
-		Namespace: input.Namespace.Name,
+		ClusterProxy:         input.ClusterProxy,
+		ClusterctlConfigPath: input.ClusterConfigPath,
+		Namespace:            input.Namespace.Name,
 	}, input.IntervalsGetter(input.SpecName, "wait-delete-cluster")...)
 
 	Byf("Deleting namespace used for hosting the %q test spec", input.SpecName)

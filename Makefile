@@ -63,7 +63,7 @@ RELEASE_DIR := out
 OUTPUT_TYPE ?= type=registry
 
 # Go
-GO_VERSION ?=1.23.7
+GO_VERSION ?=1.23.8
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # kind
@@ -81,7 +81,7 @@ PULL_POLICY ?= Always
 # Set build time variables including version details
 LDFLAGS := $(shell ./hack/version.sh)
 
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.30.0
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.32.0
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
@@ -235,7 +235,7 @@ GINKGO_NOCOLOR ?= false
 GINKGO_TIMEOUT ?= 2h
 E2E_FLAVOR ?= powervs-md-remediation
 JUNIT_FILE ?= junit.e2e_suite.1.xml
-GINKGO_ARGS ?= -v --trace --tags=e2e --timeout=$(GINKGO_TIMEOUT) --focus=$(GINKGO_FOCUS) --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="$(JUNIT_FILE)"
+GINKGO_ARGS ?= -v --trace --tags=e2e --timeout=$(GINKGO_TIMEOUT) --focus="$(GINKGO_FOCUS)" --nodes=$(GINKGO_NODES) --no-color=$(GINKGO_NOCOLOR) --output-dir="$(ARTIFACTS)" --junit-report="$(JUNIT_FILE)"
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 SKIP_CLEANUP ?= false
 SKIP_CREATE_MGMT_CLUSTER ?= false
