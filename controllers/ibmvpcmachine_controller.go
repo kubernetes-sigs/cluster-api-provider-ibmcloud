@@ -130,7 +130,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Handle non-deleted machines.
-	return r.reconcileNormal(machineScope)
+	return r.reconcileNormal(ctx, machineScope)
 }
 
 // SetupWithManager creates a new IBMVPCMachine controller for a manager.
@@ -140,14 +140,17 @@ func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
+func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
+	log := ctrl.LoggerFrom(ctx)
+	log.V(3).Info("Reconciling IBMVPCMachine")
+
 	if controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1beta2.MachineFinalizer) {
 		return ctrl.Result{}, nil
 	}
 
 	// Make sure bootstrap data is available and populated.
 	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
-		machineScope.Info("Bootstrap data secret reference is not yet available")
+		log.V(3).Info("Bootstrap data secret reference is not yet available")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
@@ -203,7 +206,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			machineRunning = true
 		default:
 			machineScope.SetNotReady()
-			machineScope.V(3).Info("unexpected vpc instance status", "instanceStatus", *instance.Status, "instanceID", machineScope.GetInstanceID())
+			log.V(3).Info("unexpected vpc instance status", "instanceStatus", *instance.Status, "instanceID", machineScope.GetInstanceID())
 			conditions.MarkUnknown(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, "", "")
 		}
 	} else {
