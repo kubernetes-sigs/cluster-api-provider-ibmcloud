@@ -8,6 +8,7 @@
     git push origin v0.2.0-alpha.3
     ```
 - Wait for the google cloud build to be finished 
+- [Prepare release notes](#prepare-release-notes)
 - Create a draft release with release notes for the tag
 - Tick the prerelease checkbox
 - Download the artifacts once cloud build is finished
@@ -31,6 +32,7 @@
     git push origin v0.1.0
     ```
 - Wait for the google cloud build to be finished
+- [Prepare release notes](#prepare-release-notes)
 - Create a draft release with release notes for the tag
 - Perform the [image promotion process](https://github.com/kubernetes/k8s.io/tree/main/k8s.gcr.io#image-promoter):
   - Clone and pull down the latest from [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io)
@@ -49,3 +51,37 @@
   - Publish the drafted release
 
 > Note: In the above instructions, `v0.1.0` is the version/tag is being released
+
+### Prepare release notes
+
+1. If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.
+
+2. Fetch the latest changes from upstream and check out the `main` branch:
+
+    ```sh
+    git fetch upstream
+    git checkout main
+    ```
+
+3. Generate release notes by running the following commands on the `main` branch:
+
+    ```sh
+    export GITHUB_TOKEN=<your GH token>
+    export RELEASE_TAG=v1.2.3 # change this to the tag of the release to be cut
+    make release-notes
+    ```
+
+4. Review the release notes file generated at `CHANGELOG/<RELEASE_TAG>.md` and make any necessary changes:
+
+  - Move items out of "Uncategorized" into an appropriate section.
+  - Change anything attributed to "k8s-cherrypick-robot" to credit the original author.
+  - Fix any typos or other errors.
+  - Add the following section with a link to the full diff:
+      ```md
+      ## The image for this release is:
+      registry.k8s.io/capi-ibmcloud/cluster-api-ibmcloud-controller:<RELEASE_TAG>
+
+      <!-- markdown-link-check-disable-next-line -->
+      Full Changelog: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/compare/v0.9.0...v0.10.0
+      ```
+    Be sure to replace the versions in the URL with the appropriate tags.
