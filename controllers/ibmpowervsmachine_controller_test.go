@@ -236,7 +236,6 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 						Name:      tc.powervsMachine.Name,
 					},
 				})
-				fmt.Println(err)
 				if tc.expectError {
 					g.Expect(err).ToNot(BeNil())
 				} else {
@@ -677,7 +676,6 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			result, err := reconciler.reconcileNormal(ctx, machineScope)
-			fmt.Println(err)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
