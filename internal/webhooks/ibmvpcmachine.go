@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
@@ -27,6 +27,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpcmachine,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=create;update,versions=v1beta2,name=mibmvpcmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -34,18 +36,21 @@ import (
 
 func (r *IBMVPCMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&IBMVPCMachine{}).
+		For(&infrav1beta2.IBMVPCMachine{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
 }
+
+// IBMVPCMachine implements a validation and defaulting webhook for IBMVPCMachine.
+type IBMVPCMachine struct{}
 
 var _ webhook.CustomDefaulter = &IBMVPCMachine{}
 var _ webhook.CustomValidator = &IBMVPCMachine{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (r *IBMVPCMachine) Default(_ context.Context, obj runtime.Object) error {
-	objValue, ok := obj.(*IBMVPCMachine)
+	objValue, ok := obj.(*infrav1beta2.IBMVPCMachine)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
 	}
@@ -55,12 +60,12 @@ func (r *IBMVPCMachine) Default(_ context.Context, obj runtime.Object) error {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCMachine) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*IBMVPCMachine)
+	objValue, ok := obj.(*infrav1beta2.IBMVPCMachine)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
 	}
 	var allErrs field.ErrorList
-	allErrs = append(allErrs, objValue.validateIBMVPCMachineBootVolume()...)
+	allErrs = append(allErrs, validateIBMVPCMachineBootVolume(objValue.Spec)...)
 	return nil, aggregateObjErrors(objValue.GroupVersionKind().GroupKind(), objValue.Name, allErrs)
 }
 
@@ -74,6 +79,6 @@ func (r *IBMVPCMachine) ValidateDelete(_ context.Context, _ runtime.Object) (adm
 	return nil, nil
 }
 
-func (r *IBMVPCMachine) validateIBMVPCMachineBootVolume() field.ErrorList {
-	return validateBootVolume(r.Spec)
+func validateIBMVPCMachineBootVolume(spec infrav1beta2.IBMVPCMachineSpec) field.ErrorList {
+	return validateBootVolume(spec)
 }

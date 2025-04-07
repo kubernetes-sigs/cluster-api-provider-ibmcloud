@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta2
+package webhooks
 
 import (
 	"context"
@@ -24,6 +24,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsimage,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages,verbs=create;update,versions=v1beta2,name=mibmpowervsimage.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -31,11 +33,14 @@ import (
 
 func (r *IBMPowerVSImage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&IBMPowerVSImage{}).
+		For(&infrav1beta2.IBMPowerVSImage{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
 }
+
+// IBMPowerVSImage implements a validation and defaulting webhook for IBMPowerVSImage.
+type IBMPowerVSImage struct{}
 
 var _ webhook.CustomDefaulter = &IBMPowerVSImage{}
 var _ webhook.CustomValidator = &IBMPowerVSImage{}
