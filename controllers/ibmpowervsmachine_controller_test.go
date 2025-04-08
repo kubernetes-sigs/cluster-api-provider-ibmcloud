@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -90,6 +89,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 							UID:        "1",
 						},
 					},
+					Finalizers: []string{infrav1beta2.IBMPowerVSMachineFinalizer},
 				},
 				Spec: infrav1beta2.IBMPowerVSMachineSpec{
 					ServiceInstanceID: "service-instance-1",
@@ -101,7 +101,8 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 			name: "Should not Reconcile if machine does not contain cluster label",
 			powervsMachine: &infrav1beta2.IBMPowerVSMachine{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "powervs-test-3", OwnerReferences: []metav1.OwnerReference{
+					Name: "powervs-test-3",
+					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion: capiv1beta1.GroupVersion.String(),
 							Kind:       "Machine",
@@ -173,6 +174,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 							UID:        "1",
 						},
 					},
+					Finalizers: []string{infrav1beta2.IBMPowerVSMachineFinalizer},
 				}, Spec: infrav1beta2.IBMPowerVSMachineSpec{
 					ServiceInstanceID: "service-instance-1",
 					ImageRef: &corev1.LocalObjectReference{
@@ -198,7 +200,6 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 			g := NewWithT(t)
 			reconciler := &IBMPowerVSMachineReconciler{
 				Client: testEnv.Client,
-				Log:    klog.Background(),
 			}
 			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 			g.Expect(err).To(BeNil())
@@ -268,7 +269,6 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSMachineReconciler{
 			Client:   testEnv.Client,
-			Log:      klog.Background(),
 			Recorder: recorder,
 		}
 	}
@@ -285,12 +285,11 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			pvsmachine := newIBMPowerVSMachine()
 
 			machineScope = &scope.PowerVSMachineScope{
-				Logger:            klog.Background(),
 				IBMPowerVSClient:  mockpowervs,
 				IBMPowerVSMachine: pvsmachine,
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			}
-			_, err := reconciler.reconcileDelete(machineScope)
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(len(machineScope.IBMPowerVSMachine.Finalizers)).To(BeZero())
 		})
@@ -299,7 +298,6 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger:           klog.Background(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -312,8 +310,8 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 			}
-			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(errors.New("Could not delete PowerVS instance"))
-			_, err := reconciler.reconcileDelete(machineScope)
+			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(errors.New("could not delete PowerVS instance"))
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
 		})
@@ -327,7 +325,6 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			mockClient := fake.NewClientBuilder().WithObjects([]client.Object{secret}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
 				Client:           mockClient,
-				Logger:           klog.Background(),
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -343,7 +340,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 				Machine:           machine,
 			}
 			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(nil)
-			_, err := reconciler.reconcileDelete(machineScope)
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(len(machineScope.IBMPowerVSMachine.Finalizers)).To(BeZero())
 		})
@@ -367,7 +364,6 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		recorder := record.NewFakeRecorder(2)
 		reconciler = IBMPowerVSMachineReconciler{
 			Client:   testEnv.Client,
-			Log:      klog.Background(),
 			Recorder: recorder,
 		}
 	}
@@ -375,13 +371,12 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		mockCtrl.Finish()
 	}
 	t.Run("Reconciling creating IBMPowerVSMachine ", func(t *testing.T) {
-		options.ProviderIDFormat = string("v2")
+		options.ProviderIDFormat = "v2"
 		t.Run("Should requeue if Cluster infrastructure status is not ready", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: false,
@@ -389,17 +384,17 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				},
 				IBMPowerVSMachine: &infrav1beta2.IBMPowerVSMachine{},
 			}
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta2.WaitingForClusterInfrastructureReason}})
 		})
+
 		t.Run("Should requeue if IBMPowerVSImage status is not ready", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: true,
@@ -412,17 +407,17 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 			}
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta2.WaitingForIBMPowerVSImageReason}})
 		})
+
 		t.Run("Should requeue if boostrap data secret reference is not found", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: true,
@@ -436,11 +431,12 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 			}
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
-			g.Expect(result.RequeueAfter).To(Not(BeZero()))
-			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, infrav1beta2.WaitingForBootstrapDataReason}})
+			g.Expect(result.RequeueAfter).To(BeZero())
+			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, capiv1beta1.WaitingForControlPlaneAvailableReason}})
 		})
+
 		t.Run("Should fail reconcile with create instance failure due to error in retrieving bootstrap data secret", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
@@ -448,10 +444,9 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			var instances = &models.PVMInstances{}
 			machine := newMachine()
 			pvsMachine := newIBMPowerVSMachine()
-			mockclient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build()
+			mockClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build()
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
-				Client: mockclient,
+				Client: mockClient,
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: true,
@@ -468,7 +463,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			}
 			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
 
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(result.RequeueAfter).To(BeZero())
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
@@ -489,7 +484,6 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
 				Client: mockclient,
 
 				Cluster: &capiv1beta1.Cluster{
@@ -564,12 +558,12 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).ToNot(BeNil())
-			g.Expect(result.Requeue).To((BeFalse()))
+			g.Expect(result.Requeue).To(BeFalse())
 			g.Expect(result.RequeueAfter).To(BeZero())
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSMachineFinalizer))
-			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionTrue, "", ""}})
+			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1beta2.InstanceReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityWarning, infrav1beta2.IBMPowerVSMachineInstanceLoadBalancerConfigurationFailedV1Beta2Reason}})
 		})
 
 		t.Run("Should requeue if the load balancer pool member is created successfully, but its provisioning status is not active", func(t *testing.T) {
@@ -586,9 +580,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
 				Client: mockclient,
-
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
 						InfrastructureReady: true,
@@ -683,7 +675,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
@@ -702,7 +694,6 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
 			machineScope = &scope.PowerVSMachineScope{
-				Logger: klog.Background(),
 				Client: mockclient,
 				Cluster: &capiv1beta1.Cluster{
 					Status: capiv1beta1.ClusterStatus{
@@ -743,7 +734,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -754,7 +745,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Status = ptr.To("SHUTOFF")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -765,7 +756,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Status = ptr.To("ACTIVE")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(true))
@@ -777,7 +768,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Fault = &models.PVMInstanceFault{Details: "Timeout creating instance"}
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -788,7 +779,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				instance.Status = ptr.To("UNKNOWN")
 				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-				result, err = reconciler.reconcileNormal(machineScope)
+				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(machineScope.IBMPowerVSMachine.Status.Ready).To(Equal(false))
@@ -812,7 +803,6 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
 
 		machineScope = &scope.PowerVSMachineScope{
-			Logger: klog.Background(),
 			Client: mockclient,
 
 			Cluster: &capiv1beta1.Cluster{
@@ -876,7 +866,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
-		result, err := reconciler.reconcileNormal(machineScope)
+		result, err := reconciler.reconcileNormal(ctx, machineScope)
 		g.Expect(err).To(BeNil())
 		g.Expect(result.Requeue).To(BeFalse())
 		g.Expect(result.RequeueAfter).To(BeZero())

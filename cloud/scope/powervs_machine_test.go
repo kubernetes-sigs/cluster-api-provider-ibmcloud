@@ -35,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -45,7 +44,6 @@ import (
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -89,22 +87,21 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 	cluster := newCluster(clusterName)
 	machine := newMachine(machineName)
 	secret := newBootstrapSecret(clusterName, machineName)
-	powervsMachine := newPowerVSMachine(clusterName, machineName, imageID, networkID, isID)
-	powervsCluster := newPowerVSCluster(clusterName)
+	powerVSMachine := newPowerVSMachine(clusterName, machineName, imageID, networkID, isID)
+	powerVSCluster := newPowerVSCluster(clusterName)
 
 	initObjects := []client.Object{
-		cluster, machine, secret, powervsCluster, powervsMachine,
+		cluster, machine, secret, powerVSCluster, powerVSMachine,
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
+	fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 	return &PowerVSMachineScope{
-		Client:            client,
-		Logger:            klog.Background(),
+		Client:            fakeClient,
 		IBMPowerVSClient:  mockpowervs,
 		Cluster:           cluster,
 		Machine:           machine,
-		IBMPowerVSCluster: powervsCluster,
-		IBMPowerVSMachine: powervsMachine,
+		IBMPowerVSCluster: powerVSCluster,
+		IBMPowerVSMachine: powerVSMachine,
 		DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 	}
 }
@@ -450,7 +447,6 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 				},
 			},
 		}
-		scope.Error(fmt.Errorf("failed to list instance-id"), "failed to get Power VS service instance id", "serviceInstanceName", "foo-cluster")
 		mockResourceController.EXPECT().GetServiceInstance("", "foo-cluster", gomock.Any()).Return(nil, fmt.Errorf("failed to list instance id"))
 		scope.ResourceClient = mockResourceController
 		serviceInstanceID, err := scope.GetServiceInstanceID()
@@ -915,7 +911,7 @@ func TestSetProviderID(t *testing.T) {
 	t.Run("Set Provider ID in invalid format", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, nil)
-		options.ProviderIDFormat = string("v1")
+		options.ProviderIDFormat = "v1"
 		err := scope.SetProviderID(providerID)
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -983,7 +979,7 @@ func TestCreateCOSClient(t *testing.T) {
 			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
 			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, errors.New("error listing COS instances"))
 			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient()
+			result, err := scope.createCOSClient(ctx)
 			g.Expect(result).To(BeNil())
 			g.Expect(err).ToNot(BeNil())
 		})
@@ -996,9 +992,9 @@ func TestCreateCOSClient(t *testing.T) {
 			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
 			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, nil)
 			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient()
+			result, err := scope.createCOSClient(ctx)
 			g.Expect(result).To(BeNil())
-			g.Expect(err).To(BeNil())
+			g.Expect(err).ToNot(BeNil())
 		})
 
 		t.Run("COS service instance is not in active state", func(t *testing.T) {
@@ -1012,7 +1008,7 @@ func TestCreateCOSClient(t *testing.T) {
 			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
 			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
 			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient()
+			result, err := scope.createCOSClient(ctx)
 			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1beta2.ServiceInstanceStateProvisioning)
 			g.Expect(result).To(BeNil())
 			g.Expect(err.Error()).To(ContainSubstring(expectedError))
@@ -1030,7 +1026,7 @@ func TestCreateCOSClient(t *testing.T) {
 			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
 			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
 			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient()
+			result, err := scope.createCOSClient(ctx)
 			expectedError := "failed to determine COS bucket region, both bucket region and VPC region not set"
 			g.Expect(result).To(BeNil())
 			g.Expect(err.Error()).To(ContainSubstring(expectedError))
@@ -1050,30 +1046,8 @@ func TestCreateCOSClient(t *testing.T) {
 			scope.ResourceClient = mockResourceController
 			expectedBucketRegion := region
 			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1beta2.CosInstance{BucketRegion: expectedBucketRegion}
-			_, err := scope.createCOSClient()
+			_, err := scope.createCOSClient(ctx)
 			g.Expect(err).To(BeNil())
-		})
-	})
-}
-
-func TestClose(t *testing.T) {
-	t.Run("Test Close", func(t *testing.T) {
-		t.Run("Returns error when IBMPowerVSMachine is not nil", func(t *testing.T) {
-			g := NewWithT(t)
-			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, nil)
-			patchHelper, _ := patch.NewHelper(scope.IBMPowerVSMachine, scope.Client)
-			scope.patchHelper = patchHelper
-			err := scope.Close()
-			g.Expect(err).To(BeNil())
-		})
-		t.Run("Closes current scope successfully when IBMPowerVSMachine is nil", func(t *testing.T) {
-			g := NewWithT(t)
-			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, nil)
-			patchHelper, _ := patch.NewHelper(scope.IBMPowerVSMachine, scope.Client)
-			scope.patchHelper = patchHelper
-			scope.IBMPowerVSMachine = nil
-			err := scope.Close()
-			g.Expect(err).ToNot(BeNil())
 		})
 	})
 }
@@ -1117,6 +1091,7 @@ func TestSetFailureReason(t *testing.T) {
 			},
 		}
 		scope.SetFailureReason(infrav1beta2.UpdateMachineError)
+		//nolint:staticcheck
 		g.Expect(*scope.IBMPowerVSMachine.Status.FailureReason).To(Equal(infrav1beta2.UpdateMachineError))
 	})
 }
@@ -1159,7 +1134,7 @@ func TestSetFailureMessage(t *testing.T) {
 		}
 		failureMessage := "invalid configuration provided"
 		scope.SetFailureMessage(failureMessage)
-		g.Expect(*scope.IBMPowerVSMachine.Status.FailureMessage).To(Equal(failureMessage))
+		g.Expect(*scope.IBMPowerVSMachine.Status.FailureMessage).To(Equal(failureMessage)) //nolint:staticcheck
 	})
 }
 func TestDeleteMachineIgnition(t *testing.T) {
@@ -1175,7 +1150,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 					},
 				},
 			}
-			err := scope.DeleteMachineIgnition()
+			err := scope.DeleteMachineIgnition(ctx)
 			g.Expect(err).ToNot(BeNil())
 		})
 		t.Run("Machine is not using user data of type ignition", func(t *testing.T) {
@@ -1201,7 +1176,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 					},
 				},
 			}
-			err := scope.DeleteMachineIgnition()
+			err := scope.DeleteMachineIgnition(ctx)
 			g.Expect(err).To(BeNil())
 		})
 
@@ -1239,7 +1214,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 					},
 				},
 			}
-			err := scope.DeleteMachineIgnition()
+			err := scope.DeleteMachineIgnition(ctx)
 			g.Expect(err).ToNot(BeNil())
 		})
 
@@ -1290,7 +1265,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 				},
 			}
 			scope.SetRegion(region)
-			err := scope.DeleteMachineIgnition()
+			err := scope.DeleteMachineIgnition(ctx)
 			g.Expect(err).To(BeNil())
 		})
 	})
@@ -1345,7 +1320,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
-			_, err := scope.CreateMachine()
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 		})
 
@@ -1358,7 +1333,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			}
 			scope := setupPowerVSMachineScope(clusterName, "foo-machine-1", ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			out, err := scope.CreateMachine()
+			out, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 			g.Expect(out.ServerName).To(Equal(expectedOutput.ServerName))
 		})
@@ -1374,7 +1349,7 @@ func TestCreateMachinePVS(t *testing.T) {
 				Status: corev1.ConditionUnknown,
 			})
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			out, err := scope.CreateMachine()
+			out, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 			g.Expect(out).To(Equal(expectedOutput))
 		})
@@ -1384,8 +1359,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, errors.New("Error when getting list of instances"))
-			_, err := scope.CreateMachine()
+			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, errors.New("error when getting list of instances"))
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 
@@ -1396,7 +1371,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = nil
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 
@@ -1407,7 +1382,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("foo-secret-temp")
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 
@@ -1429,7 +1404,7 @@ func TestCreateMachinePVS(t *testing.T) {
 				}}
 			g.Expect(scope.Client.Update(context.Background(), secret)).To(Succeed())
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 
@@ -1440,7 +1415,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Spec.Processors = intstr.FromString("invalid")
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 
@@ -1456,8 +1431,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			}
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To((BeNil()))
+			_, err := scope.CreateMachine(ctx)
+			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Image and Network name is set", func(t *testing.T) {
@@ -1469,8 +1444,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To((BeNil()))
+			_, err := scope.CreateMachine(ctx)
+			g.Expect(err).To(BeNil())
 		})
 
 		t.Run("Error when both Image id and name are nil", func(t *testing.T) {
@@ -1479,8 +1454,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, nil, ptr.To(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To((Not(BeNil())))
+			_, err := scope.CreateMachine(ctx)
+			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when Image id does not exsist", func(t *testing.T) {
@@ -1490,8 +1465,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage+"-temp"), ptr.To(pvsNetwork), false, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To((Not(BeNil())))
+			_, err := scope.CreateMachine(ctx)
+			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error when Network id does not exsist", func(t *testing.T) {
@@ -1502,8 +1477,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
-			_, err := scope.CreateMachine()
-			g.Expect(err).To((Not(BeNil())))
+			_, err := scope.CreateMachine(ctx)
+			g.Expect(err).To(Not(BeNil()))
 		})
 
 		t.Run("Error while creating machine", func(t *testing.T) {
@@ -1512,8 +1487,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, errors.New("Failed to create machine"))
-			_, err := scope.CreateMachine()
+			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, errors.New("failed to create machine"))
+			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})
@@ -1547,7 +1522,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(result).To(BeNil())
 			g.Expect(err.Error()).To(Equal("failed to find VPC load balancer ID"))
 		})
@@ -1557,7 +1532,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			mockClient := vpcmock.NewMockVpc(mockCtrl)
-			mockClient.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(loadBalancerID)}).Return(nil, nil, errors.New("Error getting load balancer"))
+			mockClient.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(loadBalancerID)}).Return(nil, nil, errors.New("error getting load balancer"))
 			scope := PowerVSMachineScope{
 				IBMVPCClient: mockClient,
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
@@ -1579,7 +1554,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(result).To(BeNil())
 			g.Expect(err).ToNot(BeNil())
 		})
@@ -1615,9 +1590,9 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(result).To(BeNil())
-			g.Expect(err.Error()).To(Equal("VPC load balancer is not in active state"))
+			g.Expect(err.Error()).To(ContainSubstring("VPC load balancer is not in active state"))
 		})
 
 		t.Run("No pools exist for the VPC load balancer", func(t *testing.T) {
@@ -1650,9 +1625,9 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(result).To(BeNil())
-			g.Expect(err.Error()).To(Equal("no pools exist for the VPC load balancer"))
+			g.Expect(err.Error()).To(Equal("no pools exist for the VPC load balancer load-balancer-0"))
 		})
 
 		t.Run("Created load balancer pool member (when there are no members in the load balancer pool)", func(t *testing.T) {
@@ -1716,8 +1691,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			expectedLoadBalancerPoolMemberID := "pool-member-2"
 			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
 			mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
-
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(err).To(BeNil())
 			g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
 		})
@@ -1738,7 +1712,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 					},
 				},
 			}
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(err.Error()).To(Equal("failed to find VPC load balancer ID"))
 			g.Expect(result).To(BeNil())
 		})
@@ -1809,7 +1783,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			expectedLoadBalancerPoolMemberID := "pool-member-2"
 			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
 			mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
-			result, err := scope.CreateVPCLoadBalancerPoolMember()
+			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(result).To(BeNil())
 			g.Expect(err).To(BeNil())
 		})
@@ -1850,7 +1824,7 @@ func TestDeleteMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Status.InstanceID = machineName + idSuffix
-			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete machine"))
+			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(id)).Return(errors.New("failed to delete machine"))
 			err := scope.DeleteMachine()
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -2118,7 +2092,7 @@ func TestSetAddresses(t *testing.T) {
 			mockPowerVSClient := tc.powerVSClientFunc(ctrl)
 			scope := setupPowerVSMachineScope("test-cluster", "test-machine-0", ptr.To("test-image-ID"), &networkID, tc.setNetworkID, mockPowerVSClient)
 			scope.DHCPIPCacheStore = tc.dhcpCacheStoreFunc()
-			scope.SetAddresses(tc.pvmInstance)
+			scope.SetAddresses(ctx, tc.pvmInstance)
 			g.Expect(scope.IBMPowerVSMachine.Status.Addresses).To(Equal(tc.expectedNodeAddress))
 		})
 	}

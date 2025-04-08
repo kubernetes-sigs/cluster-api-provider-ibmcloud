@@ -63,6 +63,7 @@ var (
 	logOptions           = logs.NewOptions()
 	webhookPort          int
 	webhookCertDir       string
+	watchFilterValue     string
 
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -130,6 +131,9 @@ func initFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
 		"The webhook certificate directory, where the server should find the TLS certificate and key.")
+
+	fs.StringVar(&watchFilterValue, "watch-filter", "",
+		fmt.Sprintf("Label value that the controller watches to reconcile cluster-api objects. Label key is always %s. If unspecified, the controller watches for all cluster-api objects.", capiv1beta1.WatchLabel))
 
 	logsv1.AddFlags(logOptions, fs)
 	flags.AddManagerOptions(fs, &managerOptions)
@@ -278,10 +282,11 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 	}
 
 	if err := (&controllers.IBMPowerVSMachineReconciler{
-		Client:          mgr.GetClient(),
-		Recorder:        mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Recorder:         mgr.GetEventRecorderFor("ibmpowervsmachine-controller"),
+		ServiceEndpoint:  serviceEndpoint,
+		Scheme:           mgr.GetScheme(),
+		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)

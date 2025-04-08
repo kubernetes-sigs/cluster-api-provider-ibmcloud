@@ -20,6 +20,62 @@ import (
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 )
 
+// IBMPowerVSMachine's InstanceReady condition and corresponding reasons that will be used in v1Beta2 API version.
+const (
+	// IBMPowerVSMachineReadyV1Beta2Condition is true if the IBMPowerVSMachine's deletionTimestamp is not set, IBMPowerVSMachine's
+	// IBMPowerVSMachineInstanceReadyV1Beta2Condition is true.
+	IBMPowerVSMachineReadyV1Beta2Condition = capiv1beta1.ReadyV1Beta2Condition
+
+	// IBMPowerVSMachineReadyV1Beta2Reason surfaces when the IBMPowerVSMachine readiness criteria is met.
+	IBMPowerVSMachineReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+
+	// IBMPowerVSMachineNotReadyV1Beta2Reason surfaces when the IBMPowerVSMachine readiness criteria is not met.
+	IBMPowerVSMachineNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+
+	// IBMPowerVSMachineReadyUnknownV1Beta2Reason surfaces when at least one IBMPowerVSMachine readiness criteria is unknown
+	// and no IBMPowerVSMachine readiness criteria is not met.
+	IBMPowerVSMachineReadyUnknownV1Beta2Reason = capiv1beta1.ReadyUnknownV1Beta2Reason
+)
+
+const (
+	// IBMPowerVSMachineInstanceReadyV1Beta2Condition documents the status of the instance that is controlled
+	// by the IBMPowerVSMachine.
+	IBMPowerVSMachineInstanceReadyV1Beta2Condition = "InstanceReady"
+
+	// IBMPowerVSMachineInstanceReadyV1Beta2Reason surfaces when the instance that is controlled
+	// by the IBMPowerVSMachine is ready.
+	IBMPowerVSMachineInstanceReadyV1Beta2Reason = "InstanceReady"
+
+	// IBMPowerVSMachineInstanceNotReadyV1Beta2Reason surfaces when the instance that is controlled
+	// by the IBMPowerVSMachine is not ready.
+	IBMPowerVSMachineInstanceNotReadyV1Beta2Reason = "InstanceNotReady"
+
+	// IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason documents the virtual machine that is controller by
+	// IBMPowerVSMachine waiting for the cluster infrastructure to be ready.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = capiv1beta1.WaitingForClusterInfrastructureReadyV1Beta2Reason.
+	IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = "WaitingForClusterInfrastructureReady"
+
+	// IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason documents the virtual machine that is controller by IBMPowerVSMachine waiting
+	// for the control plane to be initialized.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = capiv1beta1.WaitingForControlPlaneInitializedV1Beta2Reason.
+	IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = "WaitingForControlPlaneInitialized"
+
+	// IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason documents the virtual machine that is controller by IBMPowerVSMachine waiting for the bootstrap
+	// data to be ready.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = capiv1beta1.WaitingForBootstrapDataV1Beta2Reason.
+	IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = "WaitingForBootstrapData"
+
+	// IBMPowerVSMachineInstanceDeletingV1Beta2Reason surfaces when the virtual machine controller by IBMPowerVSMachine is deleting.
+	IBMPowerVSMachineInstanceDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+
+	// IBMPowerVSMachineInstanceLoadBalancerConfigurationFailedV1Beta2Reason surfaces when configuring the virtual machine IP to load balancer fails.
+	IBMPowerVSMachineInstanceLoadBalancerConfigurationFailedV1Beta2Reason = "LoadBalancerConfigurationFailed"
+
+	// IBMPowerVSMachineInstanceWaitingForNetworkAddressV1Beta2Reason surfaces when the PowerVS instance that is controlled
+	// by the IBMPowerVSMachine waiting for the machine network settings to be reported after machine being powered on.
+	IBMPowerVSMachineInstanceWaitingForNetworkAddressV1Beta2Reason = "WaitingForNetworkAddress"
+)
+
 const (
 	// InstanceProvisionFailedReason used for failures during instance provisioning.
 	InstanceProvisionFailedReason = "InstanceProvisionFailed"
