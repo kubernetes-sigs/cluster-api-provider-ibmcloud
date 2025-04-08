@@ -36,6 +36,7 @@ import (
 type MockTransitGateway struct {
 	ctrl     *gomock.Controller
 	recorder *MockTransitGatewayMockRecorder
+	isgomock struct{}
 }
 
 // MockTransitGatewayMockRecorder is the mock recorder for MockTransitGateway.
