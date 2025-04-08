@@ -36,6 +36,7 @@ import (
 type MockPowerVS struct {
 	ctrl     *gomock.Controller
 	recorder *MockPowerVSMockRecorder
+	isgomock struct{}
 }
 
 // MockPowerVSMockRecorder is the mock recorder for MockPowerVS.

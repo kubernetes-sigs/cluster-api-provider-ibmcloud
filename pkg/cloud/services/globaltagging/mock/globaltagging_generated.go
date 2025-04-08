@@ -36,6 +36,7 @@ import (
 type MockGlobalTagging struct {
 	ctrl     *gomock.Controller
 	recorder *MockGlobalTaggingMockRecorder
+	isgomock struct{}
 }
 
 // MockGlobalTaggingMockRecorder is the mock recorder for MockGlobalTagging.
