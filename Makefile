@@ -50,6 +50,7 @@ CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
 TRIVY := $(TOOLS_BIN_DIR)/trivy
+RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -57,9 +58,30 @@ BUCKET ?= $(STAGING_BUCKET)
 PROD_REGISTRY := registry.k8s.io/capi-ibmcloud
 REGISTRY ?= $(STAGING_REGISTRY)
 RELEASE_TAG ?= $(shell git describe --abbrev=0 2>/dev/null)
+ifneq (,$(findstring -,$(RELEASE_TAG)))
+    PRE_RELEASE=true
+endif
+FULL_VERSION := $(RELEASE_TAG:v%=%)
+MAJOR_VERSION := $(shell echo $(FULL_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+).*/\1/')
+MINOR_VERSION := $(shell echo $(FULL_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+).*/\2/')
+PATCH_VERSION := $(shell echo $(FULL_VERSION) | sed -E 's/^([0-9]+)\.([0-9]+)\.([0-9]+).*/\3/')
+# if the release tag is a .0 version, use the main branch
+ifeq ($(PATCH_VERSION),0)
+	RELEASE_BRANCH ?= main
+else
+	RELEASE_BRANCH ?= release-$(MAJOR_VERSION).$(MINOR_VERSION)
+endif
+PREVIOUS_TAG ?= $(shell git tag --merged $(GIT_REMOTE_NAME)/$(RELEASE_BRANCH) -l | grep -E "^v[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1 2>/dev/null)
+START_SHA ?= $(shell git rev-list -n 1 $(PREVIOUS_TAG) 2>/dev/null)
+END_SHA ?= $(shell git rev-parse $(GIT_REMOTE_NAME)/$(RELEASE_BRANCH) 2>/dev/null)
+GIT_REPO_NAME ?= cluster-api-provider-ibmcloud
+GIT_ORG_NAME ?= kubernetes-sigs
+GIT_REMOTE_NAME ?= upstream
+
 PULL_BASE_REF ?= $(RELEASE_TAG) # PULL_BASE_REF will be provided by Prow
 RELEASE_ALIAS_TAG ?= $(PULL_BASE_REF)
 RELEASE_DIR := out
+RELEASE_NOTES_DIR := CHANGELOG
 OUTPUT_TYPE ?= type=registry
 
 # Go
@@ -271,6 +293,9 @@ test-cover: setup-envtest## Run tests with code coverage and code generate repor
 $(RELEASE_DIR):
 	mkdir -p $@
 
+$(RELEASE_NOTES_DIR):
+	mkdir -p $@
+
 $(ARTIFACTS):
 	mkdir -p $@
 
@@ -321,6 +346,19 @@ release-staging: ## Build and push container images to the staging bucket
 	$(MAKE) release-templates
 	$(MAKE) release-binaries
 	$(MAKE) upload-staging-artifacts
+
+.PHONY: release-notes
+release-notes: $(RELEASE_NOTES) $(RELEASE_NOTES_DIR) ## Generate/update release notes.
+	@echo "generating release notes from $(PREVIOUS_TAG) to $(RELEASE_TAG) with start sha $(START_SHA) and end sha $(END_SHA)"
+	@if [ -n "${PRE_RELEASE}" ]; then \
+		echo ":rotating_light: This is a RELEASE CANDIDATE. Use it only for testing purposes. If you find any bugs, file an [issue](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/new)." > $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
+		$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH) --required-author "" --start-sha $(START_SHA) --end-sha $(END_SHA) --markdown-links true --dependencies false --output $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md; \
+		(cat $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; echo ""; cat $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md) > $(RELEASE_NOTES_DIR)/tmp-release-notes.md; \
+		mv $(RELEASE_NOTES_DIR)/tmp-release-notes.md $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md; \
+		rm -f $(RELEASE_NOTES_DIR)/release-notes-$(RELEASE_TAG).md; \
+	else \
+		$(RELEASE_NOTES) --org $(GIT_ORG_NAME) --repo $(GIT_REPO_NAME) --branch $(RELEASE_BRANCH) --required-author "" --start-sha $(START_SHA) --end-sha $(END_SHA) --markdown-links true --output $(RELEASE_NOTES_DIR)/$(RELEASE_TAG).md; \
+	fi
 
 .PHONY: staging-manifests
 staging-manifests:
