@@ -204,9 +204,11 @@ func dumpSpecResourcesAndCleanup(ctx context.Context, input cleanupInput) {
 	Byf("Dumping all the Cluster API resources in the %q namespace", input.Namespace.Name)
 	// Dump all Cluster API related resources to artifacts before deleting them.
 	framework.DumpAllResources(ctx, framework.DumpAllResourcesInput{
-		Lister:    input.ClusterProxy.GetClient(),
-		Namespace: input.Namespace.Name,
-		LogPath:   filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
+		Lister:               input.ClusterProxy.GetClient(),
+		KubeConfigPath:       input.ClusterProxy.GetKubeconfigPath(),
+		ClusterctlConfigPath: input.ClusterConfigPath,
+		Namespace:            input.Namespace.Name,
+		LogPath:              filepath.Join(input.ArtifactFolder, "clusters", input.ClusterProxy.GetName(), "resources"),
 	})
 
 	if input.SkipCleanup {
