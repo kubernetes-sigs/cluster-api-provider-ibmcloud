@@ -1585,7 +1585,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
 		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
-		result, err := scope.CreateVPCLoadBalancerPoolMember()
+		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
 		g.Expect(result).To(BeNil())
@@ -1672,7 +1672,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		expectedLoadBalancerPoolMemberID := "pool-member-3"
 		expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
 		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
-		result, err := scope.CreateVPCLoadBalancerPoolMember()
+		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
 		g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
@@ -1751,7 +1751,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
 		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
-		result, err := scope.CreateVPCLoadBalancerPoolMember()
+		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
 		g.Expect(result).To(BeNil())
@@ -1846,7 +1846,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		expectedLoadBalancerPoolMemberID6443 := "pool-member-6443"
 		expectedLoadBalancerPoolMember6443 := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID6443)}
 		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember6443, nil, nil).Times(1)
-		result, err := scope.CreateVPCLoadBalancerPoolMember()
+		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
 		g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID6443))
@@ -1854,7 +1854,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		expectedLoadBalancerPoolMemberID24 := "pool-member-24"
 		expectedLoadBalancerPoolMember24 := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID24)}
 		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember24, nil, nil).Times(1)
-		result1, err1 := scope.CreateVPCLoadBalancerPoolMember()
+		result1, err1 := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err1).To(BeNil())
 		g.Expect(*result1.ID).To(Equal(expectedLoadBalancerPoolMemberID24))

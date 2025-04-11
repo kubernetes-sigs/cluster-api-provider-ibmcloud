@@ -184,9 +184,6 @@ spec:
                                       type: object
                                   type: object
                                   x-kubernetes-map-type: atomic
-                                  x-kubernetes-validations:
-                                  - message: Selector is immutable
-                                    rule: self == oldSelf
                               required:
                               - port
                               type: object
@@ -516,9 +513,6 @@ spec:
                                             type: object
                                         type: object
                                         x-kubernetes-map-type: atomic
-                                        x-kubernetes-validations:
-                                        - message: Selector is immutable
-                                          rule: self == oldSelf
                                     required:
                                     - port
                                     type: object

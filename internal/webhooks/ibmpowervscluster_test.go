@@ -237,6 +237,171 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Should error if the additionalListener selector is changed for same port and protocol",
+			oldPowervsCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			newPowervsCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23-1",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should work if there is an additional listener added",
+			oldPowervsCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			newPowervsCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23",
+										},
+									},
+								},
+								{
+									Port:     25,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-25",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should work if the additionalListener selector is updated with new port and protocol",
+			oldPowervsCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			newPowervsCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+								{
+									Port:     25,
+									Protocol: &infrav1beta2.VPCLoadBalancerListenerProtocolTCP,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-25",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {
