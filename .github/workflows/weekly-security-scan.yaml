@@ -30,3 +30,39 @@ jobs:
         go-version: ${{ steps.vars.outputs.go_version }}
     - name: Run verify security target
       run: make verify-security
+      # Send email notification
+    - name: Send Email Notification (Success)
+      if: success()
+      uses: cinotify/github-action@main
+      with:
+        to: 'recipient@example.com'
+        subject: "Security scan completed successfully"
+        body: |
+          The security scan for branch ${{ matrix.branch }} completed successfully.
+          Please review the results if necessary.
+        type: 'text/plain'
+    - name: Send Email Notification (Failure)
+      if: failure()
+      uses: cinotify/github-action@main
+      with:
+        to: 'recipient@example.com'
+        subject: "Security scan failed"
+        body: |
+          The security scan for branch ${{ matrix.branch }} has failed.
+          Please review the results and take appropriate action.
+        type: 'text/plain'
+      # Send slack notification
+    - name: Send Slack Notification (Success)
+      if: success()
+      uses: slackapi/slack-github-action@v1
+      with:
+        slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        channel: '#channel'
+        text: "Security scan completed successfully on branch ${{ matrix.branch }}."
+    - name: Send Slack Notification (Failure)
+      if: failure()
+      uses: slackapi/slack-github-action@v1
+      with:
+        slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        channel: '#channel'
+        text: "Security scan failed on branch ${{ matrix.branch }}. Please review the results."
