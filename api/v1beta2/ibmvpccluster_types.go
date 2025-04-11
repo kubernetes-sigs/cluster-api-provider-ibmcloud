@@ -130,7 +130,6 @@ type AdditionalListenerSpec struct {
 
 	// Selector is used to select the machines with same label to assign the listener
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Selector is immutable"
 	Selector metav1.LabelSelector `json:"selector,omitempty"`
 }
 
