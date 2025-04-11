@@ -80,5 +80,5 @@ func (r *IBMVPCMachine) ValidateDelete(_ context.Context, _ runtime.Object) (adm
 }
 
 func validateIBMVPCMachineBootVolume(spec infrav1beta2.IBMVPCMachineSpec) field.ErrorList {
-	return validateBootVolume(spec)
+	return validateVolumes(spec)
 }
