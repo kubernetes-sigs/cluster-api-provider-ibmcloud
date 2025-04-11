@@ -462,7 +462,7 @@ spec:
                   1. in the case of DHCPServer.Name is not set the name will be DHCPSERVER<CLUSTER_NAME>_Private.
                   2. if DHCPServer.Name is set the name will be DHCPSERVER<DHCPServer.Name>_Private.
                   when Network.ID is set, its expected that there exist a network in PowerVS workspace with id or else system will give error.
-                  when Network.Name is set, system will first check for network with Name in PowerVS workspace, if not exist network will be created by DHCP service.
+                  when Network.Name is set, system will first check for network with Name in PowerVS workspace, if not exist system will check DHCP network with given Network.name, if that also not exist, it will create a new DHCP service and name will be DHCPSERVER<Network.Name>_Private.
                   Network.RegEx is not yet supported and system will ignore the value.
                 properties:
                   id:
