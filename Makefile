@@ -88,6 +88,9 @@ OUTPUT_TYPE ?= type=registry
 GO_VERSION ?=1.23.8
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
+# Trivy
+TRIVY_VER := 0.61.0
+
 # kind
 CAPI_KIND_CLUSTER_NAME ?= capi-test
 
@@ -552,8 +555,8 @@ verify-conversions: $(CONVERSION_VERIFIER) ## Verifies expected API conversion a
 	$(CONVERSION_VERIFIER)
 
 .PHONY: verify-container-images
-verify-container-images: $(TRIVY) ## Verify container images
-	TRACE=$(TRACE) ./hack/verify-container-images.sh
+verify-container-images: ## Verify container images
+	TRACE=$(TRACE) ./hack/verify-container-images.sh $(TRIVY_VER)
 
 .PHONY: verify-govulncheck
 verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
