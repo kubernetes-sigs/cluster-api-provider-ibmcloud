@@ -49,6 +49,7 @@ import (
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	gtmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	powervsmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	resourceclientmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
@@ -1415,6 +1416,7 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when Reconciling VPC subnets returns requeue as true",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
+					Cluster: &capiv1beta1.Cluster{},
 					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 						Spec: infrav1beta2.IBMPowerVSClusterSpec{
 							ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
@@ -1433,10 +1435,13 @@ func TestReconcileVPCResources(t *testing.T) {
 				}
 				vpcZones, _ := regionUtil.VPCZonesForVPCRegion("us-south")
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
+				mockgt := gtmock.NewMockGlobalTagging(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
 				mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(len(vpcZones))
-				mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(&vpcv1.Subnet{Status: ptr.To("active")}, nil, nil).Times(len(vpcZones))
+				mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(&vpcv1.Subnet{Status: ptr.To("active"), CRN: ptr.To("subnet-crn")}, nil, nil).Times(len(vpcZones))
+				mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil).AnyTimes()
 				clusterScope.IBMVPCClient = mockVPC
+				clusterScope.GlobalTaggingClient = mockgt
 				return clusterScope
 			},
 			reconcileResult: reconcileResult{
