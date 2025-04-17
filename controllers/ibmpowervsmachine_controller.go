@@ -505,23 +505,23 @@ func (r *IBMPowerVSMachineReconciler) SetupWithManager(ctx context.Context, mgr 
 
 	err = ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1beta2.IBMPowerVSMachine{}).
-		WithEventFilter(predicates.ResourceHasFilterLabel(mgr.GetScheme(), predicateLog, r.WatchFilterValue)).
+		WithEventFilter(predicates.ResourceHasFilterLabel(r.Scheme, predicateLog, r.WatchFilterValue)).
 		Watches(
 			&capiv1beta1.Machine{},
 			handler.EnqueueRequestsFromMapFunc(util.MachineToInfrastructureMapFunc(infrav1beta2.GroupVersion.WithKind("IBMPowerVSMachine"))),
-			builder.WithPredicates(predicates.ResourceIsChanged(mgr.GetScheme(), predicateLog)),
+			builder.WithPredicates(predicates.ResourceIsChanged(r.Scheme, predicateLog)),
 		).
 		Watches(
 			&infrav1beta2.IBMPowerVSCluster{},
 			handler.EnqueueRequestsFromMapFunc(r.ibmPowerVSClusterToIBMPowerVSMachines),
-			builder.WithPredicates(predicates.ResourceIsChanged(mgr.GetScheme(), predicateLog)),
+			builder.WithPredicates(predicates.ResourceIsChanged(r.Scheme, predicateLog)),
 		).
 		Watches(
 			&capiv1beta1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(clusterToIBMPowerVSMachines),
-			builder.WithPredicates(predicates.All(mgr.GetScheme(), predicateLog,
-				predicates.ResourceIsChanged(mgr.GetScheme(), predicateLog),
-				predicates.ClusterPausedTransitionsOrInfrastructureReady(mgr.GetScheme(), predicateLog),
+			builder.WithPredicates(predicates.All(r.Scheme, predicateLog,
+				predicates.ResourceIsChanged(r.Scheme, predicateLog),
+				predicates.ClusterPausedTransitionsOrInfrastructureReady(r.Scheme, predicateLog),
 			)),
 		).
 		Complete(r)
@@ -533,7 +533,7 @@ func (r *IBMPowerVSMachineReconciler) SetupWithManager(ctx context.Context, mgr 
 }
 
 func patchIBMPowerVSMachine(ctx context.Context, patchHelper *patch.Helper, ibmPowerVSMachine *infrav1beta2.IBMPowerVSMachine) error {
-	// Before computing ready condition, make sure that VirtualMachineProvisioned is always set.
+	// Before computing ready condition, make sure that InstanceReady is always set.
 	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
 	// first reconcile.
 	if c := v1beta2conditions.Get(ibmPowerVSMachine, infrav1beta2.IBMPowerVSMachineInstanceReadyV1Beta2Condition); c == nil {
