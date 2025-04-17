@@ -22,11 +22,13 @@ if [[ "${TRACE-0}" == "1" ]]; then
     set -o xtrace
 fi
 
+VERSION=${1}
 GO_ARCH="$(go env GOARCH)"
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
+"${REPO_ROOT}/hack/ensure-trivy.sh" "${VERSION}"
 
-TRIVY="${REPO_ROOT}/hack/tools/bin/trivy"
+TRIVY="${REPO_ROOT}/hack/tools/bin/trivy/${VERSION}/trivy"
 
 # Builds all the container images to be scanned and cleans up changes to ./*manager_image_patch.yaml ./*manager_pull_policy.yaml.
 make REGISTRY=gcr.io/k8s-staging-capi-ibmcloud PULL_POLICY=IfNotPresent TAG=dev OUTPUT_TYPE=type=docker docker-build
