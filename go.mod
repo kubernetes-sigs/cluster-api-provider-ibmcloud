@@ -11,7 +11,7 @@ replace (
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.11.0
-	github.com/IBM/go-sdk-core/v5 v5.19.0
+	github.com/IBM/go-sdk-core/v5 v5.19.1
 	github.com/IBM/ibm-cos-sdk-go v1.12.2
 	github.com/IBM/networking-go-sdk v0.51.3
 	github.com/IBM/platform-services-go-sdk v0.79.0
@@ -23,7 +23,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.23.3
-	github.com/onsi/gomega v1.36.3
+	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20250403153021-219b161805db
 	github.com/spf13/cobra v1.9.1
@@ -97,7 +97,7 @@ require (
 	github.com/go-openapi/validate v0.22.4 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.24.0 // indirect
+	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
@@ -184,7 +184,6 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiserver v0.32.3 // indirect
 	k8s.io/cluster-bootstrap v0.32.3 // indirect
