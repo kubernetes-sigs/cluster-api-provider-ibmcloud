@@ -193,8 +193,8 @@ const (
 	// IBMPowerVSClusterNotReadyV1Beta2Reason surfaces when the IBMPowerVSCluster readiness criteria is not met.
 	IBMPowerVSClusterNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
 
-	// IBMPowerVSClusterReadyUnknownV1Beta2Reason surfaces when at least one IBMPowerVSCluster readiness criteria is unknown
-	// and no IBMPowerVSCluster readiness criteria is not met.
+	// IBMPowerVSClusterReadyUnknownV1Beta2Reason surfaces when at least one of the IBMPowerVSCluster readiness criteria is unknown
+	// and none of the IBMPowerVSCluster readiness criteria is met.
 	IBMPowerVSClusterReadyUnknownV1Beta2Reason = capiv1beta1.ReadyUnknownV1Beta2Reason
 )
 
@@ -259,7 +259,7 @@ const (
 	// VPCSecurityGroupDeletingV1Beta2Reason surfaces when the VPC security group is being deleted.
 	VPCSecurityGroupDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
 
-	// TransitGatewayReadyV1Beta2Condition reports on the successful reconciliation of a PowerVS transit gateway.
+	// TransitGatewayReadyV1Beta2Condition reports on the successful reconciliation of a transit gateway.
 	TransitGatewayReadyV1Beta2Condition = "TransitGatewayReady"
 
 	// TransitGatewayReadyV1Beta2Reason surfaces when the transit gateway is ready.
@@ -271,7 +271,7 @@ const (
 	// TransitGatewayDeletingV1Beta2Reason surfaces when the transit gateway is being deleted.
 	TransitGatewayDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
 
-	// VPCLoadBalancerReadyV1Beta2Condition reports on the successful reconciliation of a PowerVS network.
+	// VPCLoadBalancerReadyV1Beta2Condition reports on the successful reconciliation of a VPC LoadBalancer.
 	VPCLoadBalancerReadyV1Beta2Condition = "LoadBalancerReady"
 
 	// VPCLoadBalancerReadyV1Beta2Reason surfaces when the VPC LoadBalancer is ready.
@@ -280,7 +280,7 @@ const (
 	// VPCLoadBalancerNotReadyV1Beta2Reason surfaces when VPC LoadBalancer is not ready.
 	VPCLoadBalancerNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
 
-	// VPCLoadBalancerDeletingV1Beta2Reason surfaces when the VPC load balancer is being deleted.
+	// VPCLoadBalancerDeletingV1Beta2Reason surfaces when the VPC LoadBalancer is being deleted.
 	VPCLoadBalancerDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
 
 	// COSInstanceReadyV1Beta2Condition reports on the successful reconciliation of a COS instance.

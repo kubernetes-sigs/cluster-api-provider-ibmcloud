@@ -712,12 +712,12 @@ func (s *PowerVSClusterScope) ReconcileResourceGroup(ctx context.Context) error 
 	if resourceGroupID := s.GetResourceGroupID(); resourceGroupID != "" {
 		return nil
 	}
-	// Try to fetch resource group id from cloud associated with resource group name.
+	// Try to fetch resource group ID from cloud associated with resource group name.
 	resourceGroupID, err := s.fetchResourceGroupID()
 	if err != nil {
 		return fmt.Errorf("failed to get resource group ID: %w", err)
 	}
-	log.Info("Fetched resource group id", "resourceGroupID", resourceGroupID)
+	log.Info("Fetched resource group ID", "resourceGroupID", resourceGroupID)
 	// Set the status of IBMPowerVSCluster object with resource group id.
 	s.SetStatus(ctx, infrav1beta2.ResourceTypeResourceGroup, infrav1beta2.ResourceReference{ID: &resourceGroupID, ControllerCreated: ptr.To(false)})
 	return nil
@@ -744,7 +744,7 @@ func (s *PowerVSClusterScope) ReconcilePowerVSServiceInstance(ctx context.Contex
 
 		requeue, err := s.checkServiceInstanceState(ctx, *serviceInstance)
 		if err != nil {
-			return false, fmt.Errorf("failed to check for service instance state: %w", err)
+			return false, fmt.Errorf("failed to check service instance state: %w", err)
 		}
 		return requeue, nil
 	}
@@ -826,13 +826,13 @@ func (s *PowerVSClusterScope) isServiceInstanceExists(ctx context.Context) (stri
 	}
 
 	if serviceInstance == nil {
-		log.V(3).Info("PowerVS service instance with given ID or name does not exist in IBM Cloud")
+		log.V(3).Info("PowerVS service instance with given ID or name does not exist in cloud")
 		return "", false, nil
 	}
 
 	requeue, err := s.checkServiceInstanceState(ctx, *serviceInstance)
 	if err != nil {
-		return "", false, fmt.Errorf("failed to check for service instance state: %w", err)
+		return "", false, fmt.Errorf("failed to check service instance state: %w", err)
 	}
 
 	return *serviceInstance.GUID, requeue, nil
@@ -904,7 +904,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork(ctx context.Context) (bool, error
 	// check network exist in cloud
 	networkID, err := s.checkNetwork(ctx)
 	if err != nil {
-		return false, fmt.Errorf("failed to check network: %w", err)
+		return false, fmt.Errorf("failed to check if network exists: %w", err)
 	}
 	if networkID != nil {
 		log.V(3).Info("Found PowerVS network in cloud", "networkID", networkID)
@@ -912,7 +912,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork(ctx context.Context) (bool, error
 	}
 	dhcpServerID, err := s.checkDHCPServer(ctx)
 	if err != nil {
-		return false, fmt.Errorf("failed to check dhcp server: %w", err)
+		return false, fmt.Errorf("failed to check if DHCP server exists: %w", err)
 	}
 	if dhcpServerID != nil {
 		log.V(3).Info("Found DHCP server in cloud", "dhcpServerID", dhcpServerID)
@@ -1098,7 +1098,7 @@ func (s *PowerVSClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 			return false, fmt.Errorf("error fetching VPC details: %w", err)
 		}
 		if vpcDetails == nil {
-			return false, fmt.Errorf("vpc not found with ID %s", *vpcID)
+			return false, fmt.Errorf("vpc with ID %s not found", *vpcID)
 		}
 
 		if vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1beta2.VPCStatePending) {
@@ -1112,7 +1112,7 @@ func (s *PowerVSClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 	// check vpc exist in cloud
 	id, err := s.checkVPC(ctx)
 	if err != nil {
-		return false, fmt.Errorf("error checking VPC: %w", err)
+		return false, fmt.Errorf("failed to check if VPC exists: %w", err)
 	}
 	if id != "" {
 		log.V(3).Info("VPC found in cloud", "vpcID", id)
@@ -1128,7 +1128,7 @@ func (s *PowerVSClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to create VPC: %w", err)
 	}
-	log.V(3).Info("Created VPC", "vpcID", *vpcID)
+	log.Info("Created VPC", "vpcID", *vpcID)
 	s.SetStatus(ctx, infrav1beta2.ResourceTypeVPC, infrav1beta2.ResourceReference{ID: vpcID, ControllerCreated: ptr.To(true)})
 	return true, nil
 }
@@ -1214,7 +1214,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, er
 	// check whether user has set the vpc subnets
 	if len(s.IBMPowerVSCluster.Spec.VPCSubnets) == 0 {
 		// if the user did not set any subnet, we try to create subnet in all the zones.
-		log.V(3).Info("VPC subnets are not set, constructing one")
+		log.V(3).Info("VPC subnets details are not set in spec, creating subnets in all zones in the region", "region", *s.VPC().Region)
 		for _, zone := range vpcZones {
 			subnet := infrav1beta2.Subnet{
 				Name: ptr.To(fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1beta2.ResourceTypeSubnet), zone)),
@@ -1310,7 +1310,7 @@ func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*stri
 	// create subnet
 	vpcID := s.GetVPCID()
 	if vpcID == nil {
-		return nil, fmt.Errorf("VPC id is empty")
+		return nil, fmt.Errorf("VPC ID is empty")
 	}
 
 	ipVersion := vpcSubnetIPVersion4
@@ -1766,7 +1766,7 @@ func (s *PowerVSClusterScope) ReconcileTransitGateway(ctx context.Context) (bool
 	if tg != nil {
 		requeue, err := s.checkAndUpdateTransitGateway(ctx, tg)
 		if err != nil {
-			return false, fmt.Errorf("failed to check and update transit gateway exists: %w", err)
+			return false, fmt.Errorf("failed to check and update transit gateway connections: %w", err)
 		}
 		return requeue, nil
 	}
@@ -1888,14 +1888,14 @@ func (s *PowerVSClusterScope) checkAndUpdateTransitGatewayConnections(ctx contex
 	if !powerVSConnStatus {
 		log.V(3).Info("Only PowerVS connection not exist in transit gateway, creating it")
 		if err := s.createTransitGatewayConnection(ctx, transitGateway.ID, ptr.To(getTGPowerVSConnectionName(*transitGateway.Name)), pvsServiceInstanceCRN, powervsNetworkConnectionType); err != nil {
-			return false, fmt.Errorf("failed to create PowerVS transit gateway connections: %w", err)
+			return false, fmt.Errorf("failed to create PowerVS transit gateway connection: %w", err)
 		}
 	}
 
 	if !vpcConnStatus {
 		log.V(3).Info("Only VPC connection not exist in transit gateway, creating it")
 		if err := s.createTransitGatewayConnection(ctx, transitGateway.ID, ptr.To(getTGVPCConnectionName(*transitGateway.Name)), vpcCRN, vpcNetworkConnectionType); err != nil {
-			return false, fmt.Errorf("failed to create VPC transit gateway connections: %w", err)
+			return false, fmt.Errorf("failed to create VPC transit gateway connection: %w", err)
 		}
 	}
 
@@ -1903,7 +1903,7 @@ func (s *PowerVSClusterScope) checkAndUpdateTransitGatewayConnections(ctx contex
 }
 
 // validateTransitGatewayConnections validates the existing transit gateway connections.
-// to avoid returning many return values, connection id will be returned and considered that connection is in attached state.
+// to avoid returning many return values, connection ID will be returned and considered that connection is in attached state.
 func (s *PowerVSClusterScope) validateTransitGatewayConnections(ctx context.Context, connections []tgapiv1.TransitGatewayConnectionCust, vpcCRN, pvsServiceInstanceCRN *string) (bool, bool, bool, error) {
 	var powerVSConnStatus, vpcConnStatus bool
 	for _, conn := range connections {
@@ -2094,7 +2094,7 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool,
 		// check VPC load balancer exist in cloud
 		loadBalancerStatus, err := s.checkLoadBalancer(ctx, loadBalancer)
 		if err != nil {
-			return false, fmt.Errorf("failed to check load balancer: %w", err)
+			return false, fmt.Errorf("failed to check if load balancer exists: %w", err)
 		}
 		if loadBalancerStatus != nil {
 			log.V(3).Info("Found load balancer in cloud", "loadBalancerID", *loadBalancerStatus.ID)
@@ -2103,8 +2103,7 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool,
 		}
 
 		// check load balancer port against apiserver port.
-		err = s.checkLoadBalancerPort(loadBalancer)
-		if err != nil {
+		if err := s.checkLoadBalancerPort(loadBalancer); err != nil {
 			return false, fmt.Errorf("failed to check load balancer port: %w", err)
 		}
 
@@ -2131,12 +2130,12 @@ func (s *PowerVSClusterScope) checkLoadBalancerStatus(ctx context.Context, lb vp
 	log.V(3).Info("Checking the status of VPC load balancer", "loadBalancerName", *lb.Name)
 	switch *lb.ProvisioningStatus {
 	case string(infrav1beta2.VPCLoadBalancerStateActive):
-		log.V(3).Info("load balancer is in active state")
+		log.V(3).Info("Load balancer is in active state")
 		return true
 	case string(infrav1beta2.VPCLoadBalancerStateCreatePending):
-		log.V(3).Info("load balancer creation is in pending state")
+		log.V(3).Info("Load balancer creation is in pending state")
 	case string(infrav1beta2.VPCLoadBalancerStateUpdatePending):
-		log.V(3).Info("load balancer is in updating state")
+		log.V(3).Info("Load balancer is in updating state")
 	}
 	return false
 }
@@ -2264,7 +2263,7 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 	// check COS service instance exist in cloud
 	cosServiceInstanceStatus, err := s.checkCOSServiceInstance(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check if cos instance in cloud: %w", err)
+		return fmt.Errorf("failed to check if COS instance in cloud: %w", err)
 	}
 	if cosServiceInstanceStatus != nil {
 		log.V(3).Info("COS service instance found in cloud")
@@ -2320,10 +2319,10 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 
 	// check bucket exist in service instance
 	if exist, err := s.checkCOSBucket(); exist {
-		log.V(3).Info("COS bucket found in IBM Cloud")
+		log.V(3).Info("COS bucket found in cloud")
 		return nil
 	} else if err != nil {
-		return fmt.Errorf("failed to check COS bucket: %w", err)
+		return fmt.Errorf("failed to check if COS bucket exists: %w", err)
 	}
 
 	// create bucket in service instance
@@ -2547,7 +2546,7 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, err
 
 		if err != nil {
 			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
-				log.Info("load balancer successfully deleted")
+				log.Info("Load balancer successfully deleted")
 				continue
 			}
 			errs = append(errs, fmt.Errorf("failed to fetch load balancer: %w", err))
@@ -2555,7 +2554,7 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, err
 		}
 
 		if lb != nil && lb.ProvisioningStatus != nil && *lb.ProvisioningStatus == string(infrav1beta2.VPCLoadBalancerStateDeletePending) {
-			log.V(3).Info("load balancer is currently being deleted")
+			log.V(3).Info("Load balancer is currently being deleted")
 			return true, nil
 		}
 

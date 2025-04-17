@@ -89,8 +89,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Fetch the IBMPowerVSCluster instance.
 	ibmPowerVSCluster := &infrav1beta2.IBMPowerVSCluster{}
-	err := r.Client.Get(ctx, req.NamespacedName, ibmPowerVSCluster)
-	if err != nil {
+	if err := r.Client.Get(ctx, req.NamespacedName, ibmPowerVSCluster); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("IBMPowerVSCluster not found")
 			return ctrl.Result{}, nil
@@ -538,7 +537,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	if requeue, err := clusterScope.DeleteTransitGateway(ctx); err != nil {
 		allErrs = append(allErrs, fmt.Errorf("failed to delete transit gateway: %w", err))
 	} else if requeue {
-		log.Info("Deleting transit gateway is pending, requeuing")
+		log.Info("Transit gateway deletion is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
