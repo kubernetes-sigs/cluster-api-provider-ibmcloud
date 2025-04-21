@@ -14,7 +14,7 @@ require (
 	github.com/IBM/go-sdk-core/v5 v5.19.1
 	github.com/IBM/ibm-cos-sdk-go v1.12.2
 	github.com/IBM/networking-go-sdk v0.51.4
-	github.com/IBM/platform-services-go-sdk v0.79.0
+	github.com/IBM/platform-services-go-sdk v0.79.1
 	github.com/IBM/vpc-go-sdk v0.67.1
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.21.0
@@ -87,7 +87,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/analysis v0.21.5 // indirect
-	github.com/go-openapi/errors v0.22.0 // indirect
+	github.com/go-openapi/errors v0.22.1 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.20.3 // indirect
 	github.com/go-openapi/loads v0.21.3 // indirect
