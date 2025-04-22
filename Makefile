@@ -252,7 +252,7 @@ test: generate fmt vet setup-envtest $(GOTESTSUM) ## Run tests
 
 # Allow overriding the e2e configurations
 GINKGO_FOCUS ?= Workload cluster creation
-GINKGO_NODES ?= 3
+GINKGO_NODES ?= 1
 GINKGO_NOCOLOR ?= false
 GINKGO_TIMEOUT ?= 2h
 E2E_FLAVOR ?= powervs-md-remediation
