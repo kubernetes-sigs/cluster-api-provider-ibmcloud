@@ -1155,3 +1155,63 @@ func (m *MachineScope) APIServerPort() int32 {
 	}
 	return infrav1beta2.DefaultAPIServerPort
 }
+
+// GetVolumeAttachments returns the volume attachments for the instance.
+func (m *MachineScope) GetVolumeAttachments() ([]vpcv1.VolumeAttachment, error) {
+	options := vpcv1.ListInstanceVolumeAttachmentsOptions{
+		InstanceID: &m.IBMVPCMachine.Status.InstanceID,
+	}
+	result, _, err := m.IBMVPCClient.GetVolumeAttachments(&options)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting volume attachments: %w", err)
+	}
+	return result.VolumeAttachments, nil
+}
+
+// CreateAndAttachVolume creates a new Volume and attaches it to the instance.
+func (m *MachineScope) CreateAndAttachVolume(vpcVolume *infrav1beta2.VPCVolume) error {
+	volumeOptions := vpcv1.CreateVolumeOptions{}
+	// TODO: EncryptionKeyCRN is not supported for now, the field is omitted from the manifest
+	if vpcVolume.Profile != "custom" {
+		volumeOptions.VolumePrototype = &vpcv1.VolumePrototype{
+			Profile: &vpcv1.VolumeProfileIdentityByName{
+				Name: &vpcVolume.Profile,
+			},
+			Zone: &vpcv1.ZoneIdentity{
+				Name: &m.IBMVPCMachine.Spec.Zone,
+			},
+			Capacity: &vpcVolume.SizeGiB,
+		}
+	} else {
+		volumeOptions.VolumePrototype = &vpcv1.VolumePrototype{
+			Iops: &vpcVolume.Iops,
+			Profile: &vpcv1.VolumeProfileIdentityByName{
+				Name: &vpcVolume.Profile,
+			},
+			Zone: &vpcv1.ZoneIdentity{
+				Name: &m.IBMVPCMachine.Spec.Zone,
+			},
+			Capacity: &vpcVolume.SizeGiB,
+		}
+	}
+
+	volumeResult, _, err := m.IBMVPCClient.CreateVolume(&volumeOptions)
+	if err != nil {
+		return fmt.Errorf("error while creating volume: %w", err)
+	}
+
+	attachmentOptions := vpcv1.CreateInstanceVolumeAttachmentOptions{
+		InstanceID: &m.IBMVPCMachine.Status.InstanceID,
+		Volume: &vpcv1.VolumeAttachmentPrototypeVolume{
+			ID: volumeResult.ID,
+		},
+		DeleteVolumeOnInstanceDelete: &vpcVolume.DeleteVolumeOnInstanceDelete,
+		Name:                         &vpcVolume.Name,
+	}
+
+	_, _, err = m.IBMVPCClient.AttachVolumeToInstance(&attachmentOptions)
+	if err != nil {
+		err = fmt.Errorf("error while attaching volume to instance: %w", err)
+	}
+	return err
+}
