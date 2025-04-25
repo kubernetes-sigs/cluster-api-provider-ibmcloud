@@ -126,10 +126,6 @@ GOVULNCHECK := $(BIN_DIR)/govulncheck
 $(GOVULNCHECK): $(BIN_DIR) go.mod go.sum ## Build a local copy of govulncheck.
 	go build -tags=capibmtools -o $@ golang.org/x/vuln/cmd/govulncheck
 
-TRIVY := $(BIN_DIR)/trivy
-$(TRIVY): $(BIN_DIR) go.mod go.sum ## Build a local copy of trivy.
-	go build -tags=capibmtools -o $@ github.com/aquasecurity/trivy/cmd/trivy
-
 RELEASE_NOTES := $(BIN_DIR)/release-notes
 $(RELEASE_NOTES): $(BIN_DIR) go.mod go.sum ## Build a local copy of release-notes.
 	go build -tags=capibmtools -o $@ k8s.io/release/cmd/release-notes
