@@ -21,7 +21,6 @@ limitations under the License.
 package tools
 
 import (
-	_ "github.com/aquasecurity/trivy/cmd/trivy"
 	_ "github.com/drone/envsubst/v2/cmd/envsubst"
 	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 	_ "github.com/itchyny/gojq/cmd/gojq"

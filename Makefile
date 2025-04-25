@@ -49,7 +49,6 @@ CONTROLLER_GEN := $(TOOLS_BIN_DIR)/controller-gen
 CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
-TRIVY := $(TOOLS_BIN_DIR)/trivy
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
@@ -87,6 +86,9 @@ OUTPUT_TYPE ?= type=registry
 # Go
 GO_VERSION ?=1.23.8
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
+
+# Trivy
+TRIVY_VER := 0.61.1
 
 # kind
 CAPI_KIND_CLUSTER_NAME ?= capi-test
@@ -552,8 +554,8 @@ verify-conversions: $(CONVERSION_VERIFIER) ## Verifies expected API conversion a
 	$(CONVERSION_VERIFIER)
 
 .PHONY: verify-container-images
-verify-container-images: $(TRIVY) ## Verify container images
-	TRACE=$(TRACE) ./hack/verify-container-images.sh
+verify-container-images: ## Verify container images
+	TRACE=$(TRACE) ./hack/verify-container-images.sh $(TRIVY_VER)
 
 .PHONY: verify-govulncheck
 verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
