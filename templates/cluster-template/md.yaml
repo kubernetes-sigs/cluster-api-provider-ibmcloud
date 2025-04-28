@@ -8,10 +8,10 @@ spec:
       additionalVolumes:
       - name: additional-volume-1
         profile: general-purpose
-        sizeGiB: 25
+        sizeGiB: 50
       - name: additional-volume-2
         profile: custom
         sizeGiB: 50
-        iops: 3000
+        iops: 100
       bootVolume:
         sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
