@@ -10,7 +10,7 @@ require (
 	github.com/itchyny/gojq v0.12.17
 	github.com/joelanford/go-apidiff v0.8.2
 	github.com/onsi/ginkgo/v2 v2.23.3
-	go.uber.org/mock v0.5.1
+	go.uber.org/mock v0.5.2
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.12.1
 	k8s.io/code-generator v0.32.3
