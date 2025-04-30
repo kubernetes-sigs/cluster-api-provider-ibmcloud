@@ -20,10 +20,10 @@ REGISTRY=gcr.io/k8s-staging-capi-ibmcloud
 IMG=powervs-cloud-controller-manager
 
 # POWERVS_CLOUD_CONTROLLER_COMMIT can be fetched from here https://github.com/openshift/cloud-provider-powervs/commits/main
-POWERVS_CLOUD_CONTROLLER_COMMIT?=7c51cd2
+POWERVS_CLOUD_CONTROLLER_COMMIT?=ef83f3f
 TAG?=$(POWERVS_CLOUD_CONTROLLER_COMMIT)
 
-build-image: init-buildx
+build-image: init-buildx gcloud-auth
 	{ \
 		set -e ; \
 		docker buildx build \
@@ -38,6 +38,18 @@ init-buildx:
 	-docker buildx rm multiarch-multiplatform-builder
 	docker buildx create --use --name=multiarch-multiplatform-builder
 	docker run --rm --privileged multiarch/qemu-user-static --reset --credential yes --persistent yes
+
+gcloud-auth:
 	# Register gcloud as a Docker credential helper.
 	# Required for "docker buildx build --push".
 	gcloud auth configure-docker --quiet
+
+build-local: init-buildx
+	{ \
+		set -e ; \
+		docker buildx build \
+			--platform=linux/$(ARCH) --pull \
+			--build-arg golang_image=$(GO_CONTAINER_IMAGE) \
+			--build-arg POWERVS_CLOUD_CONTROLLER_COMMIT=$(POWERVS_CLOUD_CONTROLLER_COMMIT) \
+			-t $(REGISTRY)/$(IMG)-$(ARCH):$(TAG) . --output=type=docker --target centos-base; \
+    }
