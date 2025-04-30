@@ -34,15 +34,18 @@ TRIVY="${REPO_ROOT}/hack/tools/bin/trivy/${VERSION}/trivy"
 make REGISTRY=gcr.io/k8s-staging-capi-ibmcloud PULL_POLICY=IfNotPresent TAG=dev OUTPUT_TYPE=type=docker docker-build
 make clean-release-git
 
+make -C hack/ccm ARCH="${GO_ARCH}" TAG=dev build-local
+
 # Scan the images
 "${TRIVY}" image -q --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller-"${GO_ARCH}":dev && R1=$? || R1=$?
+"${TRIVY}" image -q --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL gcr.io/k8s-staging-capi-ibmcloud/powervs-cloud-controller-manager-"${GO_ARCH}":dev && R2=$? || R2=$?
 
 echo ""
 BRed='\033[1;31m'
 BGreen='\033[1;32m'
 NC='\033[0m' # No
 
-if [ "$R1" -ne "0" ]
+if [ "$R1" -ne "0" ] || [ "$R2"  -ne "0" ]
 then
   echo -e "${BRed}Check container images failed! There are vulnerabilities to be fixed${NC}"
   exit 1
