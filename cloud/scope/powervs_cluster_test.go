@@ -22,34 +22,36 @@ import (
 	"os"
 	"testing"
 
+	"go.uber.org/mock/gomock"
+
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/ibm-cos-sdk-go/aws/awserr"
+	"github.com/IBM/ibm-cos-sdk-go/service/s3"
+	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
-	"go.uber.org/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	mockP "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
-	tgmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway/mock"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 
+	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
+	mockP "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	mockRC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
+	tgmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
-	"github.com/IBM/ibm-cos-sdk-go/service/s3"
 	. "github.com/onsi/gomega"
 )
 
@@ -5722,11 +5724,13 @@ func TestDeleteTransitGatewayConnections(t *testing.T) {
 func TestReconcileCOSInstance(t *testing.T) {
 	var (
 		mockResourceController *mockRC.MockResourceController
+		mockCOSController      *mockcos.MockCos
 		mockCtrl               *gomock.Controller
 	)
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockCOSController = mockcos.NewMockCos(mockCtrl)
 		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
 	}
 	teardown := func() {
@@ -5986,14 +5990,110 @@ func TestReconcileCOSInstance(t *testing.T) {
 			Name: ptr.To("test-resource-instance-name"),
 		}, nil, nil)
 
+		mockCOSController.EXPECT().GetBucketByName(gomock.Any()).Return(nil, fmt.Errorf("failed to get bucket by name"))
+
+		cos.NewServiceFunc = func(_ cos.ServiceOptions, _, _ string) (cos.Cos, error) {
+			return mockCOSController, nil
+		}
+
+		err = clusterScope.ReconcileCOSInstance(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-resource-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(true)))
+	})
+	t.Run("When create COS bucket fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-bucket-region",
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			ID:   ptr.To("test-resource-instance-id"),
+			GUID: ptr.To("test-resource-instance-guid"),
+			Name: ptr.To("test-resource-instance-name"),
+		}, nil, nil)
+
+		mockCOSController.EXPECT().GetBucketByName(gomock.Any()).Return(nil, awserr.New(s3.ErrCodeNoSuchBucket, "bucket does not exist", nil))
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(nil, fmt.Errorf("failed to create bucket"))
+
+		cos.NewServiceFunc = func(_ cos.ServiceOptions, _, _ string) (cos.Cos, error) {
+			return mockCOSController, nil
+		}
+
 		err = clusterScope.ReconcileCOSInstance(ctx)
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-resource-instance-guid")))
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(true)))
 	})
 
-	//TODO: Complete cases to cover control flow on checkCOSBucket and createCOSBucket
-	// Github issue: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/2034
+	t.Run("When create COS bucket succeeds", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		err := os.Setenv("IBMCLOUD_APIKEY", "test-api-key")
+		g.Expect(err).To(BeNil())
+		defer os.Unsetenv("IBMCLOUD_APIKEY")
+
+		clusterScope := PowerVSClusterScope{
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					CosInstance: &infrav1beta2.CosInstance{
+						BucketRegion: "test-bucket-region",
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-group-id"),
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("test-serviceinstance-id"),
+					},
+				},
+			},
+		}
+		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+			ID:   ptr.To("test-resource-instance-id"),
+			GUID: ptr.To("test-resource-instance-guid"),
+			Name: ptr.To("test-resource-instance-name"),
+		}, nil, nil)
+
+		mockCOSController.EXPECT().GetBucketByName(gomock.Any()).Return(nil, awserr.New(s3.ErrCodeNoSuchBucket, "bucket does not exist", nil))
+		mockCOSController.EXPECT().CreateBucket(gomock.Any()).Return(nil, nil)
+
+		cos.NewServiceFunc = func(_ cos.ServiceOptions, _, _ string) (cos.Cos, error) {
+			return mockCOSController, nil
+		}
+
+		err = clusterScope.ReconcileCOSInstance(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ID).To(Equal(ptr.To("test-resource-instance-guid")))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.ControllerCreated).To(Equal(ptr.To(true)))
+	})
 }
 
 func TestCheckCOSServiceInstance(t *testing.T) {

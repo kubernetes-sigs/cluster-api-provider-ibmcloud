@@ -548,7 +548,7 @@ func (m *PowerVSMachineScope) DeleteMachineIgnition(ctx context.Context) error {
 }
 
 // createCOSClient creates a new cosClient from the supplied parameters.
-func (m *PowerVSMachineScope) createCOSClient(ctx context.Context) (*cos.Service, error) {
+func (m *PowerVSMachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var cosInstanceName string
 	if m.IBMPowerVSCluster.Spec.CosInstance == nil || m.IBMPowerVSCluster.Spec.CosInstance.Name == "" {

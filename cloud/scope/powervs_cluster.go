@@ -2307,7 +2307,7 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 		},
 	}
 
-	cosClient, err := cos.NewService(cosOptions, apiKey, *cosServiceInstanceStatus.GUID)
+	cosClient, err := cos.NewServiceWrapper(cosOptions, apiKey, *cosServiceInstanceStatus.GUID)
 	if err != nil {
 		return fmt.Errorf("failed to create COS client: %w", err)
 	}
