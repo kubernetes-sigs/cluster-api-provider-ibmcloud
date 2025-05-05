@@ -85,3 +85,7 @@
       Full Changelog: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/compare/v0.9.0...v0.10.0
       ```
     Be sure to replace the versions in the URL with the appropriate tags.
+---
+### Post release tasks: 
+
+Create a tracker issue using the [`release`](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/.github/ISSUE_TEMPLATE/release.md) template to have a check-list that covers through all tasks that are expected to be done after the release.
