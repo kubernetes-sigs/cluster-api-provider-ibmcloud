@@ -35,6 +35,8 @@ import (
 
 	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging"
+	gtmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging/mock"
 	mockP "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	tgmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway/mock"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -149,6 +151,9 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 						return nil, nil
 					},
 					ResourceManagerFactory: func() (resourcemanager.ResourceManager, error) {
+						return nil, nil
+					},
+					GlobalTaggingFactory: func() (globaltagging.GlobalTagging, error) {
 						return nil, nil
 					},
 				},
@@ -1166,12 +1171,14 @@ func TestGetResourceGroupID(t *testing.T) {
 func TestReconcileLoadBalancers(t *testing.T) {
 	var (
 		mockVpc  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(gomock.NewController(t))
 		mockVpc = mock.NewMockVpc(mockCtrl)
 	}
 
@@ -1491,7 +1498,8 @@ func TestReconcileLoadBalancers(t *testing.T) {
 
 		clusterAPIServerPort := int32(9090)
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVpc,
+			IBMVPCClient:        mockVpc,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 
@@ -1533,7 +1541,9 @@ func TestReconcileLoadBalancers(t *testing.T) {
 			ID:                 ptr.To("test-lb-id"),
 			ProvisioningStatus: ptr.To("active"),
 			Hostname:           ptr.To("test-lb-hostname"),
+			CRN:                ptr.To("lb-crn"),
 		}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 
 		loadBalancerReady, err := clusterScope.ReconcileLoadBalancers(ctx)
 		g.Expect(loadBalancerReady).To(BeFalse())
@@ -1550,12 +1560,14 @@ func TestReconcileLoadBalancers(t *testing.T) {
 func TestCreateLoadbalancer(t *testing.T) {
 	var (
 		mockVpc  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(gomock.NewController(t))
 		mockVpc = mock.NewMockVpc(mockCtrl)
 	}
 
@@ -1698,7 +1710,8 @@ func TestCreateLoadbalancer(t *testing.T) {
 
 		clusterAPIServerPort := int32(9090)
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVpc,
+			IBMVPCClient:        mockVpc,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 
@@ -1748,7 +1761,77 @@ func TestCreateLoadbalancer(t *testing.T) {
 			ID:                 ptr.To("test-lb-id"),
 			ProvisioningStatus: ptr.To("active"),
 			Hostname:           ptr.To("test-lb-hostname"),
+			CRN:                ptr.To("lb-crn"),
 		}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
+
+		loadBalancerStatus, err := clusterScope.createLoadBalancer(ctx, lb)
+		g.Expect(err).To(BeNil())
+		g.Expect(loadBalancerStatus.State).To(BeEquivalentTo(infrav1beta2.VPCLoadBalancerStateActive))
+		g.Expect(loadBalancerStatus.ControllerCreated).To(Equal(ptr.To(true)))
+		g.Expect(loadBalancerStatus.Hostname).To(Equal(ptr.To("test-lb-hostname")))
+	})
+	t.Run("When IBMVPCClient client CreateLoadBalancer successfully creates load balancer in cloud but tagging load balancer fails", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterAPIServerPort := int32(9090)
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient:        mockVpc,
+			GlobalTaggingClient: mockgt,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("test-resource-gid"),
+					},
+					LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+						{
+							Name: "test-lb",
+							ID:   nil,
+						},
+					},
+					VPCSubnets: []infrav1beta2.Subnet{
+						{
+							Name: ptr.To("test-subnet"),
+							ID:   ptr.To("test-subnetid"),
+						},
+					},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					VPCSubnet: map[string]infrav1beta2.ResourceReference{
+						"test-subnet": {
+							ID: ptr.To("test-resource-reference-id"),
+						},
+					},
+				},
+			},
+			Cluster: &capiv1beta1.Cluster{
+				Spec: capiv1beta1.ClusterSpec{
+					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+						APIServerPort: &clusterAPIServerPort,
+					},
+				},
+			},
+		}
+
+		lb := infrav1beta2.VPCLoadBalancerSpec{
+			Name: "test-lb",
+			AdditionalListeners: []infrav1beta2.AdditionalListenerSpec{
+				{
+					Port: int64(9090),
+				},
+			},
+		}
+
+		mockVpc.EXPECT().CreateLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("test-lb-id"),
+			ProvisioningStatus: ptr.To("active"),
+			Hostname:           ptr.To("test-lb-hostname"),
+			CRN:                ptr.To("lb-crn"),
+		}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, fmt.Errorf("failed to tag load balancer"))
 
 		loadBalancerStatus, err := clusterScope.createLoadBalancer(ctx, lb)
 		g.Expect(err).To(BeNil())
@@ -2178,6 +2261,7 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -2203,6 +2287,7 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -2459,6 +2544,7 @@ func TestCreateServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -2482,6 +2568,7 @@ func TestCreateServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -2504,12 +2591,14 @@ func TestCreateServiceInstance(t *testing.T) {
 func TestReconcileVPC(t *testing.T) {
 	var (
 		mockVPC  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
 	}
 	teardown := func() {
@@ -2552,14 +2641,16 @@ func TestReconcileVPC(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
-			Cluster:      &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
+			Cluster:             &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
-		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
+		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), CRN: ptr.To("vpc-crn"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, nil)
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, nil)
 		requeue, err := clusterScope.ReconcileVPC(ctx)
 		g.Expect(err).To(BeNil())
@@ -2678,12 +2769,14 @@ func TestReconcileVPC(t *testing.T) {
 func TestPowerVSScopeCreateVPC(t *testing.T) {
 	var (
 		mockVPC  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
 	}
 	teardown := func() {
@@ -2699,7 +2792,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
 		}
 
-		vpcID, err := clusterScope.createVPC()
+		vpcID, err := clusterScope.createVPC(ctx)
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(vpcID).To(BeNil())
 	})
@@ -2709,16 +2802,40 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
-			Cluster:      &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
+			Cluster:             &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, nil)
 
-		vpcID, err := clusterScope.createVPC()
+		vpcID, err := clusterScope.createVPC(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(vpcID).To(Equal(vpcOutput.ID))
+	})
+
+	t.Run("When create VPC is successful but tagging vpc fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
+			Cluster:             &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
+				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+		}
+		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
+		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, fmt.Errorf("AttachTag returns error"))
+		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, nil)
+
+		vpcID, err := clusterScope.createVPC(ctx)
 		g.Expect(err).To(BeNil())
 		g.Expect(vpcID).To(Equal(vpcOutput.ID))
 	})
@@ -2729,15 +2846,17 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
-			Cluster:      &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
+			Cluster:             &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, fmt.Errorf("CreateSecurityGroupRule returns error"))
-		vpcID, err := clusterScope.createVPC()
+		vpcID, err := clusterScope.createVPC(ctx)
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(vpcID).To(BeNil())
 	})
@@ -3529,11 +3648,13 @@ func TestReconcileNetwork(t *testing.T) {
 func TestReconcileVPCSubnets(t *testing.T) {
 	var (
 		mockVPC  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
 	}
 	teardown := func() {
@@ -3575,7 +3696,9 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		var subnetZone *string
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Status: infrav1beta2.IBMPowerVSClusterStatus{
@@ -3620,6 +3743,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			})
 			subnetDetails := &vpcv1.Subnet{ID: ptr.To(fmt.Sprintf("subnet%dID", i+1)), Name: ptr.To(fmt.Sprintf("subnet%dName", i+1))}
 			mockVPC.EXPECT().CreateSubnet(subnet1Options).Return(subnetDetails, nil, nil)
+			mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		}
 		requeue, err := clusterScope.ReconcileVPCSubnets(ctx)
 		g.Expect(requeue).To(BeTrue())
@@ -3636,7 +3760,9 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Status: infrav1beta2.IBMPowerVSClusterStatus{
@@ -3672,6 +3798,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 			})
 			subnetDetails := &vpcv1.Subnet{ID: ptr.To(fmt.Sprintf("subnet%dID", i+1)), Name: ptr.To(fmt.Sprintf("subnet%dName", i+1))}
 			mockVPC.EXPECT().CreateSubnet(subnet1Options).Return(subnetDetails, nil, nil)
+			mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		}
 		requeue, err := clusterScope.ReconcileVPCSubnets(ctx)
 		g.Expect(requeue).To(BeTrue())
@@ -3687,7 +3814,9 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Status: infrav1beta2.IBMPowerVSClusterStatus{
@@ -3701,6 +3830,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(3)
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil).Times(3)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil).Times(3)
 		requeue, err := clusterScope.ReconcileVPCSubnets(ctx)
 		g.Expect(requeue).To(BeTrue())
 		g.Expect(err).To(BeNil())
@@ -3715,7 +3845,9 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Status: infrav1beta2.IBMPowerVSClusterStatus{
@@ -3727,9 +3859,10 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPCSubnets:    []infrav1beta2.Subnet{{Name: ptr.To("subnet1Name")}}},
 			},
 		}
-		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("subnet1Name")}
+		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("subnet1Name"), CRN: ptr.To("subnet-crn")}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 
 		requeue, err := clusterScope.ReconcileVPCSubnets(ctx)
 		g.Expect(requeue).To(BeTrue())
@@ -3775,7 +3908,9 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "ClusterName"},
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -3993,11 +4128,13 @@ func TestCheckVPCSubnet(t *testing.T) {
 func TestCreateVPCSubnet(t *testing.T) {
 	var (
 		mockVPC  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(gomock.NewController(t))
 		mockVPC = mock.NewMockVpc(mockCtrl)
 	}
 	teardown := func() {
@@ -4009,7 +4146,9 @@ func TestCreateVPCSubnet(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
@@ -4018,10 +4157,36 @@ func TestCreateVPCSubnet(t *testing.T) {
 			},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
-		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
+		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), CRN: ptr.To("subnet-crn")}
 
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
+		g.Expect(subnetID).To(Equal(subnet1Details.ID))
+		g.Expect(err).To(BeNil())
+	})
+	t.Run("When createVPCSubnet returns success but tagging subnet fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{VPC: &infrav1beta2.ResourceReference{ID: ptr.To("vpcID")}},
+			},
+		}
+		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
+		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), CRN: ptr.To("subnet-crn")}
+
+		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, fmt.Errorf("error attching subnet"))
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
 		g.Expect(subnetID).To(Equal(subnet1Details.ID))
 		g.Expect(err).To(BeNil())
 	})
@@ -4031,7 +4196,11 @@ func TestCreateVPCSubnet(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster: &capiv1beta1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster"},
+			},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
@@ -4041,10 +4210,11 @@ func TestCreateVPCSubnet(t *testing.T) {
 			},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
-		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
+		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), CRN: ptr.To("subnet-crn")}
 
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(subnet1Details, nil, nil)
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
 		g.Expect(subnetID).To(Equal(subnet1Details.ID))
 		g.Expect(err).To(BeNil())
 	})
@@ -4059,7 +4229,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{}},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -4075,7 +4245,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -4093,7 +4263,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(nil, nil, fmt.Errorf("error creating subnet"))
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -4110,7 +4280,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 		}
 		subnet := infrav1beta2.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
 		mockVPC.EXPECT().CreateSubnet(gomock.Any()).Return(nil, nil, nil)
-		subnetID, err := clusterScope.createVPCSubnet(subnet)
+		subnetID, err := clusterScope.createVPCSubnet(ctx, subnet)
 		g.Expect(subnetID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -5813,6 +5983,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 		defer os.Unsetenv("IBMCLOUD_APIKEY")
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -5854,6 +6025,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 		defer os.Unsetenv("IBMCLOUD_APIKEY")
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -5923,6 +6095,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 		defer os.Unsetenv("IBMCLOUD_APIKEY")
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -5961,6 +6134,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 		defer os.Unsetenv("IBMCLOUD_APIKEY")
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -6365,6 +6539,7 @@ func TestCreateCOSServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -6393,6 +6568,7 @@ func TestCreateCOSServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:        &capiv1beta1.Cluster{},
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
@@ -6423,6 +6599,7 @@ func TestReconcileTransitGateway(t *testing.T) {
 		mockResourceController *mockRC.MockResourceController
 		mockVPC                *mock.MockVpc
 		mockTransitGateway     *tgmock.MockTransitGateway
+		mockgt                 *gtmock.MockGlobalTagging
 		mockCtrl               *gomock.Controller
 	)
 
@@ -6431,6 +6608,7 @@ func TestReconcileTransitGateway(t *testing.T) {
 		mockCtrl = gomock.NewController(t)
 		mockTransitGateway = tgmock.NewMockTransitGateway(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
 	}
 	teardown := func() {
@@ -6605,9 +6783,11 @@ func TestReconcileTransitGateway(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:              &capiv1beta1.Cluster{},
 			TransitGatewayClient: mockTransitGateway,
 			IBMVPCClient:         mockVPC,
 			ResourceClient:       mockResourceController,
+			GlobalTaggingClient:  mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
@@ -6627,6 +6807,7 @@ func TestReconcileTransitGateway(t *testing.T) {
 
 		mockTransitGateway.EXPECT().GetTransitGatewayByName(gomock.Any()).Return(nil, nil)
 		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{CRN: ptr.To("crn")}, nil, nil)
 		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{CRN: ptr.To("crn")}, nil, nil)
 		mockTransitGateway.EXPECT().CreateTransitGatewayConnection(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCust{ID: ptr.To("pvs-connID")}, nil, nil)
@@ -6897,6 +7078,7 @@ func TestCreateTransitGateway(t *testing.T) {
 		mockResourceController *mockRC.MockResourceController
 		mockVPC                *mock.MockVpc
 		mockTransitGateway     *tgmock.MockTransitGateway
+		mockgt                 *gtmock.MockGlobalTagging
 		mockCtrl               *gomock.Controller
 	)
 
@@ -6905,6 +7087,7 @@ func TestCreateTransitGateway(t *testing.T) {
 		mockCtrl = gomock.NewController(t)
 		mockTransitGateway = tgmock.NewMockTransitGateway(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
 	}
 	teardown := func() {
@@ -7002,9 +7185,11 @@ func TestCreateTransitGateway(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:              &capiv1beta1.Cluster{},
 			TransitGatewayClient: mockTransitGateway,
 			IBMVPCClient:         mockVPC,
 			ResourceClient:       mockResourceController,
+			GlobalTaggingClient:  mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
@@ -7022,7 +7207,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			},
 		}
 
-		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Status: ptr.To("pending")}, nil, nil)
+		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Crn: ptr.To("tg-crn"), Status: ptr.To("pending")}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(nil, nil, errors.New("failed to get vpc"))
 		err := clusterScope.createTransitGateway(ctx)
 		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.ID).To(BeEquivalentTo("transitGatewayID"))
@@ -7036,9 +7222,11 @@ func TestCreateTransitGateway(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:              &capiv1beta1.Cluster{},
 			TransitGatewayClient: mockTransitGateway,
 			IBMVPCClient:         mockVPC,
 			ResourceClient:       mockResourceController,
+			GlobalTaggingClient:  mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
@@ -7057,6 +7245,7 @@ func TestCreateTransitGateway(t *testing.T) {
 		}
 
 		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{CRN: ptr.To("crn")}, nil, nil)
 		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to get power vs instance"))
 		err := clusterScope.createTransitGateway(ctx)
@@ -7071,9 +7260,11 @@ func TestCreateTransitGateway(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:              &capiv1beta1.Cluster{},
 			TransitGatewayClient: mockTransitGateway,
 			IBMVPCClient:         mockVPC,
 			ResourceClient:       mockResourceController,
+			GlobalTaggingClient:  mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
@@ -7092,6 +7283,7 @@ func TestCreateTransitGateway(t *testing.T) {
 		}
 
 		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{CRN: ptr.To("crn")}, nil, nil)
 		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{CRN: ptr.To("crn")}, nil, nil)
 		mockTransitGateway.EXPECT().CreateTransitGatewayConnection(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCust{ID: ptr.To("pvs-connID")}, nil, nil)
@@ -7144,9 +7336,11 @@ func TestCreateTransitGateway(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := PowerVSClusterScope{
+			Cluster:              &capiv1beta1.Cluster{},
 			TransitGatewayClient: mockTransitGateway,
 			IBMVPCClient:         mockVPC,
 			ResourceClient:       mockResourceController,
+			GlobalTaggingClient:  mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					TransitGateway: &infrav1beta2.TransitGateway{
@@ -7168,6 +7362,54 @@ func TestCreateTransitGateway(t *testing.T) {
 		}
 
 		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
+		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{CRN: ptr.To("crn")}, nil, nil)
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{CRN: ptr.To("crn")}, nil, nil)
+		mockTransitGateway.EXPECT().CreateTransitGatewayConnection(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCust{ID: ptr.To("pvs-connID")}, nil, nil)
+		mockTransitGateway.EXPECT().CreateTransitGatewayConnection(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCust{ID: ptr.To("vpc-connID")}, nil, nil)
+		err := clusterScope.createTransitGateway(ctx)
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.ID).To(BeEquivalentTo("transitGatewayID"))
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.ControllerCreated).To(BeTrue())
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.PowerVSConnection.ID).To(BeEquivalentTo("pvs-connID"))
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.PowerVSConnection.ControllerCreated).To(BeTrue())
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.VPCConnection.ID).To(BeEquivalentTo("vpc-connID"))
+		g.Expect(*clusterScope.IBMPowerVSCluster.Status.TransitGateway.VPCConnection.ControllerCreated).To(BeTrue())
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When TransitGateway is created but tagging TransitGateway fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		clusterScope := PowerVSClusterScope{
+			Cluster:              &capiv1beta1.Cluster{},
+			TransitGatewayClient: mockTransitGateway,
+			IBMVPCClient:         mockVPC,
+			ResourceClient:       mockResourceController,
+			GlobalTaggingClient:  mockgt,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					TransitGateway: &infrav1beta2.TransitGateway{
+						GlobalRouting: ptr.To(true),
+					},
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					Zone:          ptr.To("zone-ID"),
+					VPC:           &infrav1beta2.VPCResourceReference{Region: ptr.To("region")},
+				},
+				Status: infrav1beta2.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1beta2.ResourceReference{
+						ID: ptr.To("serviceInstanceID"),
+					},
+					VPC: &infrav1beta2.ResourceReference{
+						ID: ptr.To("vpcID"),
+					},
+				},
+			},
+		}
+
+		mockTransitGateway.EXPECT().CreateTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{ID: ptr.To("transitGatewayID"), Name: ptr.To("transitGatewayName"), Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, fmt.Errorf("failed to tag transitGateway"))
 		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{CRN: ptr.To("crn")}, nil, nil)
 		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{CRN: ptr.To("crn")}, nil, nil)
 		mockTransitGateway.EXPECT().CreateTransitGatewayConnection(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCust{ID: ptr.To("pvs-connID")}, nil, nil)
@@ -7209,6 +7451,7 @@ func makePowerVSClusterScope(mockTransitGateway *tgmock.MockTransitGateway, mock
 func TestReconcileVPCSecurityGroups(t *testing.T) {
 	var (
 		mockVPC  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 	securityGroupID := "securityGroupID"
@@ -7217,6 +7460,7 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
 	}
 	teardown := func() {
@@ -7268,7 +7512,9 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					VPCSecurityGroups: append([]infrav1beta2.VPCSecurityGroup{}, infrav1beta2.VPCSecurityGroup{
@@ -7279,7 +7525,8 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 		}
 
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, nil)
-		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
+		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID"), CRN: ptr.To("sg-crn")}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).To(BeNil())
 	})
@@ -7398,7 +7645,9 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 		}
 
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Status: infrav1beta2.IBMPowerVSClusterStatus{
 					VPC: &infrav1beta2.ResourceReference{
@@ -7416,6 +7665,7 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, errors.New("failed to create security group rule"))
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).ToNot(BeNil())
@@ -9493,11 +9743,13 @@ func TestCreateVPCSecurityGroupRulesAndSetStatus(t *testing.T) {
 func TestCreateVPCSecurityGroup(t *testing.T) {
 	var (
 		mockVPC  *mock.MockVpc
+		mockgt   *gtmock.MockGlobalTagging
 		mockCtrl *gomock.Controller
 	)
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
+		mockgt = gtmock.NewMockGlobalTagging(mockCtrl)
 		mockVPC = mock.NewMockVpc(mockCtrl)
 	}
 	teardown := func() {
@@ -9508,7 +9760,9 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 		clusterScope := PowerVSClusterScope{
-			IBMVPCClient: mockVPC,
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 				Spec: infrav1beta2.IBMPowerVSClusterSpec{
 					VPCSecurityGroups: append([]infrav1beta2.VPCSecurityGroup{}, infrav1beta2.VPCSecurityGroup{
@@ -9521,7 +9775,35 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 			},
 		}
 
-		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
+		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID"), CRN: ptr.To("sg-crn")}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, nil)
+		sg, err := clusterScope.createVPCSecurityGroup(ctx, clusterScope.IBMPowerVSCluster.Spec.VPCSecurityGroups[0])
+		g.Expect(*sg).To(BeEquivalentTo("securityGroupID"))
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When SecurityGroup is created successfully but tagging SecurityGroup fails", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := PowerVSClusterScope{
+			Cluster:             &capiv1beta1.Cluster{},
+			IBMVPCClient:        mockVPC,
+			GlobalTaggingClient: mockgt,
+			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: append([]infrav1beta2.VPCSecurityGroup{}, infrav1beta2.VPCSecurityGroup{
+						Name: ptr.To("securityGroupName"),
+					}),
+					ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+						ID: ptr.To("resourceGroupID"),
+					},
+				},
+			},
+		}
+
+		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID"), CRN: ptr.To("sg-crn")}, nil, nil)
+		mockgt.EXPECT().AttachTag(gomock.Any()).Return(nil, nil, fmt.Errorf("failed to tag SecurityGroup"))
 		sg, err := clusterScope.createVPCSecurityGroup(ctx, clusterScope.IBMPowerVSCluster.Spec.VPCSecurityGroups[0])
 		g.Expect(*sg).To(BeEquivalentTo("securityGroupID"))
 		g.Expect(err).To(BeNil())
