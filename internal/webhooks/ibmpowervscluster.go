@@ -254,10 +254,9 @@ func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1beta2.IBM
 			newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener.Selector
 		}
 	}
-	fmt.Println(oldCluster.Spec.LoadBalancers)
 	for _, loadbalancer := range oldCluster.Spec.LoadBalancers {
 		for _, additionalListener := range loadbalancer.AdditionalListeners {
-			if _, ok := newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)]; ok && !reflect.DeepEqual(newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)], additionalListener.Selector) {
+			if selector, ok := newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)]; ok && !reflect.DeepEqual(selector, additionalListener.Selector) {
 				allErrs = append(allErrs, field.Forbidden(field.NewPath("selector"), "Selector is immutable"))
 			}
 		}

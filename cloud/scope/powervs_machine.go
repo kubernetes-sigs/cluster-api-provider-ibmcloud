@@ -998,30 +998,35 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 
 		internalIP := m.GetMachineInternalIP()
 
-		// TODO:SHILPA- handle multiple lbs as well
-		// Update each LoadBalancer pool
-		loadBalancerListeners := map[string]infrav1beta2.AdditionalListenerSpec{}
+		// lbAdditionalListeners is a mapping of additionalListener's port-protocol to the additionalListener as defined in the specification
+		// It will be used later to get the default pool associated with the listener
+		lbAdditionalListeners := map[string]infrav1beta2.AdditionalListenerSpec{}
 		for _, additionalListener := range lb.AdditionalListeners {
-			// TODO:SHILPA- protocol is added irrespective of whats provided in the additionalListener protocol, need to handle this
 			if additionalListener.Protocol == nil {
 				additionalListener.Protocol = &infrav1beta2.VPCLoadBalancerListenerProtocolTCP
 			}
-			loadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener
+			lbAdditionalListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener
 		}
+
+		// loadBalancerListeners is a mapping of the loadBalancer listener's defaultPoolName to the additionalListener
+		// as the default pool name might be empty in spec and should be fetched from the cloud's listener
+		loadBalancerListeners := map[string]infrav1beta2.AdditionalListenerSpec{}
 		for _, listener := range loadBalancer.Listeners {
 			listenerOptions := &vpcv1.GetLoadBalancerListenerOptions{}
 			listenerOptions.SetLoadBalancerID(*loadBalancer.ID)
 			listenerOptions.SetID(*listener.ID)
 			loadBalancerListener, _, err := m.IBMVPCClient.GetLoadBalancerListener(listenerOptions)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list %s load balancer listener: %v", *listener.ID, err)
+				return nil, fmt.Errorf("failed to list %s load balancer listener: %w", *listener.ID, err)
 			}
-			if additionalListener, ok := loadBalancerListeners[fmt.Sprintf("%d-%s", *loadBalancerListener.Port, *loadBalancerListener.Protocol)]; ok {
+			if additionalListener, ok := lbAdditionalListeners[fmt.Sprintf("%d-%s", *loadBalancerListener.Port, *loadBalancerListener.Protocol)]; ok {
 				if loadBalancerListener.DefaultPool != nil {
 					loadBalancerListeners[*loadBalancerListener.DefaultPool.Name] = additionalListener
 				}
 			}
 		}
+		// Update each LoadBalancer pool
+		// For each pool, get the additionalListener associated with the pool from the loadBalancerListeners map.
 		for _, pool := range loadBalancer.Pools {
 			log.V(3).Info("Updating LoadBalancer pool member", "pool", *pool.Name, "loadBalancerName", *loadBalancer.Name, "IP", internalIP)
 			listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
@@ -1032,13 +1037,14 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 				return nil, fmt.Errorf("failed to list %s VPC load balancer pool: %w", *pool.Name, err)
 			}
 			var targetPort int64
-			var alreadyRegistered, skipListener bool
+			var alreadyRegistered bool
 
 			if loadBalancerListener, ok := loadBalancerListeners[*pool.Name]; ok {
 				targetPort = loadBalancerListener.Port
+				log.V(3).Info("Checking if machine label matches with the label selector in listener", "machine label", m.IBMPowerVSMachine.Labels, "label selector", loadBalancerListener.Selector)
 				selector, err := metav1.LabelSelectorAsSelector(&loadBalancerListener.Selector)
 				if err != nil {
-					log.V(5).Info("Skipping listener addition, failed to get label selector from spec selector")
+					log.V(5).Error(err, "Skipping listener addition, failed to get label selector from spec selector")
 					continue
 				}
 
@@ -1047,12 +1053,9 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 				}
 				// Skip adding the listener if the selector does not match
 				if !selector.Empty() && !selector.Matches(labels.Set(m.IBMPowerVSMachine.Labels)) {
-					skipListener = true
+					log.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "IP", internalIP)
+					continue
 				}
-			}
-			if skipListener {
-				log.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "targetip", internalIP, "machine", m.IBMPowerVSMachine.Name, "clusterName", m.IBMPowerVSCluster.Name)
-				continue
 			}
 
 			for _, member := range listLoadBalancerPoolMembers.Members {

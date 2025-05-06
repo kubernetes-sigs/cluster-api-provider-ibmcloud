@@ -128,7 +128,7 @@ type AdditionalListenerSpec struct {
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
 
-	// Selector is used to select the machines with same label to assign the listener
+	// selector is used to select the machines with same label to assign the listener
 	// +kubebuilder:validation:Optional
 	Selector metav1.LabelSelector `json:"selector,omitempty"`
 }

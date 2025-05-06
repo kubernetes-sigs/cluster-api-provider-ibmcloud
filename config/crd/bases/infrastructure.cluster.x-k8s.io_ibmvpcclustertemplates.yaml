@@ -137,7 +137,7 @@ spec:
                                   - udp
                                   type: string
                                 selector:
-                                  description: Selector is used to select the machines
+                                  description: selector is used to select the machines
                                     with same label to assign the listener
                                   properties:
                                     matchExpressions:
@@ -466,7 +466,7 @@ spec:
                                         - udp
                                         type: string
                                       selector:
-                                        description: Selector is used to select the
+                                        description: selector is used to select the
                                           machines with same label to assign the listener
                                         properties:
                                           matchExpressions:
