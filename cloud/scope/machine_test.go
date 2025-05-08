@@ -43,6 +43,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var (
+	volumeName = "foo-volume"
+	volumeID   = "foo-volume-id"
+)
+
 func newVPCMachine(clusterName, machineName string) *infrav1beta2.IBMVPCMachine {
 	return &infrav1beta2.IBMVPCMachine{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1109,7 +1114,6 @@ func TestGetVolumeAttachments(t *testing.T) {
 		},
 	}
 	volumeAttachmentName := "foo-volume-attachment"
-	volumeName := "foo-volume"
 
 	testVolumeAttachments := vpcv1.VolumeAttachmentCollection{
 		VolumeAttachments: []vpcv1.VolumeAttachment{{
@@ -1145,14 +1149,57 @@ func TestGetVolumeAttachments(t *testing.T) {
 	})
 }
 
-func TestCreateAndAttachVolume(t *testing.T) {
+func TestGetVolumeState(t *testing.T) {
 	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
 		t.Helper()
 		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
 	}
 
-	volumeName := "foo-volume"
-	volumeID := "foo-volume-id"
+	volumeStatus := vpcv1.VolumeStatusPendingConst
+
+	vpcMachine := infrav1beta2.IBMVPCMachine{
+		Status: infrav1beta2.IBMVPCMachineStatus{
+			InstanceID: "foo-instance-id",
+		},
+	}
+
+	vpcVolume := vpcv1.Volume{
+		Name:   &volumeName,
+		ID:     &volumeID,
+		Status: &volumeStatus,
+	}
+	volumeFetchError := errors.New("error while fetching volume")
+
+	t.Run("Return correct volume state", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockVPC := setup(t)
+		t.Cleanup(mockController.Finish)
+		scope := setupMachineScope(clusterName, machineName, mockVPC)
+		scope.IBMVPCMachine.Status = vpcMachine.Status
+		mockVPC.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		state, err := scope.GetVolumeState(volumeID)
+		g.Expect(err).To(BeNil())
+		g.Expect(state).To(Equal(volumeStatus))
+	})
+
+	t.Run("Return error when GetVolumeState returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockVPC := setup(t)
+		t.Cleanup(mockController.Finish)
+		scope := setupMachineScope(clusterName, machineName, mockVPC)
+		scope.IBMVPCMachine.Status = vpcMachine.Status
+		mockVPC.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(nil, nil, volumeFetchError)
+		state, err := scope.GetVolumeState(volumeID)
+		g.Expect(state).To(BeZero())
+		g.Expect(errors.Is(err, volumeFetchError)).To(BeTrue())
+	})
+}
+
+func TestCreateVolume(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
+		t.Helper()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
+	}
 
 	vpcMachine := infrav1beta2.IBMVPCMachine{
 		Status: infrav1beta2.IBMVPCMachineStatus{
@@ -1161,54 +1208,75 @@ func TestCreateAndAttachVolume(t *testing.T) {
 	}
 
 	infraVolume := infrav1beta2.VPCVolume{
-		Name: volumeName,
+		Name:    volumeName,
+		Profile: "custom",
+		Iops:    100,
+		SizeGiB: 50,
 	}
+	pendingState := vpcv1.VolumeStatusPendingConst
 
 	vpcVolume := vpcv1.Volume{
-		Name: &volumeName,
-		ID:   &volumeID,
+		Name:   &volumeName,
+		ID:     &volumeID,
+		Status: &pendingState,
 	}
 
 	volumeCreationError := errors.New("error while creating volume")
-
-	volumeAttachmentError := errors.New("error while attaching volume")
-
-	t.Run("Volume creation and attachment is successful", func(t *testing.T) {
+	t.Run("Volume creation is successful", func(t *testing.T) {
 		g := NewWithT(t)
 		mockController, mockVPC := setup(t)
 		t.Cleanup(mockController.Finish)
 		scope := setupMachineScope(clusterName, machineName, mockVPC)
-		scope.IBMVPCMachine.Status = vpcMachine.Status
 		mockVPC.EXPECT().CreateVolume(gomock.AssignableToTypeOf(&vpcv1.CreateVolumeOptions{})).Return(&vpcVolume, nil, nil)
-		mockVPC.EXPECT().AttachVolumeToInstance(gomock.AssignableToTypeOf(&vpcv1.CreateInstanceVolumeAttachmentOptions{})).Return(nil, nil, nil)
-
-		err := scope.CreateAndAttachVolume(&infraVolume)
+		id, err := scope.CreateVolume(&infraVolume)
 		g.Expect(err).Should(Succeed())
+		g.Expect(id).Should(Equal(volumeID))
 	})
-
-	t.Run("Volume Creation Fails", func(t *testing.T) {
+	t.Run("Volume creation fails", func(t *testing.T) {
 		g := NewWithT(t)
 		mockController, mockVPC := setup(t)
 		t.Cleanup(mockController.Finish)
 		scope := setupMachineScope(clusterName, machineName, mockVPC)
 		scope.IBMVPCMachine.Status = vpcMachine.Status
 		mockVPC.EXPECT().CreateVolume(gomock.AssignableToTypeOf(&vpcv1.CreateVolumeOptions{})).Return(nil, nil, volumeCreationError)
-
-		err := scope.CreateAndAttachVolume(&infraVolume)
+		id, err := scope.CreateVolume(&infraVolume)
 		g.Expect(err).ShouldNot(Succeed())
 		g.Expect(errors.Is(err, volumeCreationError)).To(BeTrue())
+		g.Expect(id).To(BeZero())
 	})
+}
 
-	t.Run("Volume Attachment Fails", func(t *testing.T) {
+func TestAttachVolume(t *testing.T) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc) {
+		t.Helper()
+		return gomock.NewController(t), mock.NewMockVpc(gomock.NewController(t))
+	}
+
+	deleteOnInstanceDelete := true
+	vpcMachine := infrav1beta2.IBMVPCMachine{
+		Status: infrav1beta2.IBMVPCMachineStatus{
+			InstanceID: "foo-instance-id",
+		},
+	}
+	volumeAttachmentError := errors.New("error while attaching volume")
+	t.Run("Volume attachment is successful", func(t *testing.T) {
 		g := NewWithT(t)
 		mockController, mockVPC := setup(t)
 		t.Cleanup(mockController.Finish)
 		scope := setupMachineScope(clusterName, machineName, mockVPC)
 		scope.IBMVPCMachine.Status = vpcMachine.Status
-		mockVPC.EXPECT().CreateVolume(gomock.AssignableToTypeOf(&vpcv1.CreateVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		mockVPC.EXPECT().AttachVolumeToInstance(gomock.AssignableToTypeOf(&vpcv1.CreateInstanceVolumeAttachmentOptions{})).Return(nil, nil, nil)
+		err := scope.AttachVolume(deleteOnInstanceDelete, volumeID, volumeName)
+		g.Expect(err).Should(Succeed())
+	})
+	t.Run("Volume attachment fails", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockVPC := setup(t)
+		t.Cleanup(mockController.Finish)
+		scope := setupMachineScope(clusterName, machineName, mockVPC)
+		scope.IBMVPCMachine.Status = vpcMachine.Status
 		mockVPC.EXPECT().AttachVolumeToInstance(gomock.AssignableToTypeOf(&vpcv1.CreateInstanceVolumeAttachmentOptions{})).Return(nil, nil, volumeAttachmentError)
-
-		err := scope.CreateAndAttachVolume(&infraVolume)
+		err := scope.AttachVolume(deleteOnInstanceDelete, volumeID, volumeName)
 		g.Expect(err).ShouldNot(Succeed())
 		g.Expect(errors.Is(err, volumeAttachmentError)).To(BeTrue())
 	})

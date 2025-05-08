@@ -539,6 +539,11 @@ spec:
           status:
             description: IBMVPCMachineStatus defines the observed state of IBMVPCMachine.
             properties:
+              additionalVolumeIDs:
+                description: AdditionalVolumeIDs is a list of Volume ID as per IBMCloud
+                items:
+                  type: string
+                type: array
               addresses:
                 description: Addresses contains the IBM Cloud instance associated
                   addresses.

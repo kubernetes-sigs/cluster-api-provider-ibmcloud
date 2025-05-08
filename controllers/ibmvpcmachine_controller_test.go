@@ -709,6 +709,7 @@ func TestReconcileAdditionalVolumes(t *testing.T) {
 	volumeName := "foo-volume"
 	volumeID := "foo-volume-id"
 	volumeGeneratedName := "foo-generated-name"
+	clusterResourceGroup := "foo-resource-group"
 
 	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
 		t.Helper()
@@ -719,6 +720,11 @@ func TestReconcileAdditionalVolumes(t *testing.T) {
 		}
 		machineScope := &scope.MachineScope{
 			Logger: klog.Background(),
+			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
+				Spec: infrav1beta2.IBMVPCClusterSpec{
+					ResourceGroup: clusterResourceGroup,
+				},
+			},
 			IBMVPCMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -755,26 +761,109 @@ func TestReconcileAdditionalVolumes(t *testing.T) {
 			}},
 	}
 
+	testMachineStatus := infrav1beta2.IBMVPCMachineStatus{
+		AdditionalVolumeIDs: []string{volumeID},
+	}
+
 	emptyVolumeAttachments := vpcv1.VolumeAttachmentCollection{}
+	volumeAvailableState := vpcv1.VolumeStatusAvailableConst
+	volumePendingState := vpcv1.VolumeStatusPendingConst
+	volumeUpdatingState := vpcv1.VolumeStatusUpdatingConst
+	volumeFailedState := vpcv1.VolumeStatusFailedConst
+	volumeUnusableState := vpcv1.VolumeStatusUnusableConst
 
 	t.Run("Should successfully return when no additional volumes are present in spec", func(t *testing.T) {
 		g := NewWithT(t)
 		mockController, _, machineScope, reconciler := setup(t)
 		t.Cleanup(mockController.Finish)
-		err := reconciler.reconcileAdditionalVolumes(machineScope)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
 		g.Expect(err).Should(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{}))
 	})
 
-	t.Run("Should successfully create and attach additional volumes", func(t *testing.T) {
+	t.Run("Should successfully attach volume when volume id is defined and volume is in available state", func(t *testing.T) {
 		g := NewWithT(t)
 		mockController, mockvpc, machineScope, reconciler := setup(t)
 		t.Cleanup(mockController.Finish)
-		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
 		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&emptyVolumeAttachments, nil, nil)
-		mockvpc.EXPECT().CreateVolume(gomock.AssignableToTypeOf(&vpcv1.CreateVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
+		machineScope.IBMVPCMachine.Status = testMachineStatus
 		mockvpc.EXPECT().AttachVolumeToInstance(gomock.AssignableToTypeOf(&vpcv1.CreateInstanceVolumeAttachmentOptions{})).Return(nil, nil, nil)
-		err := reconciler.reconcileAdditionalVolumes(machineScope)
+		vpcVolume.Status = &volumeAvailableState
+		mockvpc.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
 		g.Expect(err).Should(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{}))
+	})
+
+	t.Run("Should requeue when volume is successfully created but in pending state", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockvpc, machineScope, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&emptyVolumeAttachments, nil, nil)
+		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
+		machineScope.IBMVPCMachine.Status = testMachineStatus
+		vpcVolume.Status = &volumePendingState
+		mockvpc.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
+		g.Expect(err).Should(BeNil())
+		g.Expect(result.RequeueAfter).ToNot(BeZero())
+	})
+
+	t.Run("Should requeue when volume is successfully created but in updating state", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockvpc, machineScope, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&emptyVolumeAttachments, nil, nil)
+		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
+		machineScope.IBMVPCMachine.Status = testMachineStatus
+		vpcVolume.Status = &volumeUpdatingState
+		mockvpc.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
+		g.Expect(err).Should(BeNil())
+		g.Expect(result.RequeueAfter).ToNot(BeZero())
+	})
+
+	t.Run("Should requeue when volume is in updating state", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockvpc, machineScope, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&emptyVolumeAttachments, nil, nil)
+		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
+		machineScope.IBMVPCMachine.Status = testMachineStatus
+		vpcVolume.Status = &volumeUpdatingState
+		mockvpc.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
+		g.Expect(err).Should(BeNil())
+		g.Expect(result.RequeueAfter).ToNot(BeZero())
+	})
+
+	t.Run("Should return error when volume is in failed state", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockvpc, machineScope, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&emptyVolumeAttachments, nil, nil)
+		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
+		machineScope.IBMVPCMachine.Status = testMachineStatus
+		vpcVolume.Status = &volumeFailedState
+		mockvpc.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
+		g.Expect(err).ShouldNot(BeNil())
+		g.Expect(result).To(BeZero())
+	})
+
+	t.Run("Should return error when volume is in unusable state", func(t *testing.T) {
+		g := NewWithT(t)
+		mockController, mockvpc, machineScope, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&emptyVolumeAttachments, nil, nil)
+		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
+		machineScope.IBMVPCMachine.Status = testMachineStatus
+		vpcVolume.Status = &volumeUnusableState
+		mockvpc.EXPECT().GetVolume(gomock.AssignableToTypeOf(&vpcv1.GetVolumeOptions{})).Return(&vpcVolume, nil, nil)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
+		g.Expect(err).ShouldNot(BeNil())
+		g.Expect(result).To(BeZero())
 	})
 
 	t.Run("Should not create new volume if it already exists", func(t *testing.T) {
@@ -783,7 +872,8 @@ func TestReconcileAdditionalVolumes(t *testing.T) {
 		t.Cleanup(mockController.Finish)
 		machineScope.IBMVPCMachine.Spec.AdditionalVolumes = additionalVolumes
 		mockvpc.EXPECT().GetVolumeAttachments(gomock.AssignableToTypeOf(&vpcv1.ListInstanceVolumeAttachmentsOptions{})).Return(&testVolumeAttachments, nil, nil)
-		err := reconciler.reconcileAdditionalVolumes(machineScope)
+		result, err := reconciler.reconcileAdditionalVolumes(machineScope)
 		g.Expect(err).Should(BeNil())
+		g.Expect(result).To(Equal(ctrl.Result{}))
 	})
 }

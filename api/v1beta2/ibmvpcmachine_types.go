@@ -184,6 +184,10 @@ type IBMVPCMachineStatus struct {
 	// LoadBalancerPoolMembers is the status of IBM Cloud VPC Load Balancer Backend Pools the machine is a member.
 	// +optional
 	LoadBalancerPoolMembers []VPCLoadBalancerBackendPoolMember `json:"loadBalancerPoolMembers,omitempty"`
+
+	// AdditionalVolumeIDs is a list of Volume ID as per IBMCloud
+	// +optional
+	AdditionalVolumeIDs []string `json:"additionalVolumeIDs,omitempty"`
 }
 
 // +kubebuilder:object:root=true
