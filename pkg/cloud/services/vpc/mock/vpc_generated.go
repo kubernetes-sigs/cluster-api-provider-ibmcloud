@@ -616,6 +616,22 @@ func (mr *MockVpcMockRecorder) GetVPCZonesByRegion(region any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCZonesByRegion", reflect.TypeOf((*MockVpc)(nil).GetVPCZonesByRegion), region)
 }
 
+// GetVolume mocks base method.
+func (m *MockVpc) GetVolume(options *vpcv1.GetVolumeOptions) (*vpcv1.Volume, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVolume", options)
+	ret0, _ := ret[0].(*vpcv1.Volume)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetVolume indicates an expected call of GetVolume.
+func (mr *MockVpcMockRecorder) GetVolume(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolume", reflect.TypeOf((*MockVpc)(nil).GetVolume), options)
+}
+
 // GetVolumeAttachments mocks base method.
 func (m *MockVpc) GetVolumeAttachments(options *vpcv1.ListInstanceVolumeAttachmentsOptions) (*vpcv1.VolumeAttachmentCollection, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()

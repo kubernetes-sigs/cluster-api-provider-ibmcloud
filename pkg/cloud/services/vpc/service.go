@@ -536,6 +536,11 @@ func (s *Service) AttachVolumeToInstance(options *vpcv1.CreateInstanceVolumeAtta
 	return s.vpcService.CreateInstanceVolumeAttachment(options)
 }
 
+// GetVolume fetches the given volume's status.
+func (s *Service) GetVolume(options *vpcv1.GetVolumeOptions) (result *vpcv1.Volume, response *core.DetailedResponse, err error) {
+	return s.vpcService.GetVolume(options)
+}
+
 // NewService returns a new VPC Service.
 func NewService(svcEndpoint string) (Vpc, error) {
 	service := &Service{}

@@ -1444,6 +1444,7 @@ func autoConvert_v1beta2_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(in *
 	// WARNING: in.FailureMessage requires manual conversion: does not exist in peer-type
 	out.InstanceStatus = in.InstanceStatus
 	// WARNING: in.LoadBalancerPoolMembers requires manual conversion: does not exist in peer-type
+	// WARNING: in.AdditionalVolumeIDs requires manual conversion: does not exist in peer-type
 	return nil
 }
 
