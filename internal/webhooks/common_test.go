@@ -112,58 +112,58 @@ func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
 	}
 }
 
-func Test_validateVolumes(t *testing.T) {
+func Test_validateBootVolume(t *testing.T) {
 	tests := []struct {
 		name      string
 		spec      infrav1beta2.IBMVPCMachineSpec
 		wantError bool
 	}{
 		{
-			name: "Nil bootvolume for Boot Volume",
+			name: "Nil bootvolume",
 			spec: infrav1beta2.IBMVPCMachineSpec{
 				BootVolume: nil,
 			},
 			wantError: false,
 		},
 		{
-			name: "valid sizeGiB for Boot Volume",
+			name: "valid sizeGiB",
 			spec: infrav1beta2.IBMVPCMachineSpec{
 				BootVolume: &infrav1beta2.VPCVolume{SizeGiB: 20},
 			},
 			wantError: false,
 		},
 		{
-			name: "Invalid sizeGiB for Boot Volume",
+			name: "Invalid sizeGiB",
 			spec: infrav1beta2.IBMVPCMachineSpec{
 				BootVolume: &infrav1beta2.VPCVolume{SizeGiB: 1},
 			},
 			wantError: true,
 		},
 		{
-			name: "Missing Iops for custom profile for Additional Volume",
+			name: "Valid Iops",
 			spec: infrav1beta2.IBMVPCMachineSpec{
-				AdditionalVolumes: []*infrav1beta2.VPCVolume{{Profile: "custom", SizeGiB: 20}},
+				BootVolume: &infrav1beta2.VPCVolume{Iops: 1000, Profile: "custom"},
 			},
 			wantError: true,
 		},
 		{
-			name: "Missing SizeGiB for custom profile for Additional Volume",
+			name: "Invalid Iops",
 			spec: infrav1beta2.IBMVPCMachineSpec{
-				AdditionalVolumes: []*infrav1beta2.VPCVolume{{Profile: "custom", Iops: 4000}},
+				BootVolume: &infrav1beta2.VPCVolume{Iops: 1234, Profile: "general-purpose"},
 			},
 			wantError: true,
 		},
 		{
-			name: "Valid iops and sizeGiB for custom profile",
+			name: "Missing Iops for custom profile",
 			spec: infrav1beta2.IBMVPCMachineSpec{
-				AdditionalVolumes: []*infrav1beta2.VPCVolume{{Profile: "custom", SizeGiB: 25, Iops: 4000}},
+				BootVolume: &infrav1beta2.VPCVolume{Profile: "general-purpose"},
 			},
-			wantError: false,
+			wantError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := validateVolumes(tt.spec); (err != nil) != tt.wantError {
+			if err := validateBootVolume(tt.spec); (err != nil) != tt.wantError {
 				t.Errorf("validateBootVolume() = %v, wantError %v", err, tt.wantError)
 			}
 		})
