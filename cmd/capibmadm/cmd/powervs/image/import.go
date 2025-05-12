@@ -80,7 +80,7 @@ capibmadm powervs image import --service-instance-id <service-instance-id> -b <b
 	cmd.Flags().StringVar(&imageImportOption.ImageName, "name", "", "Name to PowerVS imported image.")
 	cmd.Flags().BoolVarP(&imageImportOption.Public, "public-bucket", "", false, "Cloud Object Storage public bucket.")
 	cmd.Flags().DurationVar(&imageImportOption.WatchTimeout, "watch-timeout", 1*time.Hour, "watch timeout")
-	cmd.Flags().StringVar(&imageImportOption.StorageType, "pvs-storagetype", "tier3", "PowerVS Storage type, accepted values are [tier1, tier3].")
+	cmd.Flags().StringVar(&imageImportOption.StorageType, "pvs-storagetype", "tier1", "PowerVS Storage type, accepted values are [tier0, tier1, tier3].")
 	_ = cmd.MarkFlagRequired("bucket")
 	_ = cmd.MarkFlagRequired("bucket-region")
 	_ = cmd.MarkFlagRequired("name")

@@ -79,6 +79,7 @@ spec:
                 description: Type of storage, storage pool with the most available
                   space will be selected.
                 enum:
+                - tier0
                 - tier1
                 - tier3
                 type: string
@@ -253,6 +254,7 @@ spec:
                 description: Type of storage, storage pool with the most available
                   space will be selected.
                 enum:
+                - tier0
                 - tier1
                 - tier3
                 type: string
