@@ -12,7 +12,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.3
 	go.uber.org/mock v0.5.2
 	golang.org/x/vuln v1.1.4
-	gotest.tools/gotestsum v1.12.1
+	gotest.tools/gotestsum v1.12.2
 	k8s.io/code-generator v0.32.3
 	k8s.io/release v0.16.9
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250429160156-647a1b741bc8
