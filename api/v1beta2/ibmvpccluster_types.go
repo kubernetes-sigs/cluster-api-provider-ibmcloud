@@ -127,6 +127,10 @@ type AdditionalListenerSpec struct {
 	// Will default to TCP protocol if not specified.
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
+
+	// selector is used to select the machines with same label to assign the listener
+	// +kubebuilder:validation:Optional
+	Selector metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // VPCLoadBalancerBackendPoolSpec defines the desired configuration of a VPC Load Balancer Backend Pool.
