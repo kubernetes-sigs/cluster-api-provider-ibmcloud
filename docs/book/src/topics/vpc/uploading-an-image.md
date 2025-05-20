@@ -44,7 +44,7 @@ Service VPC Infrastructure Services in Resource_group <your_resource_group_or_ac
 target: service Cloud object storage in resource_group <your_resource_group_or_account>
 ```
 
-3) Go to https://cloud.ibm.com/vpc-ext/provision/customImage
+3) Go to [https://cloud.ibm.com/vpc-ext/provision/customImage](https://cloud.ibm.com/vpc-ext/provision/customImage)
   * Fill in imagename, resource group or account
   * Choice box: Cloud Object Storage
   * Set Filter: <your_cos_plain_name> <eu-de_or_other> <your_vm_bucket>
