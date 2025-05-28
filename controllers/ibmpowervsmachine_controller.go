@@ -400,18 +400,6 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 	}
 
-	// We configure load balancer for only control-plane machines
-	if !util.IsControlPlaneMachine(machineScope.Machine) {
-		log.Info("Skipping load balancer configuration for worker machine")
-		conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition)
-		v1beta2conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1beta2.IBMPowerVSMachineInstanceReadyV1Beta2Condition,
-			Status: metav1.ConditionTrue,
-			Reason: infrav1beta2.IBMPowerVSMachineInstanceReadyV1Beta2Reason,
-		})
-		return ctrl.Result{}, nil
-	}
-
 	if machineScope.IBMPowerVSCluster.Spec.VPC == nil || machineScope.IBMPowerVSCluster.Spec.VPC.Region == nil {
 		log.Info("Skipping configuring machine to load balancer as VPC is not set")
 		conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1beta2.InstanceReadyCondition)

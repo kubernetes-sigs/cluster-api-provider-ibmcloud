@@ -199,6 +199,11 @@ func (s *Service) ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoo
 	return s.vpcService.ListLoadBalancerPoolMembers(options)
 }
 
+// GetLoadBalancerListener returns the associated listeners of a load balancer.
+func (s *Service) GetLoadBalancerListener(options *vpcv1.GetLoadBalancerListenerOptions) (*vpcv1.LoadBalancerListener, *core.DetailedResponse, error) {
+	return s.vpcService.GetLoadBalancerListener(options)
+}
+
 // ListKeys returns list of keys in a region.
 func (s *Service) ListKeys(options *vpcv1.ListKeysOptions) (*vpcv1.KeyCollection, *core.DetailedResponse, error) {
 	return s.vpcService.ListKeys(options)

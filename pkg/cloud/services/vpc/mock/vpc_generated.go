@@ -414,6 +414,22 @@ func (mr *MockVpcMockRecorder) GetLoadBalancerByName(loadBalancerName any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerByName", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerByName), loadBalancerName)
 }
 
+// GetLoadBalancerListener mocks base method.
+func (m *MockVpc) GetLoadBalancerListener(options *vpcv1.GetLoadBalancerListenerOptions) (*vpcv1.LoadBalancerListener, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLoadBalancerListener", options)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancerListener)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetLoadBalancerListener indicates an expected call of GetLoadBalancerListener.
+func (mr *MockVpcMockRecorder) GetLoadBalancerListener(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerListener", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerListener), options)
+}
+
 // GetLoadBalancerPoolByName mocks base method.
 func (m *MockVpc) GetLoadBalancerPoolByName(loadBalancerID, poolName string) (*vpcv1.LoadBalancerPool, error) {
 	m.ctrl.T.Helper()

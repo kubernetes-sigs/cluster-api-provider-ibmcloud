@@ -19,11 +19,13 @@ package webhooks
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strconv"
 
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -64,16 +66,20 @@ func (r *IBMPowerVSCluster) ValidateCreate(_ context.Context, obj runtime.Object
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", obj))
 	}
-	return validateIBMPowerVSCluster(objValue)
+	return validateIBMPowerVSCluster(nil, objValue)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSCluster) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*infrav1beta2.IBMPowerVSCluster)
+func (r *IBMPowerVSCluster) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+	oldObjValue, ok := oldObj.(*infrav1beta2.IBMPowerVSCluster)
+	if !ok {
+		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", oldObj))
+	}
+	newObjValue, ok := newObj.(*infrav1beta2.IBMPowerVSCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", newObj))
 	}
-	return validateIBMPowerVSCluster(objValue)
+	return validateIBMPowerVSCluster(oldObjValue, newObjValue)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
@@ -81,14 +87,20 @@ func (r *IBMPowerVSCluster) ValidateDelete(_ context.Context, _ runtime.Object) 
 	return nil, nil
 }
 
-func validateIBMPowerVSCluster(cluster *infrav1beta2.IBMPowerVSCluster) (admission.Warnings, error) {
+func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1beta2.IBMPowerVSCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	if err := validateIBMPowerVSClusterNetwork(cluster); err != nil {
+	if err := validateIBMPowerVSClusterNetwork(newCluster); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
-	if err := validateIBMPowerVSClusterCreateInfraPrereq(cluster); err != nil {
+	if err := validateIBMPowerVSClusterCreateInfraPrereq(newCluster); err != nil {
 		allErrs = append(allErrs, err...)
+	}
+	// Need not validate for create operation
+	if oldCluster != nil {
+		if err := validateAdditionalListenerSelector(newCluster, oldCluster); err != nil {
+			allErrs = append(allErrs, err...)
+		}
 	}
 
 	if len(allErrs) == 0 {
@@ -97,7 +109,7 @@ func validateIBMPowerVSCluster(cluster *infrav1beta2.IBMPowerVSCluster) (admissi
 
 	return nil, apierrors.NewInvalid(
 		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSCluster"},
-		cluster.Name, allErrs)
+		newCluster.Name, allErrs)
 }
 
 func validateIBMPowerVSClusterNetwork(cluster *infrav1beta2.IBMPowerVSCluster) *field.Error {
@@ -232,5 +244,22 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1beta2.IBMPowerVS
 		allErrs = append(allErrs, err)
 	}
 
+	return allErrs
+}
+
+func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+	newLoadBalancerListeners := map[string]metav1.LabelSelector{}
+	for _, loadbalancer := range newCluster.Spec.LoadBalancers {
+		for _, additionalListener := range loadbalancer.AdditionalListeners {
+			newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener.Selector
+		}
+	}
+	for _, loadbalancer := range oldCluster.Spec.LoadBalancers {
+		for _, additionalListener := range loadbalancer.AdditionalListeners {
+			if selector, ok := newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)]; ok && !reflect.DeepEqual(selector, additionalListener.Selector) {
+				allErrs = append(allErrs, field.Forbidden(field.NewPath("selector"), "Selector is immutable"))
+			}
+		}
+	}
 	return allErrs
 }
