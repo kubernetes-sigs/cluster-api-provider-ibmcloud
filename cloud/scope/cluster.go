@@ -30,7 +30,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -47,7 +47,7 @@ type ClusterScopeParams struct {
 	IBMVPCClient    vpc.Vpc
 	Client          client.Client
 	Logger          logr.Logger
-	Cluster         *capiv1beta1.Cluster
+	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
@@ -59,7 +59,7 @@ type ClusterScope struct {
 	patchHelper *patch.Helper
 
 	IBMVPCClient    vpc.Vpc
-	Cluster         *capiv1beta1.Cluster
+	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }

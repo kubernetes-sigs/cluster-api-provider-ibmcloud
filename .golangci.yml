@@ -88,8 +88,10 @@ linters-settings:
         alias: capiv1alpha3
       - pkg: sigs.k8s.io/cluster-api/api/v1alpha4
         alias: capiv1alpha4
-      - pkg: sigs.k8s.io/cluster-api/api/v1beta1
+      - pkg: sigs.k8s.io/cluster-api/api/core/v1beta1
         alias: capiv1beta1
+      - pkg: sigs.k8s.io/cluster-api/api/core/v1beta2
+        alias: clusterv1
       # CAPI-IBMCLOUD
       - pkg: sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1
         alias: infrav1beta1
@@ -121,7 +123,7 @@ linters-settings:
     - whyNoLint
     - wrapperFunc
   unused:
-    go: "1.23"
+    go: "1.24"
 issues:
   max-same-issues: 0
   max-issues-per-linter: 0
@@ -207,7 +209,7 @@ issues:
   - "zz_generated.*\\.go$"
 
 run:
-  go: "1.23"
+  go: "1.24"
   timeout: 20m
   build-tags:
   - tools

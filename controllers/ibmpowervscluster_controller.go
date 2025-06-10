@@ -39,12 +39,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
-	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions/v1beta2"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+	"sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 	"sigs.k8s.io/cluster-api/util/finalizers"
-	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/cluster-api/util/paused"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
@@ -200,6 +201,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	var errList []error
 	// receive return values from the channel and decide the requeue
 	for val := range ch {
+		//nolint:staticcheck
 		if val.Requeue {
 			requeue = true
 		}
@@ -219,7 +221,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	// reconcile Transit Gateway
 	log.Info("Reconciling transit gateway")
 	if requeue, err := clusterScope.ReconcileTransitGateway(ctx); err != nil {
-		conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.TransitGatewayReadyCondition, infrav1beta2.TransitGatewayReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.TransitGatewayReadyCondition, infrav1beta2.TransitGatewayReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
 			Type:    infrav1beta2.TransitGatewayReadyV1Beta2Condition,
 			Status:  metav1.ConditionFalse,
@@ -242,7 +244,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	if clusterScope.IBMPowerVSCluster.Spec.Ignition != nil {
 		log.Info("Reconciling COS service instance")
 		if err := clusterScope.ReconcileCOSInstance(ctx); err != nil {
-			conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.COSInstanceReadyCondition, infrav1beta2.COSInstanceReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+			conditions.MarkFalse(powerVSCluster.cluster, infrav1beta2.COSInstanceReadyCondition, infrav1beta2.COSInstanceReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 			v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
 				Type:    infrav1beta2.COSInstanceReadyV1Beta2Condition,
 				Status:  metav1.ConditionFalse,
@@ -303,11 +305,11 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 	// reconcile PowerVS service instance
 	log.Info("Reconciling PowerVS service instance")
 	if requeue, err := clusterScope.ReconcilePowerVSServiceInstance(ctx); err != nil {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1beta2.ServiceInstanceReadyCondition,
 			Reason:   infrav1beta2.ServiceInstanceReconciliationFailedReason,
-			Severity: capiv1beta1.ConditionSeverityError,
+			Severity: clusterv1.ConditionSeverityError,
 			Message:  err.Error(),
 		})
 		//TODO: When we completely transition into v1beta2 api's update the conditions with lock
@@ -324,7 +326,7 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 		ch <- reconcileResult{reconcile.Result{Requeue: true}, nil}
 		return
 	}
-	powerVSCluster.updateCondition(capiv1beta1.Condition{
+	powerVSCluster.updateCondition(clusterv1.Condition{
 		Status: corev1.ConditionTrue,
 		Type:   infrav1beta2.ServiceInstanceReadyCondition,
 	})
@@ -339,11 +341,11 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 	// reconcile network
 	log.Info("Reconciling network")
 	if networkActive, err := clusterScope.ReconcileNetwork(ctx); err != nil {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1beta2.NetworkReadyCondition,
 			Reason:   infrav1beta2.NetworkReconciliationFailedReason,
-			Severity: capiv1beta1.ConditionSeverityError,
+			Severity: clusterv1.ConditionSeverityError,
 			Message:  err.Error(),
 		})
 		v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
@@ -355,7 +357,7 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile network: %w", err)}
 		return
 	} else if networkActive {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status: corev1.ConditionTrue,
 			Type:   infrav1beta2.NetworkReadyCondition,
 		})
@@ -380,11 +382,11 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 	defer log.Info("Finished VPC reconciliation")
 
 	if requeue, err := clusterScope.ReconcileVPC(ctx); err != nil {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1beta2.VPCReadyCondition,
 			Reason:   infrav1beta2.VPCReconciliationFailedReason,
-			Severity: capiv1beta1.ConditionSeverityError,
+			Severity: clusterv1.ConditionSeverityError,
 			Message:  err.Error(),
 		})
 		v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
@@ -400,7 +402,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 		ch <- reconcileResult{reconcile.Result{Requeue: true}, nil}
 		return
 	}
-	powerVSCluster.updateCondition(capiv1beta1.Condition{
+	powerVSCluster.updateCondition(clusterv1.Condition{
 		Status: corev1.ConditionTrue,
 		Type:   infrav1beta2.VPCReadyCondition,
 	})
@@ -413,11 +415,11 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 	// reconcile VPC Subnet
 	log.Info("Reconciling VPC subnets")
 	if requeue, err := clusterScope.ReconcileVPCSubnets(ctx); err != nil {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1beta2.VPCSubnetReadyCondition,
 			Reason:   infrav1beta2.VPCSubnetReconciliationFailedReason,
-			Severity: capiv1beta1.ConditionSeverityError,
+			Severity: clusterv1.ConditionSeverityError,
 			Message:  err.Error(),
 		})
 		v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
@@ -433,7 +435,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 		ch <- reconcileResult{reconcile.Result{Requeue: true}, nil}
 		return
 	}
-	powerVSCluster.updateCondition(capiv1beta1.Condition{
+	powerVSCluster.updateCondition(clusterv1.Condition{
 		Status: corev1.ConditionTrue,
 		Type:   infrav1beta2.VPCSubnetReadyCondition,
 	})
@@ -446,11 +448,11 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 	// reconcile VPC security group
 	log.Info("Reconciling VPC security group")
 	if err := clusterScope.ReconcileVPCSecurityGroups(ctx); err != nil {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1beta2.VPCSecurityGroupReadyCondition,
 			Reason:   infrav1beta2.VPCSecurityGroupReconciliationFailedReason,
-			Severity: capiv1beta1.ConditionSeverityError,
+			Severity: clusterv1.ConditionSeverityError,
 			Message:  err.Error(),
 		})
 		v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
@@ -462,7 +464,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile VPC security groups: %w", err)}
 		return
 	}
-	powerVSCluster.updateCondition(capiv1beta1.Condition{
+	powerVSCluster.updateCondition(clusterv1.Condition{
 		Status: corev1.ConditionTrue,
 		Type:   infrav1beta2.VPCSecurityGroupReadyCondition,
 	})
@@ -475,11 +477,11 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 	// reconcile LoadBalancer
 	log.Info("Reconciling VPC load balancers")
 	if loadBalancerReady, err := clusterScope.ReconcileLoadBalancers(ctx); err != nil {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1beta2.LoadBalancerReadyCondition,
 			Reason:   infrav1beta2.LoadBalancerReconciliationFailedReason,
-			Severity: capiv1beta1.ConditionSeverityError,
+			Severity: clusterv1.ConditionSeverityError,
 			Message:  err.Error(),
 		})
 		v1beta2conditions.Set(powerVSCluster.cluster, metav1.Condition{
@@ -491,7 +493,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile VPC load balancers: %w", err)}
 		return
 	} else if loadBalancerReady {
-		powerVSCluster.updateCondition(capiv1beta1.Condition{
+		powerVSCluster.updateCondition(clusterv1.Condition{
 			Status: corev1.ConditionTrue,
 			Type:   infrav1beta2.LoadBalancerReadyCondition,
 		})
@@ -634,7 +636,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	return ctrl.Result{}, nil
 }
 
-func (update *powerVSCluster) updateCondition(condition capiv1beta1.Condition) {
+func (update *powerVSCluster) updateCondition(condition clusterv1.Condition) {
 	update.mu.Lock()
 	defer update.mu.Unlock()
 	conditions.Set(update.cluster, &condition)
@@ -724,7 +726,7 @@ func (r *IBMPowerVSClusterReconciler) listDescendants(ctx context.Context, clust
 
 	listOptions := []client.ListOption{
 		client.InNamespace(cluster.Namespace),
-		client.MatchingLabels(map[string]string{capiv1beta1.ClusterNameLabel: cluster.Name}),
+		client.MatchingLabels(map[string]string{clusterv1.ClusterNameLabel: cluster.Name}),
 	}
 
 	if err := r.Client.List(ctx, &descendants.ibmPowerVSImages, listOptions...); err != nil {
@@ -827,7 +829,7 @@ func (r *IBMPowerVSClusterReconciler) SetupWithManager(ctx context.Context, mgr 
 		WithEventFilter(predicates.ResourceHasFilterLabel(r.Scheme, predicateLog, r.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(r.Scheme, predicateLog)).
 		Watches(
-			&capiv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1beta2.GroupVersion.WithKind("IBMPowerVSCluster"), mgr.GetClient(), &infrav1beta2.IBMPowerVSCluster{})),
 			builder.WithPredicates(predicates.All(r.Scheme, predicateLog,
 				predicates.ResourceIsChanged(r.Scheme, predicateLog),

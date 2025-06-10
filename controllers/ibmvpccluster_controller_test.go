@@ -30,7 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +46,7 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 	testCases := []struct {
 		name         string
 		vpcCluster   *infrav1beta2.IBMVPCCluster
-		ownerCluster *capiv1beta1.Cluster
+		ownerCluster *clusterv1.Cluster
 		expectError  bool
 	}{
 		{
@@ -56,7 +56,7 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 					GenerateName: "vpc-test-",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Cluster",
 							Name:       "capi-test",
 							UID:        "1",
@@ -105,7 +105,7 @@ func TestIBMVPCClusterReconciler_Reconcile(t *testing.T) {
 				}(tc.ownerCluster)
 				tc.vpcCluster.OwnerReferences = []metav1.OwnerReference{
 					{
-						APIVersion: capiv1beta1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
 						Name:       tc.ownerCluster.Name,
 						UID:        "1",
@@ -158,7 +158,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 		}
 		clusterScope = &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
-			Cluster:      &capiv1beta1.Cluster{},
+			Cluster:      &clusterv1.Cluster{},
 			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -258,7 +258,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			t.Cleanup(teardown)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
 			port := int32(412)
-			clusterScope.Cluster.Spec.ClusterNetwork = &capiv1beta1.ClusterNetwork{APIServerPort: &port}
+			clusterScope.Cluster.Spec.ClusterNetwork = &clusterv1.ClusterNetwork{APIServerPort: &port}
 			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
 			mockvpc.EXPECT().ListSubnets(subnetOptions).Return(subnets, response, nil)
 			mockvpc.EXPECT().ListLoadBalancers(loadBalancerOptions).Return(loadBalancers, response, nil)
@@ -295,7 +295,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 		}
 		clusterScope := &scope.ClusterScope{
 			IBMVPCClient: mockvpc,
-			Cluster:      &capiv1beta1.Cluster{},
+			Cluster:      &clusterv1.Cluster{},
 			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1beta2.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
@@ -376,7 +376,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			t.Cleanup(mockController.Finish)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
 			port := int32(412)
-			clusterScope.Cluster.Spec.ClusterNetwork = &capiv1beta1.ClusterNetwork{APIServerPort: &port}
+			clusterScope.Cluster.Spec.ClusterNetwork = &clusterv1.ClusterNetwork{APIServerPort: &port}
 			mockvpc.EXPECT().ListVpcs(&vpcv1.ListVpcsOptions{}).Return(vpclist, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnets, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancers(&vpcv1.ListLoadBalancersOptions{}).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)
@@ -391,7 +391,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			mockController, mockvpc, clusterScope, reconciler := setup(t)
 			t.Cleanup(mockController.Finish)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1beta2.ClusterFinalizer}
-			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = capiv1beta1.APIEndpoint{
+			clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint = clusterv1.APIEndpoint{
 				Host: *core.StringPtr("vpc-load-balancer-hostname"),
 			}
 			mockvpc.EXPECT().ListVpcs(&vpcv1.ListVpcsOptions{}).Return(vpclist, &core.DetailedResponse{}, nil)
@@ -571,7 +571,7 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 					ControlPlaneLoadBalancer: &infrav1beta2.VPCLoadBalancerSpec{
 						Name: "vpc-load-balancer",
 					},
-					ControlPlaneEndpoint: capiv1beta1.APIEndpoint{
+					ControlPlaneEndpoint: clusterv1.APIEndpoint{
 						Host: "vpc-load-balancer-hostname",
 					},
 				},

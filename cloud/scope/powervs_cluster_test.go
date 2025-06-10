@@ -36,7 +36,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
@@ -95,7 +95,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 						GenerateName: "powervs-test-",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion: capiv1beta1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 								Kind:       "Cluster",
 								Name:       "capi-test",
 								UID:        "1",
@@ -124,7 +124,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 						GenerateName: "powervs-test-",
 						OwnerReferences: []metav1.OwnerReference{
 							{
-								APIVersion: capiv1beta1.GroupVersion.String(),
+								APIVersion: clusterv1.GroupVersion.String(),
 								Kind:       "Cluster",
 								Name:       "capi-test",
 								UID:        "1",
@@ -1419,9 +1419,9 @@ func TestReconcileLoadBalancers(t *testing.T) {
 					},
 				},
 			},
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: &clusterNetworkAPIServerPort,
 					},
 				},
@@ -1470,9 +1470,9 @@ func TestReconcileLoadBalancers(t *testing.T) {
 					},
 				},
 			},
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: &clusterAPIServerPort,
 					},
 				},
@@ -1521,9 +1521,9 @@ func TestReconcileLoadBalancers(t *testing.T) {
 					},
 				},
 			},
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: &clusterAPIServerPort,
 					},
 				},
@@ -1669,9 +1669,9 @@ func TestCreateLoadbalancer(t *testing.T) {
 					},
 				},
 			},
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: &clusterAPIServerPort,
 					},
 				},
@@ -1728,9 +1728,9 @@ func TestCreateLoadbalancer(t *testing.T) {
 					},
 				},
 			},
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: &clusterAPIServerPort,
 					},
 				},
@@ -1768,9 +1768,9 @@ func TestCheckLoadBalancerPort(t *testing.T) {
 		expectedErr := fmt.Errorf("port %d for the %s load balancer cannot be used as an additional listener port, as it is already assigned to the API server", port, lbName)
 
 		clusterScope := PowerVSClusterScope{
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: ptr.To(int32(port)),
 					},
 				},
@@ -1790,9 +1790,9 @@ func TestCheckLoadBalancerPort(t *testing.T) {
 	t.Run("When load balancer listener port and powerVS API server port are different", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope := PowerVSClusterScope{
-			Cluster: &capiv1beta1.Cluster{
-				Spec: capiv1beta1.ClusterSpec{
-					ClusterNetwork: &capiv1beta1.ClusterNetwork{
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: &clusterv1.ClusterNetwork{
 						APIServerPort: ptr.To(int32(8080)),
 					},
 				},
@@ -2555,7 +2555,7 @@ func TestReconcileVPC(t *testing.T) {
 
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			Cluster:      &clusterv1.Cluster{Spec: clusterv1.ClusterSpec{ClusterNetwork: nil}},
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
@@ -2712,7 +2712,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			Cluster:      &clusterv1.Cluster{Spec: clusterv1.ClusterSpec{ClusterNetwork: nil}},
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
@@ -2732,7 +2732,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &capiv1beta1.Cluster{Spec: capiv1beta1.ClusterSpec{ClusterNetwork: nil}},
+			Cluster:      &clusterv1.Cluster{Spec: clusterv1.ClusterSpec{ClusterNetwork: nil}},
 			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{Spec: infrav1beta2.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
