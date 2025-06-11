@@ -27,7 +27,7 @@ IBMCLOUD_API_KEY: IBM Cloud API key.
 
 --watch-timeout: watch timeout.
 
---pvs-storagetype: PowerVS Storage type, accepted values are [tier1, tier3]..
+--pvs-storagetype: PowerVS Storage type, accepted values are [tier0, tier1, tier3]..
 
 
 #### Example:
