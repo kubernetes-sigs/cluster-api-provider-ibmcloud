@@ -1,5 +1,5 @@
 kind: KubeadmControlPlane
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
   namespace: "${NAMESPACE}"
@@ -16,7 +16,9 @@ spec:
     clusterConfiguration:
       kubernetesVersion: ${KUBERNETES_VERSION}
       controllerManager:
-        extraArgs: {enable-hostpath-provisioner: 'true'}
+        extraArgs:
+        - name: enable-hostpath-provisioner
+          value: "true"
       apiServer:
         certSANs: [localhost, 127.0.0.1]
       dns: {}
@@ -27,15 +29,19 @@ spec:
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
         kubeletExtraArgs:
-          cloud-provider: external
-          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+        - name: cloud-provider
+          value: external
+        - name: eviction-hard
+          value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
     joinConfiguration:
       discovery: {}
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
         kubeletExtraArgs:
-          cloud-provider: external
-          eviction-hard: 'nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%'
+        - name: cloud-provider
+          value: external
+        - name: eviction-hard
+          value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
 ---
 kind: IBMVPCMachineTemplate
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
