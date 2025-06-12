@@ -9,6 +9,3 @@ spec:
       controllerManager:
         extraArgs:
           cloud-provider: external
-      apiServer:
-        extraArgs:
-          cloud-provider: external
