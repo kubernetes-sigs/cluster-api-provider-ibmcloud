@@ -33,9 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
@@ -181,10 +181,10 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		switch machineScope.GetInstanceStatus() {
 		case vpcv1.InstanceStatusPendingConst:
 			machineScope.SetNotReady()
-			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceNotReadyReason, capiv1beta1.ConditionSeverityWarning, "")
+			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceNotReadyReason, clusterv1.ConditionSeverityWarning, "")
 		case vpcv1.InstanceStatusStoppedConst:
 			machineScope.SetNotReady()
-			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStoppedReason, capiv1beta1.ConditionSeverityError, "")
+			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStoppedReason, clusterv1.ConditionSeverityError, "")
 		case vpcv1.InstanceStatusFailedConst:
 			msg := ""
 			healthReasonsLen := len(instance.HealthReasons)
@@ -196,7 +196,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			machineScope.SetNotReady()
 			machineScope.SetFailureReason(infrav1beta2.UpdateMachineError)
 			machineScope.SetFailureMessage(msg)
-			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceErroredReason, capiv1beta1.ConditionSeverityError, "%s", msg)
+			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceErroredReason, clusterv1.ConditionSeverityError, "%s", msg)
 			capibmrecord.Warnf(machineScope.IBMVPCMachine, "FailedBuildInstance", "Failed to build the instance - %s", msg)
 			return ctrl.Result{}, nil
 		case vpcv1.InstanceStatusRunningConst:
@@ -235,7 +235,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		}
 	} else {
 		// Otherwise, default to previous Load Balancer Pool Member configuration.
-		_, ok := machineScope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]
+		_, ok := machineScope.IBMVPCMachine.Labels[clusterv1.MachineControlPlaneNameLabel]
 		if err = machineScope.SetProviderID(instance.ID); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to set provider id IBMVPCMachine %s/%s: %w", machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 		}
@@ -269,7 +269,7 @@ func (r *IBMVPCMachineReconciler) getOrCreate(scope *scope.MachineScope) (*vpcv1
 func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ ctrl.Result, reterr error) {
 	scope.Info("Handling deleted IBMVPCMachine")
 
-	if _, ok := scope.IBMVPCMachine.Labels[capiv1beta1.MachineControlPlaneNameLabel]; ok {
+	if _, ok := scope.IBMVPCMachine.Labels[clusterv1.MachineControlPlaneNameLabel]; ok {
 		if err := scope.DeleteVPCLoadBalancerPoolMember(); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to delete loadBalancer pool member: %w", err)
 		}

@@ -27,7 +27,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	capi_e2e "sigs.k8s.io/cluster-api/test/e2e"
 	"sigs.k8s.io/cluster-api/test/framework"
 	"sigs.k8s.io/cluster-api/test/framework/clusterctl"
@@ -171,7 +171,7 @@ type cleanupInput struct {
 	ArtifactFolder    string
 	Namespace         *corev1.Namespace
 	CancelWatches     context.CancelFunc
-	Cluster           *capiv1beta1.Cluster
+	Cluster           *clusterv1.Cluster
 	IntervalsGetter   func(spec, key string) []interface{}
 	SkipCleanup       bool
 	AdditionalCleanup func()

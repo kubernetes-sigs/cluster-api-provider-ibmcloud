@@ -30,7 +30,7 @@ import (
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 var (
@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 // Setting up the test environment.
 func setup() {
 	utilruntime.Must(infrav1beta2.AddToScheme(scheme.Scheme))
-	utilruntime.Must(capiv1beta1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(clusterv1.AddToScheme(scheme.Scheme))
 	testEnvConfig := helpers.NewTestEnvironmentConfiguration([]string{
 		path.Join("config", "crd", "bases"),
 	},

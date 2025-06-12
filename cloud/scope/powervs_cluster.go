@@ -45,7 +45,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -86,7 +86,7 @@ const (
 type PowerVSClusterScopeParams struct {
 	Client            client.Client
 	Logger            logr.Logger
-	Cluster           *capiv1beta1.Cluster
+	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 
@@ -116,7 +116,7 @@ type PowerVSClusterScope struct {
 	COSClient             cos.Cos
 	ResourceManagerClient resourcemanager.ResourceManager
 
-	Cluster           *capiv1beta1.Cluster
+	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 }

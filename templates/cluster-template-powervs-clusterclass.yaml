@@ -239,7 +239,6 @@ spec:
         - echo "{{ v1.local_hostname }}" >/etc/hostname
         - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort);
           do echo "Running script $script"; "$script"; done
-        useExperimentalRetryJoin: true
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
 kind: KubeadmConfigTemplate
@@ -307,7 +306,7 @@ spec:
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
 ---
-apiVersion: addons.cluster.x-k8s.io/v1beta1
+apiVersion: addons.cluster.x-k8s.io/v1beta2
 kind: ClusterResourceSet
 metadata:
   name: crs-cloud-conf

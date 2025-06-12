@@ -43,7 +43,7 @@ import (
 	resourcecontrollermock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -69,7 +69,7 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 	return &infrav1beta2.IBMPowerVSMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				capiv1beta1.ClusterNameLabel: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",
@@ -139,9 +139,9 @@ func TestAPIServerPort(t *testing.T) {
 			name:               "Returns assigned port number",
 			expectedPortNumber: int32(6445),
 			machineScope: PowerVSMachineScope{
-				Cluster: &capiv1beta1.Cluster{
-					Spec: capiv1beta1.ClusterSpec{
-						ClusterNetwork: &capiv1beta1.ClusterNetwork{
+				Cluster: &clusterv1.Cluster{
+					Spec: clusterv1.ClusterSpec{
+						ClusterNetwork: &clusterv1.ClusterNetwork{
 							APIServerPort: ptr.To(int32(6445)),
 						},
 					},
@@ -151,7 +151,7 @@ func TestAPIServerPort(t *testing.T) {
 			name:               "Returns DefaultAPIServerPort when machineScope.Cluster.Spec.ClusterNetwork is nil",
 			expectedPortNumber: infrav1beta2.DefaultAPIServerPort,
 			machineScope: PowerVSMachineScope{
-				Cluster: &capiv1beta1.Cluster{},
+				Cluster: &clusterv1.Cluster{},
 			},
 		},
 	}
@@ -678,7 +678,7 @@ func TestBootstrapDataKey(t *testing.T) {
 	}{
 		{
 			name:                     "Returns BootstrapDataKey for a machine in control plane",
-			machineLabel:             capiv1beta1.MachineControlPlaneLabel,
+			machineLabel:             clusterv1.MachineControlPlaneLabel,
 			machineName:              "foo-machine-0",
 			expectedBootstrapDataKey: path.Join("control-plane", "foo-machine-0"),
 		},
@@ -699,7 +699,7 @@ func TestBootstrapDataKey(t *testing.T) {
 						Name: tc.machineName,
 					},
 				},
-				Machine: &capiv1beta1.Machine{
+				Machine: &clusterv1.Machine{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
 							tc.machineLabel: "",
@@ -1142,9 +1142,9 @@ func TestDeleteMachineIgnition(t *testing.T) {
 		t.Run("Fails to retrieve bootstrap data: linked Machine's bootstrap.dataSecretName is nil", func(t *testing.T) {
 			g := NewWithT(t)
 			scope := PowerVSMachineScope{
-				Machine: &capiv1beta1.Machine{
-					Spec: capiv1beta1.MachineSpec{
-						Bootstrap: capiv1beta1.Bootstrap{
+				Machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
+						Bootstrap: clusterv1.Bootstrap{
 							DataSecretName: nil,
 						},
 					},
@@ -1165,9 +1165,9 @@ func TestDeleteMachineIgnition(t *testing.T) {
 				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
 					Spec: infrav1beta2.IBMPowerVSClusterSpec{},
 				},
-				Machine: &capiv1beta1.Machine{
-					Spec: capiv1beta1.MachineSpec{
-						Bootstrap: capiv1beta1.Bootstrap{
+				Machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
+						Bootstrap: clusterv1.Bootstrap{
 							DataSecretName: ptr.To(machineName),
 						},
 					},
@@ -1203,9 +1203,9 @@ func TestDeleteMachineIgnition(t *testing.T) {
 					},
 				},
 				ResourceClient: mockResourceController,
-				Machine: &capiv1beta1.Machine{
-					Spec: capiv1beta1.MachineSpec{
-						Bootstrap: capiv1beta1.Bootstrap{
+				Machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
+						Bootstrap: clusterv1.Bootstrap{
 							DataSecretName: ptr.To(machineName),
 						},
 					},
@@ -1253,9 +1253,9 @@ func TestDeleteMachineIgnition(t *testing.T) {
 					},
 				},
 				ResourceClient: mockResourceController,
-				Machine: &capiv1beta1.Machine{
-					Spec: capiv1beta1.MachineSpec{
-						Bootstrap: capiv1beta1.Bootstrap{
+				Machine: &clusterv1.Machine{
+					Spec: clusterv1.MachineSpec{
+						Bootstrap: clusterv1.Bootstrap{
 							DataSecretName: ptr.To(machineName),
 						},
 					},
@@ -1344,7 +1344,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			expectedOutput := (*models.PVMInstanceReference)(nil)
 			scope := setupPowerVSMachineScope(clusterName, "foo-machine-2", ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			scope.IBMPowerVSMachine.Status.Conditions = append(scope.IBMPowerVSMachine.Status.Conditions, capiv1beta1.Condition{
+			scope.IBMPowerVSMachine.Status.Conditions = append(scope.IBMPowerVSMachine.Status.Conditions, clusterv1.Condition{
 				Type:   infrav1beta2.InstanceReadyCondition,
 				Status: corev1.ConditionUnknown,
 			})
@@ -1394,7 +1394,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						capiv1beta1.ClusterNameLabel: clusterName,
+						clusterv1.ClusterNameLabel: clusterName,
 					},
 					Name:      machineName,
 					Namespace: "default",
@@ -1542,7 +1542,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient := vpcmock.NewMockVpc(mockCtrl)
 
 		scope := PowerVSMachineScope{
-			Machine: &capiv1beta1.Machine{
+			Machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{},
 			},
 			IBMVPCClient: mockClient,
@@ -1626,7 +1626,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient := vpcmock.NewMockVpc(mockCtrl)
 
 		scope := PowerVSMachineScope{
-			Machine: &capiv1beta1.Machine{
+			Machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{},
 			},
 			IBMVPCClient: mockClient,
@@ -1713,7 +1713,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient := vpcmock.NewMockVpc(mockCtrl)
 
 		scope := PowerVSMachineScope{
-			Machine: &capiv1beta1.Machine{
+			Machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{},
 			},
 			IBMVPCClient: mockClient,
@@ -1803,7 +1803,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient := vpcmock.NewMockVpc(mockCtrl)
 
 		scope := PowerVSMachineScope{
-			Machine: &capiv1beta1.Machine{
+			Machine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						"cluster.x-k8s.io/control-plane": "true",

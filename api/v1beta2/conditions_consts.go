@@ -17,7 +17,9 @@ limitations under the License.
 package v1beta2
 
 import (
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	//nolint:staticcheck
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // IBMPowerVSMachine's InstanceReady condition and corresponding reasons that will be used in v1Beta2 API version.
@@ -52,17 +54,17 @@ const (
 
 	// IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason documents the virtual machine that is controller by
 	// IBMPowerVSMachine waiting for the cluster infrastructure to be ready.
-	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = capiv1beta1.WaitingForClusterInfrastructureReadyV1Beta2Reason.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = clusterv1.WaitingForClusterInfrastructureReadyV1Beta2Reason.
 	IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = "WaitingForClusterInfrastructureReady"
 
 	// IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason documents the virtual machine that is controller by IBMPowerVSMachine waiting
 	// for the control plane to be initialized.
-	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = capiv1beta1.WaitingForControlPlaneInitializedV1Beta2Reason.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = clusterv1.WaitingForControlPlaneInitializedV1Beta2Reason.
 	IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = "WaitingForControlPlaneInitialized"
 
 	// IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason documents the virtual machine that is controller by IBMPowerVSMachine waiting for the bootstrap
 	// data to be ready.
-	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = capiv1beta1.WaitingForBootstrapDataV1Beta2Reason.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = clusterv1.WaitingForBootstrapDataV1Beta2Reason.
 	IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = "WaitingForBootstrapData"
 
 	// IBMPowerVSMachineInstanceDeletingV1Beta2Reason surfaces when the virtual machine controller by IBMPowerVSMachine is deleting.
@@ -101,7 +103,7 @@ const (
 
 const (
 	// InstanceReadyCondition reports on current status of the instance. Ready indicates the instance is in a Running state.
-	InstanceReadyCondition capiv1beta1.ConditionType = "InstanceReady"
+	InstanceReadyCondition clusterv1.ConditionType = "InstanceReady"
 )
 
 const (
@@ -122,10 +124,10 @@ const (
 
 const (
 	// ImageReadyCondition reports on current status of the image. Ready indicates the image is in a active state.
-	ImageReadyCondition capiv1beta1.ConditionType = "ImageReady"
+	ImageReadyCondition clusterv1.ConditionType = "ImageReady"
 
 	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
-	ImageImportedCondition capiv1beta1.ConditionType = "ImageImported"
+	ImageImportedCondition clusterv1.ConditionType = "ImageImported"
 )
 
 const (
@@ -135,42 +137,42 @@ const (
 
 const (
 	// ServiceInstanceReadyCondition reports on the successful reconciliation of a Power VS workspace.
-	ServiceInstanceReadyCondition capiv1beta1.ConditionType = "ServiceInstanceReady"
+	ServiceInstanceReadyCondition clusterv1.ConditionType = "ServiceInstanceReady"
 	// ServiceInstanceReconciliationFailedReason used when an error occurs during workspace reconciliation.
 	ServiceInstanceReconciliationFailedReason = "ServiceInstanceReconciliationFailed"
 
 	// NetworkReadyCondition reports on the successful reconciliation of a Power VS network.
-	NetworkReadyCondition capiv1beta1.ConditionType = "NetworkReady"
+	NetworkReadyCondition clusterv1.ConditionType = "NetworkReady"
 	// NetworkReconciliationFailedReason used when an error occurs during network reconciliation.
 	NetworkReconciliationFailedReason = "NetworkReconciliationFailed"
 
 	// VPCSecurityGroupReadyCondition reports on the successful reconciliation of a VPC.
-	VPCSecurityGroupReadyCondition capiv1beta1.ConditionType = "VPCSecurityGroupReady"
+	VPCSecurityGroupReadyCondition clusterv1.ConditionType = "VPCSecurityGroupReady"
 	// VPCSecurityGroupReconciliationFailedReason used when an error occurs during VPC reconciliation.
 	VPCSecurityGroupReconciliationFailedReason = "VPCSecurityGroupReconciliationFailed"
 
 	// VPCReadyCondition reports on the successful reconciliation of a VPC.
-	VPCReadyCondition capiv1beta1.ConditionType = "VPCReady"
+	VPCReadyCondition clusterv1.ConditionType = "VPCReady"
 	// VPCReconciliationFailedReason used when an error occurs during VPC reconciliation.
 	VPCReconciliationFailedReason = "VPCReconciliationFailed"
 
 	// VPCSubnetReadyCondition reports on the successful reconciliation of a VPC subnet.
-	VPCSubnetReadyCondition capiv1beta1.ConditionType = "VPCSubnetReady"
+	VPCSubnetReadyCondition clusterv1.ConditionType = "VPCSubnetReady"
 	// VPCSubnetReconciliationFailedReason used when an error occurs during VPC subnet reconciliation.
 	VPCSubnetReconciliationFailedReason = "VPCSubnetReconciliationFailed"
 
 	// TransitGatewayReadyCondition reports on the successful reconciliation of a Power VS transit gateway.
-	TransitGatewayReadyCondition capiv1beta1.ConditionType = "TransitGatewayReady"
+	TransitGatewayReadyCondition clusterv1.ConditionType = "TransitGatewayReady"
 	// TransitGatewayReconciliationFailedReason used when an error occurs during transit gateway reconciliation.
 	TransitGatewayReconciliationFailedReason = "TransitGatewayReconciliationFailed"
 
 	// LoadBalancerReadyCondition reports on the successful reconciliation of a Power VS network.
-	LoadBalancerReadyCondition capiv1beta1.ConditionType = "LoadBalancerReady"
+	LoadBalancerReadyCondition clusterv1.ConditionType = "LoadBalancerReady"
 	// LoadBalancerReconciliationFailedReason used when an error occurs during loadbalancer reconciliation.
 	LoadBalancerReconciliationFailedReason = "LoadBalancerReconciliationFailed"
 
 	// COSInstanceReadyCondition reports on the successful reconciliation of a COS instance.
-	COSInstanceReadyCondition capiv1beta1.ConditionType = "COSInstanceCreated"
+	COSInstanceReadyCondition clusterv1.ConditionType = "COSInstanceCreated"
 	// COSInstanceReconciliationFailedReason used when an error occurs during COS instance reconciliation.
 	COSInstanceReconciliationFailedReason = "COSInstanceCreationFailed"
 )

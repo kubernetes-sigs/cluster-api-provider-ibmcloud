@@ -36,7 +36,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -65,7 +65,7 @@ const (
 // VPCClusterScopeParams defines the input parameters used to create a new VPCClusterScope.
 type VPCClusterScopeParams struct {
 	Client          client.Client
-	Cluster         *capiv1beta1.Cluster
+	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	Logger          logr.Logger
 	ServiceEndpoint []endpoints.ServiceEndpoint
@@ -85,7 +85,7 @@ type VPCClusterScope struct {
 	ResourceManagerClient    resourcemanager.ResourceManager
 	VPCClient                vpc.Vpc
 
-	Cluster         *capiv1beta1.Cluster
+	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }

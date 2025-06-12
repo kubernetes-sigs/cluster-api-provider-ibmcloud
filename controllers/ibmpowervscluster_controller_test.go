@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -106,7 +106,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: capiv1beta1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
 						Name:       "capi-test",
 						UID:        "1",
@@ -191,7 +191,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: capiv1beta1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
 						Name:       "capi-test",
 						UID:        "1",
@@ -226,7 +226,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: capiv1beta1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
 						Name:       "capi-test",
 						UID:        "1",
@@ -234,7 +234,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			Spec: infrav1beta2.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
 		}
 
-		ownerCluster := &capiv1beta1.Cluster{
+		ownerCluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "capi-test",
 				Namespace: ns.Name,
@@ -290,7 +290,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
-						APIVersion: capiv1beta1.GroupVersion.String(),
+						APIVersion: clusterv1.GroupVersion.String(),
 						Kind:       "Cluster",
 						Name:       "capi-test",
 						UID:        "1",
@@ -298,7 +298,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			Spec: infrav1beta2.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
 		}
 
-		ownerCluster := &capiv1beta1.Cluster{
+		ownerCluster := &clusterv1.Cluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "capi-test",
 				Namespace: ns.Name,
@@ -353,7 +353,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		clusterStatus       bool
 		expectedResult      ctrl.Result
 		expectedError       error
-		conditions          capiv1beta1.Conditions
+		conditions          clusterv1.Conditions
 	}{
 		{
 			name: "Should add finalizer and reconcile IBMPowerVSCluster",
@@ -584,14 +584,14 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				return clusterScope
 			},
 			expectedError: errors.New("error getting transit gateway"),
-			conditions: capiv1beta1.Conditions{
+			conditions: clusterv1.Conditions{
 				getVPCLBReadyCondition(),
 				getNetworkReadyCondition(),
 				getServiceInstanceReadyCondition(),
-				capiv1beta1.Condition{
+				clusterv1.Condition{
 					Type:               infrav1beta2.TransitGatewayReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.TransitGatewayReconciliationFailedReason,
 					Message:            "failed to get transit gateway: error getting transit gateway",
@@ -658,11 +658,11 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				return clusterScope
 			},
 			expectedError: errors.New("error getting instance by name"),
-			conditions: capiv1beta1.Conditions{
-				capiv1beta1.Condition{
+			conditions: clusterv1.Conditions{
+				clusterv1.Condition{
 					Type:               infrav1beta2.COSInstanceReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.COSInstanceReconciliationFailedReason,
 					Message:            "failed to check if COS instance in cloud: failed to get COS service instance: error getting instance by name",
@@ -735,7 +735,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When reconcile is successful",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					Cluster:           &capiv1beta1.Cluster{},
+					Cluster:           &clusterv1.Cluster{},
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
@@ -780,7 +780,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 					return metav1.Time{}
 				})
-				g.Expect(powerVSClusterScope.IBMPowerVSCluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+				g.Expect(powerVSClusterScope.IBMPowerVSCluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 			}
 		})
 	}
@@ -811,7 +811,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					Annotations: map[string]string{"powervs.cluster.x-k8s.io/create-infra": "true"},
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Cluster",
 							Name:       "capi-test",
 							UID:        "1",
@@ -879,7 +879,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 							UID:        "1",
 						},
 					},
-					Labels: map[string]string{capiv1beta1.ClusterNameLabel: "capi-powervs-cluster"},
+					Labels: map[string]string{clusterv1.ClusterNameLabel: "capi-powervs-cluster"},
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
@@ -899,7 +899,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 							UID:        "1",
 						},
 					},
-					Labels: map[string]string{capiv1beta1.ClusterNameLabel: "capi-powervs-cluster"},
+					Labels: map[string]string{clusterv1.ClusterNameLabel: "capi-powervs-cluster"},
 				},
 				Spec: infrav1beta2.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
@@ -1322,7 +1322,7 @@ func TestReconcileVPCResources(t *testing.T) {
 		name                    string
 		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
 		reconcileResult         reconcileResult
-		conditions              capiv1beta1.Conditions
+		conditions              clusterv1.Conditions
 	}{
 		{
 			name: "when ReconcileVPC returns error",
@@ -1338,11 +1338,11 @@ func TestReconcileVPCResources(t *testing.T) {
 			reconcileResult: reconcileResult{
 				error: errors.New("vpc not found"),
 			},
-			conditions: capiv1beta1.Conditions{
-				capiv1beta1.Condition{
+			conditions: clusterv1.Conditions{
+				clusterv1.Condition{
 					Type:               infrav1beta2.VPCReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.VPCReconciliationFailedReason,
 					Message:            "failed to check if VPC exists: failed to get VPC: error fetching VPC details with name: vpc not found",
@@ -1399,12 +1399,12 @@ func TestReconcileVPCResources(t *testing.T) {
 				error: errors.New("vpc subnet not found"),
 			},
 
-			conditions: capiv1beta1.Conditions{
+			conditions: clusterv1.Conditions{
 				getVPCReadyCondition(),
-				capiv1beta1.Condition{
+				clusterv1.Condition{
 					Type:               infrav1beta2.VPCSubnetReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.VPCSubnetReconciliationFailedReason,
 					Message:            "error checking VPC subnet with name: vpc subnet not found",
@@ -1444,7 +1444,7 @@ func TestReconcileVPCResources(t *testing.T) {
 					Requeue: true,
 				},
 			},
-			conditions: capiv1beta1.Conditions{
+			conditions: clusterv1.Conditions{
 				getVPCReadyCondition(),
 			},
 		},
@@ -1486,12 +1486,12 @@ func TestReconcileVPCResources(t *testing.T) {
 				error: errors.New("failed to validate existing security group: vpc security group not found"),
 			},
 
-			conditions: capiv1beta1.Conditions{
+			conditions: clusterv1.Conditions{
 				getVPCReadyCondition(),
-				capiv1beta1.Condition{
+				clusterv1.Condition{
 					Type:               infrav1beta2.VPCSecurityGroupReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.VPCSecurityGroupReconciliationFailedReason,
 					Message:            "failed to validate existing security group: vpc security group not found",
@@ -1537,11 +1537,11 @@ func TestReconcileVPCResources(t *testing.T) {
 				error: errors.New("load balancer not found"),
 			},
 
-			conditions: capiv1beta1.Conditions{
-				capiv1beta1.Condition{
+			conditions: clusterv1.Conditions{
+				clusterv1.Condition{
 					Type:               infrav1beta2.LoadBalancerReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.LoadBalancerReconciliationFailedReason,
 					Message:            "failed to fetch load balancer details: load balancer not found",
@@ -1589,7 +1589,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			conditions: capiv1beta1.Conditions{
+			conditions: clusterv1.Conditions{
 				getVPCLBReadyCondition(),
 				getVPCReadyCondition(),
 				getVPCSGReadyCondition(),
@@ -1623,7 +1623,7 @@ func TestReconcileVPCResources(t *testing.T) {
 			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 				return metav1.Time{}
 			})
-			g.Expect(pvsCluster.cluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
 }
@@ -1633,7 +1633,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 		name                    string
 		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
 		reconcileResult         reconcileResult
-		conditions              capiv1beta1.Conditions
+		conditions              clusterv1.Conditions
 	}{
 		{
 			name: "When Reconciling PowerVS service instance returns error",
@@ -1656,11 +1656,11 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				error: errors.New("error getting resource instance"),
 			},
 
-			conditions: capiv1beta1.Conditions{
-				capiv1beta1.Condition{
+			conditions: clusterv1.Conditions{
+				clusterv1.Condition{
 					Type:               infrav1beta2.ServiceInstanceReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.ServiceInstanceReconciliationFailedReason,
 					Message:            "failed to fetch service instance details: error getting resource instance",
@@ -1716,11 +1716,11 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			reconcileResult: reconcileResult{
 				error: errors.New("error getting network"),
 			},
-			conditions: capiv1beta1.Conditions{
-				capiv1beta1.Condition{
+			conditions: clusterv1.Conditions{
+				clusterv1.Condition{
 					Type:               infrav1beta2.NetworkReadyCondition,
 					Status:             "False",
-					Severity:           capiv1beta1.ConditionSeverityError,
+					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1beta2.NetworkReconciliationFailedReason,
 					Message:            "failed to fetch network by ID: error getting network",
@@ -1751,7 +1751,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope.IBMPowerVSClient = mockPowerVS
 				return clusterScope
 			},
-			conditions: capiv1beta1.Conditions{
+			conditions: clusterv1.Conditions{
 				getNetworkReadyCondition(),
 				getServiceInstanceReadyCondition(),
 			},
@@ -1783,41 +1783,41 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 				return metav1.Time{}
 			})
-			g.Expect(pvsCluster.cluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
 }
 
-func getVPCReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getVPCReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.VPCReadyCondition,
 		Status: "True",
 	}
 }
 
-func getVPCSubnetReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getVPCSubnetReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.VPCSubnetReadyCondition,
 		Status: "True",
 	}
 }
 
-func getVPCSGReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getVPCSGReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.VPCSecurityGroupReadyCondition,
 		Status: "True",
 	}
 }
 
-func getVPCLBReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getVPCLBReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.LoadBalancerReadyCondition,
 		Status: "True",
 	}
 }
 
-func getTGReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getTGReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.TransitGatewayReadyCondition,
 		Status: "True",
 	}
@@ -1956,14 +1956,14 @@ func cleanupCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, na
 	}
 }
 
-func getServiceInstanceReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getServiceInstanceReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.ServiceInstanceReadyCondition,
 		Status: "True",
 	}
 }
-func getNetworkReadyCondition() capiv1beta1.Condition {
-	return capiv1beta1.Condition{
+func getNetworkReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
 		Type:   infrav1beta2.NetworkReadyCondition,
 		Status: "True",
 	}

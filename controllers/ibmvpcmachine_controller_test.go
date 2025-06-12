@@ -31,7 +31,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,9 +49,9 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 	testCases := []struct {
 		name         string
 		vpcMachine   *infrav1beta2.IBMVPCMachine
-		ownerMachine *capiv1beta1.Machine
+		ownerMachine *clusterv1.Machine
 		vpcCluster   *infrav1beta2.IBMVPCCluster
-		ownerCluster *capiv1beta1.Cluster
+		ownerCluster *clusterv1.Cluster
 		expectError  bool
 	}{
 		{
@@ -77,7 +77,7 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 					Name: "vpc-test-2",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "capi-test-machine",
 							UID:        "1",
@@ -96,7 +96,7 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-test-3", OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "capi-test-machine",
 							UID:        "1",
@@ -107,10 +107,10 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 					Image: &infrav1beta2.IBMVPCResourceReference{},
 				},
 			},
-			ownerMachine: &capiv1beta1.Machine{
+			ownerMachine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-machine"}},
-			ownerCluster: &capiv1beta1.Cluster{
+			ownerCluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-1"}},
 			expectError: false,
@@ -120,16 +120,16 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 			vpcMachine: &infrav1beta2.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-test-4", Labels: map[string]string{
-						capiv1beta1.ClusterNameAnnotation: "capi-test-2"},
+						clusterv1.ClusterNameAnnotation: "capi-test-2"},
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Machine",
 							Name:       "capi-test-machine",
 							UID:        "1",
 						},
 						{
-							APIVersion: capiv1beta1.GroupVersion.String(),
+							APIVersion: clusterv1.GroupVersion.String(),
 							Kind:       "Cluster",
 							Name:       "capi-test-2",
 							UID:        "1",
@@ -140,13 +140,13 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 					Image: &infrav1beta2.IBMVPCResourceReference{},
 				},
 			},
-			ownerMachine: &capiv1beta1.Machine{
+			ownerMachine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-machine"}},
-			ownerCluster: &capiv1beta1.Cluster{
+			ownerCluster: &clusterv1.Cluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-2"},
-				Spec: capiv1beta1.ClusterSpec{
+				Spec: clusterv1.ClusterSpec{
 					InfrastructureRef: &corev1.ObjectReference{
 						Name: "vpc-cluster"}}},
 			expectError: false,
@@ -234,13 +234,13 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
 					Labels: map[string]string{
-						capiv1beta1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
+						clusterv1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
 					},
 					Finalizers: []string{infrav1beta2.MachineFinalizer},
 				},
 			},
-			Machine: &capiv1beta1.Machine{
-				Spec: capiv1beta1.MachineSpec{
+			Machine: &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					ClusterName: "vpc-cluster",
 				},
 			},
@@ -293,15 +293,15 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
 					Labels: map[string]string{
-						capiv1beta1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
+						clusterv1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
 					},
 					Finalizers: []string{infrav1beta2.MachineFinalizer},
 				},
 			},
-			Machine: &capiv1beta1.Machine{
-				Spec: capiv1beta1.MachineSpec{
+			Machine: &clusterv1.Machine{
+				Spec: clusterv1.MachineSpec{
 					ClusterName: "vpc-cluster",
-					Bootstrap: capiv1beta1.Bootstrap{
+					Bootstrap: clusterv1.Bootstrap{
 						DataSecretName: ptr.To("capi-machine"),
 					},
 				},
@@ -321,7 +321,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 					},
 				},
 			},
-			Cluster:             &capiv1beta1.Cluster{},
+			Cluster:             &clusterv1.Cluster{},
 			IBMVPCClient:        mockvpc,
 			GlobalTaggingClient: mockgt,
 		}
@@ -644,7 +644,7 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 					Name:       "capi-machine",
 					Finalizers: []string{infrav1beta2.MachineFinalizer},
 					Labels: map[string]string{
-						capiv1beta1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
+						clusterv1.MachineControlPlaneNameLabel: "capi-control-plane-machine",
 					},
 				},
 				Status: infrav1beta2.IBMVPCMachineStatus{

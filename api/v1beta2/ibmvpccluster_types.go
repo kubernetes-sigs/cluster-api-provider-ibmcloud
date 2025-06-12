@@ -19,7 +19,7 @@ package v1beta2
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -49,7 +49,7 @@ type IBMVPCClusterSpec struct {
 
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
-	ControlPlaneEndpoint capiv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
+	ControlPlaneEndpoint clusterv1.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	// ControlPlaneLoadBalancer is optional configuration for customizing control plane behavior.
 	// Use this for legacy support, use Network.LoadBalancers for the extended VPC support.
@@ -319,7 +319,7 @@ type IBMVPCClusterStatus struct {
 
 	// Conditions defines current service state of the load balancer.
 	// +optional
-	Conditions capiv1beta1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // VPCNetworkStatus provides details on the status of VPC network resources for extended VPC Infrastructure support.
@@ -390,13 +390,13 @@ type IBMVPCClusterList struct {
 	Items           []IBMVPCCluster `json:"items"`
 }
 
-// GetConditions returns the observations of the operational state of the IBMVPCCluster resource.
-func (r *IBMVPCCluster) GetConditions() capiv1beta1.Conditions {
+// GetV1Beta1Conditions returns the observations of the operational state of the IBMVPCCluster resource.
+func (r *IBMVPCCluster) GetV1Beta1Conditions() clusterv1.Conditions {
 	return r.Status.Conditions
 }
 
-// SetConditions sets the underlying service state of the IBMVPCCluster to the predescribed clusterv1.Conditions.
-func (r *IBMVPCCluster) SetConditions(conditions capiv1beta1.Conditions) {
+// SetV1Beta1Conditions sets the underlying service state of the IBMVPCCluster to the predescribed clusterv1.Conditions.
+func (r *IBMVPCCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
 	r.Status.Conditions = conditions
 }
 
