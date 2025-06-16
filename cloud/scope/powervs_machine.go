@@ -55,7 +55,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -76,8 +76,8 @@ const cosURLDomain = "cloud-object-storage.appdomain.cloud"
 type PowerVSMachineScopeParams struct {
 	Logger            logr.Logger
 	Client            client.Client
-	Cluster           *capiv1beta1.Cluster
-	Machine           *capiv1beta1.Machine
+	Cluster           *clusterv1.Cluster
+	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
 	IBMPowerVSMachine *infrav1beta2.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta2.IBMPowerVSImage
@@ -92,8 +92,8 @@ type PowerVSMachineScope struct {
 	IBMPowerVSClient  powervs.PowerVS
 	IBMVPCClient      vpc.Vpc
 	ResourceClient    resourcecontroller.ResourceController
-	Cluster           *capiv1beta1.Cluster
-	Machine           *capiv1beta1.Machine
+	Cluster           *clusterv1.Cluster
+	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
 	IBMPowerVSMachine *infrav1beta2.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1beta2.IBMPowerVSImage

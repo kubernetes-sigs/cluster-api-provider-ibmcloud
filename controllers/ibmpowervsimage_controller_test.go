@@ -30,9 +30,9 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -231,7 +231,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSImageFinalizer))
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
 				g.Expect(imageScope.IBMPowerVSImage.Status.ImageState).To(BeEquivalentTo(infrav1beta2.PowerVSImageStateQue))
-				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, string(infrav1beta2.PowerVSImageStateQue)}})
+				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, clusterv1.ConditionSeverityInfo, string(infrav1beta2.PowerVSImageStateQue)}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When importing image is still in progress", func(_ *testing.T) {
@@ -242,7 +242,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSImageFinalizer))
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
 				g.Expect(imageScope.IBMPowerVSImage.Status.ImageState).To(BeEquivalentTo(infrav1beta2.PowerVSImageStateImporting))
-				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityInfo, *job.Status.State}})
+				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, clusterv1.ConditionSeverityInfo, *job.Status.State}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When import job status is failed", func(_ *testing.T) {
@@ -253,7 +253,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSImageFinalizer))
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
 				g.Expect(imageScope.IBMPowerVSImage.Status.ImageState).To(BeEquivalentTo(infrav1beta2.PowerVSImageStateFailed))
-				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityError, infrav1beta2.ImageImportFailedReason}})
+				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageImportedCondition, corev1.ConditionFalse, clusterv1.ConditionSeverityError, infrav1beta2.ImageImportFailedReason}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			job.Status.State = ptr.To("completed")
@@ -288,7 +288,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(err).To(BeNil())
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSImageFinalizer))
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
-				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageReadyCondition, corev1.ConditionFalse, capiv1beta1.ConditionSeverityWarning, infrav1beta2.ImageNotReadyReason}})
+				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1beta2.ImageReadyCondition, corev1.ConditionFalse, clusterv1.ConditionSeverityWarning, infrav1beta2.ImageNotReadyReason}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When import job status is completed and image state is undefined", func(_ *testing.T) {

@@ -22,7 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
@@ -34,13 +34,13 @@ const (
 	pvsNetwork  = "foo-network"
 )
 
-func newCluster(name string) *capiv1beta1.Cluster {
-	return &capiv1beta1.Cluster{
+func newCluster(name string) *clusterv1.Cluster {
+	return &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: "default",
 		},
-		Spec: capiv1beta1.ClusterSpec{},
+		Spec: clusterv1.ClusterSpec{},
 	}
 }
 
@@ -62,14 +62,14 @@ func newPowerVSCluster(name string) *infrav1beta2.IBMPowerVSCluster {
 	}
 }
 
-func newMachine(machineName string) *capiv1beta1.Machine {
-	return &capiv1beta1.Machine{
+func newMachine(machineName string) *clusterv1.Machine {
+	return &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      machineName,
 			Namespace: "default",
 		},
-		Spec: capiv1beta1.MachineSpec{
-			Bootstrap: capiv1beta1.Bootstrap{
+		Spec: clusterv1.MachineSpec{
+			Bootstrap: clusterv1.Bootstrap{
 				DataSecretName: core.StringPtr(machineName),
 			},
 		},
@@ -80,7 +80,7 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				capiv1beta1.ClusterNameLabel: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",

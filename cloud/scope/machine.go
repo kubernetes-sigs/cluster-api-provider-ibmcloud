@@ -35,7 +35,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -53,8 +53,8 @@ type MachineScopeParams struct {
 	IBMVPCClient    vpc.Vpc
 	Client          client.Client
 	Logger          logr.Logger
-	Cluster         *capiv1beta1.Cluster
-	Machine         *capiv1beta1.Machine
+	Cluster         *clusterv1.Cluster
+	Machine         *clusterv1.Machine
 	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
 	IBMVPCMachine   *infrav1beta2.IBMVPCMachine
 	ServiceEndpoint []endpoints.ServiceEndpoint
@@ -68,8 +68,8 @@ type MachineScope struct {
 
 	IBMVPCClient        vpc.Vpc
 	GlobalTaggingClient globaltagging.GlobalTagging
-	Cluster             *capiv1beta1.Cluster
-	Machine             *capiv1beta1.Machine
+	Cluster             *clusterv1.Cluster
+	Machine             *clusterv1.Machine
 	IBMVPCCluster       *infrav1beta2.IBMVPCCluster
 	IBMVPCMachine       *infrav1beta2.IBMVPCMachine
 	ServiceEndpoint     []endpoints.ServiceEndpoint

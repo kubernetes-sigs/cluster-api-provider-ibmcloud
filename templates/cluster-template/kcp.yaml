@@ -1,4 +1,4 @@
-apiVersion: controlplane.cluster.x-k8s.io/v1beta1
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlane
 metadata:
   name: "${CLUSTER_NAME}-control-plane"
@@ -8,7 +8,9 @@ spec:
     clusterConfiguration:
       controllerManager:
         extraArgs:
-          cloud-provider: external
+        - name: cloud-provider
+          value: external
       apiServer:
         extraArgs:
-          cloud-provider: external
+        - name: cloud-provider
+          value: external

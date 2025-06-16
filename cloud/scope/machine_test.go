@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -47,7 +47,7 @@ func newVPCMachine(clusterName, machineName string) *infrav1beta2.IBMVPCMachine 
 	return &infrav1beta2.IBMVPCMachine{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				capiv1beta1.ClusterNameLabel: clusterName,
+				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
 			Namespace: "default",
@@ -263,7 +263,7 @@ func TestCreateMachine(t *testing.T) {
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						capiv1beta1.ClusterNameLabel: clusterName,
+						clusterv1.ClusterNameLabel: clusterName,
 					},
 					Name:      machineName,
 					Namespace: "default",

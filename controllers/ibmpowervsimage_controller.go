@@ -33,9 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterv1util "sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
@@ -116,8 +116,8 @@ func (r *IBMPowerVSImageReconciler) reconcile(cluster *infrav1beta2.IBMPowerVSCl
 		imageScope.IBMPowerVSImage.Labels = make(map[string]string)
 	}
 
-	if _, ok := imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterNameLabel]; !ok {
-		imageScope.IBMPowerVSImage.Labels[capiv1beta1.ClusterNameLabel] = imageScope.IBMPowerVSImage.Spec.ClusterName
+	if _, ok := imageScope.IBMPowerVSImage.Labels[clusterv1.ClusterNameLabel]; !ok {
+		imageScope.IBMPowerVSImage.Labels[clusterv1.ClusterNameLabel] = imageScope.IBMPowerVSImage.Spec.ClusterName
 	}
 
 	if r.shouldAdopt(*imageScope.IBMPowerVSImage) {
@@ -143,17 +143,17 @@ func (r *IBMPowerVSImageReconciler) reconcile(cluster *infrav1beta2.IBMPowerVSCl
 		case "failed":
 			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1beta2.PowerVSImageStateFailed))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageImportedCondition, infrav1beta2.ImageImportFailedReason, capiv1beta1.ConditionSeverityError, "%s", job.Status.Message)
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageImportedCondition, infrav1beta2.ImageImportFailedReason, clusterv1.ConditionSeverityError, "%s", job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, fmt.Errorf("failed to import image, message: %s", job.Status.Message)
 		case "queued":
 			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1beta2.PowerVSImageStateQue))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageImportedCondition, string(infrav1beta2.PowerVSImageStateQue), capiv1beta1.ConditionSeverityInfo, "%s", job.Status.Message)
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageImportedCondition, string(infrav1beta2.PowerVSImageStateQue), clusterv1.ConditionSeverityInfo, "%s", job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		default:
 			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1beta2.PowerVSImageStateImporting))
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageImportedCondition, *job.Status.State, capiv1beta1.ConditionSeverityInfo, "%s", job.Status.Message)
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageImportedCondition, *job.Status.State, clusterv1.ConditionSeverityInfo, "%s", job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		}
 	}
@@ -187,7 +187,7 @@ func reconcileImage(img *models.ImageReference, imageScope *scope.PowerVSImageSc
 		case infrav1beta2.PowerVSImageStateQue:
 			imageScope.Info("Image is in queued state")
 			imageScope.SetNotReady()
-			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageNotReadyReason, capiv1beta1.ConditionSeverityWarning, "")
+			conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageNotReadyReason, clusterv1.ConditionSeverityWarning, "")
 			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 		case infrav1beta2.PowerVSImageStateACTIVE:
 			imageScope.Info("Image is in active state")

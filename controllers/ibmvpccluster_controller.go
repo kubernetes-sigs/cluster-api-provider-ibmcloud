@@ -34,9 +34,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/conditions"
+	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
@@ -239,7 +239,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling VPC")
 	if requeue, err := clusterScope.ReconcileVPC(); err != nil {
 		clusterScope.Error(err, "failed to reconcile VPC")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition, infrav1beta2.VPCReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCReadyCondition, infrav1beta2.VPCReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("VPC creation is pending, requeuing")
@@ -252,7 +252,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling VPC Custom Image")
 	if requeue, err := clusterScope.ReconcileVPCCustomImage(); err != nil {
 		clusterScope.Error(err, "failed to reconcile VPC Custom Image")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.ImageReadyCondition, infrav1beta2.ImageReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("VPC Custom Image creation is pending, requeueing")
@@ -265,7 +265,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling VPC Subnets")
 	if requeue, err := clusterScope.ReconcileSubnets(); err != nil {
 		clusterScope.Error(err, "failed to reconcile VPC Subnets")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCSubnetReadyCondition, infrav1beta2.VPCSubnetReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCSubnetReadyCondition, infrav1beta2.VPCSubnetReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("VPC Subnets creation is pending, requeueing")
@@ -278,7 +278,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling Security Groups")
 	if requeue, err := clusterScope.ReconcileSecurityGroups(); err != nil {
 		clusterScope.Error(err, "failed to reconcile Security Groups")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCSecurityGroupReadyCondition, infrav1beta2.VPCSecurityGroupReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.VPCSecurityGroupReadyCondition, infrav1beta2.VPCSecurityGroupReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("Security Groups creation is pending, requeueing")
@@ -291,7 +291,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(clusterScope *scope.VPCCluste
 	clusterScope.Info("Reconciling Load Balancers")
 	if requeue, err := clusterScope.ReconcileLoadBalancers(); err != nil {
 		clusterScope.Error(err, "failed to reconcile Load Balancers")
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.LoadBalancerReadyCondition, infrav1beta2.LoadBalancerReconciliationFailedReason, capiv1beta1.ConditionSeverityError, "%s", err.Error())
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.LoadBalancerReadyCondition, infrav1beta2.LoadBalancerReconciliationFailedReason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		return reconcile.Result{}, err
 	} else if requeue {
 		clusterScope.Info("Load Balancers creation is pending, requeueing")
@@ -400,7 +400,7 @@ func (r *IBMVPCClusterReconciler) reconcileLBState(clusterScope *scope.ClusterSc
 	case infrav1beta2.VPCLoadBalancerStateCreatePending:
 		clusterScope.Logger.V(3).Info("LoadBalancer is in create state")
 		clusterScope.SetNotReady()
-		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.LoadBalancerReadyCondition, string(infrav1beta2.VPCLoadBalancerStateCreatePending), capiv1beta1.ConditionSeverityInfo, "%s", *loadBalancer.OperatingStatus)
+		conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1beta2.LoadBalancerReadyCondition, string(infrav1beta2.VPCLoadBalancerStateCreatePending), clusterv1.ConditionSeverityInfo, "%s", *loadBalancer.OperatingStatus)
 	case infrav1beta2.VPCLoadBalancerStateActive:
 		clusterScope.Logger.V(3).Info("LoadBalancer is in active state")
 		clusterScope.SetReady()

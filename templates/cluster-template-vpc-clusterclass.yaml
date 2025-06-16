@@ -162,7 +162,7 @@ spec:
       - name: ${IBMVPC_SSHKEY_NAME}
       zone: ${IBMVPC_ZONE}
 ---
-apiVersion: addons.cluster.x-k8s.io/v1beta1
+apiVersion: addons.cluster.x-k8s.io/v1beta2
 kind: ClusterResourceSet
 metadata:
   name: crs-cloud-conf
