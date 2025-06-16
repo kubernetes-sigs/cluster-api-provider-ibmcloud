@@ -1,8 +1,8 @@
-# Add tags to PowerVS Cluster resources and delete on the bases of specific tag
+# Tagging PowerVS cluster resources for lifecycle management
 
 
 ## Motivation
-PowerVS cluster creation supports both creating infrastructure and using existing resources required for cluster creation. If the infrastructure is created during cluster creation then this tagging will be applied and created infrastructure will also be deleted based on tagging.
+PowerVS cluster creation supports both creating infrastructure and using existing resources required for cluster creation.
 PowerVS cluster reconciler sets controllercreated field whenever resource is created by controller, which was initially introduced to allow proper cleanup of newly created resource vs the use of existing resources.
 
 Though its working as expected and fulfills the purpose, we see some drawbacks.
@@ -34,22 +34,21 @@ A tag of format`powervs.cluster.x-k8s.io-resource-owner:<cluster_name>` will be 
 8. [COS Instance](https://www.ibm.com/products/cloud-object-storage)
 
 #### Note 
-- Currently TransitGateway Connections doesn't support tagging, So we will handle deletion of connections based on VPC.
-- DHCP Server doesn't support tagging, So we will tag DHCP Network and handle deletion based on Network.
+- Currently transit gateway connections and DHCP server don't support tagging. We will handle their deletion using the VPC and network tag respectively.
 
 
 ### User tags
 User can add tags to resources when creating PowerVS cluster.
 
 #### Proposed API changes
-UserTags field will contain list of tags that will be applied on resources.
+UserTags field will contain list of tags that will be attached to resources.
 
 ```shell
 
 // IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster.
 type IBMPowerVSClusterSpec struct {
 
-	// UserTags contains list of tags needs to be applied on resources
+	// UserTags contains list of tags needs to be attached to resources
 	UserTags []string `json:"tags,omitempty"`
 	.
 	.
@@ -61,8 +60,8 @@ type IBMPowerVSClusterSpec struct {
 
 
 ### Cluster creation workflow
-The controller will attach the tag to the resources after resources are created.
-During cluster creation first we will check if User tags set or not, if it is set then those tags will be attached to the resources. After that Controller tag will be attached to all the resources created by conroller. 
+ 1. The controller will attach the `powervs.cluster.x-k8s.io-resource-owner:<cluster_name>` tag to the created resources.
+ 2. If user tags are set in the spec, they will be attached to the resources. 
 ![add-tag-workflow.png](../images/add-tag-workflow.png)
 
 
