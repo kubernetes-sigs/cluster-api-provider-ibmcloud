@@ -37,7 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
@@ -77,7 +77,7 @@ type VPCClusterScopeParams struct {
 type VPCClusterScope struct {
 	logr.Logger
 	Client      client.Client
-	patchHelper *patch.Helper
+	patchHelper *v1beta1patch.Helper
 
 	COSClient                cos.Cos
 	GlobalTaggingClient      globaltagging.GlobalTagging
@@ -108,7 +108,7 @@ func NewVPCClusterScope(params VPCClusterScopeParams) (*VPCClusterScope, error) 
 		params.Logger = textlogger.NewLogger(textlogger.NewConfig())
 	}
 
-	helper, err := patch.NewHelper(params.IBMVPCCluster, params.Client)
+	helper, err := v1beta1patch.NewHelper(params.IBMVPCCluster, params.Client)
 	if err != nil {
 		return nil, fmt.Errorf("error failed to init patch helper: %w", err)
 	}

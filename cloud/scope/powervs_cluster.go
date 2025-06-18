@@ -46,7 +46,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
@@ -107,7 +107,7 @@ type ClientFactory struct {
 // PowerVSClusterScope defines a scope defined around a Power VS Cluster.
 type PowerVSClusterScope struct {
 	Client      client.Client
-	patchHelper *patch.Helper
+	patchHelper *v1beta1patch.Helper
 
 	IBMPowerVSClient      powervs.PowerVS
 	IBMVPCClient          vpc.Vpc
@@ -147,7 +147,7 @@ func NewPowerVSClusterScope(params PowerVSClusterScopeParams) (*PowerVSClusterSc
 		params.Logger = klog.Background()
 	}
 
-	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)
+	helper, err := v1beta1patch.NewHelper(params.IBMPowerVSCluster, params.Client)
 	if err != nil {
 		err = fmt.Errorf("failed to init patch helper: %w", err)
 		return nil, err

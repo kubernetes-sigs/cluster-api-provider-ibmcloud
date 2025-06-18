@@ -39,7 +39,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck //nolint:staticcheck
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"         //nolint:staticcheck
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2" //nolint:staticcheck
@@ -828,7 +829,7 @@ func (r *IBMPowerVSClusterReconciler) SetupWithManager(ctx context.Context, mgr 
 		WithEventFilter(predicates.ResourceHasFilterLabel(r.Scheme, predicateLog, r.WatchFilterValue)).
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(r.Scheme, predicateLog)).
 		Watches(
-			&clusterv1beta1.Cluster{},
+			&clusterv1.Cluster{},
 			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("IBMPowerVSCluster"), mgr.GetClient(), &infrav1.IBMPowerVSCluster{})),
 			builder.WithPredicates(predicates.All(r.Scheme, predicateLog,
 				predicates.ResourceIsChanged(r.Scheme, predicateLog),

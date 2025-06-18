@@ -32,7 +32,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"sigs.k8s.io/cluster-api/util/patch"
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -57,7 +57,7 @@ type PowerVSImageScopeParams struct {
 type PowerVSImageScope struct {
 	logr.Logger
 	Client      client.Client
-	patchHelper *patch.Helper
+	patchHelper *v1beta1patch.Helper
 
 	IBMPowerVSClient powervs.PowerVS
 	IBMPowerVSImage  *infrav1.IBMPowerVSImage
@@ -85,7 +85,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	}
 	scope.Logger = params.Logger
 
-	helper, err := patch.NewHelper(params.IBMPowerVSImage, params.Client)
+	helper, err := v1beta1patch.NewHelper(params.IBMPowerVSImage, params.Client)
 	if err != nil {
 		err = fmt.Errorf("failed to init patch helper: %w", err)
 		return nil, err
