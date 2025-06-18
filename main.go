@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/flags"
 
 	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -77,7 +77,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = infrav1beta1.AddToScheme(scheme)
-	_ = infrav1beta2.AddToScheme(scheme)
+	_ = infrav1.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -233,7 +233,7 @@ func main() {
 				DisableFor: []client.Object{
 					// We want to avoid use of cache for IBMPowerVSCluster as we exclusively depend on IBMPowerVSCluster.Status.[Resource].ControllerCreated
 					// to mark resources created by controller.
-					&infrav1beta2.IBMPowerVSCluster{},
+					&infrav1.IBMPowerVSCluster{},
 				},
 			},
 		},

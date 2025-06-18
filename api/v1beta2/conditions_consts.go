@@ -17,26 +17,24 @@ limitations under the License.
 package v1beta2
 
 import (
-	//nolint:staticcheck
-	capiv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 )
 
 // IBMPowerVSMachine's InstanceReady condition and corresponding reasons that will be used in v1Beta2 API version.
 const (
 	// IBMPowerVSMachineReadyV1Beta2Condition is true if the IBMPowerVSMachine's deletionTimestamp is not set, IBMPowerVSMachine's
 	// IBMPowerVSMachineInstanceReadyV1Beta2Condition is true.
-	IBMPowerVSMachineReadyV1Beta2Condition = capiv1beta1.ReadyV1Beta2Condition
+	IBMPowerVSMachineReadyV1Beta2Condition = clusterv1beta1.ReadyV1Beta2Condition
 
 	// IBMPowerVSMachineReadyV1Beta2Reason surfaces when the IBMPowerVSMachine readiness criteria is met.
-	IBMPowerVSMachineReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	IBMPowerVSMachineReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// IBMPowerVSMachineNotReadyV1Beta2Reason surfaces when the IBMPowerVSMachine readiness criteria is not met.
-	IBMPowerVSMachineNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	IBMPowerVSMachineNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// IBMPowerVSMachineReadyUnknownV1Beta2Reason surfaces when at least one IBMPowerVSMachine readiness criteria is unknown
 	// and no IBMPowerVSMachine readiness criteria is not met.
-	IBMPowerVSMachineReadyUnknownV1Beta2Reason = capiv1beta1.ReadyUnknownV1Beta2Reason
+	IBMPowerVSMachineReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
 )
 
 const (
@@ -54,21 +52,21 @@ const (
 
 	// IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason documents the virtual machine that is controller by
 	// IBMPowerVSMachine waiting for the cluster infrastructure to be ready.
-	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = clusterv1.WaitingForClusterInfrastructureReadyV1Beta2Reason.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = clusterv1beta1.WaitingForClusterInfrastructureReadyV1Beta2Reason.
 	IBMPowerVSMachineInstanceWaitingForClusterInfrastructureReadyV1Beta2Reason = "WaitingForClusterInfrastructureReady"
 
 	// IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason documents the virtual machine that is controller by IBMPowerVSMachine waiting
 	// for the control plane to be initialized.
-	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = clusterv1.WaitingForControlPlaneInitializedV1Beta2Reason.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = clusterv1beta1.WaitingForControlPlaneInitializedV1Beta2Reason.
 	IBMPowerVSMachineInstanceWaitingForControlPlaneInitializedV1Beta2Reason = "WaitingForControlPlaneInitialized"
 
 	// IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason documents the virtual machine that is controller by IBMPowerVSMachine waiting for the bootstrap
 	// data to be ready.
-	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = clusterv1.WaitingForBootstrapDataV1Beta2Reason.
+	// TODO: Use when CAPI version is updated: IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = clusterv1beta1.WaitingForBootstrapDataV1Beta2Reason.
 	IBMPowerVSMachineInstanceWaitingForBootstrapDataV1Beta2Reason = "WaitingForBootstrapData"
 
 	// IBMPowerVSMachineInstanceDeletingV1Beta2Reason surfaces when the virtual machine controller by IBMPowerVSMachine is deleting.
-	IBMPowerVSMachineInstanceDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	IBMPowerVSMachineInstanceDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// IBMPowerVSMachineInstanceLoadBalancerConfigurationFailedV1Beta2Reason surfaces when configuring the virtual machine IP to load balancer fails.
 	IBMPowerVSMachineInstanceLoadBalancerConfigurationFailedV1Beta2Reason = "LoadBalancerConfigurationFailed"
@@ -103,7 +101,7 @@ const (
 
 const (
 	// InstanceReadyCondition reports on current status of the instance. Ready indicates the instance is in a Running state.
-	InstanceReadyCondition clusterv1.ConditionType = "InstanceReady"
+	InstanceReadyCondition clusterv1beta1.ConditionType = "InstanceReady"
 )
 
 const (
@@ -124,10 +122,10 @@ const (
 
 const (
 	// ImageReadyCondition reports on current status of the image. Ready indicates the image is in a active state.
-	ImageReadyCondition clusterv1.ConditionType = "ImageReady"
+	ImageReadyCondition clusterv1beta1.ConditionType = "ImageReady"
 
 	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
-	ImageImportedCondition clusterv1.ConditionType = "ImageImported"
+	ImageImportedCondition clusterv1beta1.ConditionType = "ImageImported"
 )
 
 const (
@@ -137,42 +135,42 @@ const (
 
 const (
 	// ServiceInstanceReadyCondition reports on the successful reconciliation of a Power VS workspace.
-	ServiceInstanceReadyCondition clusterv1.ConditionType = "ServiceInstanceReady"
+	ServiceInstanceReadyCondition clusterv1beta1.ConditionType = "ServiceInstanceReady"
 	// ServiceInstanceReconciliationFailedReason used when an error occurs during workspace reconciliation.
 	ServiceInstanceReconciliationFailedReason = "ServiceInstanceReconciliationFailed"
 
 	// NetworkReadyCondition reports on the successful reconciliation of a Power VS network.
-	NetworkReadyCondition clusterv1.ConditionType = "NetworkReady"
+	NetworkReadyCondition clusterv1beta1.ConditionType = "NetworkReady"
 	// NetworkReconciliationFailedReason used when an error occurs during network reconciliation.
 	NetworkReconciliationFailedReason = "NetworkReconciliationFailed"
 
 	// VPCSecurityGroupReadyCondition reports on the successful reconciliation of a VPC.
-	VPCSecurityGroupReadyCondition clusterv1.ConditionType = "VPCSecurityGroupReady"
+	VPCSecurityGroupReadyCondition clusterv1beta1.ConditionType = "VPCSecurityGroupReady"
 	// VPCSecurityGroupReconciliationFailedReason used when an error occurs during VPC reconciliation.
 	VPCSecurityGroupReconciliationFailedReason = "VPCSecurityGroupReconciliationFailed"
 
 	// VPCReadyCondition reports on the successful reconciliation of a VPC.
-	VPCReadyCondition clusterv1.ConditionType = "VPCReady"
+	VPCReadyCondition clusterv1beta1.ConditionType = "VPCReady"
 	// VPCReconciliationFailedReason used when an error occurs during VPC reconciliation.
 	VPCReconciliationFailedReason = "VPCReconciliationFailed"
 
 	// VPCSubnetReadyCondition reports on the successful reconciliation of a VPC subnet.
-	VPCSubnetReadyCondition clusterv1.ConditionType = "VPCSubnetReady"
+	VPCSubnetReadyCondition clusterv1beta1.ConditionType = "VPCSubnetReady"
 	// VPCSubnetReconciliationFailedReason used when an error occurs during VPC subnet reconciliation.
 	VPCSubnetReconciliationFailedReason = "VPCSubnetReconciliationFailed"
 
 	// TransitGatewayReadyCondition reports on the successful reconciliation of a Power VS transit gateway.
-	TransitGatewayReadyCondition clusterv1.ConditionType = "TransitGatewayReady"
+	TransitGatewayReadyCondition clusterv1beta1.ConditionType = "TransitGatewayReady"
 	// TransitGatewayReconciliationFailedReason used when an error occurs during transit gateway reconciliation.
 	TransitGatewayReconciliationFailedReason = "TransitGatewayReconciliationFailed"
 
 	// LoadBalancerReadyCondition reports on the successful reconciliation of a Power VS network.
-	LoadBalancerReadyCondition clusterv1.ConditionType = "LoadBalancerReady"
+	LoadBalancerReadyCondition clusterv1beta1.ConditionType = "LoadBalancerReady"
 	// LoadBalancerReconciliationFailedReason used when an error occurs during loadbalancer reconciliation.
 	LoadBalancerReconciliationFailedReason = "LoadBalancerReconciliationFailed"
 
 	// COSInstanceReadyCondition reports on the successful reconciliation of a COS instance.
-	COSInstanceReadyCondition clusterv1.ConditionType = "COSInstanceCreated"
+	COSInstanceReadyCondition clusterv1beta1.ConditionType = "COSInstanceCreated"
 	// COSInstanceReconciliationFailedReason used when an error occurs during COS instance reconciliation.
 	COSInstanceReconciliationFailedReason = "COSInstanceCreationFailed"
 )
@@ -187,17 +185,17 @@ const (
 const (
 	// IBMPowerVSClusterReadyV1Beta2Condition is true if the IBMPowerVSCluster's deletionTimestamp is not set, IBMPowerVSCluster's
 	// FailureDomainsReady, VCenterAvailable and ClusterModulesReady conditions are true.
-	IBMPowerVSClusterReadyV1Beta2Condition = capiv1beta1.ReadyV1Beta2Condition
+	IBMPowerVSClusterReadyV1Beta2Condition = clusterv1beta1.ReadyV1Beta2Condition
 
 	// IBMPowerVSClusterReadyV1Beta2Reason surfaces when the IBMPowerVSCluster readiness criteria is met.
-	IBMPowerVSClusterReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	IBMPowerVSClusterReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// IBMPowerVSClusterNotReadyV1Beta2Reason surfaces when the IBMPowerVSCluster readiness criteria is not met.
-	IBMPowerVSClusterNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	IBMPowerVSClusterNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// IBMPowerVSClusterReadyUnknownV1Beta2Reason surfaces when at least one of the IBMPowerVSCluster readiness criteria is unknown
 	// and none of the IBMPowerVSCluster readiness criteria is met.
-	IBMPowerVSClusterReadyUnknownV1Beta2Reason = capiv1beta1.ReadyUnknownV1Beta2Reason
+	IBMPowerVSClusterReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
 )
 
 const (
@@ -205,95 +203,95 @@ const (
 	WorkspaceReadyV1Beta2Condition = "WorkspaceReady"
 
 	// WorkspaceReadyV1Beta2Reason surfaces when the PowerVS workspace is ready.
-	WorkspaceReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	WorkspaceReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// WorkspaceNotReadyV1Beta2Reason surfaces when PowerVS workspace is not ready.
-	WorkspaceNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	WorkspaceNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// WorkspaceDeletingV1Beta2Reason surfaces when the PowerVS workspace is being deleted.
-	WorkspaceDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	WorkspaceDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// NetworkReadyV1Beta2Condition reports on the successful reconciliation of a PowerVS network.
 	NetworkReadyV1Beta2Condition = "NetworkReady"
 
 	// NetworkReadyV1Beta2Reason surfaces when PowerVS workspace is ready.
-	NetworkReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	NetworkReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// NetworkNotReadyV1Beta2Reason surfaces when the PowerVS network is not ready.
-	NetworkNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	NetworkNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// NetworkDeletingV1Beta2Reason surfaces when the PowerVS network is being deleted.
-	NetworkDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	NetworkDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// VPCReadyV1Beta2Condition reports on the successful reconciliation of a VPC.
 	VPCReadyV1Beta2Condition = "VPCReady"
 
 	// VPCReadyV1Beta2Reason surfaces when the VPC is ready.
-	VPCReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	VPCReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// VPCNotReadyV1Beta2Reason surfaces when VPC is not ready.
-	VPCNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	VPCNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// VPCDeletingV1Beta2Reason surfaces when the VPC is being deleted.
-	VPCDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	VPCDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// VPCSubnetReadyV1Beta2Condition reports on the successful reconciliation of a VPC subnet.
 	VPCSubnetReadyV1Beta2Condition = "VPCSubnetReady"
 
 	// VPCSubnetReadyV1Beta2Reason surfaces when the VPC subnet is ready.
-	VPCSubnetReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	VPCSubnetReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// VPCSubnetNotReadyV1Beta2Reason surfaces when VPC subnet is not ready.
-	VPCSubnetNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	VPCSubnetNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// VPCSubnetDeletingV1Beta2Reason surfaces when the VPC subnet is being deleted.
-	VPCSubnetDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	VPCSubnetDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// VPCSecurityGroupReadyV1Beta2Condition reports on the successful reconciliation of a VPC Security Group.
 	VPCSecurityGroupReadyV1Beta2Condition = "VPCSecurityGroupReady"
 
 	// VPCSecurityGroupReadyV1Beta2Reason surfaces when the VPC security group is ready.
-	VPCSecurityGroupReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	VPCSecurityGroupReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// VPCSecurityGroupNotReadyV1Beta2Reason surfaces when VPC security group is not ready.
-	VPCSecurityGroupNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	VPCSecurityGroupNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// VPCSecurityGroupDeletingV1Beta2Reason surfaces when the VPC security group is being deleted.
-	VPCSecurityGroupDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	VPCSecurityGroupDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// TransitGatewayReadyV1Beta2Condition reports on the successful reconciliation of a transit gateway.
 	TransitGatewayReadyV1Beta2Condition = "TransitGatewayReady"
 
 	// TransitGatewayReadyV1Beta2Reason surfaces when the transit gateway is ready.
-	TransitGatewayReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	TransitGatewayReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// TransitGatewayNotReadyV1Beta2Reason surfaces when the transit gateway is not ready.
-	TransitGatewayNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	TransitGatewayNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// TransitGatewayDeletingV1Beta2Reason surfaces when the transit gateway is being deleted.
-	TransitGatewayDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	TransitGatewayDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// VPCLoadBalancerReadyV1Beta2Condition reports on the successful reconciliation of a VPC LoadBalancer.
 	VPCLoadBalancerReadyV1Beta2Condition = "LoadBalancerReady"
 
 	// VPCLoadBalancerReadyV1Beta2Reason surfaces when the VPC LoadBalancer is ready.
-	VPCLoadBalancerReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	VPCLoadBalancerReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// VPCLoadBalancerNotReadyV1Beta2Reason surfaces when VPC LoadBalancer is not ready.
-	VPCLoadBalancerNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	VPCLoadBalancerNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// VPCLoadBalancerDeletingV1Beta2Reason surfaces when the VPC LoadBalancer is being deleted.
-	VPCLoadBalancerDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	VPCLoadBalancerDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 
 	// COSInstanceReadyV1Beta2Condition reports on the successful reconciliation of a COS instance.
 	COSInstanceReadyV1Beta2Condition = "COSInstanceReady"
 
 	// COSInstanceReadyV1Beta2Reason surfaces when the COS instance is ready.
-	COSInstanceReadyV1Beta2Reason = capiv1beta1.ReadyV1Beta2Reason
+	COSInstanceReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
 
 	// COSInstanceNotReadyV1Beta2Reason surfaces when the COS instance is not ready.
-	COSInstanceNotReadyV1Beta2Reason = capiv1beta1.NotReadyV1Beta2Reason
+	COSInstanceNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// COSInstanceDeletingV1Beta2Reason surfaces when the COS instance is being deleted.
-	COSInstanceDeletingV1Beta2Reason = capiv1beta1.DeletingV1Beta2Reason
+	COSInstanceDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 )

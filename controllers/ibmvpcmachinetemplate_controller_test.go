@@ -31,7 +31,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	"github.com/IBM/go-sdk-core/v5/core"
@@ -43,7 +43,7 @@ func TestIBMVPCMachineTemplateReconciler_Reconcile(t *testing.T) {
 	testCases := []struct {
 		name               string
 		expectError        bool
-		VPCMachineTemplate *infrav1beta2.IBMVPCMachineTemplate
+		VPCMachineTemplate *infrav1.IBMVPCMachineTemplate
 	}{
 		{
 			name:        "Should Reconcile successfully if no IBMVPCMachineTemplate found",
@@ -74,7 +74,7 @@ func TestIBMVPCMachineTemplateReconciler_Reconcile(t *testing.T) {
 
 			if tc.VPCMachineTemplate != nil {
 				g.Eventually(func() bool {
-					machineTemplate := &infrav1beta2.IBMVPCMachineTemplate{}
+					machineTemplate := &infrav1.IBMVPCMachineTemplate{}
 					key := client.ObjectKey{
 						Name:      tc.VPCMachineTemplate.Name,
 						Namespace: ns.Name,
@@ -153,7 +153,7 @@ func TestIBMVPCMachineTemplateReconciler_reconcileNormal(t *testing.T) {
 		}
 		g.Expect(err).To(BeNil())
 		g.Eventually(func() bool {
-			machineTemplate := &infrav1beta2.IBMVPCMachineTemplate{}
+			machineTemplate := &infrav1.IBMVPCMachineTemplate{}
 			key := client.ObjectKey{
 				Name:      vPCMachineTemplate.Name,
 				Namespace: ns.Name,
@@ -214,15 +214,15 @@ func TestIBMVPCMachineTemplateReconciler_reconcileNormal(t *testing.T) {
 	)
 }
 
-func stubVPCMachineTemplate(profile string) infrav1beta2.IBMVPCMachineTemplate {
-	return infrav1beta2.IBMVPCMachineTemplate{
+func stubVPCMachineTemplate(profile string) infrav1.IBMVPCMachineTemplate {
+	return infrav1.IBMVPCMachineTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "vpc-test-1",
 		},
-		Spec: infrav1beta2.IBMVPCMachineTemplateSpec{
-			Template: infrav1beta2.IBMVPCMachineTemplateResource{
-				Spec: infrav1beta2.IBMVPCMachineSpec{
-					Image: &infrav1beta2.IBMVPCResourceReference{
+		Spec: infrav1.IBMVPCMachineTemplateSpec{
+			Template: infrav1.IBMVPCMachineTemplateResource{
+				Spec: infrav1.IBMVPCMachineSpec{
+					Image: &infrav1.IBMVPCResourceReference{
 						ID: ptr.To("capi-image"),
 					},
 					Profile: profile,

@@ -19,7 +19,7 @@ package webhooks
 import (
 	"testing"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 
 	. "github.com/onsi/gomega"
 )
@@ -29,25 +29,25 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		newTemplate *infrav1beta2.IBMPowerVSClusterTemplate
-		oldTemplate *infrav1beta2.IBMPowerVSClusterTemplate
+		newTemplate *infrav1.IBMPowerVSClusterTemplate
+		oldTemplate *infrav1.IBMPowerVSClusterTemplate
 		wantErr     bool
 	}{
 		{
 			name: "IBMPowerVSClusterTemplate with immutable spec",
-			newTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
-				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
-					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+			newTemplate: &infrav1.IBMPowerVSClusterTemplate{
+				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance1",
 						},
 					},
 				},
 			},
-			oldTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
-				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
-					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+			oldTemplate: &infrav1.IBMPowerVSClusterTemplate{
+				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance1",
 						},
 					},
@@ -57,19 +57,19 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 		},
 		{
 			name: " IBMPowerVSClusterTemplate with mutable spec",
-			newTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
-				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
-					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+			newTemplate: &infrav1.IBMPowerVSClusterTemplate{
+				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance1",
 						},
 					},
 				},
 			},
-			oldTemplate: &infrav1beta2.IBMPowerVSClusterTemplate{
-				Spec: infrav1beta2.IBMPowerVSClusterTemplateSpec{
-					Template: infrav1beta2.IBMPowerVSClusterTemplateResource{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+			oldTemplate: &infrav1.IBMPowerVSClusterTemplate{
+				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+					Template: infrav1.IBMPowerVSClusterTemplateResource{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "test-instance2",
 						},
 					},

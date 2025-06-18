@@ -22,14 +22,14 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 
 	. "github.com/onsi/gomega"
 )
 
 func TestVPCMachine_default(t *testing.T) {
 	g := NewWithT(t)
-	vpcMachine := &infrav1beta2.IBMVPCMachine{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine", Namespace: "default"}}
+	vpcMachine := &infrav1.IBMVPCMachine{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine", Namespace: "default"}}
 	g.Expect((&IBMVPCMachine{}).Default(context.Background(), vpcMachine)).ToNot(HaveOccurred())
 	g.Expect(vpcMachine.Spec.Profile).To(BeEquivalentTo("bx2-2x8"))
 }
@@ -37,26 +37,26 @@ func TestVPCMachine_default(t *testing.T) {
 func TestIBMVPCMachine_Create(t *testing.T) {
 	tests := []struct {
 		name    string
-		machine *infrav1beta2.IBMVPCMachine
+		machine *infrav1.IBMVPCMachine
 		wantErr bool
 	}{
 		{
 			name: "Create a IBMVPCMachine with valid SizeGiB BootVolume",
-			machine: &infrav1beta2.IBMVPCMachine{
-				Spec: infrav1beta2.IBMVPCMachineSpec{
-					BootVolume: &infrav1beta2.VPCVolume{
+			machine: &infrav1.IBMVPCMachine{
+				Spec: infrav1.IBMVPCMachineSpec{
+					BootVolume: &infrav1.VPCVolume{
 						SizeGiB: 10,
 					},
-					Image: &infrav1beta2.IBMVPCResourceReference{},
+					Image: &infrav1.IBMVPCResourceReference{},
 				},
 			},
 			wantErr: false,
 		},
 		{
 			name: "Create a IBMVPCMachine with invalid SizeGiB BootVolume",
-			machine: &infrav1beta2.IBMVPCMachine{
-				Spec: infrav1beta2.IBMVPCMachineSpec{
-					BootVolume: &infrav1beta2.VPCVolume{
+			machine: &infrav1.IBMVPCMachine{
+				Spec: infrav1.IBMVPCMachineSpec{
+					BootVolume: &infrav1.VPCVolume{
 						SizeGiB: 1,
 					},
 				},

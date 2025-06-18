@@ -21,7 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -220,7 +220,7 @@ type IBMPowerVSMachineStatus struct {
 
 	// Conditions defines current service state of the IBMPowerVSMachine.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
 
 	// Region specifies the Power VS Service instance region.
 	Region *string `json:"region,omitempty"`
@@ -266,26 +266,26 @@ type IBMPowerVSMachine struct {
 	Status IBMPowerVSMachineStatus `json:"status,omitempty"`
 }
 
-// GetV1Beta1Conditions returns the observations of the operational state of the IBMPowerVSMachine resource.
-func (r *IBMPowerVSMachine) GetV1Beta1Conditions() clusterv1.Conditions {
+// GetConditions returns the observations of the operational state of the IBMPowerVSMachine resource.
+func (r *IBMPowerVSMachine) GetConditions() clusterv1beta1.Conditions {
 	return r.Status.Conditions
 }
 
-// SetV1Beta1Conditions sets the underlying service state of the IBMPowerVSMachine to the predescribed clusterv1.Conditions.
-func (r *IBMPowerVSMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+// SetConditions sets the underlying service state of the IBMPowerVSMachine to the predescribed clusterv1beta1.Conditions.
+func (r *IBMPowerVSMachine) SetConditions(conditions clusterv1beta1.Conditions) {
 	r.Status.Conditions = conditions
 }
 
-// GetConditions returns the set of conditions for this object.
-func (r *IBMPowerVSMachine) GetConditions() []metav1.Condition {
+// GetV1Beta2Conditions returns the set of conditions for this object.
+func (r *IBMPowerVSMachine) GetV1Beta2Conditions() []metav1.Condition {
 	if r.Status.V1Beta2 == nil {
 		return nil
 	}
 	return r.Status.V1Beta2.Conditions
 }
 
-// SetConditions sets conditions for an API object.
-func (r *IBMPowerVSMachine) SetConditions(conditions []metav1.Condition) {
+// SetV1Beta2Conditions sets conditions for an API object.
+func (r *IBMPowerVSMachine) SetV1Beta2Conditions(conditions []metav1.Condition) {
 	if r.Status.V1Beta2 == nil {
 		r.Status.V1Beta2 = &IBMPowerVSMachineV1Beta2Status{}
 	}

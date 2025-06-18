@@ -48,7 +48,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -87,7 +87,7 @@ type PowerVSClusterScopeParams struct {
 	Client            client.Client
 	Logger            logr.Logger
 	Cluster           *clusterv1.Cluster
-	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
+	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 
 	// ClientFactory contains collection of functions to override actual client, which helps in testing.
@@ -117,7 +117,7 @@ type PowerVSClusterScope struct {
 	ResourceManagerClient resourcemanager.ResourceManager
 
 	Cluster           *clusterv1.Cluster
-	IBMPowerVSCluster *infrav1beta2.IBMPowerVSCluster
+	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
@@ -369,7 +369,7 @@ func (s *PowerVSClusterScope) Zone() *string {
 }
 
 // ResourceGroup returns the cluster resource group.
-func (s *PowerVSClusterScope) ResourceGroup() *infrav1beta2.IBMPowerVSResourceReference {
+func (s *PowerVSClusterScope) ResourceGroup() *infrav1.IBMPowerVSResourceReference {
 	return s.IBMPowerVSCluster.Spec.ResourceGroup
 }
 
@@ -383,11 +383,11 @@ func (s *PowerVSClusterScope) APIServerPort() int32 {
 	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
 		return *s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
-	return infrav1beta2.DefaultAPIServerPort
+	return infrav1.DefaultAPIServerPort
 }
 
 // ServiceInstance returns the cluster ServiceInstance.
-func (s *PowerVSClusterScope) ServiceInstance() *infrav1beta2.IBMPowerVSResourceReference {
+func (s *PowerVSClusterScope) ServiceInstance() *infrav1.IBMPowerVSResourceReference {
 	return s.IBMPowerVSCluster.Spec.ServiceInstance
 }
 
@@ -400,7 +400,7 @@ func (s *PowerVSClusterScope) GetServiceInstanceID() string {
 }
 
 // SetTransitGatewayConnectionStatus sets the connection status of Transit gateway.
-func (s *PowerVSClusterScope) SetTransitGatewayConnectionStatus(networkType networkConnectionType, resource *infrav1beta2.ResourceReference) {
+func (s *PowerVSClusterScope) SetTransitGatewayConnectionStatus(networkType networkConnectionType, resource *infrav1.ResourceReference) {
 	if s.IBMPowerVSCluster.Status.TransitGateway == nil || resource == nil {
 		return
 	}
@@ -415,7 +415,7 @@ func (s *PowerVSClusterScope) SetTransitGatewayConnectionStatus(networkType netw
 
 // SetTransitGatewayStatus sets the status of Transit gateway.
 func (s *PowerVSClusterScope) SetTransitGatewayStatus(id *string, controllerCreated *bool) {
-	s.IBMPowerVSCluster.Status.TransitGateway = &infrav1beta2.TransitGatewayStatus{
+	s.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
 		ID:                id,
 		ControllerCreated: controllerCreated,
 	}
@@ -424,41 +424,41 @@ func (s *PowerVSClusterScope) SetTransitGatewayStatus(id *string, controllerCrea
 // TODO: Can we use generic here.
 
 // SetStatus set the IBMPowerVSCluster status for provided ResourceType.
-func (s *PowerVSClusterScope) SetStatus(ctx context.Context, resourceType infrav1beta2.ResourceType, resource infrav1beta2.ResourceReference) {
+func (s *PowerVSClusterScope) SetStatus(ctx context.Context, resourceType infrav1.ResourceType, resource infrav1.ResourceReference) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting status", "resourceType", resourceType, "resource", resource)
 	switch resourceType {
-	case infrav1beta2.ResourceTypeServiceInstance:
+	case infrav1.ResourceTypeServiceInstance:
 		if s.IBMPowerVSCluster.Status.ServiceInstance == nil {
 			s.IBMPowerVSCluster.Status.ServiceInstance = &resource
 			return
 		}
 		s.IBMPowerVSCluster.Status.ServiceInstance.Set(resource)
-	case infrav1beta2.ResourceTypeNetwork:
+	case infrav1.ResourceTypeNetwork:
 		if s.IBMPowerVSCluster.Status.Network == nil {
 			s.IBMPowerVSCluster.Status.Network = &resource
 			return
 		}
 		s.IBMPowerVSCluster.Status.Network.Set(resource)
-	case infrav1beta2.ResourceTypeVPC:
+	case infrav1.ResourceTypeVPC:
 		if s.IBMPowerVSCluster.Status.VPC == nil {
 			s.IBMPowerVSCluster.Status.VPC = &resource
 			return
 		}
 		s.IBMPowerVSCluster.Status.VPC.Set(resource)
-	case infrav1beta2.ResourceTypeDHCPServer:
+	case infrav1.ResourceTypeDHCPServer:
 		if s.IBMPowerVSCluster.Status.DHCPServer == nil {
 			s.IBMPowerVSCluster.Status.DHCPServer = &resource
 			return
 		}
 		s.IBMPowerVSCluster.Status.DHCPServer.Set(resource)
-	case infrav1beta2.ResourceTypeCOSInstance:
+	case infrav1.ResourceTypeCOSInstance:
 		if s.IBMPowerVSCluster.Status.COSInstance == nil {
 			s.IBMPowerVSCluster.Status.COSInstance = &resource
 			return
 		}
 		s.IBMPowerVSCluster.Status.COSInstance.Set(resource)
-	case infrav1beta2.ResourceTypeResourceGroup:
+	case infrav1.ResourceTypeResourceGroup:
 		if s.IBMPowerVSCluster.Status.ResourceGroup == nil {
 			s.IBMPowerVSCluster.Status.ResourceGroup = &resource
 			return
@@ -476,7 +476,7 @@ func (s *PowerVSClusterScope) GetNetworkID() *string {
 }
 
 // Network returns the cluster Network.
-func (s *PowerVSClusterScope) Network() *infrav1beta2.IBMPowerVSResourceReference {
+func (s *PowerVSClusterScope) Network() *infrav1.IBMPowerVSResourceReference {
 	return &s.IBMPowerVSCluster.Spec.Network
 }
 
@@ -489,12 +489,12 @@ func (s *PowerVSClusterScope) GetDHCPServerID() *string {
 }
 
 // DHCPServer returns the DHCP server details.
-func (s *PowerVSClusterScope) DHCPServer() *infrav1beta2.DHCPServer {
+func (s *PowerVSClusterScope) DHCPServer() *infrav1.DHCPServer {
 	return s.IBMPowerVSCluster.Spec.DHCPServer
 }
 
 // VPC returns the cluster VPC information.
-func (s *PowerVSClusterScope) VPC() *infrav1beta2.VPCResourceReference {
+func (s *PowerVSClusterScope) VPC() *infrav1.VPCResourceReference {
 	return s.IBMPowerVSCluster.Spec.VPC
 }
 
@@ -530,11 +530,11 @@ func (s *PowerVSClusterScope) GetVPCSubnetIDs() []*string {
 }
 
 // SetVPCSubnetStatus set the VPC subnet id.
-func (s *PowerVSClusterScope) SetVPCSubnetStatus(ctx context.Context, name string, resource infrav1beta2.ResourceReference) {
+func (s *PowerVSClusterScope) SetVPCSubnetStatus(ctx context.Context, name string, resource infrav1.ResourceReference) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting status", "name", name, "resource", resource)
 	if s.IBMPowerVSCluster.Status.VPCSubnet == nil {
-		s.IBMPowerVSCluster.Status.VPCSubnet = make(map[string]infrav1beta2.ResourceReference)
+		s.IBMPowerVSCluster.Status.VPCSubnet = make(map[string]infrav1.ResourceReference)
 	}
 	if val, ok := s.IBMPowerVSCluster.Status.VPCSubnet[name]; ok {
 		if val.ControllerCreated != nil && *val.ControllerCreated {
@@ -569,11 +569,11 @@ func (s *PowerVSClusterScope) GetVPCSecurityGroupByID(securityGroupID string) (*
 }
 
 // SetVPCSecurityGroupStatus set the VPC security group id.
-func (s *PowerVSClusterScope) SetVPCSecurityGroupStatus(ctx context.Context, name string, resource infrav1beta2.VPCSecurityGroupStatus) {
+func (s *PowerVSClusterScope) SetVPCSecurityGroupStatus(ctx context.Context, name string, resource infrav1.VPCSecurityGroupStatus) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting VPC security group status", "name", name, "resource", resource)
 	if s.IBMPowerVSCluster.Status.VPCSecurityGroups == nil {
-		s.IBMPowerVSCluster.Status.VPCSecurityGroups = make(map[string]infrav1beta2.VPCSecurityGroupStatus)
+		s.IBMPowerVSCluster.Status.VPCSecurityGroups = make(map[string]infrav1.VPCSecurityGroupStatus)
 	}
 	if val, ok := s.IBMPowerVSCluster.Status.VPCSecurityGroups[name]; ok {
 		if val.ControllerCreated != nil && *val.ControllerCreated {
@@ -584,7 +584,7 @@ func (s *PowerVSClusterScope) SetVPCSecurityGroupStatus(ctx context.Context, nam
 }
 
 // TransitGateway returns the cluster Transit Gateway information.
-func (s *PowerVSClusterScope) TransitGateway() *infrav1beta2.TransitGateway {
+func (s *PowerVSClusterScope) TransitGateway() *infrav1.TransitGateway {
 	return s.IBMPowerVSCluster.Spec.TransitGateway
 }
 
@@ -597,11 +597,11 @@ func (s *PowerVSClusterScope) GetTransitGatewayID() *string {
 }
 
 // SetLoadBalancerStatus set the loadBalancer id.
-func (s *PowerVSClusterScope) SetLoadBalancerStatus(ctx context.Context, name string, loadBalancer infrav1beta2.VPCLoadBalancerStatus) {
+func (s *PowerVSClusterScope) SetLoadBalancerStatus(ctx context.Context, name string, loadBalancer infrav1.VPCLoadBalancerStatus) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting status", "name", name, "status", loadBalancer)
 	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
-		s.IBMPowerVSCluster.Status.LoadBalancers = make(map[string]infrav1beta2.VPCLoadBalancerStatus)
+		s.IBMPowerVSCluster.Status.LoadBalancers = make(map[string]infrav1.VPCLoadBalancerStatus)
 	}
 	if val, ok := s.IBMPowerVSCluster.Status.LoadBalancers[name]; ok {
 		if val.ControllerCreated != nil && *val.ControllerCreated {
@@ -623,7 +623,7 @@ func (s *PowerVSClusterScope) GetLoadBalancerID(loadBalancerName string) *string
 }
 
 // GetLoadBalancerState will return the state for the load balancer.
-func (s *PowerVSClusterScope) GetLoadBalancerState(name string) *infrav1beta2.VPCLoadBalancerState {
+func (s *PowerVSClusterScope) GetLoadBalancerState(name string) *infrav1.VPCLoadBalancerState {
 	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
 		return nil
 	}
@@ -641,7 +641,7 @@ func (s *PowerVSClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 
 	var name string
 	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
-		name = *s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancer)
+		name = *s.GetServiceName(infrav1.ResourceTypeLoadBalancer)
 	}
 
 	for _, lb := range s.IBMPowerVSCluster.Spec.LoadBalancers {
@@ -719,7 +719,7 @@ func (s *PowerVSClusterScope) ReconcileResourceGroup(ctx context.Context) error 
 	}
 	log.Info("Fetched resource group ID", "resourceGroupID", resourceGroupID)
 	// Set the status of IBMPowerVSCluster object with resource group id.
-	s.SetStatus(ctx, infrav1beta2.ResourceTypeResourceGroup, infrav1beta2.ResourceReference{ID: &resourceGroupID, ControllerCreated: ptr.To(false)})
+	s.SetStatus(ctx, infrav1.ResourceTypeResourceGroup, infrav1.ResourceReference{ID: &resourceGroupID, ControllerCreated: ptr.To(false)})
 	return nil
 }
 
@@ -757,7 +757,7 @@ func (s *PowerVSClusterScope) ReconcilePowerVSServiceInstance(ctx context.Contex
 	// Set the status of IBMPowerVSCluster object with serviceInstanceID and ControllerCreated to false as PowerVS service instance is already exist in cloud.
 	if serviceInstanceID != "" {
 		log.V(3).Info("Found PowerVS service instance in cloud", "serviceInstanceID", serviceInstanceID)
-		s.SetStatus(ctx, infrav1beta2.ResourceTypeServiceInstance, infrav1beta2.ResourceReference{ID: &serviceInstanceID, ControllerCreated: ptr.To(false)})
+		s.SetStatus(ctx, infrav1.ResourceTypeServiceInstance, infrav1.ResourceReference{ID: &serviceInstanceID, ControllerCreated: ptr.To(false)})
 		return requeue, nil
 	}
 
@@ -772,7 +772,7 @@ func (s *PowerVSClusterScope) ReconcilePowerVSServiceInstance(ctx context.Contex
 
 	log.Info("Created PowerVS service instance", "serviceInstanceID", serviceInstance.GUID)
 	// Set the status of IBMPowerVSCluster object with serviceInstanceID and ControllerCreated to true as new PowerVS service instance is created.
-	s.SetStatus(ctx, infrav1beta2.ResourceTypeServiceInstance, infrav1beta2.ResourceReference{ID: serviceInstance.GUID, ControllerCreated: ptr.To(true)})
+	s.SetStatus(ctx, infrav1.ResourceTypeServiceInstance, infrav1.ResourceReference{ID: serviceInstance.GUID, ControllerCreated: ptr.To(true)})
 	return true, nil
 }
 
@@ -783,13 +783,13 @@ func (s *PowerVSClusterScope) checkServiceInstanceState(ctx context.Context, ins
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Checking the state of PowerVS service instance", "name", *instance.Name)
 	switch *instance.State {
-	case string(infrav1beta2.ServiceInstanceStateActive):
+	case string(infrav1.ServiceInstanceStateActive):
 		log.V(3).Info("PowerVS service instance is in active state")
 		return false, nil
-	case string(infrav1beta2.ServiceInstanceStateProvisioning):
+	case string(infrav1.ServiceInstanceStateProvisioning):
 		log.V(3).Info("PowerVS service instance is in provisioning state")
 		return true, nil
-	case string(infrav1beta2.ServiceInstanceStateFailed):
+	case string(infrav1.ServiceInstanceStateFailed):
 		return false, fmt.Errorf("PowerVS service instance is in failed state")
 	}
 	return false, fmt.Errorf("PowerVS service instance is in %s state", *instance.State)
@@ -841,7 +841,7 @@ func (s *PowerVSClusterScope) isServiceInstanceExists(ctx context.Context) (stri
 // getServiceInstance return resource instance by name.
 func (s *PowerVSClusterScope) getServiceInstance() (*resourcecontrollerv2.ResourceInstance, error) {
 	//TODO: Support regular expression
-	return s.ResourceClient.GetServiceInstance("", *s.GetServiceName(infrav1beta2.ResourceTypeServiceInstance), s.IBMPowerVSCluster.Spec.Zone)
+	return s.ResourceClient.GetServiceInstance("", *s.GetServiceName(infrav1.ResourceTypeServiceInstance), s.IBMPowerVSCluster.Spec.Zone)
 }
 
 // createServiceInstance creates the service instance.
@@ -854,13 +854,13 @@ func (s *PowerVSClusterScope) createServiceInstance(ctx context.Context) (*resou
 	}
 
 	// create service instance.
-	log.V(3).Info("Creating new PowerVS service instance", "serviceInstanceName", s.GetServiceName(infrav1beta2.ResourceTypeServiceInstance))
+	log.V(3).Info("Creating new PowerVS service instance", "serviceInstanceName", s.GetServiceName(infrav1.ResourceTypeServiceInstance))
 	zone := s.Zone()
 	if zone == nil {
 		return nil, fmt.Errorf("PowerVS zone is not set")
 	}
 	serviceInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
-		Name:           s.GetServiceName(infrav1beta2.ResourceTypeServiceInstance),
+		Name:           s.GetServiceName(infrav1.ResourceTypeServiceInstance),
 		Target:         zone,
 		ResourceGroup:  &resourceGroupID,
 		ResourcePlanID: ptr.To(resourcecontroller.PowerVSResourcePlanID),
@@ -909,7 +909,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork(ctx context.Context) (bool, error
 	}
 	if networkID != nil {
 		log.V(3).Info("Found PowerVS network in cloud", "networkID", networkID)
-		s.SetStatus(ctx, infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: networkID, ControllerCreated: ptr.To(false)})
+		s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: networkID, ControllerCreated: ptr.To(false)})
 	}
 	dhcpServerID, err := s.checkDHCPServer(ctx)
 	if err != nil {
@@ -917,7 +917,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork(ctx context.Context) (bool, error
 	}
 	if dhcpServerID != nil {
 		log.V(3).Info("Found DHCP server in cloud", "dhcpServerID", dhcpServerID)
-		s.SetStatus(ctx, infrav1beta2.ResourceTypeDHCPServer, infrav1beta2.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(false)})
+		s.SetStatus(ctx, infrav1.ResourceTypeDHCPServer, infrav1.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(false)})
 	}
 	if s.GetNetworkID() != nil {
 		return true, nil
@@ -929,7 +929,7 @@ func (s *PowerVSClusterScope) ReconcileNetwork(ctx context.Context) (bool, error
 	}
 
 	log.Info("Created DHCP Server", "dhcpServerID", *dhcpServerID)
-	s.SetStatus(ctx, infrav1beta2.ResourceTypeDHCPServer, infrav1beta2.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(true)})
+	s.SetStatus(ctx, infrav1.ResourceTypeDHCPServer, infrav1.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(true)})
 	return false, nil
 }
 
@@ -948,7 +948,7 @@ func (s *PowerVSClusterScope) checkDHCPServer(ctx context.Context) (*string, err
 				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
 					return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
 				}
-				s.SetStatus(ctx, infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
+				s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
 			} else {
 				return nil, fmt.Errorf("found DHCP server with ID `%s`, but network is nil", *s.DHCPServer().ID)
 			}
@@ -959,7 +959,7 @@ func (s *PowerVSClusterScope) checkDHCPServer(ctx context.Context) (*string, err
 	}
 
 	// if user provides DHCP server name then we can use network name to match the existing DHCP server
-	networkName := dhcpNetworkName(*s.GetServiceName(infrav1beta2.ResourceTypeDHCPServer))
+	networkName := dhcpNetworkName(*s.GetServiceName(infrav1.ResourceTypeDHCPServer))
 
 	log.V(3).Info("Checking DHCP server's network list by network name", "name", networkName)
 	dhcpServers, err := s.IBMPowerVSClient.GetAllDHCPServers()
@@ -972,7 +972,7 @@ func (s *PowerVSClusterScope) checkDHCPServer(ctx context.Context) (*string, err
 				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
 					return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
 				}
-				s.SetStatus(ctx, infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
+				s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
 			} else if *dhcpServer.Network.ID != *s.GetNetworkID() {
 				return nil, fmt.Errorf("error network set via spec and DHCP server's networkID are not matching")
 			}
@@ -1031,13 +1031,13 @@ func (s *PowerVSClusterScope) checkDHCPServerStatus(ctx context.Context, dhcpSer
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Checking the status of DHCP server", "dhcpServerID", *dhcpServer.ID)
 	switch *dhcpServer.Status {
-	case string(infrav1beta2.DHCPServerStateActive):
+	case string(infrav1.DHCPServerStateActive):
 		log.V(3).Info("DHCP server is in active state")
 		return true, nil
-	case string(infrav1beta2.DHCPServerStateBuild):
+	case string(infrav1.DHCPServerStateBuild):
 		log.V(3).Info("DHCP server is in build state")
 		return false, nil
-	case string(infrav1beta2.DHCPServerStateError):
+	case string(infrav1.DHCPServerStateError):
 		return false, fmt.Errorf("DHCP server creation failed and is in error state")
 	}
 	return false, nil
@@ -1049,10 +1049,10 @@ func (s *PowerVSClusterScope) createDHCPServer(ctx context.Context) (*string, er
 	var dhcpServerCreateParams models.DHCPServerCreate
 	dhcpServerDetails := s.DHCPServer()
 	if dhcpServerDetails == nil {
-		dhcpServerDetails = &infrav1beta2.DHCPServer{}
+		dhcpServerDetails = &infrav1.DHCPServer{}
 	}
 
-	dhcpServerCreateParams.Name = s.GetServiceName(infrav1beta2.ResourceTypeDHCPServer)
+	dhcpServerCreateParams.Name = s.GetServiceName(infrav1.ResourceTypeDHCPServer)
 	log.V(3).Info("Creating a new DHCP server with name", "name", dhcpServerCreateParams.Name)
 	if dhcpServerDetails.DNSServer != nil {
 		dhcpServerCreateParams.DNSServer = dhcpServerDetails.DNSServer
@@ -1076,7 +1076,7 @@ func (s *PowerVSClusterScope) createDHCPServer(ctx context.Context) (*string, er
 	}
 
 	log.Info("DHCP Server network details", "details", *dhcpServer.Network)
-	s.SetStatus(ctx, infrav1beta2.ResourceTypeNetwork, infrav1beta2.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(true)})
+	s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(true)})
 	return dhcpServer.ID, nil
 }
 
@@ -1097,7 +1097,7 @@ func (s *PowerVSClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 			return false, fmt.Errorf("vpc with ID %s not found", *vpcID)
 		}
 
-		if vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1beta2.VPCStatePending) {
+		if vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1.VPCStatePending) {
 			log.V(3).Info("VPC creation is in pending state")
 			return true, nil
 		}
@@ -1112,7 +1112,7 @@ func (s *PowerVSClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 	}
 	if id != "" {
 		log.V(3).Info("VPC found in cloud", "vpcID", id)
-		s.SetStatus(ctx, infrav1beta2.ResourceTypeVPC, infrav1beta2.ResourceReference{ID: &id, ControllerCreated: ptr.To(false)})
+		s.SetStatus(ctx, infrav1.ResourceTypeVPC, infrav1.ResourceReference{ID: &id, ControllerCreated: ptr.To(false)})
 		return false, nil
 	}
 
@@ -1125,7 +1125,7 @@ func (s *PowerVSClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to create VPC: %w", err)
 	}
 	log.Info("Created VPC", "vpcID", *vpcID)
-	s.SetStatus(ctx, infrav1beta2.ResourceTypeVPC, infrav1beta2.ResourceReference{ID: vpcID, ControllerCreated: ptr.To(true)})
+	s.SetStatus(ctx, infrav1.ResourceTypeVPC, infrav1.ResourceReference{ID: vpcID, ControllerCreated: ptr.To(true)})
 	return true, nil
 }
 
@@ -1156,7 +1156,7 @@ func (s *PowerVSClusterScope) checkVPC(ctx context.Context) (string, error) {
 }
 
 func (s *PowerVSClusterScope) getVPCByName() (*vpcv1.VPC, error) {
-	vpcDetails, err := s.IBMVPCClient.GetVPCByName(*s.GetServiceName(infrav1beta2.ResourceTypeVPC))
+	vpcDetails, err := s.IBMVPCClient.GetVPCByName(*s.GetServiceName(infrav1.ResourceTypeVPC))
 	if err != nil {
 		return nil, fmt.Errorf("error fetching VPC details with name: %w", err)
 	}
@@ -1172,7 +1172,7 @@ func (s *PowerVSClusterScope) createVPC() (*string, error) {
 	addressPrefixManagement := "auto"
 	vpcOption := &vpcv1.CreateVPCOptions{
 		ResourceGroup:           &vpcv1.ResourceGroupIdentity{ID: &resourceGroupID},
-		Name:                    s.GetServiceName(infrav1beta2.ResourceTypeVPC),
+		Name:                    s.GetServiceName(infrav1.ResourceTypeVPC),
 		AddressPrefixManagement: &addressPrefixManagement,
 	}
 	vpcDetails, _, err := s.IBMVPCClient.CreateVPC(vpcOption)
@@ -1199,7 +1199,7 @@ func (s *PowerVSClusterScope) createVPC() (*string, error) {
 // ReconcileVPCSubnets reconciles VPC subnet.
 func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	subnets := make([]infrav1beta2.Subnet, 0)
+	subnets := make([]infrav1.Subnet, 0)
 	vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
 	if err != nil {
 		return false, fmt.Errorf("error fetching VPC zones associated with VPC region: %w", err)
@@ -1212,8 +1212,8 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, er
 		// if the user did not set any subnet, we try to create subnet in all the zones.
 		log.V(3).Info("VPC subnets details are not set in spec, creating subnets in all zones in the region", "region", *s.VPC().Region)
 		for _, zone := range vpcZones {
-			subnet := infrav1beta2.Subnet{
-				Name: ptr.To(fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1beta2.ResourceTypeSubnet), zone)),
+			subnet := infrav1.Subnet{
+				Name: ptr.To(fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1.ResourceTypeSubnet), zone)),
 				Zone: ptr.To(zone),
 			}
 			subnets = append(subnets, subnet)
@@ -1229,7 +1229,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, er
 			subnetID = subnet.ID
 		} else {
 			if subnet.Name == nil {
-				subnet.Name = ptr.To(fmt.Sprintf("%s-%d", *s.GetServiceName(infrav1beta2.ResourceTypeSubnet), index))
+				subnet.Name = ptr.To(fmt.Sprintf("%s-%d", *s.GetServiceName(infrav1.ResourceTypeSubnet), index))
 			}
 			subnetID = s.GetVPCSubnetID(*subnet.Name)
 		}
@@ -1246,7 +1246,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, er
 				return false, fmt.Errorf("failed to get VPC subnet with ID %s", *subnetID)
 			}
 			// check for next subnet
-			s.SetVPCSubnetStatus(ctx, *subnetDetails.Name, infrav1beta2.ResourceReference{ID: subnetDetails.ID})
+			s.SetVPCSubnetStatus(ctx, *subnetDetails.Name, infrav1.ResourceReference{ID: subnetDetails.ID})
 			continue
 		}
 
@@ -1257,7 +1257,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, er
 		}
 		if vpcSubnetID != "" {
 			log.V(3).Info("Found VPC subnet in cloud", "subnetID", vpcSubnetID)
-			s.SetVPCSubnetStatus(ctx, *subnet.Name, infrav1beta2.ResourceReference{ID: &vpcSubnetID, ControllerCreated: ptr.To(false)})
+			s.SetVPCSubnetStatus(ctx, *subnet.Name, infrav1.ResourceReference{ID: &vpcSubnetID, ControllerCreated: ptr.To(false)})
 			// check for next subnet
 			continue
 		}
@@ -1271,7 +1271,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, er
 			return false, fmt.Errorf("error creating VPC subnet: %w", err)
 		}
 		log.Info("Created VPC subnet", "subnetID", subnetID)
-		s.SetVPCSubnetStatus(ctx, *subnet.Name, infrav1beta2.ResourceReference{ID: subnetID, ControllerCreated: ptr.To(true)})
+		s.SetVPCSubnetStatus(ctx, *subnet.Name, infrav1.ResourceReference{ID: subnetID, ControllerCreated: ptr.To(true)})
 		// Requeue only when the creation of all subnets has been triggered.
 		if index == len(subnets)-1 {
 			return true, nil
@@ -1295,7 +1295,7 @@ func (s *PowerVSClusterScope) checkVPCSubnet(ctx context.Context, subnetName str
 }
 
 // createVPCSubnet creates a VPC subnet.
-func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1beta2.Subnet) (*string, error) {
+func (s *PowerVSClusterScope) createVPCSubnet(subnet infrav1.Subnet) (*string, error) {
 	// TODO(karthik-k-n): consider moving to clusterscope
 	// fetch resource group id
 	resourceGroupID := s.GetResourceGroupID()
@@ -1373,7 +1373,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSecurityGroups(ctx context.Context) er
 		}
 		if sg != nil {
 			log.V(3).Info("VPC security group already exists", "name", *sg.Name)
-			s.SetVPCSecurityGroupStatus(ctx, *sg.Name, infrav1beta2.VPCSecurityGroupStatus{
+			s.SetVPCSecurityGroupStatus(ctx, *sg.Name, infrav1.VPCSecurityGroupStatus{
 				ID:                sg.ID,
 				RuleIDs:           ruleIDs,
 				ControllerCreated: ptr.To(false),
@@ -1386,7 +1386,7 @@ func (s *PowerVSClusterScope) ReconcileVPCSecurityGroups(ctx context.Context) er
 			return fmt.Errorf("failed to create VPC security group: %w", err)
 		}
 		log.Info("VPC security group created", "securityGroupName", *securityGroup.Name)
-		s.SetVPCSecurityGroupStatus(ctx, *securityGroup.Name, infrav1beta2.VPCSecurityGroupStatus{
+		s.SetVPCSecurityGroupStatus(ctx, *securityGroup.Name, infrav1.VPCSecurityGroupStatus{
 			ID:                securityGroupID,
 			ControllerCreated: ptr.To(true),
 		})
@@ -1400,11 +1400,11 @@ func (s *PowerVSClusterScope) ReconcileVPCSecurityGroups(ctx context.Context) er
 }
 
 // createVPCSecurityGroupRule creates a specific rule for a existing security group.
-func (s *PowerVSClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityGroupID, direction, protocol *string, portMin, portMax *int64, remote infrav1beta2.VPCSecurityGroupRuleRemote) (*string, error) {
+func (s *PowerVSClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityGroupID, direction, protocol *string, portMin, portMax *int64, remote infrav1.VPCSecurityGroupRuleRemote) (*string, error) {
 	log := ctrl.LoggerFrom(ctx)
-	setRemote := func(remote infrav1beta2.VPCSecurityGroupRuleRemote, remoteOption *vpcv1.SecurityGroupRuleRemotePrototype) error {
+	setRemote := func(remote infrav1.VPCSecurityGroupRuleRemote, remoteOption *vpcv1.SecurityGroupRuleRemotePrototype) error {
 		switch remote.RemoteType {
-		case infrav1beta2.VPCSecurityGroupRuleRemoteTypeCIDR:
+		case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
 			cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(*remote.CIDRSubnetName)
 			if err != nil {
 				return fmt.Errorf("failed to find VPC subnet by name '%s' for fetching CIDR block: %w", *remote.CIDRSubnetName, err)
@@ -1414,10 +1414,10 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRule(ctx context.Context, se
 			}
 			log.V(3).Info("Creating VPC security group rule", "securityGroupID", *securityGroupID, "direction", *direction, "protocol", *protocol, "cidrBlockSubnet", *remote.CIDRSubnetName, "cidr", *cidrSubnet.Ipv4CIDRBlock)
 			remoteOption.CIDRBlock = cidrSubnet.Ipv4CIDRBlock
-		case infrav1beta2.VPCSecurityGroupRuleRemoteTypeAddress:
+		case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
 			log.V(3).Info("Creating VPC security group rule", "securityGroupID", *securityGroupID, "direction", *direction, "protocol", *protocol, "ip", *remote.Address)
 			remoteOption.Address = remote.Address
-		case infrav1beta2.VPCSecurityGroupRuleRemoteTypeSG:
+		case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
 			sg, err := s.IBMVPCClient.GetSecurityGroupByName(*remote.SecurityGroupName)
 			if err != nil {
 				return fmt.Errorf("failed to find VPC security group by name '%s', err: %w", *remote.SecurityGroupName, err)
@@ -1474,7 +1474,7 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRule(ctx context.Context, se
 }
 
 // createVPCSecurityGroupRules creates rules for a security group.
-func (s *PowerVSClusterScope) createVPCSecurityGroupRules(ctx context.Context, ogSecurityGroupRules []*infrav1beta2.VPCSecurityGroupRule, securityGroupID *string) ([]*string, error) {
+func (s *PowerVSClusterScope) createVPCSecurityGroupRules(ctx context.Context, ogSecurityGroupRules []*infrav1.VPCSecurityGroupRule, securityGroupID *string) ([]*string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var ruleIDs []*string
 	log.V(3).Info("Creating VPC security group rules")
@@ -1485,7 +1485,7 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRules(ctx context.Context, o
 
 		direction := ptr.To(string(rule.Direction))
 		switch rule.Direction {
-		case infrav1beta2.VPCSecurityGroupRuleDirectionInbound:
+		case infrav1.VPCSecurityGroupRuleDirectionInbound:
 			protocol = ptr.To(string(rule.Source.Protocol))
 			if rule.Source.PortRange != nil {
 				portMin = ptr.To(rule.Source.PortRange.MinimumPort)
@@ -1499,7 +1499,7 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRules(ctx context.Context, o
 				}
 				ruleIDs = append(ruleIDs, id)
 			}
-		case infrav1beta2.VPCSecurityGroupRuleDirectionOutbound:
+		case infrav1.VPCSecurityGroupRuleDirectionOutbound:
 			protocol = ptr.To(string(rule.Destination.Protocol))
 			if rule.Destination.PortRange != nil {
 				portMin = ptr.To(rule.Destination.PortRange.MinimumPort)
@@ -1520,7 +1520,7 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRules(ctx context.Context, o
 }
 
 // createVPCSecurityGroupRulesAndSetStatus creates VPC security group rules and sets its status.
-func (s *PowerVSClusterScope) createVPCSecurityGroupRulesAndSetStatus(ctx context.Context, ogSecurityGroupRules []*infrav1beta2.VPCSecurityGroupRule, securityGroupID, securityGroupName *string) error {
+func (s *PowerVSClusterScope) createVPCSecurityGroupRulesAndSetStatus(ctx context.Context, ogSecurityGroupRules []*infrav1.VPCSecurityGroupRule, securityGroupID, securityGroupName *string) error {
 	log := ctrl.LoggerFrom(ctx)
 	ruleIDs, err := s.createVPCSecurityGroupRules(ctx, ogSecurityGroupRules, securityGroupID)
 	if err != nil {
@@ -1528,7 +1528,7 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRulesAndSetStatus(ctx contex
 	}
 	log.Info("VPC security group rules created", "securityGroupName", *securityGroupName)
 
-	s.SetVPCSecurityGroupStatus(ctx, *securityGroupName, infrav1beta2.VPCSecurityGroupStatus{
+	s.SetVPCSecurityGroupStatus(ctx, *securityGroupName, infrav1.VPCSecurityGroupStatus{
 		ID:                securityGroupID,
 		RuleIDs:           ruleIDs,
 		ControllerCreated: ptr.To(true),
@@ -1538,7 +1538,7 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRulesAndSetStatus(ctx contex
 }
 
 // createVPCSecurityGroup creates a VPC security group.
-func (s *PowerVSClusterScope) createVPCSecurityGroup(ctx context.Context, spec infrav1beta2.VPCSecurityGroup) (*string, error) {
+func (s *PowerVSClusterScope) createVPCSecurityGroup(ctx context.Context, spec infrav1.VPCSecurityGroup) (*string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Creating VPC security group", "name", *spec.Name)
 
@@ -1561,19 +1561,19 @@ func (s *PowerVSClusterScope) createVPCSecurityGroup(ctx context.Context, spec i
 }
 
 // validateVPCSecurityGroupRuleRemote compares a specific security group rule's remote with the spec and existing security group rule's remote.
-func (s *PowerVSClusterScope) validateVPCSecurityGroupRuleRemote(originalSGRemote *vpcv1.SecurityGroupRuleRemote, expectedSGRemote infrav1beta2.VPCSecurityGroupRuleRemote) (bool, error) {
+func (s *PowerVSClusterScope) validateVPCSecurityGroupRuleRemote(originalSGRemote *vpcv1.SecurityGroupRuleRemote, expectedSGRemote infrav1.VPCSecurityGroupRuleRemote) (bool, error) {
 	var match bool
 
 	switch expectedSGRemote.RemoteType {
-	case infrav1beta2.VPCSecurityGroupRuleRemoteTypeAny:
+	case infrav1.VPCSecurityGroupRuleRemoteTypeAny:
 		if originalSGRemote.CIDRBlock != nil && *originalSGRemote.CIDRBlock == "0.0.0.0/0" {
 			match = true
 		}
-	case infrav1beta2.VPCSecurityGroupRuleRemoteTypeAddress:
+	case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
 		if originalSGRemote.Address != nil && *originalSGRemote.Address == *expectedSGRemote.Address {
 			match = true
 		}
-	case infrav1beta2.VPCSecurityGroupRuleRemoteTypeCIDR:
+	case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
 		cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(*expectedSGRemote.CIDRSubnetName)
 		if err != nil {
 			return false, fmt.Errorf("failed to find VPC subnet by name '%s' for fetching CIDR block: %w", *expectedSGRemote.CIDRSubnetName, err)
@@ -1582,7 +1582,7 @@ func (s *PowerVSClusterScope) validateVPCSecurityGroupRuleRemote(originalSGRemot
 		if originalSGRemote.CIDRBlock != nil && cidrSubnet != nil && *originalSGRemote.CIDRBlock == *cidrSubnet.Ipv4CIDRBlock {
 			match = true
 		}
-	case infrav1beta2.VPCSecurityGroupRuleRemoteTypeSG:
+	case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
 		securityGroup, err := s.IBMVPCClient.GetSecurityGroupByName(*expectedSGRemote.SecurityGroupName)
 		if err != nil {
 			return false, fmt.Errorf("failed to find ID for resource group '%s': %w", *expectedSGRemote.SecurityGroupName, err)
@@ -1597,7 +1597,7 @@ func (s *PowerVSClusterScope) validateVPCSecurityGroupRuleRemote(originalSGRemot
 }
 
 // validateSecurityGroupRule compares a specific security group's rule with the spec and existing security group's rule.
-func (s *PowerVSClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, direction infrav1beta2.VPCSecurityGroupRuleDirection, rule *infrav1beta2.VPCSecurityGroupRulePrototype, remote infrav1beta2.VPCSecurityGroupRuleRemote) (ruleID *string, match bool, err error) {
+func (s *PowerVSClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, direction infrav1.VPCSecurityGroupRuleDirection, rule *infrav1.VPCSecurityGroupRulePrototype, remote infrav1.VPCSecurityGroupRuleRemote) (ruleID *string, match bool, err error) {
 	updateError := func(e error) {
 		err = fmt.Errorf("failed to validate VPC security group rule's remote: %w", e)
 	}
@@ -1656,13 +1656,13 @@ func (s *PowerVSClusterScope) validateSecurityGroupRule(originalSecurityGroupRul
 }
 
 // validateVPCSecurityGroupRules compares a specific security group rules spec with the existing security group's rules.
-func (s *PowerVSClusterScope) validateVPCSecurityGroupRules(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, expectedSecurityGroupRules []*infrav1beta2.VPCSecurityGroupRule) ([]*string, bool, error) {
+func (s *PowerVSClusterScope) validateVPCSecurityGroupRules(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, expectedSecurityGroupRules []*infrav1.VPCSecurityGroupRule) ([]*string, bool, error) {
 	ruleIDs := []*string{}
 	for _, expectedRule := range expectedSecurityGroupRules {
 		direction := expectedRule.Direction
 
 		switch direction {
-		case infrav1beta2.VPCSecurityGroupRuleDirectionInbound:
+		case infrav1.VPCSecurityGroupRuleDirectionInbound:
 			for _, remote := range expectedRule.Source.Remotes {
 				id, match, err := s.validateSecurityGroupRule(originalSecurityGroupRules, direction, expectedRule.Source, remote)
 				if err != nil {
@@ -1673,7 +1673,7 @@ func (s *PowerVSClusterScope) validateVPCSecurityGroupRules(originalSecurityGrou
 				}
 				ruleIDs = append(ruleIDs, id)
 			}
-		case infrav1beta2.VPCSecurityGroupRuleDirectionOutbound:
+		case infrav1.VPCSecurityGroupRuleDirectionOutbound:
 			for _, remote := range expectedRule.Destination.Remotes {
 				id, match, err := s.validateSecurityGroupRule(originalSecurityGroupRules, direction, expectedRule.Destination, remote)
 				if err != nil {
@@ -1691,7 +1691,7 @@ func (s *PowerVSClusterScope) validateVPCSecurityGroupRules(originalSecurityGrou
 }
 
 // validateVPCSecurityGroup validates the security group and it's rules provided by user via spec.
-func (s *PowerVSClusterScope) validateVPCSecurityGroup(ctx context.Context, securityGroup infrav1beta2.VPCSecurityGroup) (*vpcv1.SecurityGroup, []*string, error) {
+func (s *PowerVSClusterScope) validateVPCSecurityGroup(ctx context.Context, securityGroup infrav1.VPCSecurityGroup) (*vpcv1.SecurityGroup, []*string, error) {
 	var securityGroupDet *vpcv1.SecurityGroup
 	var err error
 
@@ -1788,7 +1788,7 @@ func (s *PowerVSClusterScope) isTransitGatewayExists(ctx context.Context) (*tgap
 			ID: s.IBMPowerVSCluster.Spec.TransitGateway.ID,
 		})
 	} else {
-		transitGateway, err = s.TransitGatewayClient.GetTransitGatewayByName(*s.GetServiceName(infrav1beta2.ResourceTypeTransitGateway))
+		transitGateway, err = s.TransitGatewayClient.GetTransitGatewayByName(*s.GetServiceName(infrav1.ResourceTypeTransitGateway))
 	}
 
 	if err != nil {
@@ -1826,11 +1826,11 @@ func (s *PowerVSClusterScope) checkTransitGatewayStatus(ctx context.Context, tg 
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Checking the status of transit gateway", "name", *tg.Name)
 	switch *tg.Status {
-	case string(infrav1beta2.TransitGatewayStateAvailable):
+	case string(infrav1.TransitGatewayStateAvailable):
 		log.V(3).Info("Transit gateway is in available state")
-	case string(infrav1beta2.TransitGatewayStateFailed):
+	case string(infrav1.TransitGatewayStateFailed):
 		return false, fmt.Errorf("failed to create transit gateway, current status: %s", *tg.Status)
-	case string(infrav1beta2.TransitGatewayStatePending):
+	case string(infrav1.TransitGatewayStatePending):
 		log.V(3).Info("Transit gateway is in pending state")
 		return true, nil
 	}
@@ -1911,7 +1911,7 @@ func (s *PowerVSClusterScope) validateTransitGatewayConnections(ctx context.Cont
 			}
 
 			if s.IBMPowerVSCluster.Status.TransitGateway != nil && s.IBMPowerVSCluster.Status.TransitGateway.VPCConnection == nil {
-				s.SetTransitGatewayConnectionStatus(vpcNetworkConnectionType, &infrav1beta2.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(false)})
+				s.SetTransitGatewayConnectionStatus(vpcNetworkConnectionType, &infrav1.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(false)})
 			}
 			vpcConnStatus = true
 		}
@@ -1923,7 +1923,7 @@ func (s *PowerVSClusterScope) validateTransitGatewayConnections(ctx context.Cont
 			}
 
 			if s.IBMPowerVSCluster.Status.TransitGateway != nil && s.IBMPowerVSCluster.Status.TransitGateway.PowerVSConnection == nil {
-				s.SetTransitGatewayConnectionStatus(powervsNetworkConnectionType, &infrav1beta2.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(false)})
+				s.SetTransitGatewayConnectionStatus(powervsNetworkConnectionType, &infrav1.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(false)})
 			}
 			powerVSConnStatus = true
 		}
@@ -1939,11 +1939,11 @@ func (s *PowerVSClusterScope) checkTransitGatewayConnectionStatus(ctx context.Co
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Checking the status of transit gateway connection", "name", *con.Name)
 	switch *con.Status {
-	case string(infrav1beta2.TransitGatewayConnectionStateAttached):
+	case string(infrav1.TransitGatewayConnectionStateAttached):
 		return false, nil
-	case string(infrav1beta2.TransitGatewayConnectionStateFailed):
+	case string(infrav1.TransitGatewayConnectionStateFailed):
 		return false, fmt.Errorf("failed to attach connection to transit gateway, current status: %s", *con.Status)
-	case string(infrav1beta2.TransitGatewayConnectionStatePending):
+	case string(infrav1.TransitGatewayConnectionStatePending):
 		log.V(3).Info("Transit gateway connection is in pending state")
 		return true, nil
 	}
@@ -1963,7 +1963,7 @@ func (s *PowerVSClusterScope) createTransitGatewayConnection(ctx context.Context
 	if err != nil {
 		return err
 	}
-	s.SetTransitGatewayConnectionStatus(networkType, &infrav1beta2.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(true)})
+	s.SetTransitGatewayConnectionStatus(networkType, &infrav1.ResourceReference{ID: conn.ID, ControllerCreated: ptr.To(true)})
 
 	return nil
 }
@@ -2008,7 +2008,7 @@ func (s *PowerVSClusterScope) createTransitGateway(ctx context.Context) error {
 		globalRouting = ptr.To(true)
 	}
 
-	tgName := s.GetServiceName(infrav1beta2.ResourceTypeTransitGateway)
+	tgName := s.GetServiceName(infrav1.ResourceTypeTransitGateway)
 	tg, _, err := s.TransitGatewayClient.CreateTransitGateway(&tgapiv1.CreateTransitGatewayOptions{
 		Location:      location,
 		Name:          tgName,
@@ -2040,11 +2040,11 @@ func (s *PowerVSClusterScope) createTransitGateway(ctx context.Context) error {
 // ReconcileLoadBalancers reconcile loadBalancer.
 func (s *PowerVSClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	loadBalancers := make([]infrav1beta2.VPCLoadBalancerSpec, 0)
+	loadBalancers := make([]infrav1.VPCLoadBalancerSpec, 0)
 	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
 		log.V(3).Info("VPC load balancer is not set, constructing one")
-		loadBalancer := infrav1beta2.VPCLoadBalancerSpec{
-			Name:   *s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancer),
+		loadBalancer := infrav1.VPCLoadBalancerSpec{
+			Name:   *s.GetServiceName(infrav1.ResourceTypeLoadBalancer),
 			Public: ptr.To(true),
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
@@ -2060,7 +2060,7 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool,
 			loadBalancerID = loadBalancer.ID
 		} else {
 			if loadBalancer.Name == "" {
-				loadBalancer.Name = fmt.Sprintf("%s-%d", *s.GetServiceName(infrav1beta2.ResourceTypeLoadBalancer), index)
+				loadBalancer.Name = fmt.Sprintf("%s-%d", *s.GetServiceName(infrav1.ResourceTypeLoadBalancer), index)
 			}
 			loadBalancerID = s.GetLoadBalancerID(loadBalancer.Name)
 		}
@@ -2078,9 +2078,9 @@ func (s *PowerVSClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool,
 				isAnyLoadBalancerNotReady = true
 			}
 
-			loadBalancerStatus := infrav1beta2.VPCLoadBalancerStatus{
+			loadBalancerStatus := infrav1.VPCLoadBalancerStatus{
 				ID:       loadBalancer.ID,
-				State:    infrav1beta2.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
+				State:    infrav1.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
 				Hostname: loadBalancer.Hostname,
 			}
 			s.SetLoadBalancerStatus(ctx, *loadBalancer.Name, loadBalancerStatus)
@@ -2125,18 +2125,18 @@ func (s *PowerVSClusterScope) checkLoadBalancerStatus(ctx context.Context, lb vp
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Checking the status of VPC load balancer", "loadBalancerName", *lb.Name)
 	switch *lb.ProvisioningStatus {
-	case string(infrav1beta2.VPCLoadBalancerStateActive):
+	case string(infrav1.VPCLoadBalancerStateActive):
 		log.V(3).Info("Load balancer is in active state")
 		return true
-	case string(infrav1beta2.VPCLoadBalancerStateCreatePending):
+	case string(infrav1.VPCLoadBalancerStateCreatePending):
 		log.V(3).Info("Load balancer creation is in pending state")
-	case string(infrav1beta2.VPCLoadBalancerStateUpdatePending):
+	case string(infrav1.VPCLoadBalancerStateUpdatePending):
 		log.V(3).Info("Load balancer is in updating state")
 	}
 	return false
 }
 
-func (s *PowerVSClusterScope) checkLoadBalancerPort(lb infrav1beta2.VPCLoadBalancerSpec) error {
+func (s *PowerVSClusterScope) checkLoadBalancerPort(lb infrav1.VPCLoadBalancerSpec) error {
 	for _, listener := range lb.AdditionalListeners {
 		if listener.Port == int64(s.APIServerPort()) {
 			return fmt.Errorf("port %d for the %s load balancer cannot be used as an additional listener port, as it is already assigned to the API server", listener.Port, lb.Name)
@@ -2146,7 +2146,7 @@ func (s *PowerVSClusterScope) checkLoadBalancerPort(lb infrav1beta2.VPCLoadBalan
 }
 
 // checkLoadBalancer checks if VPC load balancer by the given name exists in cloud.
-func (s *PowerVSClusterScope) checkLoadBalancer(ctx context.Context, lb infrav1beta2.VPCLoadBalancerSpec) (*infrav1beta2.VPCLoadBalancerStatus, error) {
+func (s *PowerVSClusterScope) checkLoadBalancer(ctx context.Context, lb infrav1.VPCLoadBalancerSpec) (*infrav1.VPCLoadBalancerStatus, error) {
 	log := ctrl.LoggerFrom(ctx)
 	loadBalancer, err := s.IBMVPCClient.GetLoadBalancerByName(lb.Name)
 	if err != nil {
@@ -2156,15 +2156,15 @@ func (s *PowerVSClusterScope) checkLoadBalancer(ctx context.Context, lb infrav1b
 		log.V(3).Info("VPC load balancer not found in cloud")
 		return nil, nil
 	}
-	return &infrav1beta2.VPCLoadBalancerStatus{
+	return &infrav1.VPCLoadBalancerStatus{
 		ID:       loadBalancer.ID,
-		State:    infrav1beta2.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
+		State:    infrav1.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
 		Hostname: loadBalancer.Hostname,
 	}, nil
 }
 
 // createLoadBalancer creates loadBalancer.
-func (s *PowerVSClusterScope) createLoadBalancer(ctx context.Context, lb infrav1beta2.VPCLoadBalancerSpec) (*infrav1beta2.VPCLoadBalancerStatus, error) {
+func (s *PowerVSClusterScope) createLoadBalancer(ctx context.Context, lb infrav1.VPCLoadBalancerSpec) (*infrav1.VPCLoadBalancerStatus, error) {
 	log := ctrl.LoggerFrom(ctx)
 	options := &vpcv1.CreateLoadBalancerOptions{}
 	// TODO(karthik-k-n): consider moving resource group id to clusterscope
@@ -2239,8 +2239,8 @@ func (s *PowerVSClusterScope) createLoadBalancer(ctx context.Context, lb infrav1
 	if err != nil {
 		return nil, fmt.Errorf("failed to create load balancer: %w", err)
 	}
-	lbState := infrav1beta2.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus)
-	return &infrav1beta2.VPCLoadBalancerStatus{
+	lbState := infrav1.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus)
+	return &infrav1.VPCLoadBalancerStatus{
 		ID:                loadBalancer.ID,
 		State:             lbState,
 		Hostname:          loadBalancer.Hostname,
@@ -2249,7 +2249,7 @@ func (s *PowerVSClusterScope) createLoadBalancer(ctx context.Context, lb infrav1
 }
 
 // COSInstance returns the COS instance reference.
-func (s *PowerVSClusterScope) COSInstance() *infrav1beta2.CosInstance {
+func (s *PowerVSClusterScope) COSInstance() *infrav1.CosInstance {
 	return s.IBMPowerVSCluster.Spec.CosInstance
 }
 
@@ -2263,7 +2263,7 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 	}
 	if cosServiceInstanceStatus != nil {
 		log.V(3).Info("COS service instance found in cloud")
-		s.SetStatus(ctx, infrav1beta2.ResourceTypeCOSInstance, infrav1beta2.ResourceReference{ID: cosServiceInstanceStatus.GUID, ControllerCreated: ptr.To(false)})
+		s.SetStatus(ctx, infrav1.ResourceTypeCOSInstance, infrav1.ResourceReference{ID: cosServiceInstanceStatus.GUID, ControllerCreated: ptr.To(false)})
 	} else {
 		// create COS service instance
 		log.V(3).Info("Creating COS service instance")
@@ -2272,7 +2272,7 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 			return fmt.Errorf("failed to create COS service instance: %w", err)
 		}
 		log.Info("Created COS service instance", "cosID", cosServiceInstanceStatus.GUID)
-		s.SetStatus(ctx, infrav1beta2.ResourceTypeCOSInstance, infrav1beta2.ResourceReference{ID: cosServiceInstanceStatus.GUID, ControllerCreated: ptr.To(true)})
+		s.SetStatus(ctx, infrav1.ResourceTypeCOSInstance, infrav1.ResourceReference{ID: cosServiceInstanceStatus.GUID, ControllerCreated: ptr.To(true)})
 	}
 
 	props, err := authenticator.GetProperties()
@@ -2329,7 +2329,7 @@ func (s *PowerVSClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 }
 
 func (s *PowerVSClusterScope) checkCOSBucket() (bool, error) {
-	if _, err := s.COSClient.GetBucketByName(*s.GetServiceName(infrav1beta2.ResourceTypeCOSBucket)); err != nil {
+	if _, err := s.COSClient.GetBucketByName(*s.GetServiceName(infrav1.ResourceTypeCOSBucket)); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchBucket, "Forbidden", "NotFound":
@@ -2347,7 +2347,7 @@ func (s *PowerVSClusterScope) checkCOSBucket() (bool, error) {
 
 func (s *PowerVSClusterScope) createCOSBucket() error {
 	input := &s3.CreateBucketInput{
-		Bucket: ptr.To(*s.GetServiceName(infrav1beta2.ResourceTypeCOSBucket)),
+		Bucket: ptr.To(*s.GetServiceName(infrav1.ResourceTypeCOSBucket)),
 	}
 	_, err := s.COSClient.CreateBucket(input)
 	if err == nil {
@@ -2373,15 +2373,15 @@ func (s *PowerVSClusterScope) createCOSBucket() error {
 func (s *PowerVSClusterScope) checkCOSServiceInstance(ctx context.Context) (*resourcecontrollerv2.ResourceInstance, error) {
 	log := ctrl.LoggerFrom(ctx)
 	// check cos service instance
-	serviceInstance, err := s.ResourceClient.GetInstanceByName(*s.GetServiceName(infrav1beta2.ResourceTypeCOSInstance), resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID)
+	serviceInstance, err := s.ResourceClient.GetInstanceByName(*s.GetServiceName(infrav1.ResourceTypeCOSInstance), resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get COS service instance: %w", err)
 	}
 	if serviceInstance == nil {
-		log.V(3).Info("COS service instance is not found", "cosInstanceName", *s.GetServiceName(infrav1beta2.ResourceTypeCOSInstance))
+		log.V(3).Info("COS service instance is not found", "cosInstanceName", *s.GetServiceName(infrav1.ResourceTypeCOSInstance))
 		return nil, nil
 	}
-	if *serviceInstance.State != string(infrav1beta2.ServiceInstanceStateActive) {
+	if *serviceInstance.State != string(infrav1.ServiceInstanceStateActive) {
 		return nil, fmt.Errorf("COS service instance is not in active state, current state: %s", *serviceInstance.State)
 	}
 	return serviceInstance, nil
@@ -2397,7 +2397,7 @@ func (s *PowerVSClusterScope) createCOSServiceInstance() (*resourcecontrollerv2.
 	target := "Global"
 	// create service instance
 	serviceInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
-		Name:           s.GetServiceName(infrav1beta2.ResourceTypeCOSInstance),
+		Name:           s.GetServiceName(infrav1.ResourceTypeCOSInstance),
 		Target:         &target,
 		ResourceGroup:  &resourceGroupID,
 		ResourcePlanID: ptr.To(resourcecontroller.CosResourcePlanID),
@@ -2480,14 +2480,14 @@ func (s *PowerVSClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) 
 // TODO(karthik-k-n): Decide on proper naming format for services.
 
 // GetServiceName returns name of given service type from spec or generate a name for it.
-func (s *PowerVSClusterScope) GetServiceName(resourceType infrav1beta2.ResourceType) *string { //nolint:gocyclo
+func (s *PowerVSClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string { //nolint:gocyclo
 	switch resourceType {
-	case infrav1beta2.ResourceTypeServiceInstance:
+	case infrav1.ResourceTypeServiceInstance:
 		if s.ServiceInstance() == nil || s.ServiceInstance().Name == nil {
 			return ptr.To(fmt.Sprintf("%s-serviceInstance", s.InfraCluster()))
 		}
 		return s.ServiceInstance().Name
-	case infrav1beta2.ResourceTypeDHCPServer:
+	case infrav1.ResourceTypeDHCPServer:
 		if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
 			return s.DHCPServer().Name
 		}
@@ -2495,29 +2495,29 @@ func (s *PowerVSClusterScope) GetServiceName(resourceType infrav1beta2.ResourceT
 			return s.Network().Name
 		}
 		return ptr.To(s.InfraCluster())
-	case infrav1beta2.ResourceTypeVPC:
+	case infrav1.ResourceTypeVPC:
 		if s.VPC() == nil || s.VPC().Name == nil {
 			return ptr.To(fmt.Sprintf("%s-vpc", s.InfraCluster()))
 		}
 		return s.VPC().Name
-	case infrav1beta2.ResourceTypeTransitGateway:
+	case infrav1.ResourceTypeTransitGateway:
 		if s.TransitGateway() == nil || s.TransitGateway().Name == nil {
 			return ptr.To(fmt.Sprintf("%s-transitgateway", s.InfraCluster()))
 		}
 		return s.TransitGateway().Name
-	case infrav1beta2.ResourceTypeCOSInstance:
+	case infrav1.ResourceTypeCOSInstance:
 		if s.COSInstance() == nil || s.COSInstance().Name == "" {
 			return ptr.To(fmt.Sprintf("%s-cosinstance", s.InfraCluster()))
 		}
 		return &s.COSInstance().Name
-	case infrav1beta2.ResourceTypeCOSBucket:
+	case infrav1.ResourceTypeCOSBucket:
 		if s.COSInstance() == nil || s.COSInstance().BucketName == "" {
 			return ptr.To(fmt.Sprintf("%s-cosbucket", s.InfraCluster()))
 		}
 		return &s.COSInstance().BucketName
-	case infrav1beta2.ResourceTypeSubnet:
+	case infrav1.ResourceTypeSubnet:
 		return ptr.To(fmt.Sprintf("%s-vpcsubnet", s.InfraCluster()))
-	case infrav1beta2.ResourceTypeLoadBalancer:
+	case infrav1.ResourceTypeLoadBalancer:
 		return ptr.To(fmt.Sprintf("%s-loadbalancer", s.InfraCluster()))
 	}
 	return nil
@@ -2547,7 +2547,7 @@ func (s *PowerVSClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, err
 			continue
 		}
 
-		if lb != nil && lb.ProvisioningStatus != nil && *lb.ProvisioningStatus == string(infrav1beta2.VPCLoadBalancerStateDeletePending) {
+		if lb != nil && lb.ProvisioningStatus != nil && *lb.ProvisioningStatus == string(infrav1.VPCLoadBalancerStateDeletePending) {
 			log.V(3).Info("Load balancer is currently being deleted")
 			return true, nil
 		}
@@ -2620,7 +2620,7 @@ func (s *PowerVSClusterScope) DeleteVPCSubnet(ctx context.Context) (bool, error)
 			continue
 		}
 
-		if net != nil && net.Status != nil && *net.Status == string(infrav1beta2.VPCSubnetStateDeleting) {
+		if net != nil && net.Status != nil && *net.Status == string(infrav1.VPCSubnetStateDeleting) {
 			return true, nil
 		}
 
@@ -2641,7 +2641,7 @@ func (s *PowerVSClusterScope) DeleteVPCSubnet(ctx context.Context) (bool, error)
 // DeleteVPC deletes VPC.
 func (s *PowerVSClusterScope) DeleteVPC(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1beta2.ResourceTypeVPC) {
+	if !s.isResourceCreatedByController(infrav1.ResourceTypeVPC) {
 		log.Info("Skipping VPC deletion as resource is not created by controller")
 		return false, nil
 	}
@@ -2662,7 +2662,7 @@ func (s *PowerVSClusterScope) DeleteVPC(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("failed to fetch VPC: %w", err)
 	}
 
-	if vpcDetails != nil && vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1beta2.VPCStateDeleting) {
+	if vpcDetails != nil && vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1.VPCStateDeleting) {
 		return true, nil
 	}
 
@@ -2678,7 +2678,7 @@ func (s *PowerVSClusterScope) DeleteVPC(ctx context.Context) (bool, error) {
 func (s *PowerVSClusterScope) DeleteTransitGateway(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	skipTGDeletion := false
-	if !s.isResourceCreatedByController(infrav1beta2.ResourceTypeTransitGateway) {
+	if !s.isResourceCreatedByController(infrav1.ResourceTypeTransitGateway) {
 		log.Info("Skipping transit gateway deletion as resource is not created by controller, but will check if connections are created by the controller")
 		skipTGDeletion = true
 	}
@@ -2699,7 +2699,7 @@ func (s *PowerVSClusterScope) DeleteTransitGateway(ctx context.Context) (bool, e
 		return false, fmt.Errorf("failed to fetch transit gateway: %w", err)
 	}
 
-	if tg.Status != nil && *tg.Status == string(infrav1beta2.TransitGatewayStateDeletePending) {
+	if tg.Status != nil && *tg.Status == string(infrav1.TransitGatewayStateDeletePending) {
 		log.V(3).Info("Transit gateway is being deleted")
 		return true, nil
 	}
@@ -2737,7 +2737,7 @@ func (s *PowerVSClusterScope) deleteTransitGatewayConnections(ctx context.Contex
 		if err != nil {
 			return false, fmt.Errorf("failed to get transit gateway powervs connection: %w", err)
 		}
-		if conn.Status != nil && *conn.Status == string(infrav1beta2.TransitGatewayConnectionStateDeleting) {
+		if conn.Status != nil && *conn.Status == string(infrav1.TransitGatewayConnectionStateDeleting) {
 			log.V(3).Info("Transit gateway connection is in deleting state")
 			return true, nil
 		}
@@ -2779,11 +2779,11 @@ func (s *PowerVSClusterScope) deleteTransitGatewayConnections(ctx context.Contex
 // DeleteDHCPServer deletes DHCP server.
 func (s *PowerVSClusterScope) DeleteDHCPServer(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1beta2.ResourceTypeDHCPServer) {
+	if !s.isResourceCreatedByController(infrav1.ResourceTypeDHCPServer) {
 		log.Info("Skipping DHCP server deletion as resource is not created by controller")
 		return nil
 	}
-	if s.isResourceCreatedByController(infrav1beta2.ResourceTypeServiceInstance) {
+	if s.isResourceCreatedByController(infrav1.ResourceTypeServiceInstance) {
 		log.Info("Skipping DHCP server deletion as PowerVS service instance is created by controller, will directly delete the PowerVS service instance since it will delete the DHCP server internally")
 		return nil
 	}
@@ -2810,7 +2810,7 @@ func (s *PowerVSClusterScope) DeleteDHCPServer(ctx context.Context) error {
 // DeleteServiceInstance deletes service instance.
 func (s *PowerVSClusterScope) DeleteServiceInstance(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1beta2.ResourceTypeServiceInstance) {
+	if !s.isResourceCreatedByController(infrav1.ResourceTypeServiceInstance) {
 		log.Info("Skipping PowerVS service instance deletion as resource is not created by controller")
 		return false, nil
 	}
@@ -2826,7 +2826,7 @@ func (s *PowerVSClusterScope) DeleteServiceInstance(ctx context.Context) (bool, 
 		return false, fmt.Errorf("failed to fetch PowerVS service instance: %w", err)
 	}
 
-	if serviceInstance != nil && *serviceInstance.State == string(infrav1beta2.ServiceInstanceStateRemoved) {
+	if serviceInstance != nil && *serviceInstance.State == string(infrav1.ServiceInstanceStateRemoved) {
 		log.Info("PowerVS service instance has been removed")
 		return false, nil
 	}
@@ -2843,7 +2843,7 @@ func (s *PowerVSClusterScope) DeleteServiceInstance(ctx context.Context) (bool, 
 // DeleteCOSInstance deletes COS instance.
 func (s *PowerVSClusterScope) DeleteCOSInstance(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1beta2.ResourceTypeCOSInstance) {
+	if !s.isResourceCreatedByController(infrav1.ResourceTypeCOSInstance) {
 		log.Info("Skipping COS instance deletion as resource is not created by controller")
 		return nil
 	}
@@ -2862,7 +2862,7 @@ func (s *PowerVSClusterScope) DeleteCOSInstance(ctx context.Context) error {
 		return fmt.Errorf("failed to fetch COS service instance: %w", err)
 	}
 
-	if cosInstance != nil && (*cosInstance.State == "pending_reclamation" || *cosInstance.State == string(infrav1beta2.ServiceInstanceStateRemoved)) {
+	if cosInstance != nil && (*cosInstance.State == "pending_reclamation" || *cosInstance.State == string(infrav1.ServiceInstanceStateRemoved)) {
 		log.Info("COS service instance has been removed")
 		return nil
 	}
@@ -2879,33 +2879,33 @@ func (s *PowerVSClusterScope) DeleteCOSInstance(ctx context.Context) error {
 }
 
 // resourceCreatedByController helps to identify resource created by controller or not.
-func (s *PowerVSClusterScope) isResourceCreatedByController(resourceType infrav1beta2.ResourceType) bool { //nolint:gocyclo
+func (s *PowerVSClusterScope) isResourceCreatedByController(resourceType infrav1.ResourceType) bool { //nolint:gocyclo
 	switch resourceType {
-	case infrav1beta2.ResourceTypeVPC:
+	case infrav1.ResourceTypeVPC:
 		vpcStatus := s.IBMPowerVSCluster.Status.VPC
 		if vpcStatus == nil || vpcStatus.ControllerCreated == nil || !*vpcStatus.ControllerCreated {
 			return false
 		}
 		return true
-	case infrav1beta2.ResourceTypeServiceInstance:
+	case infrav1.ResourceTypeServiceInstance:
 		serviceInstance := s.IBMPowerVSCluster.Status.ServiceInstance
 		if serviceInstance == nil || serviceInstance.ControllerCreated == nil || !*serviceInstance.ControllerCreated {
 			return false
 		}
 		return true
-	case infrav1beta2.ResourceTypeTransitGateway:
+	case infrav1.ResourceTypeTransitGateway:
 		transitGateway := s.IBMPowerVSCluster.Status.TransitGateway
 		if transitGateway == nil || transitGateway.ControllerCreated == nil || !*transitGateway.ControllerCreated {
 			return false
 		}
 		return true
-	case infrav1beta2.ResourceTypeDHCPServer:
+	case infrav1.ResourceTypeDHCPServer:
 		dhcpServer := s.IBMPowerVSCluster.Status.DHCPServer
 		if dhcpServer == nil || dhcpServer.ControllerCreated == nil || !*dhcpServer.ControllerCreated {
 			return false
 		}
 		return true
-	case infrav1beta2.ResourceTypeCOSInstance:
+	case infrav1.ResourceTypeCOSInstance:
 		cosInstance := s.IBMPowerVSCluster.Status.COSInstance
 		if cosInstance == nil || cosInstance.ControllerCreated == nil || !*cosInstance.ControllerCreated {
 			return false

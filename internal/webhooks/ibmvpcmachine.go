@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpcmachine,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=create;update,versions=v1beta2,name=mibmvpcmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -36,7 +36,7 @@ import (
 
 func (r *IBMVPCMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1beta2.IBMVPCMachine{}).
+		For(&infrav1.IBMVPCMachine{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -50,7 +50,7 @@ var _ webhook.CustomValidator = &IBMVPCMachine{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (r *IBMVPCMachine) Default(_ context.Context, obj runtime.Object) error {
-	objValue, ok := obj.(*infrav1beta2.IBMVPCMachine)
+	objValue, ok := obj.(*infrav1.IBMVPCMachine)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
 	}
@@ -60,7 +60,7 @@ func (r *IBMVPCMachine) Default(_ context.Context, obj runtime.Object) error {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCMachine) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1beta2.IBMVPCMachine)
+	objValue, ok := obj.(*infrav1.IBMVPCMachine)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
 	}
@@ -79,6 +79,6 @@ func (r *IBMVPCMachine) ValidateDelete(_ context.Context, _ runtime.Object) (adm
 	return nil, nil
 }
 
-func validateIBMVPCMachineBootVolume(spec infrav1beta2.IBMVPCMachineSpec) field.ErrorList {
+func validateIBMVPCMachineBootVolume(spec infrav1.IBMVPCMachineSpec) field.ErrorList {
 	return validateBootVolume(spec)
 }

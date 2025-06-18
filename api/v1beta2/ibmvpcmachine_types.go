@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -154,7 +154,7 @@ type IBMVPCMachineStatus struct {
 
 	// Conditions deefines current service state of the IBMVPCMachine.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
 
 	// FailureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
@@ -192,13 +192,13 @@ type IBMVPCMachine struct {
 	Status IBMVPCMachineStatus `json:"status,omitempty"`
 }
 
-// GetV1Beta1Conditions returns the observations of the operational state of the IBMVPCMachine resource.
-func (r *IBMVPCMachine) GetV1Beta1Conditions() clusterv1.Conditions {
+// GetConditions returns the observations of the operational state of the IBMVPCMachine resource.
+func (r *IBMVPCMachine) GetConditions() clusterv1beta1.Conditions {
 	return r.Status.Conditions
 }
 
-// SetV1Beta1Conditions sets the underlying service state of the IBMVPCMachine to the predescribed clusterv1.Conditions.
-func (r *IBMVPCMachine) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+// SetConditions sets the underlying service state of the IBMVPCMachine to the predescribed clusterv1beta1.Conditions.
+func (r *IBMVPCMachine) SetConditions(conditions clusterv1beta1.Conditions) {
 	r.Status.Conditions = conditions
 }
 

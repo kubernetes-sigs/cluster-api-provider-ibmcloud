@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 
 	. "github.com/onsi/gomega"
@@ -39,13 +39,13 @@ import (
 
 const idSuffix = "-id"
 
-func newPowervsImage(imageName string) *infrav1beta2.IBMPowerVSImage {
-	return &infrav1beta2.IBMPowerVSImage{
+func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
+	return &infrav1.IBMPowerVSImage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      imageName,
 			Namespace: "default",
 		},
-		Spec: infrav1beta2.IBMPowerVSImageSpec{
+		Spec: infrav1.IBMPowerVSImageSpec{
 			ClusterName:       "test-cluster",
 			ServiceInstanceID: "test-service-ID",
 			StorageType:       "foo-tier",

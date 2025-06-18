@@ -19,6 +19,7 @@ package controllers
 import (
 	"errors"
 	"fmt"
+
 	"sync"
 	"testing"
 	"time"
@@ -44,10 +45,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	powervsmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
@@ -65,11 +67,11 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 		g.Expect(err).To(BeNil())
 
-		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
 			},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -100,10 +102,10 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 		g.Expect(err).To(BeNil())
 
-		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
-				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: clusterv1.GroupVersion.String(),
@@ -111,7 +113,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -136,12 +138,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 		g.Expect(err).To(BeNil())
 
-		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
-				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 			},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -185,10 +187,10 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 		g.Expect(err).To(BeNil())
 
-		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
-				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: clusterv1.GroupVersion.String(),
@@ -196,7 +198,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -220,10 +222,10 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 		g.Expect(err).To(BeNil())
 
-		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
-				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: clusterv1.GroupVersion.String(),
@@ -231,7 +233,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+			Spec: infrav1.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
 		}
 
 		ownerCluster := &clusterv1.Cluster{
@@ -268,7 +270,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		})
 		g.Expect(err).To(BeNil())
 
-		ibmPowerVSCluster := &infrav1beta2.IBMPowerVSCluster{}
+		ibmPowerVSCluster := &infrav1.IBMPowerVSCluster{}
 		g.Eventually(func(gomega Gomega) {
 			gomega.Expect(testEnv.Client.Get(ctx, client.ObjectKey{
 				Name:      powerVSCluster.GetName(),
@@ -284,10 +286,10 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
 		g.Expect(err).To(BeNil())
 
-		powerVSCluster := &infrav1beta2.IBMPowerVSCluster{
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
-				Finalizers:   []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: clusterv1.GroupVersion.String(),
@@ -295,7 +297,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1beta2.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+			Spec: infrav1.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
 		}
 
 		ownerCluster := &clusterv1.Cluster{
@@ -314,7 +316,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		defer cleanupCluster(g, powerVSCluster, ns)
 
 		g.Expect(testEnv.Delete(ctx, powerVSCluster)).To(Succeed())
-		ibmPowerVSCluster := &infrav1beta2.IBMPowerVSCluster{}
+		ibmPowerVSCluster := &infrav1.IBMPowerVSCluster{}
 
 		g.Eventually(func() bool {
 			err := testEnv.Client.Get(ctx, client.ObjectKey{
@@ -353,15 +355,15 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		clusterStatus       bool
 		expectedResult      ctrl.Result
 		expectedError       error
-		conditions          clusterv1.Conditions
+		conditions          clusterv1beta1.Conditions
 	}{
 		{
 			name: "Should add finalizer and reconcile IBMPowerVSCluster",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				return &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers: []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+							Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
 						},
 					},
 				}
@@ -372,9 +374,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "Should reconcile IBMPowerVSCluster status as Ready",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				return &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers: []string{infrav1beta2.IBMPowerVSClusterFinalizer},
+							Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
 						},
 					},
 				}
@@ -385,12 +387,12 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When PowerVS zone does not support PER",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers:  []string{infrav1beta2.IBMPowerVSClusterFinalizer},
-							Annotations: map[string]string{infrav1beta2.CreateInfrastructureAnnotation: "true"},
+							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
+							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							Zone: ptr.To("dal10"),
 						},
 					},
@@ -406,12 +408,12 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When resource group name is not set",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers:  []string{infrav1beta2.IBMPowerVSClusterFinalizer},
-							Annotations: map[string]string{infrav1beta2.CreateInfrastructureAnnotation: "true"},
+							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
+							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							Zone: ptr.To("dal10"),
 						},
 					},
@@ -427,19 +429,19 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When reconcile PowerVS resource returns requeue as true",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers:  []string{infrav1beta2.IBMPowerVSClusterFinalizer},
-							Annotations: map[string]string{infrav1beta2.CreateInfrastructureAnnotation: "true"},
+							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
+							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							Zone: ptr.To("dal10"),
-							ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1.ResourceReference{
 								ID: ptr.To("serviceInstanceID"),
 							},
 						},
@@ -453,7 +455,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1beta2.ServiceInstanceStateProvisioning)),
+					State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -469,22 +471,22 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When reconcile PowerVS and VPC resource returns requeue as true",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers:  []string{infrav1beta2.IBMPowerVSClusterFinalizer},
-							Annotations: map[string]string{infrav1beta2.CreateInfrastructureAnnotation: "true"},
+							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
+							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							Zone: ptr.To("dal10"),
-							ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1.ResourceReference{
 								ID: ptr.To("serviceInstanceID"),
 							},
-							VPC: &infrav1beta2.ResourceReference{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -498,7 +500,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1beta2.ServiceInstanceStateProvisioning)),
+					State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -514,19 +516,19 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When reconcile VPC and PowerVS resource returns error",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
-							Finalizers:  []string{infrav1beta2.IBMPowerVSClusterFinalizer},
-							Annotations: map[string]string{infrav1beta2.CreateInfrastructureAnnotation: "true"},
+							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
+							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							Zone: ptr.To("dal10"),
-							ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1.ResourceReference{
 								ID: ptr.To("serviceInstanceID"),
 							},
 						},
@@ -563,17 +565,17 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)),
+					State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
-				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive))}, nil, nil)
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To(string(infrav1.VPCLoadBalancerStateActive))}, nil, nil)
 				mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
 				mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
 					ID:                 ptr.To("lb-id"),
 					Name:               ptr.To("lb"),
-					ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive)),
+					ProvisioningStatus: ptr.To(string(infrav1.VPCLoadBalancerStateActive)),
 				}, nil, nil)
 				clusterScope.IBMVPCClient = mockVPC
 
@@ -584,16 +586,16 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				return clusterScope
 			},
 			expectedError: errors.New("error getting transit gateway"),
-			conditions: clusterv1.Conditions{
+			conditions: clusterv1beta1.Conditions{
 				getVPCLBReadyCondition(),
 				getNetworkReadyCondition(),
 				getServiceInstanceReadyCondition(),
-				clusterv1.Condition{
-					Type:               infrav1beta2.TransitGatewayReadyCondition,
+				clusterv1beta1.Condition{
+					Type:               infrav1.TransitGatewayReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.TransitGatewayReconciliationFailedReason,
+					Reason:             infrav1.TransitGatewayReconciliationFailedReason,
 					Message:            "failed to get transit gateway: error getting transit gateway",
 				},
 				getVPCReadyCondition(),
@@ -614,7 +616,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)),
+					State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -624,7 +626,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
 					ID:                 ptr.To("lb-id"),
 					Name:               ptr.To("lb"),
-					ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive)),
+					ProvisioningStatus: ptr.To(string(infrav1.VPCLoadBalancerStateActive)),
 				}, nil, nil)
 				clusterScope.IBMVPCClient = mockVPC
 
@@ -632,7 +634,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockTransitGateway.EXPECT().GetTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{
 					Name:   ptr.To("transitGateway"),
 					ID:     ptr.To("transitGatewayID"),
-					Status: ptr.To(string(infrav1beta2.TransitGatewayStatePending)),
+					Status: ptr.To(string(infrav1.TransitGatewayStatePending)),
 				}, nil, nil)
 				clusterScope.TransitGatewayClient = mockTransitGateway
 
@@ -644,7 +646,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When reconcile COS service instance returns error",
 			powervsClusterScope: func() *scope.PowerVSClusterScope {
 				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
-				powerVSCluster.Spec.Ignition = &infrav1beta2.Ignition{Version: "3.4"}
+				powerVSCluster.Spec.Ignition = &infrav1.Ignition{Version: "3.4"}
 				clusterScope := &scope.PowerVSClusterScope{
 					IBMPowerVSCluster: powerVSCluster,
 				}
@@ -658,13 +660,13 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				return clusterScope
 			},
 			expectedError: errors.New("error getting instance by name"),
-			conditions: clusterv1.Conditions{
-				clusterv1.Condition{
-					Type:               infrav1beta2.COSInstanceReadyCondition,
+			conditions: clusterv1beta1.Conditions{
+				clusterv1beta1.Condition{
+					Type:               infrav1.COSInstanceReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.COSInstanceReconciliationFailedReason,
+					Reason:             infrav1.COSInstanceReconciliationFailedReason,
 					Message:            "failed to check if COS instance in cloud: failed to get COS service instance: error getting instance by name",
 				},
 				getVPCLBReadyCondition(),
@@ -746,7 +748,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
 					ID:                 ptr.To("lb-id"),
 					Name:               ptr.To("lb"),
-					ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive)),
+					ProvisioningStatus: ptr.To(string(infrav1.VPCLoadBalancerStateActive)),
 					Hostname:           ptr.To("hostname"),
 				}, nil, nil)
 				clusterScope.IBMVPCClient = mockVPC
@@ -775,12 +777,12 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			}
 			g.Expect(res).To(Equal(tc.expectedResult))
 			g.Expect(powerVSClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
-			g.Expect(powerVSClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1beta2.IBMPowerVSClusterFinalizer))
+			g.Expect(powerVSClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1.IBMPowerVSClusterFinalizer))
 			if len(tc.conditions) > 1 {
 				ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 					return metav1.Time{}
 				})
-				g.Expect(powerVSClusterScope.IBMPowerVSCluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+				g.Expect(powerVSClusterScope.IBMPowerVSCluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 			}
 		})
 	}
@@ -801,7 +803,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	}
 	powervsClusterScope = func() *scope.PowerVSClusterScope {
 		return &scope.PowerVSClusterScope{
-			IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "IBMPowerVSCluster",
 					APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -817,9 +819,9 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 							UID:        "1",
 						}},
 				},
-				Spec: infrav1beta2.IBMPowerVSClusterSpec{},
-				Status: infrav1beta2.IBMPowerVSClusterStatus{
-					ServiceInstance: &infrav1beta2.ResourceReference{
+				Spec: infrav1.IBMPowerVSClusterSpec{},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					ServiceInstance: &infrav1.ResourceReference{
 						ID: ptr.To("serviceInstanceID"),
 					},
 				},
@@ -832,7 +834,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
 						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -840,7 +842,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-powervs-cluster",
 					},
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					Spec: infrav1.IBMPowerVSClusterSpec{
 						ServiceInstanceID: "service-instance-1",
 					},
 				},
@@ -854,7 +856,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		t.Run("Should reconcile with requeue by deleting the cluster descendants", func(t *testing.T) {
 			g := NewWithT(t)
 			clusterScope = &scope.PowerVSClusterScope{
-				IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
 						APIVersion: "infrastructure.cluster.x-k8s.io/v1beta1",
@@ -862,18 +864,18 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-powervs-cluster",
 					},
-					Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					Spec: infrav1.IBMPowerVSClusterSpec{
 						ServiceInstanceID: "service-instance-1",
 					},
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
 			}
-			powervsImage1 := &infrav1beta2.IBMPowerVSImage{
+			powervsImage1 := &infrav1.IBMPowerVSImage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-image",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: infrav1beta2.GroupVersion.String(),
+							APIVersion: infrav1.GroupVersion.String(),
 							Kind:       "IBMPowerVSCluster",
 							Name:       "capi-powervs-cluster",
 							UID:        "1",
@@ -881,19 +883,19 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					},
 					Labels: map[string]string{clusterv1.ClusterNameLabel: "capi-powervs-cluster"},
 				},
-				Spec: infrav1beta2.IBMPowerVSImageSpec{
+				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
 					Object:      ptr.To("capi-image.ova.gz"),
 					Region:      ptr.To("us-south"),
 					Bucket:      ptr.To("capi-bucket"),
 				},
 			}
-			powervsImage2 := &infrav1beta2.IBMPowerVSImage{
+			powervsImage2 := &infrav1.IBMPowerVSImage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-image2",
 					OwnerReferences: []metav1.OwnerReference{
 						{
-							APIVersion: infrav1beta2.GroupVersion.String(),
+							APIVersion: infrav1.GroupVersion.String(),
 							Kind:       "IBMPowerVSCluster",
 							Name:       "capi-powervs-cluster",
 							UID:        "1",
@@ -901,7 +903,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					},
 					Labels: map[string]string{clusterv1.ClusterNameLabel: "capi-powervs-cluster"},
 				},
-				Spec: infrav1beta2.IBMPowerVSImageSpec{
+				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
 					Object:      ptr.To("capi-image2.ova.gz"),
 					Region:      ptr.To("us-south"),
@@ -925,14 +927,14 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete TransitGateway returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1beta2.TransitGatewayStatus{
+		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
 			ID:                ptr.To("transitgatewayID"),
 			ControllerCreated: ptr.To(true),
-			PowerVSConnection: &infrav1beta2.ResourceReference{
+			PowerVSConnection: &infrav1.ResourceReference{
 				ControllerCreated: ptr.To(true),
 				ID:                ptr.To("connectionID"),
 			},
-			VPCConnection: &infrav1beta2.ResourceReference{
+			VPCConnection: &infrav1.ResourceReference{
 				ControllerCreated: ptr.To(true),
 				ID:                ptr.To("connectionID"),
 			},
@@ -940,7 +942,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		tgw := &tgapiv1.TransitGateway{
 			Name:   ptr.To("transitGateway"),
 			ID:     ptr.To("transitGatewayID"),
-			Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable))}
+			Status: ptr.To(string(infrav1.TransitGatewayStateAvailable))}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
@@ -961,14 +963,14 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete TransitGateway returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1beta2.TransitGatewayStatus{
+		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
 			ID:                ptr.To("transitgatewayID"),
 			ControllerCreated: ptr.To(true),
-			PowerVSConnection: &infrav1beta2.ResourceReference{
+			PowerVSConnection: &infrav1.ResourceReference{
 				ControllerCreated: ptr.To(true),
 				ID:                ptr.To("connectionID"),
 			},
-			VPCConnection: &infrav1beta2.ResourceReference{
+			VPCConnection: &infrav1.ResourceReference{
 				ControllerCreated: ptr.To(true),
 				ID:                ptr.To("connectionID"),
 			},
@@ -976,7 +978,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		tgw := &tgapiv1.TransitGateway{
 			Name:   ptr.To("transitGateway"),
 			ID:     ptr.To("transitGatewayID"),
-			Status: ptr.To(string(infrav1beta2.TransitGatewayStateDeletePending))}
+			Status: ptr.To(string(infrav1.TransitGatewayStateDeletePending))}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
@@ -995,7 +997,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete LoadBalancer returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1beta2.VPCLoadBalancerStatus{
+		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1.VPCLoadBalancerStatus{
 			"lb": {
 				ID:                ptr.To("lb-id"),
 				ControllerCreated: ptr.To(true),
@@ -1012,7 +1014,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
 			ID:                 ptr.To("lb-id"),
 			Name:               ptr.To("lb"),
-			ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateActive)),
+			ProvisioningStatus: ptr.To(string(infrav1.VPCLoadBalancerStateActive)),
 		}, nil, nil)
 		mockVpc.EXPECT().DeleteLoadBalancer(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete load balancer"))
 		clusterScope.IBMVPCClient = mockVpc
@@ -1024,7 +1026,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete LoadBalancer returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1beta2.VPCLoadBalancerStatus{
+		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1.VPCLoadBalancerStatus{
 			"lb": {
 				ID:                ptr.To("lb-id"),
 				ControllerCreated: ptr.To(true),
@@ -1041,7 +1043,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		mockVpc.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
 			ID:                 ptr.To("lb-id"),
 			Name:               ptr.To("lb"),
-			ProvisioningStatus: ptr.To(string(infrav1beta2.VPCLoadBalancerStateDeletePending)),
+			ProvisioningStatus: ptr.To(string(infrav1.VPCLoadBalancerStateDeletePending)),
 		}, nil, nil)
 		clusterScope.IBMVPCClient = mockVpc
 		result, err := reconciler.reconcileDelete(ctx, clusterScope)
@@ -1052,7 +1054,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC security group returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1beta2.VPCSecurityGroupStatus{
+		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1.VPCSecurityGroupStatus{
 			"sc": {
 				ID:                ptr.To("sc-id"),
 				ControllerCreated: ptr.To(true),
@@ -1080,7 +1082,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC subnet returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1.ResourceReference{
 			"subent1": {
 				ID:                ptr.To("subent1"),
 				ControllerCreated: ptr.To(true),
@@ -1105,7 +1107,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC subnet returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1.ResourceReference{
 			"subent1": {
 				ID:                ptr.To("subent1"),
 				ControllerCreated: ptr.To(true),
@@ -1118,7 +1120,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		clusterScope.ResourceClient = mockResourceClient
 		clusterScope.TransitGatewayClient = mockTransitGateway
 		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
-		mockVpc.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To(string(infrav1beta2.VPCSubnetStateDeleting))}, nil, nil)
+		mockVpc.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To(string(infrav1.VPCSubnetStateDeleting))}, nil, nil)
 		clusterScope.IBMVPCClient = mockVpc
 		result, err := reconciler.reconcileDelete(ctx, clusterScope)
 		g.Expect(err).To(BeNil())
@@ -1128,7 +1130,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1.ResourceReference{
 			ID:                ptr.To("vpcid"),
 			ControllerCreated: ptr.To(true),
 		}
@@ -1151,7 +1153,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1.ResourceReference{
 			ID:                ptr.To("vpcid"),
 			ControllerCreated: ptr.To(true),
 		}
@@ -1162,7 +1164,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		clusterScope.ResourceClient = mockResourceClient
 		clusterScope.TransitGatewayClient = mockTransitGateway
 		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
-		mockVpc.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{ID: ptr.To("vpcid"), Status: ptr.To(string(infrav1beta2.VPCStateDeleting))}, nil, nil)
+		mockVpc.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{ID: ptr.To("vpcid"), Status: ptr.To(string(infrav1.VPCStateDeleting))}, nil, nil)
 		clusterScope.IBMVPCClient = mockVpc
 		result, err := reconciler.reconcileDelete(ctx, clusterScope)
 		g.Expect(err).To(BeNil())
@@ -1172,12 +1174,12 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete DHCP returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1.ResourceReference{
 				ID:                ptr.To("serviceInstanceID"),
 				ControllerCreated: ptr.To(false),
 			},
-			DHCPServer: &infrav1beta2.ResourceReference{
+			DHCPServer: &infrav1.ResourceReference{
 				ID:                ptr.To("DHCPServerID"),
 				ControllerCreated: ptr.To(true),
 			},
@@ -1186,7 +1188,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(&models.DHCPServerDetail{
 			ID:     ptr.To("dhcpID"),
-			Status: ptr.To(string(infrav1beta2.DHCPServerStateActive)),
+			Status: ptr.To(string(infrav1.DHCPServerStateActive)),
 		}, nil)
 		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any()).Return(errors.New("failed to delete DHCP server"))
 		clusterScope.IBMPowerVSClient = mockPowerVS
@@ -1203,8 +1205,8 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete ServiceInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1.ResourceReference{
 				ID:                ptr.To("serviceInstanceID"),
 				ControllerCreated: ptr.To(true),
 			},
@@ -1233,8 +1235,8 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete ServiceInstance returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1.ResourceReference{
 				ID:                ptr.To("serviceInstanceID"),
 				ControllerCreated: ptr.To(true),
 			},
@@ -1262,13 +1264,13 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete COSInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.COSInstance = &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status.COSInstance = &infrav1.ResourceReference{
 			ID:                ptr.To("CosInstanceID"),
 			ControllerCreated: ptr.To(true),
 		}
-		clusterScope.IBMPowerVSCluster.Spec = infrav1beta2.IBMPowerVSClusterSpec{
+		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
 			ServiceInstanceID: "service-instance-1",
-			Ignition:          &infrav1beta2.Ignition{Version: "3.4"},
+			Ignition:          &infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1293,14 +1295,14 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When reconcile delete is successful", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status = infrav1beta2.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1beta2.ResourceReference{
+		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1.ResourceReference{
 				ID: ptr.To("serviceInstanceID"),
 			},
 		}
-		clusterScope.IBMPowerVSCluster.Spec = infrav1beta2.IBMPowerVSClusterSpec{
+		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
 			ServiceInstanceID: "service-instance-1",
-			Ignition:          &infrav1beta2.Ignition{Version: "3.4"},
+			Ignition:          &infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1322,13 +1324,13 @@ func TestReconcileVPCResources(t *testing.T) {
 		name                    string
 		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
 		reconcileResult         reconcileResult
-		conditions              clusterv1.Conditions
+		conditions              clusterv1beta1.Conditions
 	}{
 		{
 			name: "when ReconcileVPC returns error",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{},
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 				}
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, errors.New("vpc not found"))
@@ -1338,13 +1340,13 @@ func TestReconcileVPCResources(t *testing.T) {
 			reconcileResult: reconcileResult{
 				error: errors.New("vpc not found"),
 			},
-			conditions: clusterv1.Conditions{
-				clusterv1.Condition{
-					Type:               infrav1beta2.VPCReadyCondition,
+			conditions: clusterv1beta1.Conditions{
+				clusterv1beta1.Condition{
+					Type:               infrav1.VPCReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.VPCReconciliationFailedReason,
+					Reason:             infrav1.VPCReconciliationFailedReason,
 					Message:            "failed to check if VPC exists: failed to get VPC: error fetching VPC details with name: vpc not found",
 				},
 			},
@@ -1353,9 +1355,9 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when ReconcileVPC returns requeue as true",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							VPC: &infrav1beta2.ResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -1376,14 +1378,14 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when Reconciling VPC subnets returns error",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
-							VPC: &infrav1beta2.VPCResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							VPC: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -1399,14 +1401,14 @@ func TestReconcileVPCResources(t *testing.T) {
 				error: errors.New("vpc subnet not found"),
 			},
 
-			conditions: clusterv1.Conditions{
+			conditions: clusterv1beta1.Conditions{
 				getVPCReadyCondition(),
-				clusterv1.Condition{
-					Type:               infrav1beta2.VPCSubnetReadyCondition,
+				clusterv1beta1.Condition{
+					Type:               infrav1.VPCSubnetReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.VPCSubnetReconciliationFailedReason,
+					Reason:             infrav1.VPCSubnetReconciliationFailedReason,
 					Message:            "error checking VPC subnet with name: vpc subnet not found",
 				},
 			},
@@ -1415,17 +1417,17 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when Reconciling VPC subnets returns requeue as true",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
-							ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
-							VPC: &infrav1beta2.VPCResourceReference{
+							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							VPC: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -1444,7 +1446,7 @@ func TestReconcileVPCResources(t *testing.T) {
 					Requeue: true,
 				},
 			},
-			conditions: clusterv1.Conditions{
+			conditions: clusterv1beta1.Conditions{
 				getVPCReadyCondition(),
 			},
 		},
@@ -1452,24 +1454,24 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when Reconciling VPC security group returns error",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
-							VPC: &infrav1beta2.VPCResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
-							VPCSubnets: []infrav1beta2.Subnet{
+							VPCSubnets: []infrav1.Subnet{
 								{
 									ID: ptr.To("subnet-id"),
 								},
 							},
-							VPCSecurityGroups: []infrav1beta2.VPCSecurityGroup{
+							VPCSecurityGroups: []infrav1.VPCSecurityGroup{
 								{
 									Name: ptr.To("security-group"),
 								},
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							VPC: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -1486,14 +1488,14 @@ func TestReconcileVPCResources(t *testing.T) {
 				error: errors.New("failed to validate existing security group: vpc security group not found"),
 			},
 
-			conditions: clusterv1.Conditions{
+			conditions: clusterv1beta1.Conditions{
 				getVPCReadyCondition(),
-				clusterv1.Condition{
-					Type:               infrav1beta2.VPCSecurityGroupReadyCondition,
+				clusterv1beta1.Condition{
+					Type:               infrav1.VPCSecurityGroupReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.VPCSecurityGroupReconciliationFailedReason,
+					Reason:             infrav1.VPCSecurityGroupReconciliationFailedReason,
 					Message:            "failed to validate existing security group: vpc security group not found",
 				},
 				getVPCSubnetReadyCondition(),
@@ -1503,24 +1505,24 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when Reconciling LoadBalancer returns error",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
-							VPC: &infrav1beta2.VPCResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
-							VPCSubnets: []infrav1beta2.Subnet{
+							VPCSubnets: []infrav1.Subnet{
 								{
 									ID: ptr.To("subnet-id"),
 								},
 							},
-							LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+							LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 								{
 									ID: ptr.To("lb-id"),
 								},
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							VPC: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -1537,13 +1539,13 @@ func TestReconcileVPCResources(t *testing.T) {
 				error: errors.New("load balancer not found"),
 			},
 
-			conditions: clusterv1.Conditions{
-				clusterv1.Condition{
-					Type:               infrav1beta2.LoadBalancerReadyCondition,
+			conditions: clusterv1beta1.Conditions{
+				clusterv1beta1.Condition{
+					Type:               infrav1.LoadBalancerReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.LoadBalancerReconciliationFailedReason,
+					Reason:             infrav1.LoadBalancerReconciliationFailedReason,
 					Message:            "failed to fetch load balancer details: load balancer not found",
 				},
 				getVPCReadyCondition(),
@@ -1555,24 +1557,24 @@ func TestReconcileVPCResources(t *testing.T) {
 			name: "when Reconciling LoadBalancer returns with loadbalancer status as ready",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
-							VPC: &infrav1beta2.VPCResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
-							VPCSubnets: []infrav1beta2.Subnet{
+							VPCSubnets: []infrav1.Subnet{
 								{
 									ID: ptr.To("subnet-id"),
 								},
 							},
-							LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+							LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 								{
 									ID: ptr.To("lb-id"),
 								},
 							},
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							VPC: &infrav1beta2.ResourceReference{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
 							},
 						},
@@ -1589,7 +1591,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			conditions: clusterv1.Conditions{
+			conditions: clusterv1beta1.Conditions{
 				getVPCLBReadyCondition(),
 				getVPCReadyCondition(),
 				getVPCSGReadyCondition(),
@@ -1623,7 +1625,7 @@ func TestReconcileVPCResources(t *testing.T) {
 			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 				return metav1.Time{}
 			})
-			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			g.Expect(pvsCluster.cluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
 }
@@ -1633,15 +1635,15 @@ func TestReconcilePowerVSResources(t *testing.T) {
 		name                    string
 		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
 		reconcileResult         reconcileResult
-		conditions              clusterv1.Conditions
+		conditions              clusterv1beta1.Conditions
 	}{
 		{
 			name: "When Reconciling PowerVS service instance returns error",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1beta2.ResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1.ResourceReference{
 								ID: ptr.To("serviceInstanceID"),
 							},
 						},
@@ -1656,13 +1658,13 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				error: errors.New("error getting resource instance"),
 			},
 
-			conditions: clusterv1.Conditions{
-				clusterv1.Condition{
-					Type:               infrav1beta2.ServiceInstanceReadyCondition,
+			conditions: clusterv1beta1.Conditions{
+				clusterv1beta1.Condition{
+					Type:               infrav1.ServiceInstanceReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.ServiceInstanceReconciliationFailedReason,
+					Reason:             infrav1.ServiceInstanceReconciliationFailedReason,
 					Message:            "failed to fetch service instance details: error getting resource instance",
 				},
 			},
@@ -1671,16 +1673,16 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			name: "When Reconciling PowerVS service instance returns requeue as true",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1beta2.ResourceReference{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Status: infrav1.IBMPowerVSClusterStatus{
+							ServiceInstance: &infrav1.ResourceReference{
 								ID: ptr.To("serviceInstanceID"),
 							},
 						},
 					},
 				}
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
-				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1beta2.ServiceInstanceStateProvisioning)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
 				return clusterScope
 			},
@@ -1694,13 +1696,13 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			name: "When Reconciling network returns error",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "serviceInstanceID",
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							Network:         &infrav1beta2.ResourceReference{ID: ptr.To("NetworkID")},
-							ServiceInstance: &infrav1beta2.ResourceReference{ID: ptr.To("serviceInstanceID")},
+						Status: infrav1.IBMPowerVSClusterStatus{
+							Network:         &infrav1.ResourceReference{ID: ptr.To("NetworkID")},
+							ServiceInstance: &infrav1.ResourceReference{ID: ptr.To("serviceInstanceID")},
 						},
 					},
 				}
@@ -1708,7 +1710,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(nil, errors.New("error getting network"))
 				mockPowerVS.EXPECT().WithClients(gomock.Any())
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
-				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
 				clusterScope.IBMPowerVSClient = mockPowerVS
 				return clusterScope
@@ -1716,13 +1718,13 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			reconcileResult: reconcileResult{
 				error: errors.New("error getting network"),
 			},
-			conditions: clusterv1.Conditions{
-				clusterv1.Condition{
-					Type:               infrav1beta2.NetworkReadyCondition,
+			conditions: clusterv1beta1.Conditions{
+				clusterv1beta1.Condition{
+					Type:               infrav1.NetworkReadyCondition,
 					Status:             "False",
-					Severity:           clusterv1.ConditionSeverityError,
+					Severity:           clusterv1beta1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1beta2.NetworkReconciliationFailedReason,
+					Reason:             infrav1.NetworkReconciliationFailedReason,
 					Message:            "failed to fetch network by ID: error getting network",
 				},
 				getServiceInstanceReadyCondition(),
@@ -1732,13 +1734,13 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			name: "When reconcile network returns with DHCP server in active state",
 			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
 				clusterScope := &scope.PowerVSClusterScope{
-					IBMPowerVSCluster: &infrav1beta2.IBMPowerVSCluster{
-						Spec: infrav1beta2.IBMPowerVSClusterSpec{
+					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "serviceInstanceID",
 						},
-						Status: infrav1beta2.IBMPowerVSClusterStatus{
-							Network:         &infrav1beta2.ResourceReference{ID: ptr.To("netID")},
-							ServiceInstance: &infrav1beta2.ResourceReference{ID: ptr.To("serviceInstanceID")},
+						Status: infrav1.IBMPowerVSClusterStatus{
+							Network:         &infrav1.ResourceReference{ID: ptr.To("netID")},
+							ServiceInstance: &infrav1.ResourceReference{ID: ptr.To("serviceInstanceID")},
 						},
 					},
 				}
@@ -1746,12 +1748,12 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(&models.Network{NetworkID: ptr.To("netID")}, nil)
 				mockPowerVS.EXPECT().WithClients(gomock.Any())
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
-				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1beta2.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
 				clusterScope.IBMPowerVSClient = mockPowerVS
 				return clusterScope
 			},
-			conditions: clusterv1.Conditions{
+			conditions: clusterv1beta1.Conditions{
 				getNetworkReadyCondition(),
 				getServiceInstanceReadyCondition(),
 			},
@@ -1783,83 +1785,83 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 				return metav1.Time{}
 			})
-			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			g.Expect(pvsCluster.cluster.GetConditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
 }
 
-func getVPCReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.VPCReadyCondition,
+func getVPCReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.VPCReadyCondition,
 		Status: "True",
 	}
 }
 
-func getVPCSubnetReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.VPCSubnetReadyCondition,
+func getVPCSubnetReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.VPCSubnetReadyCondition,
 		Status: "True",
 	}
 }
 
-func getVPCSGReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.VPCSecurityGroupReadyCondition,
+func getVPCSGReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.VPCSecurityGroupReadyCondition,
 		Status: "True",
 	}
 }
 
-func getVPCLBReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.LoadBalancerReadyCondition,
+func getVPCLBReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.LoadBalancerReadyCondition,
 		Status: "True",
 	}
 }
 
-func getTGReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.TransitGatewayReadyCondition,
+func getTGReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.TransitGatewayReadyCondition,
 		Status: "True",
 	}
 }
 
-func getPowerVSClusterWithSpecAndStatus() *infrav1beta2.IBMPowerVSCluster {
-	return &infrav1beta2.IBMPowerVSCluster{
+func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
+	return &infrav1.IBMPowerVSCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Finalizers:  []string{infrav1beta2.IBMPowerVSClusterFinalizer},
-			Annotations: map[string]string{infrav1beta2.CreateInfrastructureAnnotation: "true"},
+			Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
+			Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 		},
-		Spec: infrav1beta2.IBMPowerVSClusterSpec{
+		Spec: infrav1.IBMPowerVSClusterSpec{
 			Zone: ptr.To("dal10"),
-			ResourceGroup: &infrav1beta2.IBMPowerVSResourceReference{
+			ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 				ID: ptr.To("rg-id"),
 			},
-			VPC: &infrav1beta2.VPCResourceReference{
+			VPC: &infrav1.VPCResourceReference{
 				Region: ptr.To("us-south"),
 			},
-			VPCSubnets: []infrav1beta2.Subnet{
+			VPCSubnets: []infrav1.Subnet{
 				{
 					ID: ptr.To("subnet-id"),
 				},
 			},
-			LoadBalancers: []infrav1beta2.VPCLoadBalancerSpec{
+			LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 				{
 					ID:     ptr.To("lb-id"),
 					Public: ptr.To(true),
 				},
 			},
 		},
-		Status: infrav1beta2.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1beta2.ResourceReference{
+		Status: infrav1.IBMPowerVSClusterStatus{
+			ServiceInstance: &infrav1.ResourceReference{
 				ID: ptr.To("serviceInstanceID"),
 			},
-			Network: &infrav1beta2.ResourceReference{
+			Network: &infrav1.ResourceReference{
 				ID: ptr.To("NetworkID"),
 			},
-			VPC: &infrav1beta2.ResourceReference{
+			VPC: &infrav1.ResourceReference{
 				ID: ptr.To("vpcID"),
 			},
-			TransitGateway: &infrav1beta2.TransitGatewayStatus{
+			TransitGateway: &infrav1.TransitGatewayStatus{
 				ID: ptr.To("transitGatewayID"),
 			},
 		},
@@ -1911,7 +1913,7 @@ func getMockTransitGateway(t *testing.T) *tgmock.MockTransitGateway {
 	mockTransitGateway.EXPECT().GetTransitGateway(gomock.Any()).Return(&tgapiv1.TransitGateway{
 		Name:   ptr.To("transitGateway"),
 		ID:     ptr.To("transitGatewayID"),
-		Status: ptr.To(string(infrav1beta2.TransitGatewayStateAvailable)),
+		Status: ptr.To(string(infrav1.TransitGatewayStateAvailable)),
 	}, nil, nil)
 	mockTransitGateway.EXPECT().ListTransitGatewayConnections(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCollection{
 		Connections: []tgapiv1.TransitGatewayConnectionCust{
@@ -1919,25 +1921,25 @@ func getMockTransitGateway(t *testing.T) *tgmock.MockTransitGateway {
 				Name:        ptr.To("vpc_connection"),
 				NetworkID:   ptr.To("vpc_crn"),
 				NetworkType: ptr.To("vpc"),
-				Status:      ptr.To(string(infrav1beta2.TransitGatewayConnectionStateAttached)),
+				Status:      ptr.To(string(infrav1.TransitGatewayConnectionStateAttached)),
 			},
 			{
 				Name:        ptr.To("powervs_connection"),
 				NetworkID:   ptr.To("powervs_crn"),
 				NetworkType: ptr.To("power_virtual_server"),
-				Status:      ptr.To(string(infrav1beta2.TransitGatewayConnectionStateAttached)),
+				Status:      ptr.To(string(infrav1.TransitGatewayConnectionStateAttached)),
 			},
 		},
 	}, nil, nil)
 	return mockTransitGateway
 }
 
-func createCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, namespace string) {
+func createCluster(g *WithT, powervsCluster *infrav1.IBMPowerVSCluster, namespace string) {
 	if powervsCluster != nil {
 		powervsCluster.Namespace = namespace
 		g.Expect(testEnv.Create(ctx, powervsCluster)).To(Succeed())
 		g.Eventually(func() bool {
-			cluster := &infrav1beta2.IBMPowerVSCluster{}
+			cluster := &infrav1.IBMPowerVSCluster{}
 			key := client.ObjectKey{
 				Name:      powervsCluster.Name,
 				Namespace: namespace,
@@ -1948,7 +1950,7 @@ func createCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, nam
 	}
 }
 
-func cleanupCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, namespace *corev1.Namespace) {
+func cleanupCluster(g *WithT, powervsCluster *infrav1.IBMPowerVSCluster, namespace *corev1.Namespace) {
 	if powervsCluster != nil {
 		func(do ...client.Object) {
 			g.Expect(testEnv.Cleanup(ctx, do...)).To(Succeed())
@@ -1956,15 +1958,15 @@ func cleanupCluster(g *WithT, powervsCluster *infrav1beta2.IBMPowerVSCluster, na
 	}
 }
 
-func getServiceInstanceReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.ServiceInstanceReadyCondition,
+func getServiceInstanceReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.ServiceInstanceReadyCondition,
 		Status: "True",
 	}
 }
-func getNetworkReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1beta2.NetworkReadyCondition,
+func getNetworkReadyCondition() clusterv1beta1.Condition {
+	return clusterv1beta1.Condition{
+		Type:   infrav1.NetworkReadyCondition,
 		Status: "True",
 	}
 }

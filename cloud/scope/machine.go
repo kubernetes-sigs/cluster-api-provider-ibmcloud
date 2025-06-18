@@ -38,7 +38,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/patch"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
@@ -55,8 +55,8 @@ type MachineScopeParams struct {
 	Logger          logr.Logger
 	Cluster         *clusterv1.Cluster
 	Machine         *clusterv1.Machine
-	IBMVPCCluster   *infrav1beta2.IBMVPCCluster
-	IBMVPCMachine   *infrav1beta2.IBMVPCMachine
+	IBMVPCCluster   *infrav1.IBMVPCCluster
+	IBMVPCMachine   *infrav1.IBMVPCMachine
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
@@ -70,8 +70,8 @@ type MachineScope struct {
 	GlobalTaggingClient globaltagging.GlobalTagging
 	Cluster             *clusterv1.Cluster
 	Machine             *clusterv1.Machine
-	IBMVPCCluster       *infrav1beta2.IBMVPCCluster
-	IBMVPCMachine       *infrav1beta2.IBMVPCMachine
+	IBMVPCCluster       *infrav1.IBMVPCCluster
+	IBMVPCMachine       *infrav1.IBMVPCMachine
 	ServiceEndpoint     []endpoints.ServiceEndpoint
 }
 
@@ -420,7 +420,7 @@ func (m *MachineScope) configurePlacementTarget() (vpcv1.InstancePlacementTarget
 	return nil, nil
 }
 
-func (m *MachineScope) volumeToVPCVolumeAttachment(volume *infrav1beta2.VPCVolume) *vpcv1.VolumeAttachmentPrototypeInstanceByImageContext {
+func (m *MachineScope) volumeToVPCVolumeAttachment(volume *infrav1.VPCVolume) *vpcv1.VolumeAttachmentPrototypeInstanceByImageContext {
 	bootVolume := &vpcv1.VolumeAttachmentPrototypeInstanceByImageContext{
 		DeleteVolumeOnInstanceDelete: core.BoolPtr(volume.DeleteVolumeOnInstanceDelete),
 		Volume:                       &vpcv1.VolumePrototypeInstanceByImageContext{},
@@ -509,7 +509,7 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 }
 
 // getLoadBalancerID will return the ID of a Load Balancer.
-func (m *MachineScope) getLoadBalancerID(loadBalancer *infrav1beta2.VPCResource) (*string, error) {
+func (m *MachineScope) getLoadBalancerID(loadBalancer *infrav1.VPCResource) (*string, error) {
 	// Lookup Load Balancer ID by Name if necessary
 	if loadBalancer.ID != nil {
 		return loadBalancer.ID, nil
@@ -527,7 +527,7 @@ func (m *MachineScope) getLoadBalancerID(loadBalancer *infrav1beta2.VPCResource)
 }
 
 // getLoadBalancerPoolID will return the ID of a Load Balancer Pool.
-func (m *MachineScope) getLoadBalancerPoolID(pool *infrav1beta2.VPCResource, loadBalancerID string) (*string, error) {
+func (m *MachineScope) getLoadBalancerPoolID(pool *infrav1.VPCResource, loadBalancerID string) (*string, error) {
 	// Lookup Load Balancer Pool ID by Name if necessary
 	if pool.ID != nil {
 		return pool.ID, nil
@@ -545,7 +545,7 @@ func (m *MachineScope) getLoadBalancerPoolID(pool *infrav1beta2.VPCResource, loa
 }
 
 // ReconcileVPCLoadBalancerPoolMember reconciles a Machine's Load Balancer Pool membership.
-func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(poolMember infrav1beta2.VPCLoadBalancerBackendPoolMember) (bool, error) {
+func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(poolMember infrav1.VPCLoadBalancerBackendPoolMember) (bool, error) {
 	// Collect the Machine's internal IP.
 	internalIP := m.GetMachineInternalIP()
 	if internalIP == nil {
@@ -571,7 +571,7 @@ func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(poolMember infrav1beta
 }
 
 // checkVPCLoadBalancerPoolMemberExists determines whether a Machine's Load Balancer Pool membership already exists.
-func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(poolMember infrav1beta2.VPCLoadBalancerBackendPoolMember, internalIP *string) (*vpcv1.LoadBalancerPoolMember, error) {
+func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(poolMember infrav1.VPCLoadBalancerBackendPoolMember, internalIP *string) (*vpcv1.LoadBalancerPoolMember, error) {
 	loadBalancerID, err := m.getLoadBalancerID(&poolMember.LoadBalancer)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if load balancer pool member exists: %w", err)
@@ -611,7 +611,7 @@ func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(poolMember infrav1be
 }
 
 // createVPCLoadBalancerPoolMember will create a new member within a Load Balancer Pool for the Machine's internal IP.
-func (m *MachineScope) createVPCLoadBalancerPoolMember(poolMember infrav1beta2.VPCLoadBalancerBackendPoolMember, internalIP *string) (bool, error) {
+func (m *MachineScope) createVPCLoadBalancerPoolMember(poolMember infrav1.VPCLoadBalancerBackendPoolMember, internalIP *string) (bool, error) {
 	// Retrieve the Load Balancer ID.
 	loadBalancerID, err := m.getLoadBalancerID(&poolMember.LoadBalancer)
 	if err != nil {
@@ -648,11 +648,11 @@ func (m *MachineScope) createVPCLoadBalancerPoolMember(poolMember infrav1beta2.V
 
 	// Add the new pool member details to the Machine Status.
 	// To prevent additional API calls, only use ID's and not Name's, as reconciliation does not rely on Name's for these resources in Status.
-	newMember := infrav1beta2.VPCLoadBalancerBackendPoolMember{
-		LoadBalancer: infrav1beta2.VPCResource{
+	newMember := infrav1.VPCLoadBalancerBackendPoolMember{
+		LoadBalancer: infrav1.VPCResource{
 			ID: loadBalancerID,
 		},
-		Pool: infrav1beta2.VPCResource{
+		Pool: infrav1.VPCResource{
 			ID: loadBalancerBackendPoolID,
 		},
 		Port: poolMember.Port,
@@ -678,7 +678,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targe
 		return nil, err
 	}
 
-	if *loadBalancer.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+	if *loadBalancer.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
 		return nil, fmt.Errorf("error load balancer is not in active state")
 	}
 
@@ -761,7 +761,7 @@ func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
 		if _, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
 			mtarget := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget)
 			if *mtarget.Address == *instance.PrimaryNetworkInterface.PrimaryIP.Address {
-				if *loadBalancer.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+				if *loadBalancer.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
 					return fmt.Errorf("load balancer is not in active state")
 				}
 
@@ -842,7 +842,7 @@ func (m *MachineScope) deleteVPCLoadBalancerPoolMembers() error {
 
 			m.Logger.V(3).Info("found load balancer pool member to delete", "machineName", m.IBMVPCMachine.Name, "poolMemberID", *poolMember.ID)
 			// Make LB status check now that it has been determined a change is required.
-			if *loadBalancerDetails.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+			if *loadBalancerDetails.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
 				m.Logger.V(5).Info("load balancer not in active status prior to load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID, "loadBalancerProvisioningStatus", *loadBalancerDetails.ProvisioningStatus)
 				// Set flag that some cleanup was not completed, and break out of member target loop, to try next member from Machine Status.
 				cleanupIncomplete = true
@@ -902,7 +902,7 @@ func (m *MachineScope) GetBootstrapData() (string, error) {
 	return string(value), nil
 }
 
-func fetchKeyID(key *infrav1beta2.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+func fetchKeyID(key *infrav1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
 	if key.ID == nil && key.Name == nil {
 		return nil, fmt.Errorf("both ID and Name can't be nil")
 	}
@@ -954,7 +954,7 @@ func fetchKeyID(key *infrav1beta2.IBMVPCResourceReference, m *MachineScope) (*st
 	return nil, fmt.Errorf("sshkey does not exist - failed to find Key ID")
 }
 
-func fetchImageID(image *infrav1beta2.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+func fetchImageID(image *infrav1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
 	if image.ID == nil && image.Name == nil {
 		return nil, fmt.Errorf("both ID and Name can't be nil")
 	}
@@ -1153,5 +1153,5 @@ func (m *MachineScope) APIServerPort() int32 {
 	if m.Cluster.Spec.ClusterNetwork != nil && m.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
 		return *m.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
-	return infrav1beta2.DefaultAPIServerPort
+	return infrav1.DefaultAPIServerPort
 }

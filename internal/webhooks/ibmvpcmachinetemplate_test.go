@@ -22,14 +22,14 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 
 	. "github.com/onsi/gomega"
 )
 
 func TestVPCMachineTemplate_default(t *testing.T) {
 	g := NewWithT(t)
-	vpcMachineTemplate := &infrav1beta2.IBMVPCMachineTemplate{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine-template", Namespace: "default"}}
+	vpcMachineTemplate := &infrav1.IBMVPCMachineTemplate{ObjectMeta: metav1.ObjectMeta{Name: "capi-machine-template", Namespace: "default"}}
 	g.Expect((&IBMVPCMachineTemplate{}).Default(context.Background(), vpcMachineTemplate)).ToNot(HaveOccurred())
 	g.Expect(vpcMachineTemplate.Spec.Template.Spec.Profile).To(BeEquivalentTo("bx2-2x8"))
 }
