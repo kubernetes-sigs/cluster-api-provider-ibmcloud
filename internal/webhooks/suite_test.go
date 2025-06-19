@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
 )
 
@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 
 // Setting up the test environment.
 func setup() {
-	utilruntime.Must(infrav1beta2.AddToScheme(scheme.Scheme))
+	utilruntime.Must(infrav1.AddToScheme(scheme.Scheme))
 	testEnvConfig := helpers.NewTestEnvironmentConfiguration([]string{
 		path.Join("config", "crd", "bases"),
 	},

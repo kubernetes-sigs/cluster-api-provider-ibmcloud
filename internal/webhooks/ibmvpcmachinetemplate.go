@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpcmachinetemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachinetemplates,verbs=create;update,versions=v1beta2,name=mibmvpcmachinetemplate.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -36,7 +36,7 @@ import (
 
 func (r *IBMVPCMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1beta2.IBMVPCMachineTemplate{}).
+		For(&infrav1.IBMVPCMachineTemplate{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -50,7 +50,7 @@ var _ webhook.CustomValidator = &IBMVPCMachineTemplate{}
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (r *IBMVPCMachineTemplate) Default(_ context.Context, obj runtime.Object) error {
-	objValue, ok := obj.(*infrav1beta2.IBMVPCMachineTemplate)
+	objValue, ok := obj.(*infrav1.IBMVPCMachineTemplate)
 	if !ok {
 		return apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachineTemplate but got a %T", obj))
 	}
@@ -60,7 +60,7 @@ func (r *IBMVPCMachineTemplate) Default(_ context.Context, obj runtime.Object) e
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1beta2.IBMVPCMachineTemplate)
+	objValue, ok := obj.(*infrav1.IBMVPCMachineTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachineTemplate but got a %T", obj))
 	}

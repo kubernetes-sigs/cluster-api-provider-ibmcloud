@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsclustertemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclustertemplates,verbs=create;update,versions=v1beta2,name=mibmpowervsclustertemplate.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -36,7 +36,7 @@ import (
 
 func (r *IBMPowerVSClusterTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1beta2.IBMPowerVSClusterTemplate{}).
+		For(&infrav1.IBMPowerVSClusterTemplate{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -60,11 +60,11 @@ func (r *IBMPowerVSClusterTemplate) ValidateCreate(_ context.Context, _ runtime.
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSClusterTemplate) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldObjValue, ok := oldObj.(*infrav1beta2.IBMPowerVSClusterTemplate)
+	oldObjValue, ok := oldObj.(*infrav1.IBMPowerVSClusterTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an IBMPowerVSClusterTemplate but got a %T", oldObj))
 	}
-	newObjValue, ok := newObj.(*infrav1beta2.IBMPowerVSClusterTemplate)
+	newObjValue, ok := newObj.(*infrav1.IBMPowerVSClusterTemplate)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected an IBMPowerVSClusterTemplate but got a %T", newObj))
 	}

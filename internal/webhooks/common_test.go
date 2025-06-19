@@ -21,7 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 func TestValidateIBMPowerVSMemoryValues(t *testing.T) {
@@ -115,48 +115,48 @@ func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
 func Test_validateBootVolume(t *testing.T) {
 	tests := []struct {
 		name      string
-		spec      infrav1beta2.IBMVPCMachineSpec
+		spec      infrav1.IBMVPCMachineSpec
 		wantError bool
 	}{
 		{
 			name: "Nil bootvolume",
-			spec: infrav1beta2.IBMVPCMachineSpec{
+			spec: infrav1.IBMVPCMachineSpec{
 				BootVolume: nil,
 			},
 			wantError: false,
 		},
 		{
 			name: "valid sizeGiB",
-			spec: infrav1beta2.IBMVPCMachineSpec{
-				BootVolume: &infrav1beta2.VPCVolume{SizeGiB: 20},
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{SizeGiB: 20},
 			},
 			wantError: false,
 		},
 		{
 			name: "Invalid sizeGiB",
-			spec: infrav1beta2.IBMVPCMachineSpec{
-				BootVolume: &infrav1beta2.VPCVolume{SizeGiB: 1},
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{SizeGiB: 1},
 			},
 			wantError: true,
 		},
 		{
 			name: "Valid Iops",
-			spec: infrav1beta2.IBMVPCMachineSpec{
-				BootVolume: &infrav1beta2.VPCVolume{Iops: 1000, Profile: "custom"},
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Iops: 1000, Profile: "custom"},
 			},
 			wantError: true,
 		},
 		{
 			name: "Invalid Iops",
-			spec: infrav1beta2.IBMVPCMachineSpec{
-				BootVolume: &infrav1beta2.VPCVolume{Iops: 1234, Profile: "general-purpose"},
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Iops: 1234, Profile: "general-purpose"},
 			},
 			wantError: true,
 		},
 		{
 			name: "Missing Iops for custom profile",
-			spec: infrav1beta2.IBMVPCMachineSpec{
-				BootVolume: &infrav1beta2.VPCVolume{Profile: "general-purpose"},
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "general-purpose"},
 			},
 			wantError: true,
 		},

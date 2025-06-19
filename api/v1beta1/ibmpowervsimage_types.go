@@ -19,7 +19,7 @@ package v1beta1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 )
 
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -82,7 +82,7 @@ type IBMPowerVSImageStatus struct {
 
 	// Conditions defines current service state of the IBMPowerVSImage.
 	// +optional
-	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -100,12 +100,12 @@ type IBMPowerVSImage struct {
 }
 
 // GetConditions returns the observations of the operational state of the IBMPowerVSImage resource.
-func (r *IBMPowerVSImage) GetConditions() clusterv1.Conditions {
+func (r *IBMPowerVSImage) GetConditions() clusterv1beta1.Conditions {
 	return r.Status.Conditions
 }
 
-// SetConditions sets the underlying service state of the IBMPowerVSImage to the predescribed clusterv1.Conditions.
-func (r *IBMPowerVSImage) SetConditions(conditions clusterv1.Conditions) {
+// SetConditions sets the underlying service state of the IBMPowerVSImage to the predescribed clusterv1beta1.Conditions.
+func (r *IBMPowerVSImage) SetConditions(conditions clusterv1beta1.Conditions) {
 	r.Status.Conditions = conditions
 }
 

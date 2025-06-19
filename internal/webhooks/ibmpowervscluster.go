@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
@@ -43,7 +43,7 @@ import (
 
 func (r *IBMPowerVSCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1beta2.IBMPowerVSCluster{}).
+		For(&infrav1.IBMPowerVSCluster{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -62,7 +62,7 @@ func (r *IBMPowerVSCluster) Default(_ context.Context, _ runtime.Object) error {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1beta2.IBMPowerVSCluster)
+	objValue, ok := obj.(*infrav1.IBMPowerVSCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", obj))
 	}
@@ -71,11 +71,11 @@ func (r *IBMPowerVSCluster) ValidateCreate(_ context.Context, obj runtime.Object
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMPowerVSCluster) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldObjValue, ok := oldObj.(*infrav1beta2.IBMPowerVSCluster)
+	oldObjValue, ok := oldObj.(*infrav1.IBMPowerVSCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", oldObj))
 	}
-	newObjValue, ok := newObj.(*infrav1beta2.IBMPowerVSCluster)
+	newObjValue, ok := newObj.(*infrav1.IBMPowerVSCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", newObj))
 	}
@@ -87,7 +87,7 @@ func (r *IBMPowerVSCluster) ValidateDelete(_ context.Context, _ runtime.Object) 
 	return nil, nil
 }
 
-func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1beta2.IBMPowerVSCluster) (admission.Warnings, error) {
+func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1.IBMPowerVSCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	if err := validateIBMPowerVSClusterNetwork(newCluster); err != nil {
 		allErrs = append(allErrs, err)
@@ -112,7 +112,7 @@ func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1beta2.IBMPowerVSCl
 		newCluster.Name, allErrs)
 }
 
-func validateIBMPowerVSClusterNetwork(cluster *infrav1beta2.IBMPowerVSCluster) *field.Error {
+func validateIBMPowerVSClusterNetwork(cluster *infrav1.IBMPowerVSCluster) *field.Error {
 	if res, err := validateIBMPowerVSNetworkReference(cluster.Spec.Network); !res {
 		return err
 	}
@@ -125,7 +125,7 @@ func validateIBMPowerVSClusterNetwork(cluster *infrav1beta2.IBMPowerVSCluster) *
 	return nil
 }
 
-func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	if err := validateIBMPowerVSClusterLoadBalancerNames(cluster); err != nil {
 		allErrs = append(allErrs, err...)
 	}
@@ -143,7 +143,7 @@ func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1beta2.IBMPowerVSClus
 	return append(allErrs, field.Invalid(field.NewPath("spec.LoadBalancers"), cluster.Spec.LoadBalancers, "Expect atleast one of the load balancer to be public"))
 }
 
-func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	found := make(map[string]bool)
 	for i, loadbalancer := range cluster.Spec.LoadBalancers {
 		if loadbalancer.Name == "" {
@@ -160,7 +160,7 @@ func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1beta2.IBMPowerVS
 	return allErrs
 }
 
-func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	found := make(map[string]bool)
 	for i, subnet := range cluster.Spec.VPCSubnets {
 		if subnet.Name == nil {
@@ -176,7 +176,7 @@ func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1beta2.IBMPowerVSClu
 	return allErrs
 }
 
-func validateIBMPowerVSClusterTransitGateway(cluster *infrav1beta2.IBMPowerVSCluster) *field.Error {
+func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster) *field.Error {
 	if cluster.Spec.Zone == nil && cluster.Spec.VPC == nil {
 		return nil
 	}
@@ -189,13 +189,13 @@ func validateIBMPowerVSClusterTransitGateway(cluster *infrav1beta2.IBMPowerVSClu
 	return nil
 }
 
-func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	annotations := cluster.GetAnnotations()
 	if len(annotations) == 0 {
 		return nil
 	}
 
-	value, found := annotations[infrav1beta2.CreateInfrastructureAnnotation]
+	value, found := annotations[infrav1.CreateInfrastructureAnnotation]
 	if !found {
 		return nil
 	}
@@ -247,7 +247,7 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1beta2.IBMPowerVS
 	return allErrs
 }
 
-func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1beta2.IBMPowerVSCluster) (allErrs field.ErrorList) {
+func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	newLoadBalancerListeners := map[string]metav1.LabelSelector{}
 	for _, loadbalancer := range newCluster.Spec.LoadBalancers {
 		for _, additionalListener := range loadbalancer.AdditionalListeners {

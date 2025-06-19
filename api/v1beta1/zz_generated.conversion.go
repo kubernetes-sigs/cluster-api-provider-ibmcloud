@@ -28,7 +28,7 @@ import (
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	v1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	corev1beta2 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	corev1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1"
 )
 
 func init() {
@@ -821,7 +821,7 @@ func autoConvert_v1beta1_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(
 	out.ImageID = in.ImageID
 	out.ImageState = v1beta2.PowerVSImageState(in.ImageState)
 	out.JobID = in.JobID
-	out.Conditions = *(*corev1beta2.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -835,7 +835,7 @@ func autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(
 	out.ImageID = in.ImageID
 	out.ImageState = PowerVSImageState(in.ImageState)
 	out.JobID = in.JobID
-	out.Conditions = *(*corev1beta2.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -960,7 +960,7 @@ func autoConvert_v1beta1_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineSta
 	out.Fault = in.Fault
 	out.FailureReason = (*string)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*corev1beta2.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	out.Region = (*string)(unsafe.Pointer(in.Region))
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
 	return nil
@@ -980,7 +980,7 @@ func autoConvert_v1beta2_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineSta
 	out.Fault = in.Fault
 	out.FailureReason = (*string)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*corev1beta2.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	out.Region = (*string)(unsafe.Pointer(in.Region))
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
 	// WARNING: in.V1Beta2 requires manual conversion: does not exist in peer-type
@@ -1282,7 +1282,7 @@ func autoConvert_v1beta1_IBMVPCClusterStatus_To_v1beta2_IBMVPCClusterStatus(in *
 		return err
 	}
 	out.ControlPlaneLoadBalancerState = v1beta2.VPCLoadBalancerState(in.ControlPlaneLoadBalancerState)
-	out.Conditions = *(*corev1beta2.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 
@@ -1306,7 +1306,7 @@ func autoConvert_v1beta2_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(in *
 		return err
 	}
 	out.ControlPlaneLoadBalancerState = VPCLoadBalancerState(in.ControlPlaneLoadBalancerState)
-	out.Conditions = *(*corev1beta2.Conditions)(unsafe.Pointer(&in.Conditions))
+	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	return nil
 }
 

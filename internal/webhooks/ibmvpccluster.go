@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,verbs=create;update,versions=v1beta2,name=mibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -37,7 +37,7 @@ import (
 
 func (r *IBMVPCCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1beta2.IBMVPCCluster{}).
+		For(&infrav1.IBMVPCCluster{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -56,7 +56,7 @@ func (r *IBMVPCCluster) Default(_ context.Context, _ runtime.Object) error {
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1beta2.IBMVPCCluster)
+	objValue, ok := obj.(*infrav1.IBMVPCCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", obj))
 	}
@@ -65,7 +65,7 @@ func (r *IBMVPCCluster) ValidateCreate(_ context.Context, obj runtime.Object) (a
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
 func (r *IBMVPCCluster) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*infrav1beta2.IBMVPCCluster)
+	objValue, ok := newObj.(*infrav1.IBMVPCCluster)
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", objValue))
 	}
@@ -77,7 +77,7 @@ func (r *IBMVPCCluster) ValidateDelete(_ context.Context, _ runtime.Object) (adm
 	return nil, nil
 }
 
-func validateIBMVPCCluster(vpcCluster *infrav1beta2.IBMVPCCluster) (admission.Warnings, error) {
+func validateIBMVPCCluster(vpcCluster *infrav1.IBMVPCCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
 	if err := validateIBMVPCClusterControlPlane(vpcCluster); err != nil {
 		allErrs = append(allErrs, err)
@@ -91,7 +91,7 @@ func validateIBMVPCCluster(vpcCluster *infrav1beta2.IBMVPCCluster) (admission.Wa
 		vpcCluster.Name, allErrs)
 }
 
-func validateIBMVPCClusterControlPlane(vpcCluster *infrav1beta2.IBMVPCCluster) *field.Error {
+func validateIBMVPCClusterControlPlane(vpcCluster *infrav1.IBMVPCCluster) *field.Error {
 	if vpcCluster.Spec.ControlPlaneEndpoint.Host == "" && vpcCluster.Spec.ControlPlaneLoadBalancer == nil {
 		return field.Invalid(field.NewPath(""), "", "One of - ControlPlaneEndpoint or ControlPlaneLoadBalancer must be specified")
 	}

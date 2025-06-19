@@ -33,11 +33,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
-	conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions" //nolint:staticcheck
 
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -64,7 +65,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Fetch the IBMVPCMachine instance.
 
-	ibmVpcMachine := &infrav1beta2.IBMVPCMachine{}
+	ibmVpcMachine := &infrav1.IBMVPCMachine{}
 	err := r.Get(ctx, req.NamespacedName, ibmVpcMachine)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
@@ -91,7 +92,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	log = log.WithValues("cluster", cluster.Name)
 
-	ibmCluster := &infrav1beta2.IBMVPCCluster{}
+	ibmCluster := &infrav1.IBMVPCCluster{}
 	ibmVpcClusterName := client.ObjectKey{
 		Namespace: ibmVpcMachine.Namespace,
 		Name:      cluster.Spec.InfrastructureRef.Name,
@@ -136,12 +137,12 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 // SetupWithManager creates a new IBMVPCMachine controller for a manager.
 func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&infrav1beta2.IBMVPCMachine{}).
+		For(&infrav1.IBMVPCMachine{}).
 		Complete(r)
 }
 
 func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
-	if controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1beta2.MachineFinalizer) {
+	if controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1.MachineFinalizer) {
 		return ctrl.Result{}, nil
 	}
 
@@ -152,7 +153,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 	}
 
 	if machineScope.IBMVPCCluster.Status.Subnet.ID != nil {
-		machineScope.IBMVPCMachine.Spec.PrimaryNetworkInterface = infrav1beta2.NetworkInterface{
+		machineScope.IBMVPCMachine.Spec.PrimaryNetworkInterface = infrav1.NetworkInterface{
 			Subnet: *machineScope.IBMVPCCluster.Status.Subnet.ID,
 		}
 	}
@@ -181,10 +182,10 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		switch machineScope.GetInstanceStatus() {
 		case vpcv1.InstanceStatusPendingConst:
 			machineScope.SetNotReady()
-			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceNotReadyReason, clusterv1.ConditionSeverityWarning, "")
+			v1beta1conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition, infrav1.InstanceNotReadyReason, clusterv1beta1.ConditionSeverityWarning, "")
 		case vpcv1.InstanceStatusStoppedConst:
 			machineScope.SetNotReady()
-			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStoppedReason, clusterv1.ConditionSeverityError, "")
+			v1beta1conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition, infrav1.InstanceStoppedReason, clusterv1beta1.ConditionSeverityError, "")
 		case vpcv1.InstanceStatusFailedConst:
 			msg := ""
 			healthReasonsLen := len(instance.HealthReasons)
@@ -194,9 +195,9 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 				msg = fmt.Sprintf("%s: %s", *instance.HealthReasons[healthReasonsLen-1].Code, *instance.HealthReasons[healthReasonsLen-1].Message)
 			}
 			machineScope.SetNotReady()
-			machineScope.SetFailureReason(infrav1beta2.UpdateMachineError)
+			machineScope.SetFailureReason(infrav1.UpdateMachineError)
 			machineScope.SetFailureMessage(msg)
-			conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceErroredReason, clusterv1.ConditionSeverityError, "%s", msg)
+			v1beta1conditions.MarkFalse(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition, infrav1.InstanceErroredReason, clusterv1beta1.ConditionSeverityError, "%s", msg)
 			capibmrecord.Warnf(machineScope.IBMVPCMachine, "FailedBuildInstance", "Failed to build the instance - %s", msg)
 			return ctrl.Result{}, nil
 		case vpcv1.InstanceStatusRunningConst:
@@ -204,11 +205,11 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		default:
 			machineScope.SetNotReady()
 			machineScope.V(3).Info("unexpected vpc instance status", "instanceStatus", *instance.Status, "instanceID", machineScope.GetInstanceID())
-			conditions.MarkUnknown(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, "", "")
+			v1beta1conditions.MarkUnknown(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition, "", "")
 		}
 	} else {
 		machineScope.SetNotReady()
-		conditions.MarkUnknown(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition, infrav1beta2.InstanceStateUnknownReason, "")
+		v1beta1conditions.MarkUnknown(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition, infrav1.InstanceStateUnknownReason, "")
 	}
 
 	// Check if the Machine is running.
@@ -249,7 +250,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to bind port %d to control plane %s/%s: %w", port, machineScope.IBMVPCMachine.Namespace, machineScope.IBMVPCMachine.Name, err)
 			}
-			if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1beta2.VPCLoadBalancerStateActive) {
+			if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
 				return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 			}
 		}
@@ -257,7 +258,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 
 	// With a running machine and all Load Balancer Pool Members reconciled, mark machine as ready.
 	machineScope.SetReady()
-	conditions.MarkTrue(machineScope.IBMVPCMachine, infrav1beta2.InstanceReadyCondition)
+	v1beta1conditions.MarkTrue(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition)
 	return ctrl.Result{}, nil
 }
 
@@ -283,7 +284,7 @@ func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ 
 	defer func() {
 		if reterr == nil {
 			// VSI is deleted so remove the finalizer.
-			controllerutil.RemoveFinalizer(scope.IBMVPCMachine, infrav1beta2.MachineFinalizer)
+			controllerutil.RemoveFinalizer(scope.IBMVPCMachine, infrav1.MachineFinalizer)
 		}
 	}()
 
