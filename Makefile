@@ -179,8 +179,8 @@ help:  # Display this help
 
 # Generate code
 .PHONY: generate
-generate: ## Run all generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates
-	$(MAKE) generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates
+generate: ## Run all generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
+	$(MAKE) generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
 
 generate-go-deepcopy: $(CONTROLLER_GEN) ## Generate deepcopy go code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -211,11 +211,8 @@ generate-templates: $(KUSTOMIZE) ## Generate cluster templates
 	
 .PHONY: generate-e2e-templates
 generate-e2e-templates: $(KUSTOMIZE) ## Generate E2E cluster templates
-ifeq ($(E2E_FLAVOR), powervs-md-remediation)
 	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-powervs-md-remediation.yaml
-else
 	$(KUSTOMIZE) build $(E2E_TEMPLATES)/cluster-template-vpc --load-restrictor LoadRestrictionsNone > $(E2E_TEMPLATES)/cluster-template-vpc.yaml
-endif
 
 .PHONY: generate-modules
 generate-modules: ## Runs go mod to ensure modules are up to date
