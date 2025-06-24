@@ -12,7 +12,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.23.4
 	go.uber.org/mock v0.5.2
 	golang.org/x/vuln v1.1.4
-	gotest.tools/gotestsum v1.12.2
+	gotest.tools/gotestsum v1.12.3
 	k8s.io/code-generator v0.33.1
 	k8s.io/release v0.16.9
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250617155701-abcc6d85c72a
@@ -427,7 +427,7 @@ require (
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	golang.org/x/tools v0.33.0 // indirect
+	golang.org/x/tools v0.34.0 // indirect
 	golang.org/x/tools/go/vcs v0.1.0-deprecated // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/api v0.237.0 // indirect
