@@ -5,7 +5,7 @@ following the steps below.
 
 > **Note**:
 > 1. The cluster will be deployed with [cloud controller manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
-> 2. The [template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template.yaml) uses the experimental feature gate [clusterresourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) which will create the necessary config map, secret and roles to run the cloud controller manager. Set `EXP_CLUSTER_RESOURCE_SET` to `true`.
+> 2. The [template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template.yaml) uses the experimental feature gate [clusterresourceset](https://cluster-api.sigs.k8s.io/tasks/cluster-resource-set.html#clusterresourceset-ga) which will create the necessary config map, secret and roles to run the cloud controller manager. Set `EXP_CLUSTER_RESOURCE_SET` to `true`.
 > 3. To deploy a cluster using [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html), refer [here](#deploy-a-cluster-using-ibm-cloud-vpc-infrastructure-using-clusterclass). In addition to the above flags, set `CLUSTER_TOPOLOGY` environment variable to `true`. 
 > 4. The list of IBM Cloud VPC Regions and Zones can be found [here](../../reference/regions-zones-mapping.md).
 
