@@ -126,6 +126,12 @@ const (
 
 	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
 	ImageImportedCondition clusterv1beta1.ConditionType = "ImageImported"
+
+	// IBMPowerVSImageDeletingV1Beta2Reason surfaces when the image controller by IBMPowerVSImage is deleting.
+	IBMPowerVSImageDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
+
+	// IBMPowerVSMachineImageDeletingV1Beta2Reason surfaces when the image controller by IBMPowerVSImage is deleting.
+	IBMPowerVSMachineImageDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 )
 
 const (
@@ -320,4 +326,21 @@ const (
 
 	// COSInstanceDeletingV1Beta2Reason surfaces when the COS instance is being deleted.
 	COSInstanceDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
+)
+
+// IBMPowerVSCluster's Ready condition and corresponding reasons that will be used in v1Beta2 API version.
+const (
+	// IBMPowerVSClusterReadyV1Beta2Condition is true if the IBMPowerVSCluster's deletionTimestamp is not set, IBMPowerVSCluster's
+	// FailureDomainsReady, VCenterAvailable and ClusterModulesReady conditions are true.
+	IBMPowerVSImageReadyV1Beta2Condition = clusterv1beta1.ReadyV1Beta2Condition
+
+	// IBMPowerVSClusterReadyV1Beta2Reason surfaces when the IBMPowerVSCluster readiness criteria is met.
+	IBMPowerVSImageReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
+
+	// IBMPowerVSClusterNotReadyV1Beta2Reason surfaces when the IBMPowerVSCluster readiness criteria is not met.
+	IBMPowerVSImageNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
+
+	// IBMPowerVSClusterReadyUnknownV1Beta2Reason surfaces when at least one of the IBMPowerVSCluster readiness criteria is unknown
+	// and none of the IBMPowerVSCluster readiness criteria is met.
+	IBMPowerVSImageReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
 )
