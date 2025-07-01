@@ -142,7 +142,7 @@ const (
 )
 
 const (
-	// ImageNotReadyReason used when the image is in a queued state.
+	// ImageNotReadyReason used when the image is not ready.
 	ImageNotReadyReason = "ImageNotReady"
 
 	// ImageImportFailedReason used when the image import is failed.
@@ -150,6 +150,9 @@ const (
 
 	// ImageReconciliationFailedReason used when an error occurs during VPC Custom Image reconciliation.
 	ImageReconciliationFailedReason = "ImageReconciliationFailed"
+
+	// ImageQueuedReason used when the image is in queued state.
+	ImageQueuedReason = "ImageQueued"
 )
 
 const (
@@ -158,6 +161,9 @@ const (
 
 	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
 	ImageImportedCondition clusterv1beta1.ConditionType = "ImageImported"
+
+	// IBMPowerVSImageDeletingV1Beta2Reason surfaces when the image is in deleting state.
+	IBMPowerVSImageDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 )
 
 const (
@@ -352,4 +358,23 @@ const (
 
 	// COSInstanceDeletingV1Beta2Reason surfaces when the COS instance is being deleted.
 	COSInstanceDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
+)
+
+// IBMPowerVSImage's Ready condition and corresponding reasons that will be used in v1Beta2 API version.
+const (
+	// IBMPowerVSImageReadyCondition is true if the IBMPowerVSImage's deletionTimestamp is not set, IBMPowerVSImage's IBMPowerVSImageReadyV1Beta2Condition is true.
+	IBMPowerVSImageReadyCondition = clusterv1beta1.ReadyV1Beta2Condition
+
+	// IBMPowerVSImageReadyV1Beta2Condition documents the Ready status of the image.
+	IBMPowerVSImageReadyV1Beta2Condition = "ImageReady"
+
+	// IBMPowerVSImageReadyV1Beta2Reason surfaces when the IBMPowerVSImage readiness criteria is met.
+	IBMPowerVSImageReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
+
+	// IBMPowerVSImageNotReadyV1Beta2Reason surfaces when the IBMPowerVSImage readiness criteria is not met.
+	IBMPowerVSImageNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
+
+	// IBMPowerVSImageReadyUnknownV1Beta2Reason surfaces when at least one of the IBMPowerVSImage readiness criteria is unknown
+	// and none of the IBMPowerVSImage readiness criteria is met.
+	IBMPowerVSImageReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
 )
