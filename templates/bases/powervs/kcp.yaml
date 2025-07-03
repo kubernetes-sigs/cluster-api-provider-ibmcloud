@@ -8,7 +8,7 @@ spec:
   machineTemplate:
     infrastructureRef:
       kind: IBMPowerVSMachineTemplate
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      apiGroup: infrastructure.cluster.x-k8s.io
       name: "${CLUSTER_NAME}-control-plane"
   kubeadmConfigSpec:
     clusterConfiguration:
@@ -34,7 +34,6 @@ spec:
       discovery:
         bootstrapToken:
           apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
-          token: ""
           caCertHashes: [ ]
           unsafeSkipCAVerification: false
       nodeRegistration:
