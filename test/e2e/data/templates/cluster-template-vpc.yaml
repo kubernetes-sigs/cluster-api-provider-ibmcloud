@@ -289,15 +289,13 @@ spec:
       cidrBlocks:
       - ${SERVICE_CIDR:="10.128.0.0/12"}
   controlPlaneRef:
-    apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+    apiGroup: controlplane.cluster.x-k8s.io
     kind: KubeadmControlPlane
     name: ${CLUSTER_NAME}-control-plane
-    namespace: ${NAMESPACE}
   infrastructureRef:
-    apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+    apiGroup: infrastructure.cluster.x-k8s.io
     kind: IBMVPCCluster
     name: ${CLUSTER_NAME}
-    namespace: ${NAMESPACE}
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
@@ -310,12 +308,12 @@ spec:
     spec:
       bootstrap:
         configRef:
-          apiVersion: bootstrap.cluster.x-k8s.io/v1beta1
+          apiGroup: bootstrap.cluster.x-k8s.io
           kind: KubeadmConfigTemplate
           name: ${CLUSTER_NAME}-md-0
       clusterName: ${CLUSTER_NAME}
       infrastructureRef:
-        apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+        apiGroup: infrastructure.cluster.x-k8s.io
         kind: IBMVPCMachineTemplate
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
@@ -341,8 +339,6 @@ spec:
           value: external
       dns: {}
       etcd: {}
-      kubernetesVersion: ${KUBERNETES_VERSION}
-      networking: {}
       scheduler: {}
     initConfiguration:
       nodeRegistration:
@@ -363,10 +359,9 @@ spec:
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
   machineTemplate:
     infrastructureRef:
-      apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+      apiGroup: infrastructure.cluster.x-k8s.io
       kind: IBMVPCMachineTemplate
       name: ${CLUSTER_NAME}-control-plane
-      namespace: ${NAMESPACE}
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
