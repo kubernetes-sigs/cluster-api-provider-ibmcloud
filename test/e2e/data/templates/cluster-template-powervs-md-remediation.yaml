@@ -354,9 +354,6 @@ spec:
         certSANs:
         - ${IBMPOWERVS_VIP}
         - ${IBMPOWERVS_VIP_EXTERNAL}
-        extraArgs:
-        - name: cloud-provider
-          value: external
       controlPlaneEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
       controllerManager:
         extraArgs:
