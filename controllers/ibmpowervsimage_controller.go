@@ -37,7 +37,6 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterv1util "sigs.k8s.io/cluster-api/util"
-	"sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions" //nolint:staticcheck
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
@@ -350,15 +349,15 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper,
 	}
 
 	// always update the readyCondition.
-	conditions.SetSummary(ibmPowerVSImage,
-		conditions.WithConditions(
-			infrav1.ImageReadyCondition,
+	v1beta1conditions.SetSummary(ibmPowerVSImage,
+		v1beta1conditions.WithConditions(
+			infrav1.InstanceReadyCondition,
 		),
 	)
 
 	if err := v1beta2conditions.SetSummaryCondition(ibmPowerVSImage, ibmPowerVSImage, infrav1.IBMPowerVSImageReadyV1Beta2Condition,
 		v1beta2conditions.ForConditionTypes{
-			infrav1.IBMPowerVSImageReadyV1Beta2Condition,
+			infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition,
 		},
 		// Using a custom merge strategy to override reasons applied during merge.
 		v1beta2conditions.CustomMergeStrategy{
