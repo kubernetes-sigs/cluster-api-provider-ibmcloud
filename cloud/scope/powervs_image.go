@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	infrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
@@ -170,12 +169,12 @@ func (i *PowerVSImageScope) CreateImageCOSBucket(ctx context.Context) (*models.I
 		record.Warnf(i.IBMPowerVSImage, "FailedRetrieveImage", "Failed to retrieve image %q", m.Name)
 		return nil, nil, err
 	} else if imageReply != nil {
-		log.Info("Image already exists")
+		log.Info("Image already exists", "imageName", m.Name)
 		return imageReply, nil, nil
 	}
 
 	if lastJob, _ := i.GetImportJob(); lastJob != nil {
-		if *lastJob.Status.State != string(infrav1beta2.PowerVSImageStateCompleted) && *lastJob.Status.State != string(infrav1beta2.PowerVSImageStateFailed) {
+		if *lastJob.Status.State != string(infrav1.PowerVSImageStateCompleted) && *lastJob.Status.State != string(infrav1.PowerVSImageStateFailed) {
 			log.Info("Previous import job not yet finished", "state", *lastJob.Status.State)
 			return nil, nil, nil
 		}
@@ -196,7 +195,7 @@ func (i *PowerVSImageScope) CreateImageCOSBucket(ctx context.Context) (*models.I
 		record.Warnf(i.IBMPowerVSImage, "FailedCreateImageImportJob", "Failed image import job creation - %v", err)
 		return nil, nil, err
 	}
-	log.Info("New import job request created")
+	log.Info("New import job request created", "jobID", *jobRef.ID)
 	record.Eventf(i.IBMPowerVSImage, "SuccessfulCreateImageImportJob", "Created image import job %q", *jobRef.ID)
 	return nil, jobRef, nil
 }
