@@ -151,7 +151,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 	if jobID := imageScope.GetJobID(); jobID != "" {
 		job, err := imageScope.IBMPowerVSClient.GetJob(jobID)
 		if err != nil {
-			log.Info("Unable to get job details")
+			log.Info("Unable to get job details", "jobID", jobID)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, err
 		}
 
@@ -181,7 +181,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 			v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
 				Status: metav1.ConditionFalse,
-				Reason: infrav1.ImageNotReadyReason,
+				Reason: infrav1.ImageQueuedReason,
 			})
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		default:
@@ -214,7 +214,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 	if img != nil {
 		image, err := imageScope.IBMPowerVSClient.GetImage(*img.ImageID)
 		if err != nil {
-			log.Info("Unable to get image details")
+			log.Info("Unable to get image details", "imageID", *img.ImageID)
 			return ctrl.Result{}, err
 		}
 
@@ -258,7 +258,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 
 	// Requeue after 1 minute if image is not ready to update status of the image properly.
 	if !imageScope.IsReady() {
-		log.Info("Image is not yet ready")
+		log.Info("Image is not yet ready, requeue", "state", imageScope.GetImageState())
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
