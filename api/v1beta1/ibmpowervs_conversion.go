@@ -215,6 +215,5 @@ func Convert_v1beta2_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineStatus(
 }
 
 func Convert_v1beta2_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(in *infrav1.IBMPowerVSImageStatus, out *IBMPowerVSImageStatus, s apiconversion.Scope) error {
-	// CAPI V1Beta2 was added in CAPIBM v1beta2
 	return autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(in, out, s)
 }

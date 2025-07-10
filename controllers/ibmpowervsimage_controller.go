@@ -181,7 +181,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 			v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
 				Status: metav1.ConditionFalse,
-				Reason: infrav1.ImageNotReadyReason,
+				Reason: infrav1.ImageQueuedReason,
 			})
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		default:
