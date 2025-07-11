@@ -21,18 +21,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/go-logr/logr"
-
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
-
+	"github.com/go-logr/logr"
 	"k8s.io/klog/v2"
 
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -55,10 +52,7 @@ type PowerVSImageScopeParams struct {
 
 // PowerVSImageScope defines a scope defined around a Power VS Cluster.
 type PowerVSImageScope struct {
-	logr.Logger
-	Client      client.Client
-	patchHelper *v1beta1patch.Helper
-
+	Client           client.Client
 	IBMPowerVSClient powervs.PowerVS
 	IBMPowerVSImage  *infrav1.IBMPowerVSImage
 	ServiceEndpoint  []endpoints.ServiceEndpoint
@@ -83,23 +77,9 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	if params.Logger == (logr.Logger{}) {
 		params.Logger = klog.Background()
 	}
-	scope.Logger = params.Logger
-
-	helper, err := v1beta1patch.NewHelper(params.IBMPowerVSImage, params.Client)
-	if err != nil {
-		err = fmt.Errorf("failed to init patch helper: %w", err)
-		return nil, err
-	}
-	scope.patchHelper = helper
 
 	// Create Resource Controller client.
 	var serviceOption resourcecontroller.ServiceOptions
-	// Fetch the resource controller endpoint.
-	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
-	if rcEndpoint != "" {
-		serviceOption.URL = rcEndpoint
-		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
-	}
 
 	rc, err := resourcecontroller.NewService(serviceOption)
 	if err != nil {
@@ -150,7 +130,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	// Fetch the service endpoint.
 	if svcEndpoint := endpoints.FetchPVSEndpoint(endpoints.ConstructRegionFromZone(*res.RegionID), params.ServiceEndpoint); svcEndpoint != "" {
 		options.IBMPIOptions.URL = svcEndpoint
-		scope.Logger.V(3).Info("overriding the default powervs service endpoint")
+		params.Logger.V(3).Info("overriding the default powervs service endpoint", "serviceEndpoint", svcEndpoint)
 	}
 
 	c, err := powervs.NewService(options)
@@ -179,8 +159,9 @@ func (i *PowerVSImageScope) ensureImageUnique(imageName string) (*models.ImageRe
 }
 
 // CreateImageCOSBucket creates a power vs image.
-func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *models.JobReference, error) {
-	s := i.IBMPowerVSImage.Spec
+func (i *PowerVSImageScope) CreateImageCOSBucket(ctx context.Context) (*models.ImageReference, *models.JobReference, error) {
+	log := ctrl.LoggerFrom(ctx)
+	imageSpec := i.IBMPowerVSImage.Spec
 	m := i.IBMPowerVSImage.ObjectMeta
 
 	imageReply, err := i.ensureImageUnique(m.Name)
@@ -188,49 +169,39 @@ func (i *PowerVSImageScope) CreateImageCOSBucket() (*models.ImageReference, *mod
 		record.Warnf(i.IBMPowerVSImage, "FailedRetrieveImage", "Failed to retrieve image %q", m.Name)
 		return nil, nil, err
 	} else if imageReply != nil {
-		i.Info("Image already exists")
+		log.Info("Image already exists")
 		return imageReply, nil, nil
 	}
 
 	if lastJob, _ := i.GetImportJob(); lastJob != nil {
-		if *lastJob.Status.State != "completed" && *lastJob.Status.State != "failed" {
-			i.Info("Previous import job not yet finished", "state", *lastJob.Status.State)
+		if *lastJob.Status.State != string(infrav1.PowerVSImageStateCompleted) && *lastJob.Status.State != string(infrav1.PowerVSImageStateFailed) {
+			log.Info("Previous import job not yet finished", "state", *lastJob.Status.State)
 			return nil, nil, nil
 		}
 	}
 
 	body := &models.CreateCosImageImportJob{
 		ImageName:     &m.Name,
-		BucketName:    s.Bucket,
+		BucketName:    imageSpec.Bucket,
 		BucketAccess:  core.StringPtr(BucketAccess),
-		Region:        s.Region,
-		ImageFilename: s.Object,
-		StorageType:   s.StorageType,
+		Region:        imageSpec.Region,
+		ImageFilename: imageSpec.Object,
+		StorageType:   imageSpec.StorageType,
 	}
 
 	jobRef, err := i.IBMPowerVSClient.CreateCosImage(body)
 	if err != nil {
-		i.Info("Unable to create new import job request")
+		log.Info("Unable to create new import job request")
 		record.Warnf(i.IBMPowerVSImage, "FailedCreateImageImportJob", "Failed image import job creation - %v", err)
 		return nil, nil, err
 	}
-	i.Info("New import job request created")
+	log.Info("New import job request created")
 	record.Eventf(i.IBMPowerVSImage, "SuccessfulCreateImageImportJob", "Created image import job %q", *jobRef.ID)
 	return nil, jobRef, nil
 }
 
-// PatchObject persists the cluster configuration and status.
-func (i *PowerVSImageScope) PatchObject() error {
-	return i.patchHelper.Patch(context.TODO(), i.IBMPowerVSImage)
-}
-
-// Close closes the current scope persisting the cluster configuration and status.
-func (i *PowerVSImageScope) Close() error {
-	return i.PatchObject()
-}
-
 // DeleteImage will delete the image.
-func (i *PowerVSImageScope) DeleteImage() error {
+func (i *PowerVSImageScope) DeleteImage(ctx context.Context) error {
 	if err := i.IBMPowerVSClient.DeleteImage(i.IBMPowerVSImage.Status.ImageID); err != nil {
 		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImage", "Failed image deletion - %v", err)
 		return err
@@ -245,7 +216,7 @@ func (i *PowerVSImageScope) GetImportJob() (*models.Job, error) {
 }
 
 // DeleteImportJob will delete the image import job.
-func (i *PowerVSImageScope) DeleteImportJob() error {
+func (i *PowerVSImageScope) DeleteImportJob(ctx context.Context) error {
 	if err := i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID); err != nil {
 		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImportJob", "Failed image import job deletion - %v", err)
 		return err
