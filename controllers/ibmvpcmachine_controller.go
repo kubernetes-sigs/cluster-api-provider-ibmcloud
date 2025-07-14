@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 
@@ -322,6 +324,12 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 		}
 	}
 
+	// Handle Additional Volumes
+	err = r.reconcileAdditionalVolumes(machineScope)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling additional volumes: %w", err)
+	}
+
 	// With a running machine and all Load Balancer Pool Members reconciled, mark machine as ready.
 	machineScope.SetReady()
 	v1beta1conditions.MarkTrue(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition)
@@ -414,4 +422,33 @@ func patchIBMVPCMachine(ctx context.Context, patchHelper *v1beta1patch.Helper, i
 		infrav1.IBMVPCMachineInstanceReadyV1Beta2Condition,
 		clusterv1beta1.PausedV1Beta2Condition,
 	}})
+}
+func (r *IBMVPCMachineReconciler) reconcileAdditionalVolumes(machineScope *scope.MachineScope) error {
+	machineVolumes := machineScope.IBMVPCMachine.Spec.AdditionalVolumes
+	if len(machineVolumes) == 0 {
+		return nil
+	}
+	volumeAttachmentList, err := machineScope.GetVolumeAttachments()
+	if err != nil {
+		return err
+	}
+	volumeAttachmentNames := sets.New[string]()
+	for i := range volumeAttachmentList {
+		sets.Insert(volumeAttachmentNames, *volumeAttachmentList[i].Name)
+	}
+	errList := []error{}
+	// Read through the list, checking if volume exists and create volume if it does not
+	for v := range machineVolumes {
+		if volumeAttachmentNames.Has(machineVolumes[v].Name) {
+			// volume attachment has been created so volume will eventually be attached
+			continue
+		}
+
+		err = machineScope.CreateAndAttachVolume(machineVolumes[v])
+		if err != nil {
+			errList = append(errList, err)
+			continue
+		}
+	}
+	return errors.Join(errList...)
 }

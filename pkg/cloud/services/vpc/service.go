@@ -526,6 +526,21 @@ func (s *Service) GetVPCZonesByRegion(region string) ([]string, error) {
 	return zones, nil
 }
 
+// GetVolumeAttachments returns the volumeattachments for the instance.
+func (s *Service) GetVolumeAttachments(options *vpcv1.ListInstanceVolumeAttachmentsOptions) (*vpcv1.VolumeAttachmentCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListInstanceVolumeAttachments(options)
+}
+
+// CreateVolume creates a volume.
+func (s *Service) CreateVolume(options *vpcv1.CreateVolumeOptions) (*vpcv1.Volume, *core.DetailedResponse, error) {
+	return s.vpcService.CreateVolume(options)
+}
+
+// AttachVolumeToInstance attaches the given volume to the instance.
+func (s *Service) AttachVolumeToInstance(options *vpcv1.CreateInstanceVolumeAttachmentOptions) (*vpcv1.VolumeAttachment, *core.DetailedResponse, error) {
+	return s.vpcService.CreateInstanceVolumeAttachment(options)
+}
+
 // NewService returns a new VPC Service.
 func NewService(svcEndpoint string) (Vpc, error) {
 	service := &Service{}
