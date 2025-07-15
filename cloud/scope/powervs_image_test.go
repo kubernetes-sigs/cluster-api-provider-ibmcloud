@@ -96,7 +96,7 @@ func TestNewPowerVSImageScope(t *testing.T) {
 	for _, tc := range testCases {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
-			_, err := NewPowerVSImageScope(tc.params)
+			_, err := NewPowerVSImageScope(ctx, tc.params)
 			// Note: only error/failure cases covered
 			// TO-DO: cover success cases
 			g.Expect(err).To(Not(BeNil()))

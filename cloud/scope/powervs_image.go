@@ -25,8 +25,6 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
-	"github.com/go-logr/logr"
-	"k8s.io/klog/v2"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +42,6 @@ const BucketAccess = "public"
 // PowerVSImageScopeParams defines the input parameters used to create a new PowerVSImageScope.
 type PowerVSImageScopeParams struct {
 	Client          client.Client
-	Logger          logr.Logger
 	IBMPowerVSImage *infrav1.IBMPowerVSImage
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Zone            *string
@@ -59,7 +56,8 @@ type PowerVSImageScope struct {
 }
 
 // NewPowerVSImageScope creates a new PowerVSImageScope from the supplied parameters.
-func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageScope, err error) {
+func NewPowerVSImageScope(ctx context.Context, params PowerVSImageScopeParams) (scope *PowerVSImageScope, err error) {
+	log := ctrl.LoggerFrom(ctx)
 	scope = &PowerVSImageScope{}
 
 	if params.Client == nil {
@@ -74,12 +72,14 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	}
 	scope.IBMPowerVSImage = params.IBMPowerVSImage
 
-	if params.Logger == (logr.Logger{}) {
-		params.Logger = klog.Background()
-	}
-
 	// Create Resource Controller client.
 	var serviceOption resourcecontroller.ServiceOptions
+	// Fetch the resource controller endpoint.
+	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
+	if rcEndpoint != "" {
+		serviceOption.URL = rcEndpoint
+		log.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
+	}
 
 	rc, err := resourcecontroller.NewService(serviceOption)
 	if err != nil {
@@ -99,7 +99,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 		}
 		serviceInstance, err := rc.GetServiceInstance("", name, params.Zone)
 		if err != nil {
-			params.Logger.Error(err, "error failed to get service instance id from name", "name", name)
+			log.Error(err, "error failed to get service instance id from name", "name", name)
 			return nil, err
 		}
 		if serviceInstance == nil {
@@ -122,7 +122,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 
 	options := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
+			Debug: log.V(DEBUGLEVEL).Enabled(),
 			Zone:  *res.RegionID,
 		},
 	}
@@ -130,7 +130,7 @@ func NewPowerVSImageScope(params PowerVSImageScopeParams) (scope *PowerVSImageSc
 	// Fetch the service endpoint.
 	if svcEndpoint := endpoints.FetchPVSEndpoint(endpoints.ConstructRegionFromZone(*res.RegionID), params.ServiceEndpoint); svcEndpoint != "" {
 		options.IBMPIOptions.URL = svcEndpoint
-		params.Logger.V(3).Info("overriding the default powervs service endpoint", "serviceEndpoint", svcEndpoint)
+		log.V(3).Info("overriding the default powervs service endpoint", "serviceEndpoint", svcEndpoint)
 	}
 
 	c, err := powervs.NewService(options)
