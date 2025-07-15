@@ -1307,6 +1307,7 @@ func autoConvert_v1beta2_IBMVPCClusterStatus_To_v1beta1_IBMVPCClusterStatus(in *
 	}
 	out.ControlPlaneLoadBalancerState = VPCLoadBalancerState(in.ControlPlaneLoadBalancerState)
 	out.Conditions = *(*corev1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
+	// WARNING: in.V1Beta2 requires manual conversion: does not exist in peer-type
 	return nil
 }
 

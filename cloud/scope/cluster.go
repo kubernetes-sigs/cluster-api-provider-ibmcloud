@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/klog/v2"
 
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -334,7 +335,8 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 }
 
 // DeleteSubnet deletes a subnet associated with subnet id.
-func (s *ClusterScope) DeleteSubnet() error {
+func (s *ClusterScope) DeleteSubnet(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
 	if s.IBMVPCCluster.Status.Subnet.ID == nil {
 		return nil
 	}
@@ -377,7 +379,7 @@ func (s *ClusterScope) DeleteSubnet() error {
 	}
 
 	if !found {
-		s.Logger.V(3).Info("No subnets found with ID", "Subnet ID", subnetID)
+		log.V(3).Info("No subnets found with ID", "subnetID", subnetID)
 		return nil
 	}
 
