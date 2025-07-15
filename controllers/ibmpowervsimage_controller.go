@@ -84,7 +84,6 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	var cluster *infrav1.IBMPowerVSCluster
 	scopeParams := scope.PowerVSImageScopeParams{
 		Client:          r.Client,
-		Logger:          log,
 		IBMPowerVSImage: ibmPowerVSImage,
 		ServiceEndpoint: r.ServiceEndpoint,
 	}
@@ -99,7 +98,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Create the scope
-	imageScope, err := scope.NewPowerVSImageScope(scopeParams)
+	imageScope, err := scope.NewPowerVSImageScope(ctx, scopeParams)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
@@ -240,7 +239,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 			v1beta1conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1.ImageReadyCondition)
 			v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
-				Status: metav1.ConditionFalse,
+				Status: metav1.ConditionTrue,
 				Reason: infrav1.IBMPowerVSImageReadyV1Beta2Reason,
 			})
 
@@ -329,7 +328,7 @@ func (r *IBMPowerVSImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper, ibmPowerVSImage *infrav1.IBMPowerVSImage) error {
-	// Before computing ready condition, make sure that InstanceReady is always set.
+	// Before computing ready condition, make sure that ImageReady is always set.
 	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
 	// first reconcile.
 	if c := v1beta2conditions.Get(ibmPowerVSImage, infrav1.IBMPowerVSImageReadyV1Beta2Condition); c == nil {
@@ -351,13 +350,13 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper,
 	// always update the readyCondition.
 	v1beta1conditions.SetSummary(ibmPowerVSImage,
 		v1beta1conditions.WithConditions(
-			infrav1.InstanceReadyCondition,
+			infrav1.ImageReadyCondition,
 		),
 	)
 
-	if err := v1beta2conditions.SetSummaryCondition(ibmPowerVSImage, ibmPowerVSImage, infrav1.IBMPowerVSImageReadyV1Beta2Condition,
+	if err := v1beta2conditions.SetSummaryCondition(ibmPowerVSImage, ibmPowerVSImage, infrav1.IBMPowerVSImageReadyCondition,
 		v1beta2conditions.ForConditionTypes{
-			infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition,
+			infrav1.IBMPowerVSImageReadyV1Beta2Condition,
 		},
 		// Using a custom merge strategy to override reasons applied during merge.
 		v1beta2conditions.CustomMergeStrategy{
@@ -371,13 +370,13 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper,
 			),
 		},
 	); err != nil {
-		return fmt.Errorf("failed to set %s condition: %w", infrav1.IBMPowerVSImageReadyV1Beta2Condition, err)
+		return fmt.Errorf("failed to set %s condition: %w", infrav1.IBMPowerVSImageReadyCondition, err)
 	}
 
 	// Patch the IBMPowerVSImage resource.
 	return patchHelper.Patch(ctx, ibmPowerVSImage, v1beta1patch.WithOwnedV1Beta2Conditions{Conditions: []string{
+		infrav1.IBMPowerVSImageReadyCondition,
 		infrav1.IBMPowerVSImageReadyV1Beta2Condition,
-		infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition,
 		clusterv1beta1.PausedV1Beta2Condition,
 	}})
 }
