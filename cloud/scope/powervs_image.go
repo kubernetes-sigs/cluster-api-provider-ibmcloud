@@ -201,7 +201,7 @@ func (i *PowerVSImageScope) CreateImageCOSBucket(ctx context.Context) (*models.I
 }
 
 // DeleteImage will delete the image.
-func (i *PowerVSImageScope) DeleteImage(ctx context.Context) error {
+func (i *PowerVSImageScope) DeleteImage() error {
 	if err := i.IBMPowerVSClient.DeleteImage(i.IBMPowerVSImage.Status.ImageID); err != nil {
 		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImage", "Failed image deletion - %v", err)
 		return err
@@ -216,7 +216,7 @@ func (i *PowerVSImageScope) GetImportJob() (*models.Job, error) {
 }
 
 // DeleteImportJob will delete the image import job.
-func (i *PowerVSImageScope) DeleteImportJob(ctx context.Context) error {
+func (i *PowerVSImageScope) DeleteImportJob() error {
 	if err := i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID); err != nil {
 		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImportJob", "Failed image import job deletion - %v", err)
 		return err

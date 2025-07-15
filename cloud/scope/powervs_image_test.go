@@ -229,7 +229,7 @@ func TestDeleteImage(t *testing.T) {
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.ImageID = pvsImage + idSuffix
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(nil)
-			err := scope.DeleteImage(ctx)
+			err := scope.DeleteImage()
 			g.Expect(err).To(BeNil())
 		})
 
@@ -240,7 +240,7 @@ func TestDeleteImage(t *testing.T) {
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.ImageID = pvsImage + idSuffix
 			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image"))
-			err := scope.DeleteImage(ctx)
+			err := scope.DeleteImage()
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})
@@ -270,7 +270,7 @@ func TestDeleteImportJob(t *testing.T) {
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
 			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf(id)).Return(nil)
-			err := scope.DeleteImportJob(ctx)
+			err := scope.DeleteImportJob()
 			g.Expect(err).To(BeNil())
 		})
 
@@ -281,7 +281,7 @@ func TestDeleteImportJob(t *testing.T) {
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
 			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image import job"))
-			err := scope.DeleteImportJob(ctx)
+			err := scope.DeleteImportJob()
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})
