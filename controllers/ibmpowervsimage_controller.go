@@ -37,10 +37,10 @@ import (
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	clusterv1util "sigs.k8s.io/cluster-api/util"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions" //nolint:staticcheck
-	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2"
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"
-	"sigs.k8s.io/cluster-api/util/finalizers" //nolint:staticcheck
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"         //nolint:staticcheck
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2" //nolint:staticcheck
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"                   //nolint:staticcheck
+	"sigs.k8s.io/cluster-api/util/finalizers"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
@@ -288,7 +288,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 			log.Info("JobID is not yet set, hence not invoking the PowerVS API to delete the image import job")
 			return ctrl.Result{}, nil
 		}
-		if err := scope.DeleteImportJob(ctx); err != nil {
+		if err := scope.DeleteImportJob(); err != nil {
 			log.Error(err, "Error deleting IBMPowerVSImage Import Job")
 			return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSImage Import Job: %w", err)
 		}
@@ -296,7 +296,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 	}
 
 	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1.DeletePolicyRetain) {
-		if err := scope.DeleteImage(ctx); err != nil {
+		if err := scope.DeleteImage(); err != nil {
 			log.Error(err, "Error deleting IBMPowerVSImage")
 			v1beta1conditions.MarkFalse(scope.IBMPowerVSImage, infrav1.ImageReadyCondition, clusterv1beta1.DeletionFailedReason, clusterv1beta1.ConditionSeverityWarning, "")
 			v1beta2conditions.Set(scope.IBMPowerVSImage, metav1.Condition{

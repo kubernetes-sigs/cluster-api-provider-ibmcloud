@@ -330,7 +330,7 @@ const (
 
 // IBMPowerVSImage's Ready condition and corresponding reasons that will be used in v1Beta2 API version.
 const (
-	// IBMPowerVSImageReadyCondition is true if the IBMPowerVSImage's deletionTimestamp is not set, IBMPowerVSImage's
+	// IBMPowerVSImageReadyCondition is true if the IBMPowerVSImage's deletionTimestamp is not set, IBMPowerVSImage's.
 	IBMPowerVSImageReadyCondition = clusterv1beta1.ReadyV1Beta2Condition
 
 	// IBMPowerVSImageReadyV1Beta2Condition documents the status of the image that is controlled
