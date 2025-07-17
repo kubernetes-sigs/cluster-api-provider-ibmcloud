@@ -106,7 +106,8 @@ func NewPowerVSImageScope(ctx context.Context, params PowerVSImageScopeParams) (
 			return nil, fmt.Errorf("service instance %s is not yet created", name)
 		}
 		if *serviceInstance.State != string(infrav1.ServiceInstanceStateActive) {
-			return nil, fmt.Errorf("service instance %s is not in active state", name)
+			err = errors.New("service instance is not in active state")
+			return nil, err
 		}
 		serviceInstanceID = *serviceInstance.GUID
 	}

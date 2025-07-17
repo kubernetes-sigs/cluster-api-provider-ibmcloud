@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -97,12 +98,6 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		scopeParams.Zone = cluster.Spec.Zone
 	}
 
-	// Create the scope
-	imageScope, err := scope.NewPowerVSImageScope(ctx, scopeParams)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
-	}
-
 	// Initialize the patch helper
 	patchHelper, err := v1beta1patch.NewHelper(ibmPowerVSImage, r.Client)
 	if err != nil {
@@ -115,6 +110,19 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			reterr = kerrors.NewAggregate([]error{reterr, err})
 		}
 	}()
+
+	// Create the scope
+	imageScope, err := scope.NewPowerVSImageScope(ctx, scopeParams)
+	if err != nil {
+		if err == errors.New("service instance is not in active state") {
+			v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
+				Type:   infrav1.WorkspaceReadyV1Beta2Condition,
+				Status: metav1.ConditionFalse,
+				Reason: infrav1.WorkspaceNotReadyV1Beta2Reason,
+			})
+		}
+		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
+	}
 
 	// Handle deleted clusters.
 	if !ibmPowerVSImage.DeletionTimestamp.IsZero() {
@@ -146,6 +154,12 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 		})
 		return ctrl.Result{}, nil
 	}
+
+	v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
+		Type:   infrav1.WorkspaceReadyV1Beta2Condition,
+		Status: metav1.ConditionTrue,
+		Reason: infrav1.WorkspaceReadyV1Beta2Reason,
+	})
 
 	if jobID := imageScope.GetJobID(); jobID != "" {
 		job, err := imageScope.IBMPowerVSClient.GetJob(jobID)
@@ -357,6 +371,7 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper,
 	if err := v1beta2conditions.SetSummaryCondition(ibmPowerVSImage, ibmPowerVSImage, infrav1.IBMPowerVSImageReadyCondition,
 		v1beta2conditions.ForConditionTypes{
 			infrav1.IBMPowerVSImageReadyV1Beta2Condition,
+			infrav1.WorkspaceReadyV1Beta2Condition,
 		},
 		// Using a custom merge strategy to override reasons applied during merge.
 		v1beta2conditions.CustomMergeStrategy{
@@ -378,5 +393,6 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper,
 		infrav1.IBMPowerVSImageReadyCondition,
 		infrav1.IBMPowerVSImageReadyV1Beta2Condition,
 		clusterv1beta1.PausedV1Beta2Condition,
+		infrav1.WorkspaceReadyV1Beta2Condition,
 	}})
 }
