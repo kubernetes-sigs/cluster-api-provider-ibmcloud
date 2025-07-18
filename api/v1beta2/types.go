@@ -64,6 +64,9 @@ var (
 
 	// PowerVSImageStateImporting is the string representing an image in a failed state.
 	PowerVSImageStateImporting = PowerVSImageState("importing")
+
+	// PowerVSImageStateCompleted is the string representing an image in a completed state.
+	PowerVSImageStateCompleted = PowerVSImageState("completed")
 )
 
 // ServiceInstanceState describes the state of a service instance.
