@@ -265,7 +265,7 @@ func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(
 func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
 
-	if machineScope.Cluster.Status.Initialization == nil || !machineScope.Cluster.Status.Initialization.InfrastructureProvisioned {
+	if machineScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*machineScope.Cluster.Status.Initialization.InfrastructureProvisioned {
 		log.Info("Cluster infrastructure is not ready yet, skipping reconciliation")
 		v1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyCondition, infrav1.WaitingForClusterInfrastructureReason, clusterv1beta1.ConditionSeverityInfo, "")
 		v1beta2conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
