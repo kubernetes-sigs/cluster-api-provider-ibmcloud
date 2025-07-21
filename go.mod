@@ -4,9 +4,9 @@ go 1.24.0
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
-	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.23.3
-	github.com/onsi/gomega => github.com/onsi/gomega v1.36.3
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.11.0-alpha.2
+	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.23.4
+	github.com/onsi/gomega => github.com/onsi/gomega v1.37.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.11.0-beta.0
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.2
 	golang.org/x/crypto v0.40.0
-	golang.org/x/net v0.41.0
+	golang.org/x/net v0.42.0
 	golang.org/x/text v0.27.0
 	k8s.io/api v0.33.2
 	k8s.io/apiextensions-apiserver v0.33.2
@@ -40,8 +40,8 @@ require (
 	k8s.io/component-base v0.33.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	sigs.k8s.io/cluster-api v1.11.0-alpha.2
-	sigs.k8s.io/cluster-api/test v1.11.0-alpha.2
+	sigs.k8s.io/cluster-api v1.11.0-beta.0
+	sigs.k8s.io/cluster-api/test v1.11.0-beta.0
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/yaml v1.5.0
 )
@@ -70,7 +70,7 @@ require (
 	github.com/coreos/vcontext v0.0.0-20230201181013-d72178a18687 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.3.0+incompatible // indirect
+	github.com/docker/docker v28.3.2+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
@@ -161,6 +161,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.4.0 // indirect
+	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect

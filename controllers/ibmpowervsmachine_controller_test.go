@@ -381,7 +381,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			machineScope = &scope.PowerVSMachineScope{
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{},
+						Initialization: clusterv1.ClusterInitializationStatus{},
 					},
 				},
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
@@ -399,8 +399,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			machineScope = &scope.PowerVSMachineScope{
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{
-							InfrastructureProvisioned: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
 						},
 					},
 				},
@@ -424,8 +424,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			machineScope = &scope.PowerVSMachineScope{
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{
-							InfrastructureProvisioned: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
 						},
 					},
 				},
@@ -455,8 +455,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				Client: mockClient,
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{
-							InfrastructureProvisioned: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
 						},
 					},
 				},
@@ -496,8 +496,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{
-							InfrastructureProvisioned: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
 						},
 					},
 				},
@@ -594,8 +594,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				Client: mockclient,
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{
-							InfrastructureProvisioned: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
 						},
 					},
 				},
@@ -710,8 +710,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				Client: mockclient,
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
-						Initialization: &clusterv1.ClusterInitializationStatus{
-							InfrastructureProvisioned: true,
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
 						},
 					},
 				},
@@ -822,8 +822,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			Cluster: &clusterv1.Cluster{
 				Status: clusterv1.ClusterStatus{
-					Initialization: &clusterv1.ClusterInitializationStatus{
-						InfrastructureProvisioned: true,
+					Initialization: clusterv1.ClusterInitializationStatus{
+						InfrastructureProvisioned: ptr.To(true),
 					},
 				},
 			},
