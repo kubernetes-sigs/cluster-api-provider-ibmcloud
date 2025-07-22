@@ -19,9 +19,6 @@ spec:
           value: "true"
       apiServer:
         certSANs: [localhost, 127.0.0.1]
-      dns: {}
-      etcd: {}
-      scheduler: {}
     initConfiguration:
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
@@ -31,7 +28,6 @@ spec:
         - name: eviction-hard
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
     joinConfiguration:
-      discovery: {}
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
         kubeletExtraArgs:
