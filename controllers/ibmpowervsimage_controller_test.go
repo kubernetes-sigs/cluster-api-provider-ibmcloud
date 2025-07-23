@@ -230,8 +230,8 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(err).To(BeNil())
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1.IBMPowerVSImageFinalizer))
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
-				g.Expect(imageScope.IBMPowerVSImage.Status.ImageState).To(BeEquivalentTo(infrav1.PowerVSImageStateQue))
-				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1.ImageImportedCondition, corev1.ConditionFalse, clusterv1beta1.ConditionSeverityInfo, string(infrav1.PowerVSImageStateQue)}})
+				g.Expect(imageScope.IBMPowerVSImage.Status.ImageState).To(BeEquivalentTo(infrav1.PowerVSImageStateQueued))
+				expectConditionsImage(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1.ImageImportedCondition, corev1.ConditionFalse, clusterv1beta1.ConditionSeverityInfo, string(infrav1.PowerVSImageStateQueued)}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When importing image is still in progress", func(_ *testing.T) {

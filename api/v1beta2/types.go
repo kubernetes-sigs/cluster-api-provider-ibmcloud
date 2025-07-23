@@ -56,8 +56,8 @@ var (
 	// PowerVSImageStateACTIVE is the string representing an image in a active state.
 	PowerVSImageStateACTIVE = PowerVSImageState("active")
 
-	// PowerVSImageStateQue is the string representing an image in a queued state.
-	PowerVSImageStateQue = PowerVSImageState("queued")
+	// PowerVSImageStateQueued is the string representing an image in a queued state.
+	PowerVSImageStateQueued = PowerVSImageState("queued")
 
 	// PowerVSImageStateFailed is the string representing an image in a failed state.
 	PowerVSImageStateFailed = PowerVSImageState("failed")

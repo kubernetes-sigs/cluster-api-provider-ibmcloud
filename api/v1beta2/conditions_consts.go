@@ -110,7 +110,7 @@ const (
 )
 
 const (
-	// ImageNotReadyReason used when the image is in a queued state.
+	// ImageNotReadyReason used when the image is not ready.
 	ImageNotReadyReason = "ImageNotReady"
 
 	// ImageImportFailedReason used when the image import is failed.
@@ -119,7 +119,7 @@ const (
 	// ImageReconciliationFailedReason used when an error occurs during VPC Custom Image reconciliation.
 	ImageReconciliationFailedReason = "ImageReconciliationFailed"
 
-	// ImageQueuedReason used when the image import is failed.
+	// ImageQueuedReason used when the image is in queued state.
 	ImageQueuedReason = "ImageQueued"
 )
 
@@ -130,7 +130,7 @@ const (
 	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
 	ImageImportedCondition clusterv1beta1.ConditionType = "ImageImported"
 
-	// IBMPowerVSImageDeletingV1Beta2Reason surfaces when the image controller by IBMPowerVSImage is deleting.
+	// IBMPowerVSImageDeletingV1Beta2Reason surfaces when the image is in deleting state.
 	IBMPowerVSImageDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
 )
 
@@ -307,8 +307,7 @@ const (
 	// IBMPowerVSImageReadyCondition is true if the IBMPowerVSImage's deletionTimestamp is not set, IBMPowerVSImage's.
 	IBMPowerVSImageReadyCondition = clusterv1beta1.ReadyV1Beta2Condition
 
-	// IBMPowerVSImageReadyV1Beta2Condition documents the status of the image that is controlled
-	// by the IBMPowerVSImage.
+	// IBMPowerVSImageReadyV1Beta2Condition documents the Ready status of the image.
 	IBMPowerVSImageReadyV1Beta2Condition = "ImageReady"
 
 	// IBMPowerVSImageReadyV1Beta2Reason surfaces when the IBMPowerVSImage readiness criteria is met.
