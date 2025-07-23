@@ -187,10 +187,10 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 				Reason: infrav1.ImageImportFailedReason,
 			})
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, fmt.Errorf("failed to import image, message: %s", job.Status.Message)
-		case infrav1.PowerVSImageStateQue:
+		case infrav1.PowerVSImageStateQueued:
 			imageScope.SetNotReady()
-			imageScope.SetImageState(string(infrav1.PowerVSImageStateQue))
-			v1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedCondition, string(infrav1.PowerVSImageStateQue), clusterv1beta1.ConditionSeverityInfo, "%s", job.Status.Message)
+			imageScope.SetImageState(string(infrav1.PowerVSImageStateQueued))
+			v1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedCondition, string(infrav1.PowerVSImageStateQueued), clusterv1beta1.ConditionSeverityInfo, "%s", job.Status.Message)
 			v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
 				Status: metav1.ConditionFalse,
@@ -237,7 +237,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 		log.Info("ImageState", image.State)
 
 		switch imageScope.GetImageState() {
-		case infrav1.PowerVSImageStateQue:
+		case infrav1.PowerVSImageStateQueued:
 			log.Info("Image is in queued state")
 			imageScope.SetNotReady()
 			v1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageReadyCondition, infrav1.ImageNotReadyReason, clusterv1beta1.ConditionSeverityWarning, "")
@@ -342,25 +342,6 @@ func (r *IBMPowerVSImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper, ibmPowerVSImage *infrav1.IBMPowerVSImage) error {
-	// Before computing ready condition, make sure that ImageReady is always set.
-	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
-	// first reconcile.
-	if c := v1beta2conditions.Get(ibmPowerVSImage, infrav1.IBMPowerVSImageReadyV1Beta2Condition); c == nil {
-		if ibmPowerVSImage.Status.Ready {
-			v1beta2conditions.Set(ibmPowerVSImage, metav1.Condition{
-				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
-				Status: metav1.ConditionTrue,
-				Reason: infrav1.IBMPowerVSImageReadyV1Beta2Reason,
-			})
-		} else {
-			v1beta2conditions.Set(ibmPowerVSImage, metav1.Condition{
-				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
-				Status: metav1.ConditionFalse,
-				Reason: infrav1.IBMPowerVSImageNotReadyV1Beta2Reason,
-			})
-		}
-	}
-
 	// always update the readyCondition.
 	v1beta1conditions.SetSummary(ibmPowerVSImage,
 		v1beta1conditions.WithConditions(
