@@ -43,7 +43,7 @@ require (
 	sigs.k8s.io/cluster-api v1.11.0-beta.0
 	sigs.k8s.io/cluster-api/test v1.11.0-beta.0
 	sigs.k8s.io/controller-runtime v0.21.0
-	sigs.k8s.io/yaml v1.5.0
+	sigs.k8s.io/yaml v1.6.0
 )
 
 require (
