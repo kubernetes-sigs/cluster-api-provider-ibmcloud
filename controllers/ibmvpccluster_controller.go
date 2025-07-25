@@ -371,8 +371,10 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(clusterScope *scope.ClusterSco
 	return handleFinalizerRemoval(clusterScope)
 }
 
-func (r *IBMVPCClusterReconciler) reconcileDeleteV2(_ *scope.VPCClusterScope) (ctrl.Result, error) {
-	return ctrl.Result{}, fmt.Errorf("not implemented")
+func (r *IBMVPCClusterReconciler) reconcileDeleteV2(clusterScope *scope.VPCClusterScope) (ctrl.Result, error) { //nolint:unparam
+	clusterScope.Info("Delete cluster is not implemented for reconcile v2")
+	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrav1.ClusterFinalizer)
+	return ctrl.Result{}, nil
 }
 
 func (r *IBMVPCClusterReconciler) getOrCreate(clusterScope *scope.ClusterScope) (*vpcv1.LoadBalancer, error) {
