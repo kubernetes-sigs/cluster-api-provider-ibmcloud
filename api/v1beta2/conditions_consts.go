@@ -198,6 +198,23 @@ const (
 	IBMPowerVSClusterReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
 )
 
+// IBMVPCCluster's Ready condition and corresponding reasons that will be used in v1Beta2 API version.
+const (
+	// IBMVPCClusterReadyV1Beta2Condition is true if the IBMVPCCluster's deletionTimestamp is not set and IBMVPCCluster's
+	// conditions are true.
+	IBMVPCClusterReadyV1Beta2Condition = clusterv1beta1.ReadyV1Beta2Condition
+
+	// IBMVPCClusterReadyV1Beta2Reason surfaces when the IBMVPCCluster readiness criteria is met.
+	IBMVPCClusterReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
+
+	// IBMVPCClusterNotReadyV1Beta2Reason surfaces when the IBMVPCCluster readiness criteria is not met.
+	IBMVPCClusterNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
+
+	// IBMVPCClusterReadyUnknownV1Beta2Reason surfaces when at least one of the IBMVPCCluster readiness criteria is unknown
+	// and none of the IBMVPCCluster readiness criteria is met.
+	IBMVPCClusterReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
+)
+
 const (
 	// WorkspaceReadyV1Beta2Condition reports on the successful reconciliation of a PowerVS workspace.
 	WorkspaceReadyV1Beta2Condition = "WorkspaceReady"
@@ -282,6 +299,15 @@ const (
 
 	// VPCLoadBalancerDeletingV1Beta2Reason surfaces when the VPC LoadBalancer is being deleted.
 	VPCLoadBalancerDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
+
+	// VPCImageReadyV1Beta2Condition reports on the successful reconciliation of a VPC custom image.
+	VPCImageReadyV1Beta2Condition = "VPCImageReady"
+
+	// VPCImageReadyV1Beta2Reason surfaces when the VPC custom image is ready.
+	VPCImageReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
+
+	// VPCImageNotReadyV1Beta2Reason surfaces when the VPC custom image is not ready.
+	VPCImageNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// COSInstanceReadyV1Beta2Condition reports on the successful reconciliation of a COS instance.
 	COSInstanceReadyV1Beta2Condition = "COSInstanceReady"
