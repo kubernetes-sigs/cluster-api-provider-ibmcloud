@@ -1,9 +1,0 @@
-name: YamlLint
-on: [push, pull_request]
-jobs:
-  yamllint:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run yamllint make target
-        run: make yamllint
