@@ -33,6 +33,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
@@ -62,7 +63,6 @@ type MachineScopeParams struct {
 
 // MachineScope defines a scope defined around a machine and its cluster.
 type MachineScope struct {
-	logr.Logger
 	Client      client.Client
 	patchHelper *v1beta1patch.Helper
 
@@ -127,7 +127,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 	}
 
 	return &MachineScope{
-		Logger:              params.Logger,
 		Client:              params.Client,
 		IBMVPCClient:        vpcClient,
 		GlobalTaggingClient: globalTaggingClient,
@@ -140,7 +139,8 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 }
 
 // CreateMachine creates a vpc machine.
-func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocyclo
+func (m *MachineScope) CreateMachine(ctx context.Context) (*vpcv1.Instance, error) { //nolint: gocyclo
+	log := ctrl.LoggerFrom(ctx)
 	instanceReply, err := m.ensureInstanceUnique(m.IBMVPCMachine.Name)
 	if err != nil {
 		return nil, err
@@ -270,7 +270,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 	// Populate Placement target details, if provided.
 	var placementTarget vpcv1.InstancePlacementTargetPrototypeIntf
 	if m.IBMVPCMachine.Spec.PlacementTarget != nil {
-		placementTarget, err = m.configurePlacementTarget()
+		placementTarget, err = m.configurePlacementTarget(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error configuration machine placement target: %w", err)
 		}
@@ -280,7 +280,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 	sshKeys := make([]vpcv1.KeyIdentityIntf, 0)
 	if m.IBMVPCMachine.Spec.SSHKeys != nil {
 		for _, sshKey := range m.IBMVPCMachine.Spec.SSHKeys {
-			keyID, err := fetchKeyID(sshKey, m)
+			keyID, err := fetchKeyID(ctx, sshKey, m)
 			if err != nil {
 				return nil, fmt.Errorf("error while fetching SSHKey: %v error: %v", sshKey, err)
 			}
@@ -294,7 +294,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 	// Populate boot volume attachment, if provided.
 	var bootVolumeAttachment *vpcv1.VolumeAttachmentPrototypeInstanceByImageContext
 	if m.IBMVPCMachine.Spec.BootVolume != nil {
-		bootVolumeAttachment = m.volumeToVPCVolumeAttachment(m.IBMVPCMachine.Spec.BootVolume)
+		bootVolumeAttachment = m.volumeToVPCVolumeAttachment(ctx, m.IBMVPCMachine.Spec.BootVolume)
 	}
 
 	// Configure the Machine's Image or CatalogOffering based on provided fields.
@@ -309,7 +309,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 			VPC:                     vpcIdentity,
 			Zone:                    zone,
 		}
-		imageID, err := fetchImageID(m.IBMVPCMachine.Spec.Image, m)
+		imageID, err := fetchImageID(ctx, m.IBMVPCMachine.Spec.Image, m)
 		if err != nil {
 			record.Warnf(m.IBMVPCMachine, "FailedRetrieveImage", "Failed image retrieval - %w", err)
 			return nil, fmt.Errorf("error while fetching image ID: %w", err)
@@ -329,7 +329,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 			imageInstancePrototype.BootVolumeAttachment = bootVolumeAttachment
 		}
 
-		m.Logger.Info("machine creation configured with existing image", "machineName", m.IBMVPCMachine.Name, "imageID", *imageID)
+		log.Info("Machine creation configured with existing image", "imageID", *imageID)
 		options.SetInstancePrototype(imageInstancePrototype)
 	} else if m.IBMVPCMachine.Spec.CatalogOffering != nil {
 		catalogInstancePrototype := &vpcv1.InstancePrototypeInstanceByCatalogOffering{
@@ -347,13 +347,13 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 			catalogOfferingPrototype.Offering = &vpcv1.CatalogOfferingIdentityCatalogOfferingByCRN{
 				CRN: m.IBMVPCMachine.Spec.CatalogOffering.OfferingCRN,
 			}
-			m.Logger.Info("machine creation configured with catalog offering", "machineName", m.IBMVPCMachine.Name, "offeringCRN", *m.IBMVPCMachine.Spec.CatalogOffering.OfferingCRN)
+			log.Info("Machine creation configured with catalog offering", "offeringCRN", *m.IBMVPCMachine.Spec.CatalogOffering.OfferingCRN)
 		} else if m.IBMVPCMachine.Spec.CatalogOffering.VersionCRN != nil {
 			// TODO(cjschaef): Perform lookup or use webhook validation to confirm Catalog Offering Version CRN.
 			catalogOfferingPrototype.Version = &vpcv1.CatalogOfferingVersionIdentityCatalogOfferingVersionByCRN{
 				CRN: m.IBMVPCMachine.Spec.CatalogOffering.VersionCRN,
 			}
-			m.Logger.Info("machine creation configured with catalog version", "machineName", m.IBMVPCMachine.Name, "versionCRN", *m.IBMVPCMachine.Spec.CatalogOffering.VersionCRN)
+			log.Info("Machine creation configured with catalog version", "versionCRN", *m.IBMVPCMachine.Spec.CatalogOffering.VersionCRN)
 		} else {
 			// TODO(cjschaef): Look to add webhook validation to ensure one is provided.
 			return nil, fmt.Errorf("error catalog offering missing offering crn and version crn, one must be provided")
@@ -363,7 +363,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 			catalogOfferingPrototype.Plan = &vpcv1.CatalogOfferingVersionPlanIdentityCatalogOfferingVersionPlanByCRN{
 				CRN: m.IBMVPCMachine.Spec.CatalogOffering.PlanCRN,
 			}
-			m.Logger.Info("machine creation configured with catalog plan", "machineName", m.IBMVPCMachine.Name, "planCRN", *m.IBMVPCMachine.Spec.CatalogOffering.PlanCRN)
+			log.Info("Machine creation configured with catalog plan", "planCRN", *m.IBMVPCMachine.Spec.CatalogOffering.PlanCRN)
 		}
 
 		// Configure additional fields if they were populated.
@@ -384,7 +384,7 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 		return nil, fmt.Errorf("error no machine image or catalog offering provided to build: %s", m.IBMVPCMachine.Spec.Name)
 	}
 
-	m.Logger.Info("creating instance", "createOptions", options, "name", m.IBMVPCMachine.Name, "profile", *profile.Name, "resourceGroup", resourceGroupIdentity, "vpc", vpcIdentity, "zone", zone)
+	log.Info("Creating instance", "createOptions", options, "name", m.IBMVPCMachine.Name, "profile", *profile.Name, "resourceGroup", resourceGroupIdentity, "vpc", vpcIdentity, "zone", zone)
 	instance, _, err := m.IBMVPCClient.CreateInstance(options)
 	if err != nil {
 		record.Warnf(m.IBMVPCMachine, "FailedCreateInstance", "Failed instance creation - %s, %v", options, err)
@@ -395,7 +395,8 @@ func (m *MachineScope) CreateMachine() (*vpcv1.Instance, error) { //nolint: gocy
 }
 
 // configurePlacementTarget will configure a Machine's Placement Target based on the Machine's provided configuration, if supplied.
-func (m *MachineScope) configurePlacementTarget() (vpcv1.InstancePlacementTargetPrototypeIntf, error) {
+func (m *MachineScope) configurePlacementTarget(ctx context.Context) (vpcv1.InstancePlacementTargetPrototypeIntf, error) {
+	log := ctrl.LoggerFrom(ctx)
 	// TODO(cjschaef): We currently don't support the other placement target options (Dedicated Host Group, Placement Group), they need to be added.
 	if m.IBMVPCMachine.Spec.PlacementTarget.DedicatedHost != nil {
 		// Lookup Dedicated Host ID by Name if it was provided.
@@ -412,7 +413,7 @@ func (m *MachineScope) configurePlacementTarget() (vpcv1.InstancePlacementTarget
 			dedicatedHostID = dHost.ID
 		}
 
-		m.Logger.Info("machine creation configured with dedicated host placement", "machineName", m.IBMVPCMachine.Name, "dedicatedHostID", *dedicatedHostID)
+		log.Info("Machine creation configured with dedicated host placement", "dedicatedHostID", *dedicatedHostID)
 		return &vpcv1.InstancePlacementTargetPrototypeDedicatedHostGroupIdentityDedicatedHostGroupIdentityByID{
 			ID: dedicatedHostID,
 		}, nil
@@ -420,7 +421,8 @@ func (m *MachineScope) configurePlacementTarget() (vpcv1.InstancePlacementTarget
 	return nil, nil
 }
 
-func (m *MachineScope) volumeToVPCVolumeAttachment(volume *infrav1.VPCVolume) *vpcv1.VolumeAttachmentPrototypeInstanceByImageContext {
+func (m *MachineScope) volumeToVPCVolumeAttachment(ctx context.Context, volume *infrav1.VPCVolume) *vpcv1.VolumeAttachmentPrototypeInstanceByImageContext {
+	log := ctrl.LoggerFrom(ctx)
 	bootVolume := &vpcv1.VolumeAttachmentPrototypeInstanceByImageContext{
 		DeleteVolumeOnInstanceDelete: core.BoolPtr(volume.DeleteVolumeOnInstanceDelete),
 		Volume:                       &vpcv1.VolumePrototypeInstanceByImageContext{},
@@ -448,7 +450,7 @@ func (m *MachineScope) volumeToVPCVolumeAttachment(volume *infrav1.VPCVolume) *v
 		bootVolume.Volume.EncryptionKey = &vpcv1.EncryptionKeyIdentity{
 			CRN: core.StringPtr(volume.EncryptionKeyCRN),
 		}
-		m.Logger.Info("machine creation configured with volumn encryption key", "machineName", m.IBMVPCMachine.Name, "encryptionKeyCRN", volume.EncryptionKeyCRN)
+		log.Info("Machine creation configured with volumn encryption key", "encryptionKeyCRN", volume.EncryptionKeyCRN)
 	}
 
 	return bootVolume
@@ -545,7 +547,7 @@ func (m *MachineScope) getLoadBalancerPoolID(pool *infrav1.VPCResource, loadBala
 }
 
 // ReconcileVPCLoadBalancerPoolMember reconciles a Machine's Load Balancer Pool membership.
-func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(poolMember infrav1.VPCLoadBalancerBackendPoolMember) (bool, error) {
+func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(ctx context.Context, poolMember infrav1.VPCLoadBalancerBackendPoolMember) (bool, error) {
 	// Collect the Machine's internal IP.
 	internalIP := m.GetMachineInternalIP()
 	if internalIP == nil {
@@ -554,7 +556,7 @@ func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(poolMember infrav1.VPC
 	}
 
 	// Check if Instance is already a member of Load Balancer Backend Pool.
-	existingMember, err := m.checkVPCLoadBalancerPoolMemberExists(poolMember, internalIP)
+	existingMember, err := m.checkVPCLoadBalancerPoolMemberExists(ctx, poolMember, internalIP)
 	if err != nil {
 		return false, fmt.Errorf("error failed to check if member exists in pool")
 	} else if existingMember != nil {
@@ -567,11 +569,12 @@ func (m *MachineScope) ReconcileVPCLoadBalancerPoolMember(poolMember infrav1.VPC
 	}
 
 	// Otherwise, create VPC Load Balancer Backend Pool Member
-	return m.createVPCLoadBalancerPoolMember(poolMember, internalIP)
+	return m.createVPCLoadBalancerPoolMember(ctx, poolMember, internalIP)
 }
 
 // checkVPCLoadBalancerPoolMemberExists determines whether a Machine's Load Balancer Pool membership already exists.
-func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(poolMember infrav1.VPCLoadBalancerBackendPoolMember, internalIP *string) (*vpcv1.LoadBalancerPoolMember, error) {
+func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(ctx context.Context, poolMember infrav1.VPCLoadBalancerBackendPoolMember, internalIP *string) (*vpcv1.LoadBalancerPoolMember, error) {
+	log := ctrl.LoggerFrom(ctx)
 	loadBalancerID, err := m.getLoadBalancerID(&poolMember.LoadBalancer)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if load balancer pool member exists: %w", err)
@@ -600,7 +603,7 @@ func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(poolMember infrav1.V
 		if target, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
 			// Verify the target address matches the Machine's internal IP.
 			if *target.Address == *internalIP {
-				m.Logger.Info("found existing load balancer pool member for machine", "machineName", m.IBMVPCMachine.Spec.Name, "internalIP", *internalIP, "poolID", *poolID, "loadBalancerID", *loadBalancerID)
+				log.Info("Found existing load balancer pool member for machine", "internalIP", *internalIP, "poolID", *poolID, "loadBalancerID", *loadBalancerID)
 				return ptr.To(member), nil
 			}
 		}
@@ -611,7 +614,8 @@ func (m *MachineScope) checkVPCLoadBalancerPoolMemberExists(poolMember infrav1.V
 }
 
 // createVPCLoadBalancerPoolMember will create a new member within a Load Balancer Pool for the Machine's internal IP.
-func (m *MachineScope) createVPCLoadBalancerPoolMember(poolMember infrav1.VPCLoadBalancerBackendPoolMember, internalIP *string) (bool, error) {
+func (m *MachineScope) createVPCLoadBalancerPoolMember(ctx context.Context, poolMember infrav1.VPCLoadBalancerBackendPoolMember, internalIP *string) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
 	// Retrieve the Load Balancer ID.
 	loadBalancerID, err := m.getLoadBalancerID(&poolMember.LoadBalancer)
 	if err != nil {
@@ -644,7 +648,7 @@ func (m *MachineScope) createVPCLoadBalancerPoolMember(poolMember infrav1.VPCLoa
 	if err != nil {
 		return false, fmt.Errorf("error failed creating load balancer backend pool member: %w", err)
 	}
-	m.Logger.Info("created load balancer backend pool member", "instanceID", m.IBMVPCMachine.Status.InstanceID, "loadBalancerID", loadBalancerID, "loadBalancerBackendPoolID", loadBalancerBackendPoolID, "port", poolMember.Port, "loadBalancerBackendPoolMemberID", loadBalancerPoolMember.ID)
+	log.Info("Created load balancer backend pool member", "instanceID", m.IBMVPCMachine.Status.InstanceID, "loadBalancerID", loadBalancerID, "loadBalancerBackendPoolID", loadBalancerBackendPoolID, "port", poolMember.Port, "loadBalancerBackendPoolMemberID", loadBalancerPoolMember.ID)
 
 	// Add the new pool member details to the Machine Status.
 	// To prevent additional API calls, only use ID's and not Name's, as reconciliation does not rely on Name's for these resources in Status.
@@ -670,7 +674,8 @@ func (m *MachineScope) createVPCLoadBalancerPoolMember(poolMember infrav1.VPCLoa
 }
 
 // CreateVPCLoadBalancerPoolMember creates a new pool member and adds it to the load balancer pool.
-func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targetPort int64) (*vpcv1.LoadBalancerPoolMember, error) {
+func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context, internalIP *string, targetPort int64) (*vpcv1.LoadBalancerPoolMember, error) {
+	log := ctrl.LoggerFrom(ctx)
 	loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
 		ID: m.IBMVPCCluster.Status.VPCEndpoint.LBID,
 	})
@@ -706,7 +711,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targe
 		if _, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
 			mtarget := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget)
 			if *mtarget.Address == *internalIP && *member.Port == targetPort {
-				m.Logger.V(3).Info("PoolMember already exist")
+				log.V(3).Info("PoolMember already exist")
 				return nil, nil
 			}
 		}
@@ -720,15 +725,16 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(internalIP *string, targe
 }
 
 // DeleteVPCLoadBalancerPoolMember deletes a pool member from the load balancer pool.
-func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
+func (m *MachineScope) DeleteVPCLoadBalancerPoolMember(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
 	if m.IBMVPCMachine.Status.InstanceID == "" {
-		m.Info("instance is not created, ignore deleting load balancer pool member")
+		log.Info("Instance is not created, ignore deleting load balancer pool member")
 		return nil
 	}
 
 	// If the Machine has Load Balancer Pool Members defined in its Status (part of extended VPC Machine support), process the removal of those members versus the legacy single LB design.
 	if len(m.IBMVPCMachine.Status.LoadBalancerPoolMembers) > 0 {
-		return m.deleteVPCLoadBalancerPoolMembers()
+		return m.deleteVPCLoadBalancerPoolMembers(ctx)
 	}
 
 	loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
@@ -782,7 +788,8 @@ func (m *MachineScope) DeleteVPCLoadBalancerPoolMember() error {
 
 // deleteVPCLoadBalancerPoolMembers provides support to delete Load Balancer Pools Members for a Machine that are tracked in the Machine's Status, which is part of the extended VPC Machine support.
 // This new support allows a Machine to have members in multiple Load Balancers, as defined by the Machine Spec, rather than defaulting (legacy) to the single Cluster Load Balancer.
-func (m *MachineScope) deleteVPCLoadBalancerPoolMembers() error {
+func (m *MachineScope) deleteVPCLoadBalancerPoolMembers(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
 	// Retrieve the Instance details immediately (without them the member cannot be safely deleted).
 	instanceOptions := &vpcv1.GetInstanceOptions{
 		ID: ptr.To(m.IBMVPCMachine.Status.InstanceID),
@@ -795,7 +802,7 @@ func (m *MachineScope) deleteVPCLoadBalancerPoolMembers() error {
 	if instanceDetails.PrimaryNetworkInterface == nil || instanceDetails.PrimaryNetworkInterface.PrimaryIP == nil || instanceDetails.PrimaryNetworkInterface.PrimaryIP.Address == nil {
 		return fmt.Errorf("error instance is missing the primary network interface IP address for load balancer pool member deletion for machine: %s", m.IBMVPCMachine.Name)
 	}
-	m.Logger.V(5).Info("collected instance details for load balancer pool member deletion", "machienName", m.IBMVPCMachine.Name, "instanceID", *instanceDetails.ID, "instanceIP", *instanceDetails.PrimaryNetworkInterface.PrimaryIP.Address)
+	log.V(5).Info("collected instance details for load balancer pool member deletion", "machienName", m.IBMVPCMachine.Name, "instanceID", *instanceDetails.ID, "instanceIP", *instanceDetails.PrimaryNetworkInterface.PrimaryIP.Address)
 
 	cleanupIncomplete := false
 	for _, member := range m.IBMVPCMachine.Status.LoadBalancerPoolMembers {
@@ -813,21 +820,21 @@ func (m *MachineScope) deleteVPCLoadBalancerPoolMembers() error {
 		if err != nil {
 			return fmt.Errorf("error retrieving load balancer for load balancer pool member deletion for machine %s: %w", m.IBMVPCMachine.Name, err)
 		}
-		m.Logger.V(5).Info("collected load balancer for load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID)
+		log.V(5).Info("collected load balancer for load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID)
 
 		// Lookup the Load Balancer Pool ID, if only name is available.
 		loadBalancerPoolID, err := m.getLoadBalancerPoolID(ptr.To(member.Pool), *loadBalancerDetails.ID)
 		if err != nil {
 			return fmt.Errorf("error retrieving load balancer pool id for load balancer pool member deletion for machine %s: %w", m.IBMVPCMachine.Name, err)
 		}
-		m.Logger.V(5).Info("collected load balancer pool id for load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerPoolID", *loadBalancerPoolID)
+		log.V(5).Info("collected load balancer pool id for load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerPoolID", *loadBalancerPoolID)
 
 		listMembersOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{
 			LoadBalancerID: loadBalancerDetails.ID,
 			PoolID:         loadBalancerPoolID,
 		}
 
-		m.Logger.V(5).Info("list load balancer pool members options", "machineName", m.IBMVPCMachine.Name, "options", *listMembersOptions)
+		log.V(5).Info("list load balancer pool members options", "machineName", m.IBMVPCMachine.Name, "options", *listMembersOptions)
 		poolMembers, _, err := m.IBMVPCClient.ListLoadBalancerPoolMembers(listMembersOptions)
 		if err != nil {
 			return fmt.Errorf("error retrieving load balancer pool members for load balancer pool member deletion for machine %s: %w", m.IBMVPCMachine.Name, err)
@@ -840,10 +847,10 @@ func (m *MachineScope) deleteVPCLoadBalancerPoolMembers() error {
 				continue
 			}
 
-			m.Logger.V(3).Info("found load balancer pool member to delete", "machineName", m.IBMVPCMachine.Name, "poolMemberID", *poolMember.ID)
+			log.V(3).Info("found load balancer pool member to delete", "machineName", m.IBMVPCMachine.Name, "poolMemberID", *poolMember.ID)
 			// Make LB status check now that it has been determined a change is required.
 			if *loadBalancerDetails.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
-				m.Logger.V(5).Info("load balancer not in active status prior to load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID, "loadBalancerProvisioningStatus", *loadBalancerDetails.ProvisioningStatus)
+				log.V(5).Info("load balancer not in active status prior to load balancer pool member deletion", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID, "loadBalancerProvisioningStatus", *loadBalancerDetails.ProvisioningStatus)
 				// Set flag that some cleanup was not completed, and break out of member target loop, to try next member from Machine Status.
 				cleanupIncomplete = true
 				break
@@ -855,13 +862,13 @@ func (m *MachineScope) deleteVPCLoadBalancerPoolMembers() error {
 				PoolID:         loadBalancerPoolID,
 			}
 
-			m.Logger.V(5).Info("delete load balancer pool member options", "machineName", m.IBMVPCMachine.Name, "options", *deleteOptions)
+			log.V(5).Info("delete load balancer pool member options", "machineName", m.IBMVPCMachine.Name, "options", *deleteOptions)
 			// Delete the matching Load Balancer Pool Member.
 			_, err := m.IBMVPCClient.DeleteLoadBalancerPoolMember(deleteOptions)
 			if err != nil {
 				return fmt.Errorf("error deleting load balancer pool member for machine: %s: %w", m.IBMVPCMachine.Name, err)
 			}
-			m.Logger.V(3).Info("deleted load balancer pool member", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID, "loadBalancerPoolID", *loadBalancerPoolID, "loadBalancerPoolMemberID", *poolMember.ID)
+			log.V(3).Info("deleted load balancer pool member", "machineName", m.IBMVPCMachine.Name, "loadBalancerID", *loadBalancerDetails.ID, "loadBalancerPoolID", *loadBalancerPoolID, "loadBalancerPoolMemberID", *poolMember.ID)
 		}
 	}
 
@@ -902,7 +909,8 @@ func (m *MachineScope) GetBootstrapData() (string, error) {
 	return string(value), nil
 }
 
-func fetchKeyID(key *infrav1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+func fetchKeyID(ctx context.Context, key *infrav1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+	log := ctrl.LoggerFrom(ctx)
 	if key.ID == nil && key.Name == nil {
 		return nil, fmt.Errorf("both ID and Name can't be nil")
 	}
@@ -921,8 +929,7 @@ func fetchKeyID(key *infrav1.IBMVPCResourceReference, m *MachineScope) (*string,
 
 		keysList, _, err := m.IBMVPCClient.ListKeys(listKeysOptions)
 		if err != nil {
-			m.Logger.Error(err, "Failed to get keys")
-			return false, "", err
+			return false, "", fmt.Errorf("failed to get keys: %w", err)
 		}
 
 		if keysList == nil {
@@ -931,7 +938,7 @@ func fetchKeyID(key *infrav1.IBMVPCResourceReference, m *MachineScope) (*string,
 
 		for i, ks := range keysList.Keys {
 			if *ks.Name == *key.Name {
-				m.Logger.V(3).Info("Key found with ID", "Key", *ks.Name, "ID", *ks.ID)
+				log.V(3).Info("Key found with ID", "Key", *ks.Name, "ID", *ks.ID)
 				k = &keysList.Keys[i]
 				return true, "", nil
 			}
@@ -954,7 +961,8 @@ func fetchKeyID(key *infrav1.IBMVPCResourceReference, m *MachineScope) (*string,
 	return nil, fmt.Errorf("sshkey does not exist - failed to find Key ID")
 }
 
-func fetchImageID(image *infrav1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+func fetchImageID(ctx context.Context, image *infrav1.IBMVPCResourceReference, m *MachineScope) (*string, error) {
+	log := ctrl.LoggerFrom(ctx)
 	if image.ID == nil && image.Name == nil {
 		return nil, fmt.Errorf("both ID and Name can't be nil")
 	}
@@ -979,8 +987,7 @@ func fetchImageID(image *infrav1.IBMVPCResourceReference, m *MachineScope) (*str
 
 		imagesList, _, err := m.IBMVPCClient.ListImages(listImagesOptions)
 		if err != nil {
-			m.Logger.Error(err, "Failed to get images")
-			return false, "", err
+			return false, "", fmt.Errorf("failed to get images: %w", err)
 		}
 
 		if imagesList == nil {
@@ -989,7 +996,7 @@ func fetchImageID(image *infrav1.IBMVPCResourceReference, m *MachineScope) (*str
 
 		for j, i := range imagesList.Images {
 			if *image.Name == *i.Name {
-				m.Logger.Info("Image found with ID", "Image", *i.Name, "ID", *i.ID)
+				log.Info("Image found with ID", "Image", *i.Name, "ID", *i.ID)
 				img = &imagesList.Images[j]
 				return true, "", nil
 			}
@@ -1089,8 +1096,7 @@ func (m *MachineScope) SetProviderID(id *string) error {
 	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
 		accountID, err := utils.GetAccountIDWrapper()
 		if err != nil {
-			m.Logger.Error(err, "failed to get cloud account id", err.Error())
-			return err
+			return fmt.Errorf("failed to get cloud account id: %w", err)
 		}
 		m.IBMVPCMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibm://%s///%s/%s", accountID, m.Machine.Spec.ClusterName, *id))
 	} else {
