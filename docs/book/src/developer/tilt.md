@@ -97,7 +97,7 @@ extra_args:
 ---
 ## Different flavors of deploying workload clusters using CAPIBM.
 
-> **Note:** Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental features. By default, the workload cluster is deployed using the external Cloud Controller Manager (CCM).
+> **Note:** Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/cluster-resource-set.html#clusterresourceset-ga) are experimental features. By default, the workload cluster is deployed using the external Cloud Controller Manager (CCM).
 
 ### 1.  Configuration to deploy workload cluster from ClusterClass template
 
