@@ -18,7 +18,7 @@ require (
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250715161430-724130883ae3
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387
 	sigs.k8s.io/controller-tools v0.18.0
-	sigs.k8s.io/kustomize/kustomize/v5 v5.7.0
+	sigs.k8s.io/kustomize/kustomize/v5 v5.7.1
 )
 
 require (
@@ -120,7 +120,6 @@ require (
 	github.com/buildkite/interpolate v0.0.0-20200526001904-07f35b4ae251 // indirect
 	github.com/butuzov/ireturn v0.4.0 // indirect
 	github.com/butuzov/mirror v1.3.0 // indirect
-	github.com/carapace-sh/carapace-shlex v1.0.1 // indirect
 	github.com/catenacyber/perfsprint v0.9.1 // indirect
 	github.com/ccojocar/zxcvbn-go v1.0.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -478,9 +477,9 @@ require (
 	sigs.k8s.io/cluster-api v0.0.0-00010101000000-000000000000 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20211028165026-57688c578b5d // indirect
-	sigs.k8s.io/kustomize/api v0.20.0 // indirect
-	sigs.k8s.io/kustomize/cmd/config v0.20.0 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.20.0 // indirect
+	sigs.k8s.io/kustomize/api v0.20.1 // indirect
+	sigs.k8s.io/kustomize/cmd/config v0.20.1 // indirect
+	sigs.k8s.io/kustomize/kyaml v0.20.1 // indirect
 	sigs.k8s.io/mdtoc v1.3.0 // indirect
 	sigs.k8s.io/promo-tools/v3 v3.6.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
