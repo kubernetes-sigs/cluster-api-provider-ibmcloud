@@ -3,7 +3,7 @@
 
 ## Motivation
 PowerVS cluster creation supports both creating infrastructure and using existing resources required for cluster creation.
-PowerVS cluster reconciler sets [controllerCreated](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/48aebb99c3cd8ce65b95dcfceee8f52daf3d5a31/api/v1beta2/ibmpowervscluster_types.go#L181) field whenever resource is created by controller, which was initially introduced to allow proper cleanup of newly created resource vs the use of existing resources. ControllerCreated field will be set for respective resource under ibmpowervscluster.status
+PowerVS cluster reconciler sets [controllerCreated](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/48aebb99c3cd8ce65b95dcfceee8f52daf3d5a31/api/v1beta2/ibmpowervscluster_types.go#L181) field whenever resource is created by controller, which was initially introduced to allow proper cleanup of newly created resources. ControllerCreated field will be set for respective resources under `IBMPowerVSCluster.Status`.
 
 Though its working as expected and fulfills the purpose, we see some drawbacks.
 1. The field is initially set to true during the first reconciliation cycle when the resource is being created. In subsequent reconciliation loops, the field is not updated because the resource already exists in the cloud(created during first reconciliation). This behavior introduces non-idempotency in the controller logic. As a result, if the initial reconciliation event is missed, the controller exhibits inconsistent behavior. Its against Kubernetes principle of reconciliation of having level trigger rather than edge triggered.
@@ -38,7 +38,7 @@ A tag of format`powervs.cluster.x-k8s.io-resource-owner:<cluster_name>` will be 
 8. [COS Instance](https://www.ibm.com/products/cloud-object-storage)
 
 #### Note 
-- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we connot delete connections since it doesn't support tagging. So to delete VPC connection have to check VPC subnet is tagged and to delete PowerVS connection have to check DHCP network is tagged.
+- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete VPC connection have to check VPC subnet is tagged and to delete PowerVS connection have to check DHCP network is tagged.
 - To handle deletion DHCP server, have to tag DHCP Network. DHCP server doesn't support tagging.
 
 ### User tags
