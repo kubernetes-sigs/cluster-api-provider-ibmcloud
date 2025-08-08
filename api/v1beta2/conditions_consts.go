@@ -38,6 +38,35 @@ const (
 )
 
 const (
+	// IBMVPCMachineReadyV1Beta2Condition is true if the IBMVPCMachine's deletionTimestamp is not set, IBMVPCMachine's
+	// IBMVPCMachineInstanceReadyV1Beta2Condition is true.
+	IBMVPCMachineReadyV1Beta2Condition = clusterv1beta1.ReadyV1Beta2Condition
+
+	// IBMVPCMachineReadyV1Beta2Reason surfaces when the IBMVPCMachine readiness criteria is met.
+	IBMVPCMachineReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
+
+	// IBMVPCMachineNotReadyV1Beta2Reason surfaces when the IBMVPCMachine readiness criteria is not met.
+	IBMVPCMachineNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
+
+	// IBMVPCMachineReadyUnknownV1Beta2Reason surfaces when at least one IBMVPCMachine readiness criteria is unknown.
+	IBMVPCMachineReadyUnknownV1Beta2Reason = clusterv1beta1.ReadyUnknownV1Beta2Reason
+)
+
+// IBMVPCMachine's InstanceReady condition and corresponding reasons that will be used in v1Beta2 API version.
+const (
+	// IBMVPCMachineInstanceReadyV1Beta2Condition documents the status of the instance that is controlled
+	// by the IBMVPCMachine.
+	IBMVPCMachineInstanceReadyV1Beta2Condition = "InstanceReady"
+
+	// IBMVPCMachineInstanceReadyV1Beta2Reason surfaces when the instance that is controlled
+	// by the IBMVPCMachine is ready.
+	IBMVPCMachineInstanceReadyV1Beta2Reason = "InstanceReady"
+
+	// IBMVPCMachineInstanceNotReadyV1Beta2Reason surfaces when the instance that is controlled
+	// by the IBMVPCMachine is not ready.
+	IBMVPCMachineInstanceNotReadyV1Beta2Reason = "InstanceNotReady"
+)
+const (
 	// IBMPowerVSMachineInstanceReadyV1Beta2Condition documents the status of the instance that is controlled
 	// by the IBMPowerVSMachine.
 	IBMPowerVSMachineInstanceReadyV1Beta2Condition = "InstanceReady"
@@ -94,6 +123,9 @@ const (
 
 	// InstanceNotReadyReason used when the instance is in a not ready state.
 	InstanceNotReadyReason = "InstanceNotReady"
+
+	// InstanceDeletingReason is used when the instance is in deleting state.
+	InstanceDeletingReason = "InstanceDeleting"
 
 	// InstanceStateUnknownReason used when the instance is in a unknown state.
 	InstanceStateUnknownReason = "InstanceStateUnknown"
