@@ -7,7 +7,7 @@ PowerVS cluster reconciler sets [controllerCreated](https://github.com/kubernete
 
 Though its working as expected and fulfills the purpose, we see some drawbacks.
 1. The field is initially set to true during the first reconciliation cycle when the resource is being created. In subsequent reconciliation loops, the field is not updated because the resource already exists in the cloud(created during first reconciliation). This behavior introduces non-idempotency in the controller logic. As a result, if the initial reconciliation event is missed, the controller exhibits inconsistent behavior. Its against Kubernetes principle of reconciliation of having level trigger rather than edge triggered.
-2. The Status subresource in a resource object is expected to be created from spec, considering the scenario of backup and recover. If we move the spec to fresh management cluster which is setting the status, the controller created will be set as false as the resource already exists in cloud but it was created during its previous reconciliation.
+2. The Status field in resource object gets created from spec. Considering the scenario of backup and recover, if we move the spec to fresh management cluster which is setting the status, the ControllerCreated will be set as false as the resource already exists in cloud but it was created during its previous reconciliation.
 
 ## Goal
 1. Tag newly created PowerVS Cluster's cloud resources and delete the resources based on tag.
@@ -24,7 +24,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
 
 ### Controller tag
-A tag of format`powervs.cluster.x-k8s.io-resource-owner:<cluster_name>` will be added by the controller to newly created cloud resources marking the resource as created by controller. During deletion phase the system will look for the presence of the tag inorder to proceed with deletion or to keep as it is.
+A tag of format`sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>: owned` will be added by the controller to newly created cloud resources marking the resource as created by controller. During deletion phase the system will look for the presence of the tag inorder to proceed with deletion or to keep as it is.
 
 
 #### Following resources will be getting tagged 
@@ -70,13 +70,13 @@ type Tag struct {
 
 
 ### Cluster creation workflow
- 1. The controller will attach the `powervs.cluster.x-k8s.io-resource-owner:<cluster_name>` tag to the created resources.
+ 1. The controller will attach the `sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>: owned` tag to the created resources.
  2. If user tags are set in the spec, they will be attached to the resources. 
 ![add-tag-workflow.png](../images/add-tag-workflow.png)
 
 
 ### Cluster Deletion workflow
-The controller will only delete the resources which are having this tag `powervs.cluster.x-k8s.io-resource-owner:<cluster_name>` attched to it.
+The controller will only delete the resources which are having this tag `sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>: owned` attched to it.
 ![delete-tag-workflow.png](../images/delete-tag-workflow.png)
 
 #### TransitGatway Deletion workflow
