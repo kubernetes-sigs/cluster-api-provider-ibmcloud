@@ -320,6 +320,21 @@ type IBMVPCClusterStatus struct {
 	// Conditions defines current service state of the load balancer.
 	// +optional
 	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
+
+	// V1beta2 groups all the fields that will be added or modified in IBMVPCCluster's status with the V1Beta2 version.
+	// +optional
+	V1Beta2 *IBMVPCClusterV1Beta2Status `json:"v1beta2,omitempty"`
+}
+
+// IBMVPCClusterV1Beta2Status groups all the fields that will be added or modified in IBMVPCClusterStatus with the V1Beta2 version.
+// See https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more context.
+type IBMVPCClusterV1Beta2Status struct {
+	// Conditions represents the observations of a IBMVPCCluster's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // VPCNetworkStatus provides details on the status of VPC network resources for extended VPC Infrastructure support.
@@ -398,6 +413,22 @@ func (r *IBMVPCCluster) GetConditions() clusterv1beta1.Conditions {
 // SetConditions sets the underlying service state of the IBMVPCCluster to the predescribed clusterv1beta1.Conditions.
 func (r *IBMVPCCluster) SetConditions(conditions clusterv1beta1.Conditions) {
 	r.Status.Conditions = conditions
+}
+
+// GetV1Beta2Conditions returns the set of conditions for IBMVPCCluster object.
+func (r *IBMVPCCluster) GetV1Beta2Conditions() []metav1.Condition {
+	if r.Status.V1Beta2 == nil {
+		return nil
+	}
+	return r.Status.V1Beta2.Conditions
+}
+
+// SetV1Beta2Conditions sets conditions for IBMVPCCluster object.
+func (r *IBMVPCCluster) SetV1Beta2Conditions(conditions []metav1.Condition) {
+	if r.Status.V1Beta2 == nil {
+		r.Status.V1Beta2 = &IBMVPCClusterV1Beta2Status{}
+	}
+	r.Status.V1Beta2.Conditions = conditions
 }
 
 func init() {
