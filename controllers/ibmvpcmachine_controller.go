@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/record"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -256,10 +258,17 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(machineScope *scope.MachineSco
 		}
 	}
 
+	// Handle Additional Volumes
+	var result ctrl.Result
+	result, err = r.reconcileAdditionalVolumes(machineScope)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("error reconciling additional volumes: %w", err)
+	}
+
 	// With a running machine and all Load Balancer Pool Members reconciled, mark machine as ready.
 	machineScope.SetReady()
 	v1beta1conditions.MarkTrue(machineScope.IBMVPCMachine, infrav1.InstanceReadyCondition)
-	return ctrl.Result{}, nil
+	return result, nil
 }
 
 func (r *IBMVPCMachineReconciler) getOrCreate(scope *scope.MachineScope) (*vpcv1.Instance, error) {
@@ -289,4 +298,58 @@ func (r *IBMVPCMachineReconciler) reconcileDelete(scope *scope.MachineScope) (_ 
 	}()
 
 	return ctrl.Result{}, nil
+}
+
+func (r *IBMVPCMachineReconciler) reconcileAdditionalVolumes(machineScope *scope.MachineScope) (ctrl.Result, error) {
+	if machineScope.IBMVPCMachine.Status.AdditionalVolumeIDs == nil {
+		machineScope.IBMVPCMachine.Status.AdditionalVolumeIDs = make([]string, len(machineScope.IBMVPCMachine.Spec.AdditionalVolumes))
+	}
+	machineVolumes := machineScope.IBMVPCMachine.Spec.AdditionalVolumes
+	result := ctrl.Result{}
+	if len(machineVolumes) == 0 {
+		return result, nil
+	}
+	volumeAttachmentList, err := machineScope.GetVolumeAttachments()
+	if err != nil {
+		return result, err
+	}
+	volumeAttachmentNames := sets.New[string]()
+	for i := range volumeAttachmentList {
+		sets.Insert(volumeAttachmentNames, *volumeAttachmentList[i].Name)
+	}
+	errList := []error{}
+	// Read through the list, checking if volume exists and create volume if it does not
+	for v := range machineVolumes {
+		if volumeAttachmentNames.Has(machineVolumes[v].Name) {
+			// volume attachment has been created so volume is already attached
+			continue
+		}
+		if machineScope.IBMVPCMachine.Status.AdditionalVolumeIDs[v] != "" {
+			// volume was already created, fetch volume status and attach if possible
+			state, err := machineScope.GetVolumeState(machineScope.IBMVPCMachine.Status.AdditionalVolumeIDs[v])
+			if err != nil {
+				errList = append(errList, err)
+			}
+			switch state {
+			case vpcv1.VolumeStatusPendingConst, vpcv1.VolumeStatusUpdatingConst:
+				result = ctrl.Result{RequeueAfter: 10 * time.Second}
+			case vpcv1.VolumeStatusFailedConst, vpcv1.VolumeStatusUnusableConst:
+				errList = append(errList, fmt.Errorf("volume in unexpected state: %s", state))
+			case vpcv1.VolumeStatusAvailableConst:
+				err = machineScope.AttachVolume(machineVolumes[v].DeleteVolumeOnInstanceDelete, machineScope.IBMVPCMachine.Status.AdditionalVolumeIDs[v], machineVolumes[v].Name)
+				if err != nil {
+					errList = append(errList, err)
+				}
+			}
+		} else {
+			// volume does not exist, create it and requeue so that it becomes available
+			volumeID, err := machineScope.CreateVolume(machineVolumes[v])
+			machineScope.IBMVPCMachine.Status.AdditionalVolumeIDs[v] = volumeID
+			if err != nil {
+				errList = append(errList, err)
+			}
+			result = ctrl.Result{RequeueAfter: 10 * time.Second}
+		}
+	}
+	return result, errors.Join(errList...)
 }

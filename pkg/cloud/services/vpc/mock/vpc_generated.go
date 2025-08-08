@@ -56,6 +56,22 @@ func (m *MockVpc) EXPECT() *MockVpcMockRecorder {
 	return m.recorder
 }
 
+// AttachVolumeToInstance mocks base method.
+func (m *MockVpc) AttachVolumeToInstance(options *vpcv1.CreateInstanceVolumeAttachmentOptions) (*vpcv1.VolumeAttachment, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AttachVolumeToInstance", options)
+	ret0, _ := ret[0].(*vpcv1.VolumeAttachment)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// AttachVolumeToInstance indicates an expected call of AttachVolumeToInstance.
+func (mr *MockVpcMockRecorder) AttachVolumeToInstance(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AttachVolumeToInstance", reflect.TypeOf((*MockVpc)(nil).AttachVolumeToInstance), options)
+}
+
 // CreateImage mocks base method.
 func (m *MockVpc) CreateImage(options *vpcv1.CreateImageOptions) (*vpcv1.Image, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -198,6 +214,22 @@ func (m *MockVpc) CreateVPC(options *vpcv1.CreateVPCOptions) (*vpcv1.VPC, *core.
 func (mr *MockVpcMockRecorder) CreateVPC(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVPC", reflect.TypeOf((*MockVpc)(nil).CreateVPC), options)
+}
+
+// CreateVolume mocks base method.
+func (m *MockVpc) CreateVolume(options *vpcv1.CreateVolumeOptions) (*vpcv1.Volume, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateVolume", options)
+	ret0, _ := ret[0].(*vpcv1.Volume)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateVolume indicates an expected call of CreateVolume.
+func (mr *MockVpcMockRecorder) CreateVolume(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVolume", reflect.TypeOf((*MockVpc)(nil).CreateVolume), options)
 }
 
 // DeleteInstance mocks base method.
@@ -598,6 +630,38 @@ func (m *MockVpc) GetVPCZonesByRegion(region string) ([]string, error) {
 func (mr *MockVpcMockRecorder) GetVPCZonesByRegion(region any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCZonesByRegion", reflect.TypeOf((*MockVpc)(nil).GetVPCZonesByRegion), region)
+}
+
+// GetVolume mocks base method.
+func (m *MockVpc) GetVolume(options *vpcv1.GetVolumeOptions) (*vpcv1.Volume, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVolume", options)
+	ret0, _ := ret[0].(*vpcv1.Volume)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetVolume indicates an expected call of GetVolume.
+func (mr *MockVpcMockRecorder) GetVolume(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolume", reflect.TypeOf((*MockVpc)(nil).GetVolume), options)
+}
+
+// GetVolumeAttachments mocks base method.
+func (m *MockVpc) GetVolumeAttachments(options *vpcv1.ListInstanceVolumeAttachmentsOptions) (*vpcv1.VolumeAttachmentCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVolumeAttachments", options)
+	ret0, _ := ret[0].(*vpcv1.VolumeAttachmentCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetVolumeAttachments indicates an expected call of GetVolumeAttachments.
+func (mr *MockVpcMockRecorder) GetVolumeAttachments(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVolumeAttachments", reflect.TypeOf((*MockVpc)(nil).GetVolumeAttachments), options)
 }
 
 // ListImages mocks base method.
