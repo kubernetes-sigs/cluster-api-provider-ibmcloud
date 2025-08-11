@@ -1120,8 +1120,8 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 
 // APIServerPort returns the APIServerPort.
 func (m *PowerVSMachineScope) APIServerPort() int32 {
-	if m.Cluster.Spec.ClusterNetwork != nil && m.Cluster.Spec.ClusterNetwork.APIServerPort != nil {
-		return *m.Cluster.Spec.ClusterNetwork.APIServerPort
+	if m.Cluster.Spec.ClusterNetwork.APIServerPort > 0 {
+		return m.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return infrav1.DefaultAPIServerPort
 }

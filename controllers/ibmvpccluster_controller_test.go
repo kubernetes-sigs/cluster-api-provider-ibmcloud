@@ -260,7 +260,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			t.Cleanup(teardown)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1.ClusterFinalizer}
 			port := int32(412)
-			clusterScope.Cluster.Spec.ClusterNetwork = &clusterv1.ClusterNetwork{APIServerPort: &port}
+			clusterScope.Cluster.Spec.ClusterNetwork = clusterv1.ClusterNetwork{APIServerPort: port}
 			mockvpc.EXPECT().ListVpcs(listVpcsOptions).Return(vpclist, response, nil)
 			mockvpc.EXPECT().ListSubnets(subnetOptions).Return(subnets, response, nil)
 			mockvpc.EXPECT().ListLoadBalancers(loadBalancerOptions).Return(loadBalancers, response, nil)
@@ -378,7 +378,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			t.Cleanup(mockController.Finish)
 			clusterScope.IBMVPCCluster.Finalizers = []string{infrav1.ClusterFinalizer}
 			port := int32(412)
-			clusterScope.Cluster.Spec.ClusterNetwork = &clusterv1.ClusterNetwork{APIServerPort: &port}
+			clusterScope.Cluster.Spec.ClusterNetwork = clusterv1.ClusterNetwork{APIServerPort: port}
 			mockvpc.EXPECT().ListVpcs(&vpcv1.ListVpcsOptions{}).Return(vpclist, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListSubnets(&vpcv1.ListSubnetsOptions{}).Return(subnets, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancers(&vpcv1.ListLoadBalancersOptions{}).Return(loadBalancerCollection, &core.DetailedResponse{}, nil)

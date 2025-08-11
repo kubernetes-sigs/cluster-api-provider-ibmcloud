@@ -183,7 +183,6 @@ spec:
       discovery:
         bootstrapToken:
           apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
-          caCertHashes: []
           unsafeSkipCAVerification: false
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
@@ -203,10 +202,11 @@ spec:
     - for script in $(find /etc/pre-kubeadm-commands/ -name '*.sh' -type f | sort);
       do echo "Running script $script"; "$script"; done
   machineTemplate:
-    infrastructureRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
-      kind: IBMPowerVSMachineTemplate
-      name: ${CLUSTER_NAME}-control-plane
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: IBMPowerVSMachineTemplate
+        name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
@@ -281,7 +281,6 @@ spec:
         discovery:
           bootstrapToken:
             apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
-            caCertHashes: []
             unsafeSkipCAVerification: false
         nodeRegistration:
           criSocket: /var/run/containerd/containerd.sock

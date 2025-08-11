@@ -6,7 +6,7 @@ go 1.24.0
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega => github.com/onsi/gomega v1.37.0
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.11.0-beta.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.11.0-rc.0
 )
 
 require (
@@ -23,7 +23,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.23.4
-	github.com/onsi/gomega v1.37.0
+	github.com/onsi/gomega v1.38.0
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20250403153021-219b161805db
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
@@ -32,16 +32,16 @@ require (
 	golang.org/x/crypto v0.41.0
 	golang.org/x/net v0.43.0
 	golang.org/x/text v0.28.0
-	k8s.io/api v0.33.2
-	k8s.io/apiextensions-apiserver v0.33.2
-	k8s.io/apimachinery v0.33.2
+	k8s.io/api v0.33.3
+	k8s.io/apiextensions-apiserver v0.33.3
+	k8s.io/apimachinery v0.33.3
 	k8s.io/cli-runtime v0.30.3
-	k8s.io/client-go v0.33.2
-	k8s.io/component-base v0.33.2
+	k8s.io/client-go v0.33.3
+	k8s.io/component-base v0.33.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	sigs.k8s.io/cluster-api v1.11.0-beta.0
-	sigs.k8s.io/cluster-api/test v1.11.0-beta.0
+	sigs.k8s.io/cluster-api v1.11.0-rc.0
+	sigs.k8s.io/cluster-api/test v1.11.0-rc.0
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/yaml v1.6.0
 )
@@ -70,7 +70,7 @@ require (
 	github.com/coreos/vcontext v0.0.0-20230201181013-d72178a18687 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.3.2+incompatible // indirect
+	github.com/docker/docker v28.3.3+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46 // indirect
@@ -181,8 +181,8 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.33.2 // indirect
-	k8s.io/cluster-bootstrap v0.33.2 // indirect
+	k8s.io/apiserver v0.33.3 // indirect
+	k8s.io/cluster-bootstrap v0.33.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect

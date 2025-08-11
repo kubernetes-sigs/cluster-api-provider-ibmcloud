@@ -146,8 +146,8 @@ func TestAPIServerPort(t *testing.T) {
 			machineScope: PowerVSMachineScope{
 				Cluster: &clusterv1.Cluster{
 					Spec: clusterv1.ClusterSpec{
-						ClusterNetwork: &clusterv1.ClusterNetwork{
-							APIServerPort: ptr.To(int32(6445)),
+						ClusterNetwork: clusterv1.ClusterNetwork{
+							APIServerPort: int32(6445),
 						},
 					},
 				},
