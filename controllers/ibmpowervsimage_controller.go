@@ -342,6 +342,25 @@ func (r *IBMPowerVSImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func patchIBMPowerVSImage(ctx context.Context, patchHelper *v1beta1patch.Helper, ibmPowerVSImage *infrav1.IBMPowerVSImage) error {
+	// Before computing ready condition, make sure that ImageReady is always set.
+	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
+	// first reconcile.
+	if c := v1beta2conditions.Get(ibmPowerVSImage, infrav1.IBMPowerVSImageReadyV1Beta2Condition); c == nil {
+		if ibmPowerVSImage.Status.Ready {
+			v1beta2conditions.Set(ibmPowerVSImage, metav1.Condition{
+				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
+				Status: metav1.ConditionTrue,
+				Reason: infrav1.IBMPowerVSImageReadyV1Beta2Reason,
+			})
+		} else {
+			v1beta2conditions.Set(ibmPowerVSImage, metav1.Condition{
+				Type:   infrav1.IBMPowerVSImageReadyV1Beta2Condition,
+				Status: metav1.ConditionFalse,
+				Reason: infrav1.IBMPowerVSImageNotReadyV1Beta2Reason,
+			})
+		}
+	}
+
 	// always update the readyCondition.
 	v1beta1conditions.SetSummary(ibmPowerVSImage,
 		v1beta1conditions.WithConditions(

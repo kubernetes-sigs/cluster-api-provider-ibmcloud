@@ -36,7 +36,8 @@ import (
 
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	"sigs.k8s.io/cluster-api/util"
-	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions" //nolint:staticcheck
+	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"         //nolint:staticcheck
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
@@ -89,12 +90,12 @@ func TestIBMPowerVSImageReconciler_Reconcile(t *testing.T) {
 
 			if tc.powervsImage != nil {
 				g.Eventually(func() bool {
-					machine := &infrav1.IBMPowerVSImage{}
+					image := &infrav1.IBMPowerVSImage{}
 					key := client.ObjectKey{
 						Name:      tc.powervsImage.Name,
 						Namespace: ns.Name,
 					}
-					err = testEnv.Get(ctx, key, machine)
+					err = testEnv.Get(ctx, key, image)
 					return err == nil
 				}, 10*time.Second).Should(Equal(true))
 
@@ -411,5 +412,96 @@ func expectConditionsImage(g *WithT, m *infrav1.IBMPowerVSImage, expected []cond
 		g.Expect(actual.Status).To(Equal(c.status))
 		g.Expect(actual.Severity).To(Equal(c.severity))
 		g.Expect(actual.Reason).To(Equal(c.reason))
+	}
+}
+
+func TestIBMPowerVSImageReconciler_Reconcile_Conditions(t *testing.T) {
+	testCases := []struct {
+		name           string
+		powervsCluster *infrav1.IBMPowerVSCluster
+		powervsImage   *infrav1.IBMPowerVSImage
+		expectError    bool
+	}{
+
+		{
+			name: "Conditions should be set after reconcile",
+			powervsCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-powervs-cluster"},
+			},
+			powervsImage: &infrav1.IBMPowerVSImage{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "capi-image",
+					Finalizers: []string{infrav1.IBMPowerVSImageFinalizer},
+				},
+				Spec: infrav1.IBMPowerVSImageSpec{
+					ClusterName: "capi-powervs-cluster",
+					Object:      ptr.To("capi-image.ova.gz"),
+					Region:      ptr.To("us-south"),
+					Bucket:      ptr.To("capi-bucket"),
+				},
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			reconciler := &IBMPowerVSImageReconciler{
+				Client: testEnv.Client,
+			}
+
+			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+			g.Expect(err).To(BeNil())
+
+			createObject(g, tc.powervsImage, ns.Name)
+			createCluster(g, tc.powervsCluster, ns.Name)
+			defer cleanupObject(g, tc.powervsImage)
+			defer cleanupCluster(g, tc.powervsCluster, ns)
+
+			if tc.powervsImage != nil {
+				g.Eventually(func() bool {
+					image := &infrav1.IBMPowerVSImage{}
+					key := client.ObjectKey{
+						Name:      tc.powervsImage.Name,
+						Namespace: ns.Name,
+					}
+					err = testEnv.Get(ctx, key, image)
+					return err == nil
+				}, 10*time.Second).Should(Equal(true))
+
+				_, err := reconciler.Reconcile(ctx, ctrl.Request{
+					NamespacedName: client.ObjectKey{
+						Namespace: tc.powervsImage.Namespace,
+						Name:      tc.powervsImage.Name,
+					},
+				})
+				if tc.expectError {
+					g.Expect(err).ToNot(BeNil())
+					image := &infrav1.IBMPowerVSImage{}
+					key := client.ObjectKey{
+						Namespace: tc.powervsImage.Namespace,
+						Name:      tc.powervsImage.Name,
+					}
+					err = testEnv.Get(ctx, key, image)
+					g.Expect(err).To(BeNil())
+					expectConditionsImagev1beta2(g, image, []metav1.Condition{{Type: infrav1.IBMPowerVSImageReadyV1Beta2Condition, Status: metav1.ConditionFalse, Reason: infrav1.IBMPowerVSImageNotReadyV1Beta2Reason}})
+				} else {
+					g.Expect(err).To(BeNil())
+				}
+			}
+		})
+	}
+}
+
+func expectConditionsImagev1beta2(g *WithT, m *infrav1.IBMPowerVSImage, expected []metav1.Condition) {
+	g.Expect(len(m.Status.V1Beta2.Conditions)).To(BeNumerically(">=", len(expected)))
+	for _, c := range expected {
+		actual := v1beta2conditions.Get(m, infrav1.IBMPowerVSImageReadyV1Beta2Condition)
+		g.Expect(actual).To(Not(BeNil()))
+		g.Expect(actual.Type).To(Equal(c.Type))
+		g.Expect(actual.Status).To(Equal(c.Status))
+		g.Expect(actual.Reason).To(Equal(c.Reason))
 	}
 }
