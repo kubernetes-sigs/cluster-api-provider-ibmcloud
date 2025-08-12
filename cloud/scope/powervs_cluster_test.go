@@ -1421,8 +1421,8 @@ func TestReconcileLoadBalancers(t *testing.T) {
 			},
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: &clusterNetworkAPIServerPort,
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: clusterNetworkAPIServerPort,
 					},
 				},
 			},
@@ -1472,8 +1472,8 @@ func TestReconcileLoadBalancers(t *testing.T) {
 			},
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: &clusterAPIServerPort,
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: clusterAPIServerPort,
 					},
 				},
 			},
@@ -1523,8 +1523,8 @@ func TestReconcileLoadBalancers(t *testing.T) {
 			},
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: &clusterAPIServerPort,
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: clusterAPIServerPort,
 					},
 				},
 			},
@@ -1671,8 +1671,8 @@ func TestCreateLoadbalancer(t *testing.T) {
 			},
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: &clusterAPIServerPort,
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: clusterAPIServerPort,
 					},
 				},
 			},
@@ -1730,8 +1730,8 @@ func TestCreateLoadbalancer(t *testing.T) {
 			},
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: &clusterAPIServerPort,
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: clusterAPIServerPort,
 					},
 				},
 			},
@@ -1770,8 +1770,8 @@ func TestCheckLoadBalancerPort(t *testing.T) {
 		clusterScope := PowerVSClusterScope{
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: ptr.To(int32(port)),
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: int32(port),
 					},
 				},
 			},
@@ -1792,8 +1792,8 @@ func TestCheckLoadBalancerPort(t *testing.T) {
 		clusterScope := PowerVSClusterScope{
 			Cluster: &clusterv1.Cluster{
 				Spec: clusterv1.ClusterSpec{
-					ClusterNetwork: &clusterv1.ClusterNetwork{
-						APIServerPort: ptr.To(int32(8080)),
+					ClusterNetwork: clusterv1.ClusterNetwork{
+						APIServerPort: int32(8080),
 					},
 				},
 			},
@@ -2555,7 +2555,7 @@ func TestReconcileVPC(t *testing.T) {
 
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &clusterv1.Cluster{Spec: clusterv1.ClusterSpec{ClusterNetwork: nil}},
+			Cluster:      &clusterv1.Cluster{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
@@ -2712,7 +2712,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &clusterv1.Cluster{Spec: clusterv1.ClusterSpec{ClusterNetwork: nil}},
+			Cluster:      &clusterv1.Cluster{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}
@@ -2732,7 +2732,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 
 		clusterScope := PowerVSClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &clusterv1.Cluster{Spec: clusterv1.ClusterSpec{ClusterNetwork: nil}},
+			Cluster:      &clusterv1.Cluster{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
 		}

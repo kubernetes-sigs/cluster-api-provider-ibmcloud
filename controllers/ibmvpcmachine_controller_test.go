@@ -146,7 +146,7 @@ func TestIBMVPCMachineReconciler_Reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-2"},
 				Spec: clusterv1.ClusterSpec{
-					InfrastructureRef: &clusterv1.ContractVersionedObjectReference{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 						Name: "vpc-cluster"}}},
 			expectError: false,
 		},

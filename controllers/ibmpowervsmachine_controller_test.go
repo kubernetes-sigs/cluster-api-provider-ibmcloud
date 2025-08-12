@@ -152,7 +152,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-2"},
 				Spec: clusterv1.ClusterSpec{
-					InfrastructureRef: &clusterv1.ContractVersionedObjectReference{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
 						Name: "powervs-cluster"}}},
 			expectError: false,
 		},
@@ -189,7 +189,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-test-3"},
 				Spec: clusterv1.ClusterSpec{
-					InfrastructureRef: &clusterv1.ContractVersionedObjectReference{Name: "powervs-cluster"}}},
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{Name: "powervs-cluster"}}},
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "powervs-cluster"},
 				Spec: infrav1.IBMPowerVSClusterSpec{

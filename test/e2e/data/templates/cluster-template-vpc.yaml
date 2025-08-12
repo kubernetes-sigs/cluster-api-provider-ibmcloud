@@ -351,10 +351,11 @@ spec:
         - name: eviction-hard
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
   machineTemplate:
-    infrastructureRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
-      kind: IBMVPCMachineTemplate
-      name: ${CLUSTER_NAME}-control-plane
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: IBMVPCMachineTemplate
+        name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---

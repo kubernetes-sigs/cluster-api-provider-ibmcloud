@@ -88,10 +88,11 @@ spec:
     - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
     - echo "{{ v1.local_hostname }}" >/etc/hostname
   machineTemplate:
-    infrastructureRef:
-      apiGroup: infrastructure.cluster.x-k8s.io
-      kind: IBMPowerVSMachineTemplate
-      name: ${CLUSTER_NAME}-control-plane
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: IBMPowerVSMachineTemplate
+        name: ${CLUSTER_NAME}-control-plane
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---

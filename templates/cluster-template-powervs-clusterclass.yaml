@@ -225,7 +225,6 @@ spec:
           discovery:
             bootstrapToken:
               apiServerEndpoint: 192.168.167.85:${API_SERVER_PORT:=6443}
-              caCertHashes: []
               unsafeSkipCAVerification: false
           nodeRegistration:
             criSocket: unix:///var/run/containerd/containerd.sock
@@ -258,7 +257,6 @@ spec:
         discovery:
           bootstrapToken:
             apiServerEndpoint: ${IBMPOWERVS_VIP}:${API_SERVER_PORT:=6443}
-            caCertHashes: []
             unsafeSkipCAVerification: false
         nodeRegistration:
           criSocket: unix:///var/run/containerd/containerd.sock
