@@ -38,7 +38,8 @@ A tag of format`sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>
 8. [COS Instance](https://www.ibm.com/products/cloud-object-storage)
 
 #### Note 
-- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete VPC connection have to check VPC subnet is tagged and to delete PowerVS connection have to check DHCP network is tagged.
+- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>/TG: vpcconnection, powervsconnection` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
+
 - To handle deletion DHCP server, have to tag DHCP Network. DHCP server doesn't support tagging.
 
 ### User tags
