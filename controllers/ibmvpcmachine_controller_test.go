@@ -30,8 +30,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2" //nolint:staticcheck
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -228,7 +230,6 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			Log:    klog.Background(),
 		}
 		machineScope = &scope.MachineScope{
-			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -256,7 +257,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 		})
@@ -270,7 +271,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			machineScope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("capi-machine")
 			machineScope.IBMVPCCluster.Status.Subnet.ID = ptr.To("capi-subnet-id")
 			mockvpc.EXPECT().ListInstances(options).Return(instancelist, response, errors.New("Failed to create or fetch instance"))
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 		})
@@ -287,7 +288,6 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			Log:    klog.Background(),
 		}
 		machineScope := &scope.MachineScope{
-			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -386,7 +386,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockgt.EXPECT().GetTagByName(gomock.AssignableToTypeOf("capi-cluster")).Return(existingTag, nil)
 			mockgt.EXPECT().AttachTag(gomock.AssignableToTypeOf(&globaltaggingv1.AttachTagOptions{})).Return(nil, &core.DetailedResponse{}, nil)
 
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To((Not(BeNil())))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 		})
@@ -401,7 +401,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("failed to list loadBalancerPoolMembers"))
 
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 		})
@@ -421,7 +421,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(customloadBalancerPoolMember, &core.DetailedResponse{}, nil)
 
-			result, err := reconciler.reconcileNormal(machineScope)
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			// Requeue should be set when the Pool Member is found, but not yet ready (active).
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			g.Expect(err).To(BeNil())
@@ -445,7 +445,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
 
-			_, err := reconciler.reconcileNormal(machineScope)
+			_, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 			g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
@@ -487,7 +487,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				result, err := reconciler.reconcileNormal(machineScope)
+				result, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
@@ -512,7 +512,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				_, err := reconciler.reconcileNormal(machineScope)
+				_, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(true))
 			})
@@ -536,7 +536,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				result, err := reconciler.reconcileNormal(machineScope)
+				result, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
@@ -561,7 +561,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 				}
 				mockvpc.EXPECT().ListInstances(gomock.AssignableToTypeOf(&vpcv1.ListInstancesOptions{})).Return(customInstancelist, &core.DetailedResponse{}, nil)
 
-				result, err := reconciler.reconcileNormal(machineScope)
+				result, err := reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
 				g.Expect(machineScope.IBMVPCMachine.Status.Ready).To(Equal(false))
@@ -587,7 +587,6 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 			Log:    klog.Background(),
 		}
 		machineScope = &scope.MachineScope{
-			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
@@ -611,7 +610,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(options)).Return(nil, errors.New("Failed to delete the VPC instance"))
-			_, err := reconciler.reconcileDelete(machineScope)
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 		})
@@ -621,7 +620,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 			t.Cleanup(teardown)
 			response := &core.DetailedResponse{}
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(options)).Return(response, nil)
-			_, err := reconciler.reconcileDelete(machineScope)
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(Not(ContainElement(infrav1.MachineFinalizer)))
 		})
@@ -637,7 +636,6 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 			Log:    klog.Background(),
 		}
 		machineScope := &scope.MachineScope{
-			Logger: klog.Background(),
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
@@ -685,7 +683,7 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().GetInstance(gomock.AssignableToTypeOf(&vpcv1.GetInstanceOptions{})).Return(&vpcv1.Instance{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, errors.New("failed to list LoadBalancerPoolMembers"))
-			_, err := reconciler.reconcileDelete(machineScope)
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To((Not(BeNil())))
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(ContainElement(infrav1.MachineFinalizer))
 		})
@@ -697,9 +695,139 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 			mockvpc.EXPECT().GetInstance(gomock.AssignableToTypeOf(&vpcv1.GetInstanceOptions{})).Return(&vpcv1.Instance{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(&vpcv1.DeleteInstanceOptions{})).Return(&core.DetailedResponse{}, nil)
-			_, err := reconciler.reconcileDelete(machineScope)
+			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(machineScope.IBMVPCMachine.Finalizers).To(Not(ContainElement(infrav1.MachineFinalizer)))
 		})
 	})
+}
+
+func TestIBMVPCMachine_Reconcile_Conditions(t *testing.T) {
+	testCases := []struct {
+		name              string
+		vpcMachine        *infrav1.IBMVPCMachine
+		ownerMachine      *clusterv1.Machine
+		vpcCluster        *infrav1.IBMVPCCluster
+		ownerCluster      *clusterv1.Cluster
+		expectedCondition metav1.Condition
+		expectError       bool
+	}{
+		{
+			name: "Should set conditions on first reconcile",
+			vpcMachine: &infrav1.IBMVPCMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "vpc-machine", Labels: map[string]string{
+						clusterv1.ClusterNameAnnotation: "capi-cluster"},
+					Finalizers: []string{infrav1.MachineFinalizer},
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: clusterv1.GroupVersion.String(),
+							Kind:       "Machine",
+							Name:       "capi-test-machine",
+							UID:        "1",
+						},
+						{
+							APIVersion: clusterv1.GroupVersion.String(),
+							Kind:       "Cluster",
+							Name:       "capi-cluster",
+							UID:        "1",
+						},
+					},
+				},
+				Spec: infrav1.IBMVPCMachineSpec{
+					Image: &infrav1.IBMVPCResourceReference{},
+				},
+			},
+			vpcCluster: &infrav1.IBMVPCCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-cluster"},
+				Spec: infrav1.IBMVPCClusterSpec{
+					ControlPlaneEndpoint: v1beta1.APIEndpoint{
+						Host: "cluster-host",
+					},
+				},
+			},
+			ownerMachine: &clusterv1.Machine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-test-machine"}},
+			ownerCluster: &clusterv1.Cluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "capi-cluster"},
+				Spec: clusterv1.ClusterSpec{
+					InfrastructureRef: clusterv1.ContractVersionedObjectReference{
+						Name: "capi-cluster"}}},
+			expectedCondition: metav1.Condition{
+				Type:   infrav1.IBMVPCMachineInstanceReadyV1Beta2Condition,
+				Status: metav1.ConditionFalse,
+				Reason: infrav1.IBMVPCMachineInstanceNotReadyV1Beta2Reason,
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			reconciler := &IBMVPCMachineReconciler{
+				Client: testEnv.Client,
+				Log:    klog.Background(),
+			}
+			ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+			g.Expect(err).To(BeNil())
+			defer func() {
+				g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+			}()
+
+			createObject(g, tc.ownerCluster, ns.Name)
+			defer cleanupObject(g, tc.ownerCluster)
+
+			createObject(g, tc.vpcCluster, ns.Name)
+			defer cleanupObject(g, tc.vpcCluster)
+
+			createObject(g, tc.ownerMachine, ns.Name)
+			defer cleanupObject(g, tc.ownerMachine)
+
+			createObject(g, tc.vpcMachine, ns.Name)
+			defer cleanupObject(g, tc.vpcMachine)
+
+			g.Eventually(func() bool {
+				machine := &infrav1.IBMVPCMachine{}
+				key := client.ObjectKey{
+					Name:      tc.vpcMachine.Name,
+					Namespace: ns.Name,
+				}
+				err = testEnv.Get(ctx, key, machine)
+				return err == nil
+			}, 10*time.Second).Should(Equal(true))
+
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{
+				NamespacedName: client.ObjectKey{
+					Namespace: tc.vpcMachine.Namespace,
+					Name:      tc.vpcMachine.Name,
+				},
+			})
+
+			if tc.expectError {
+				g.Expect(err).ToNot(BeNil())
+			} else {
+				g.Expect(err).To(BeNil())
+			}
+
+			machine := &infrav1.IBMVPCMachine{}
+			key := client.ObjectKey{
+				Name:      tc.vpcMachine.Name,
+				Namespace: ns.Name,
+			}
+
+			err = testEnv.Get(ctx, key, machine)
+			g.Expect(err).To(BeNil())
+			g.Expect(len(machine.Status.V1Beta2.Conditions)).To(BeNumerically(">", 0))
+
+			instanceReadyCondition := v1beta2conditions.Get(machine, infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition)
+			g.Expect(instanceReadyCondition).To(Not(BeNil()))
+			g.Expect(tc.expectedCondition.Type).To(Equal(instanceReadyCondition.Type))
+			g.Expect(tc.expectedCondition.Status).To(Equal(instanceReadyCondition.Status))
+			g.Expect(tc.expectedCondition.Reason).To(Equal(instanceReadyCondition.Reason))
+		})
+	}
 }
