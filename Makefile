@@ -587,6 +587,10 @@ endif
 yamllint:
 	@docker run --rm $$(tty -s && echo "-it" || echo) -v $(PWD):/data cytopia/yamllint:latest /data --config-file /data/.yamllint --no-warnings
 
+.PHONY: linkcheck
+linkcheck:
+	@docker run -it --rm -w /input -v $(PWD):/input lycheeverse/lychee . --hidden
+
 ## --------------------------------------
 ## Cleanup / Verification
 ## --------------------------------------
