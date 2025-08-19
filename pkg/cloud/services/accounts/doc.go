@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package util implements util code.
-package util
+// Package accounts implements account utility helpers.
+package accounts

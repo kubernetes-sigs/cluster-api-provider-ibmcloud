@@ -30,9 +30,9 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cliutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 )
 
 type keyCreateOptions struct {
@@ -93,7 +93,7 @@ func createKey(ctx context.Context, keyCreateOption keyCreateOptions) error {
 		return err
 	}
 
-	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
+	accountID, err := accounts.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func createKey(ctx context.Context, keyCreateOption keyCreateOptions) error {
 	options.SetPublicKey(keyCreateOption.publicKey)
 
 	if keyCreateOption.resourceGroupName != "" {
-		resourceGroupID, err := utils.GetResourceGroupID(ctx, keyCreateOption.resourceGroupName, accountID)
+		resourceGroupID, err := cliutils.GetResourceGroupID(ctx, keyCreateOption.resourceGroupName, accountID)
 		if err != nil {
 			return err
 		}

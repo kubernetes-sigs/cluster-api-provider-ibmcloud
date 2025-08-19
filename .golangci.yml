@@ -121,10 +121,6 @@ linters:
       - linters:
           - revive
         text: 'exported: exported method .*\.(Reconcile|SetupWithManager|SetupWebhookWithManager) should have comment or be unexported'
-        # To be fixed: This is done to unblock the bumping of golint.
-      - linters:
-          - revive
-        text: 'var-naming: avoid meaningless package names'
       - linters:
           - errcheck
         text: Error return value of .((os\.)?std(out|err)\..*|.*Close|.*Flush|os\.Remove(All)?|.*print(f|ln)?|os\.(Un)?(S|s)?etenv). is not checked
