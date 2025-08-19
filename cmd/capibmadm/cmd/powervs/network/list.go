@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 )
 
 // ListCommand function to create PowerVS network.
@@ -56,7 +56,7 @@ func listNetwork(ctx context.Context) error {
 	log := logf.Log
 	log.Info("Listing PowerVS networks", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "zone", options.GlobalOptions.PowerVSZone)
 
-	accountID, err := utils.GetAccount(iam.GetIAMAuth())
+	accountID, err := accounts.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}

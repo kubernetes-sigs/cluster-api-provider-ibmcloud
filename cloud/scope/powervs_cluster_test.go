@@ -39,7 +39,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -240,7 +240,7 @@ func TestGetDHCPServerID(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			dhcpServerID := tc.clusterScope.GetDHCPServerID()
-			g.Expect(utils.DereferencePointer(dhcpServerID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(dhcpServerID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -276,7 +276,7 @@ func TestGetVPCID(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			vpcID := tc.clusterScope.GetVPCID()
-			g.Expect(utils.DereferencePointer(vpcID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(vpcID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -355,7 +355,7 @@ func TestGetVPCSubnetID(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			subnetID := tc.clusterScope.GetVPCSubnetID(tc.subnetName)
-			g.Expect(utils.DereferencePointer(subnetID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(subnetID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -475,7 +475,7 @@ func TestVPCSecurityGroupByName(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			sgID, _, _ := tc.clusterScope.GetVPCSecurityGroupByName(tc.sgName)
-			g.Expect(utils.DereferencePointer(sgID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(sgID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -554,7 +554,7 @@ func TestVPCSecurityGroupByID(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			sgID, _, _ := tc.clusterScope.GetVPCSecurityGroupByID(tc.sgID)
-			g.Expect(utils.DereferencePointer(sgID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(sgID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -601,7 +601,7 @@ func TestGetTransitGatewayID(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			tgID := tc.clusterScope.GetTransitGatewayID()
-			g.Expect(utils.DereferencePointer(tgID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(tgID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -680,7 +680,7 @@ func TestGetLoadBalancerID(t *testing.T) {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
 			lbID := tc.clusterScope.GetLoadBalancerID(tc.lbName)
-			g.Expect(utils.DereferencePointer(lbID)).To(Equal(utils.DereferencePointer(tc.expectedID)))
+			g.Expect(pointer.Dereference(lbID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
