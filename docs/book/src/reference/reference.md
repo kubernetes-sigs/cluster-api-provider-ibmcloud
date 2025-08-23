@@ -2,5 +2,5 @@
 
 Further references to the Cluster API Provider IBM Cloud - CAPIBM project.
 
-- [API reference](/reference/api-references.html)
-- [Regions-Zones Mapping](/reference/regions-zones-mapping.html)
+- [API reference](./api-references.md)
+- [Regions-Zones Mapping](./regions-zones-mapping.md)

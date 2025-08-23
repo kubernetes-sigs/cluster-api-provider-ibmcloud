@@ -1,9 +1,9 @@
 # Developer Guide
 
-- [Rapid iterative development with Tilt](/developer/tilt.html)
-- [Guide for API conversions](/developer/conversion.html)
-- [Release Process](/developer/release.html)
-- [Release Support Guidelines](/developer/release-support-guidelines.md)
-- [How to build the machine boot images](/developer/build-images.html)
-- [Modules and tools dependencies](/developer/dependencies.html)
-- [E2E testing](/developer/e2e.html)
+- [Rapid iterative development with Tilt](./tilt.md)
+- [Guide for API conversions](./conversion.md)
+- [Release Process](./release.md)
+- [Release Support Guidelines](./release-support-guidelines.md)
+- [How to build the machine boot images](./build-images.md)
+- [Modules and tools dependencies](./dependencies.md)
+- [E2E testing](./e2e.md)
