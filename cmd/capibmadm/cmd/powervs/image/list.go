@@ -31,9 +31,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 )
 
 // ListCommand powervs image list command.
@@ -57,7 +57,7 @@ func listimage(ctx context.Context) error {
 	log := logf.Log
 	log.Info("Listing PowerVS images", "service-instance-id", options.GlobalOptions.ServiceInstanceID)
 
-	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
+	accountID, err := accounts.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}
@@ -83,14 +83,14 @@ func listimage(ctx context.Context) error {
 
 	for _, image := range images.Images {
 		imageToAppend := ImgSpec{
-			ImageID:        utils.DereferencePointer(image.ImageID).(string),
-			Name:           utils.DereferencePointer(image.Name).(string),
-			Description:    utils.DereferencePointer(image.Description).(string),
-			State:          utils.DereferencePointer(image.State).(string),
-			StoragePool:    utils.DereferencePointer(image.StoragePool).(string),
-			StorageType:    utils.DereferencePointer(image.StorageType).(string),
-			CreationDate:   utils.DereferencePointer(image.CreationDate).(strfmt.DateTime),
-			LastUpdateDate: utils.DereferencePointer(image.LastUpdateDate).(strfmt.DateTime),
+			ImageID:        pointer.Dereference(image.ImageID).(string),
+			Name:           pointer.Dereference(image.Name).(string),
+			Description:    pointer.Dereference(image.Description).(string),
+			State:          pointer.Dereference(image.State).(string),
+			StoragePool:    pointer.Dereference(image.StoragePool).(string),
+			StorageType:    pointer.Dereference(image.StorageType).(string),
+			CreationDate:   pointer.Dereference(image.CreationDate).(strfmt.DateTime),
+			LastUpdateDate: pointer.Dereference(image.LastUpdateDate).(strfmt.DateTime),
 		}
 		if image.Specifications != nil {
 			imageToAppend.Architecture = image.Specifications.Architecture

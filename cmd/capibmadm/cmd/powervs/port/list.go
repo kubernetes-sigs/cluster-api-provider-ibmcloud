@@ -30,9 +30,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 )
 
 // ListCommand powervs port list command.
@@ -63,7 +63,7 @@ func listPorts(ctx context.Context, network string) error {
 	log := logf.Log
 	log.Info("Listing PowerVS ports", "service-instance-id", options.GlobalOptions.ServiceInstanceID, "network", network)
 
-	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
+	accountID, err := accounts.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}
@@ -91,12 +91,12 @@ func listPorts(ctx context.Context, network string) error {
 
 	for _, port := range portListResp.Ports {
 		portList.Items = append(portList.Items, PSpec{
-			Description: utils.DereferencePointer(port.Description).(string),
+			Description: pointer.Dereference(port.Description).(string),
 			ExternalIP:  port.ExternalIP,
-			IPAddress:   utils.DereferencePointer(port.IPAddress).(string),
-			MacAddress:  utils.DereferencePointer(port.MacAddress).(string),
-			PortID:      utils.DereferencePointer(port.PortID).(string),
-			Status:      utils.DereferencePointer(port.Status).(string),
+			IPAddress:   pointer.Dereference(port.IPAddress).(string),
+			MacAddress:  pointer.Dereference(port.MacAddress).(string),
+			PortID:      pointer.Dereference(port.PortID).(string),
+			Status:      pointer.Dereference(port.Status).(string),
 		})
 	}
 
