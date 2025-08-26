@@ -20,7 +20,6 @@ Update cluster-api version
 Update Kubernetes version
 - [ ] [go.mod](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/go.mod)
 - [ ] [Kubebuilder version](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/Makefile#L84)
-- [ ] [scripts](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/fetch_ext_bins.sh#L29)
 
 
 If Go version is bumped, update it in the following files

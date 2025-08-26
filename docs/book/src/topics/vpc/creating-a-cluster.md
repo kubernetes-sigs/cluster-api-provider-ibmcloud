@@ -5,9 +5,8 @@ following the steps below.
 
 > **Note**:
 > 1. The cluster will be deployed with [cloud controller manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
-> 2. The [template](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/templates/cluster-template.yaml) uses the experimental feature gate [clusterresourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) which will create the necessary config map, secret and roles to run the cloud controller manager. Set `EXP_CLUSTER_RESOURCE_SET` to `true`.
-> 3. To deploy a cluster using [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html), refer [here](#deploy-a-cluster-using-ibm-cloud-vpc-infrastructure-using-clusterclass). In addition to the above flags, set `CLUSTER_TOPOLOGY` environment variable to `true`. 
-> 4. The list of IBM Cloud VPC Regions and Zones can be found [here](../../reference/regions-zones-mapping.md).
+> 2. To deploy a cluster using [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html), refer [here](#deploy-a-vpc-cluster-using-clusterclass). In addition to the above flags, set `CLUSTER_TOPOLOGY` environment variable to `true`. 
+> 3. The list of IBM Cloud VPC Regions and Zones can be found [here](../../reference/regions-zones-mapping.md).
 
 
 1. Using clusterctl, render the yaml through templates and deploy the cluster
@@ -49,8 +48,8 @@ following the steps below.
     ```
 
     **Note:** Refer below for more detailed information on VPC variables.
-    - [IBMVPC_REGION](/reference/regions-zones-mapping.html)
-    - [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
+    - [IBMVPC_REGION](../../reference/regions-zones-mapping.md)
+    - [IBMVPC_ZONE](../../reference/regions-zones-mapping.md)
     - [IBMVPC_RESOURCEGROUP](https://cloud.ibm.com/docs/account?topic=account-rgs&interface=ui)
     - [IBMVPC_IMAGE_NAME](https://cloud.ibm.com/docs/vpc?topic=vpc-planning-custom-images)
     - [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=ui)
@@ -125,10 +124,10 @@ There are two following variables for controlling the volume size for the boot d
  
 **Note:** Refer below for more detailed information on VPC variables.
 - IBMVPC_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
-- [IBMVPC_REGION](/reference/regions-zones-mapping.html)
-- [IBMVPC_ZONE](/reference/regions-zones-mapping.html)
+- [IBMVPC_REGION](../../reference/regions-zones-mapping.md)
+- [IBMVPC_ZONE](../../reference/regions-zones-mapping.md)
 - IBMVPC_RESOURCEGROUP : Go to Manage > Account > Account resources > Resource groups in the IBM Cloud console to get the resource group ID.
-- IBMVPC_IMAGE_NAME : Name of the custom image. Refer [here](/topics/capibmadm/vpc/image#1-capibmadm-vpc-image-list)
+- IBMVPC_IMAGE_NAME : Name of the custom image. Refer [here](../capibmadm/vpc/image.md#1-capibmadm-vpc-image-list)
 - [IBMVPC_PROFILE](https://cloud.ibm.com/docs/vpc?topic=vpc-profiles&interface=cli)
-- IBMVPC_SSHKEY_NAME : Name of the SSH Key. Refer [here](/topics/capibmadm/vpc/key#1-capibmadm-vpc-key-list) how to get the keys.
+- IBMVPC_SSHKEY_NAME : Name of the SSH Key. Refer [here](../capibmadm/vpc/key.md#1-capibmadm-vpc-key-list) how to get the keys.
 - IBMACCOUNT_ID : Go to the Manage > Account > Account settings page in the IBM Cloud console to view your account ID and type. The account ID is a 32 character, unique account identifier. Refer [here](https://cloud.ibm.com/account/settings)

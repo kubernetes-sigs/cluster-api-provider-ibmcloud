@@ -51,7 +51,7 @@ it into a management cluster using `clusterctl`.
      ```console
       export SERVICE_ENDPOINT=us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com
      ```
-   > Note: Refer [Regions-Zones Mapping](/reference/regions-zones-mapping.html) for more information.
+   > Note: Refer [Regions-Zones Mapping](./reference/regions-zones-mapping.md) for more information.
 
 4. For enabling debug level logs for the controller, set the `LOGLEVEL` environment variable(defaults to 0).
    ```console
@@ -86,4 +86,4 @@ it into a management cluster using `clusterctl`.
     clusterctl generate cluster [name] --kubernetes-version [version] | kubectl apply -f -
     ```
 
-6. Once the management cluster is ready with the required providers up and running, proceed to provisioning the workload cluster. Check the respective sections for [VPC](/topics/vpc/creating-a-cluster.html) and [PowerVS](/topics/powervs/creating-a-cluster.html) to deploy the cluster. 
+6. Once the management cluster is ready with the required providers up and running, proceed to provisioning the workload cluster. Check the respective sections for [VPC](./topics/vpc/creating-a-cluster.md) and [PowerVS](./topics/powervs/creating-a-cluster.md) to deploy the cluster. 
