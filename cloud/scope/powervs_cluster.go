@@ -49,16 +49,16 @@ import (
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/genutil"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
 )
 
 const (
@@ -1993,7 +1993,7 @@ func (s *PowerVSClusterScope) createTransitGateway(ctx context.Context) error {
 		return fmt.Errorf("failed to proeceed with transit gateway creation as either one of VPC or PowerVS service instance reconciliation is not successful")
 	}
 
-	location, globalRouting, err := genUtil.GetTransitGatewayLocationAndRouting(s.Zone(), s.VPC().Region)
+	location, globalRouting, err := genutil.GetTransitGatewayLocationAndRouting(s.Zone(), s.VPC().Region)
 	if err != nil {
 		return fmt.Errorf("failed to get transit gateway location and routing: %w", err)
 	}
@@ -2419,7 +2419,7 @@ func (s *PowerVSClusterScope) fetchResourceGroupID() (string, error) {
 		return "", err
 	}
 
-	account, err := utils.GetAccount(auth)
+	account, err := accounts.GetAccount(auth)
 	if err != nil {
 		return "", err
 	}

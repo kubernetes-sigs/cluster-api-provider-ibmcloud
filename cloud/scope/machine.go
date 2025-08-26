@@ -40,12 +40,13 @@ import (
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch" //nolint:staticcheck
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/pagingutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
 
@@ -503,7 +504,7 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 		return true, "", nil
 	}
 
-	if err := utils.PagingHelper(f); err != nil {
+	if err := pagingutils.PagingHelper(f); err != nil {
 		return nil, err
 	}
 
@@ -950,7 +951,7 @@ func fetchKeyID(ctx context.Context, key *infrav1.IBMVPCResourceReference, m *Ma
 		return true, "", nil
 	}
 
-	if err := utils.PagingHelper(f); err != nil {
+	if err := pagingutils.PagingHelper(f); err != nil {
 		return nil, err
 	}
 
@@ -1008,7 +1009,7 @@ func fetchImageID(ctx context.Context, image *infrav1.IBMVPCResourceReference, m
 		return true, "", nil
 	}
 
-	if err := utils.PagingHelper(f); err != nil {
+	if err := pagingutils.PagingHelper(f); err != nil {
 		return nil, err
 	}
 
@@ -1094,7 +1095,7 @@ func (m *MachineScope) SetNotReady() {
 func (m *MachineScope) SetProviderID(id *string) error {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
 	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
-		accountID, err := utils.GetAccountIDWrapper()
+		accountID, err := accounts.GetAccountIDWrapper()
 		if err != nil {
 			return fmt.Errorf("failed to get cloud account id: %w", err)
 		}

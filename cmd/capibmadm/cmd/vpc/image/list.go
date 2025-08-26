@@ -27,10 +27,12 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/iam"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/cliutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/pagingutils"
 )
 
 // ListCommand vpc image list command.
@@ -59,14 +61,14 @@ func listImages(ctx context.Context, resourceGroupName string) error {
 		return err
 	}
 
-	accountID, err := pkgUtils.GetAccount(iam.GetIAMAuth())
+	accountID, err := accounts.GetAccount(iam.GetIAMAuth())
 	if err != nil {
 		return err
 	}
 
 	var resourceGroupID string
 	if resourceGroupName != "" {
-		resourceGroupID, err = utils.GetResourceGroupID(ctx, resourceGroupName, accountID)
+		resourceGroupID, err = cliutils.GetResourceGroupID(ctx, resourceGroupName, accountID)
 		if err != nil {
 			return err
 		}
@@ -96,7 +98,7 @@ func listImages(ctx context.Context, resourceGroupName string) error {
 		return true, "", nil
 	}
 
-	if err = pkgUtils.PagingHelper(f); err != nil {
+	if err = pagingutils.PagingHelper(f); err != nil {
 		return err
 	}
 
@@ -108,34 +110,34 @@ func display(imageNesList []*vpcv1.ImageCollection) error {
 	for _, imageL := range imageNesList {
 		for _, image := range imageL.Images {
 			imageToAppend := Image{
-				ID:         utils.DereferencePointer(image.ID).(string),
-				Name:       utils.DereferencePointer(image.Name).(string),
-				Status:     utils.DereferencePointer(image.Status).(string),
-				CreatedAt:  utils.DereferencePointer(image.CreatedAt).(strfmt.DateTime),
-				Visibility: utils.DereferencePointer(image.Visibility).(string),
-				Encryption: utils.DereferencePointer(image.Encryption).(string),
+				ID:         pointer.Dereference(image.ID).(string),
+				Name:       pointer.Dereference(image.Name).(string),
+				Status:     pointer.Dereference(image.Status).(string),
+				CreatedAt:  pointer.Dereference(image.CreatedAt).(strfmt.DateTime),
+				Visibility: pointer.Dereference(image.Visibility).(string),
+				Encryption: pointer.Dereference(image.Encryption).(string),
 			}
 
 			if image.File != nil {
-				imageToAppend.FileSize = utils.DereferencePointer(image.File.Size).(int64)
+				imageToAppend.FileSize = pointer.Dereference(image.File.Size).(int64)
 			}
 
 			if image.ResourceGroup != nil {
-				imageToAppend.ResourceGroupName = utils.DereferencePointer(image.ResourceGroup.Name).(string)
+				imageToAppend.ResourceGroupName = pointer.Dereference(image.ResourceGroup.Name).(string)
 			}
 
 			if image.OperatingSystem != nil {
-				imageToAppend.OperatingSystemName = utils.DereferencePointer(image.OperatingSystem.DisplayName).(string)
-				imageToAppend.OperatingSystemVersion = utils.DereferencePointer(image.OperatingSystem.Version).(string)
-				imageToAppend.Arch = utils.DereferencePointer(image.OperatingSystem.Architecture).(string)
+				imageToAppend.OperatingSystemName = pointer.Dereference(image.OperatingSystem.DisplayName).(string)
+				imageToAppend.OperatingSystemVersion = pointer.Dereference(image.OperatingSystem.Version).(string)
+				imageToAppend.Arch = pointer.Dereference(image.OperatingSystem.Architecture).(string)
 			}
 
 			if image.SourceVolume != nil {
-				imageToAppend.SourceVolumeName = utils.DereferencePointer(image.SourceVolume.Name).(string)
+				imageToAppend.SourceVolumeName = pointer.Dereference(image.SourceVolume.Name).(string)
 			}
 
 			if image.CatalogOffering != nil {
-				imageToAppend.CatalogOffering = utils.DereferencePointer(image.CatalogOffering.Managed).(bool)
+				imageToAppend.CatalogOffering = pointer.Dereference(image.CatalogOffering.Managed).(bool)
 			}
 
 			imageListToDisplay = append(imageListToDisplay, imageToAppend)

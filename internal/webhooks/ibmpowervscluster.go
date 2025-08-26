@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	genUtil "sigs.k8s.io/cluster-api-provider-ibmcloud/util"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/genutil"
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervscluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,verbs=create;update,versions=v1beta2,name=mibmpowervscluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
@@ -183,7 +183,7 @@ func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster)
 	if cluster.Spec.TransitGateway == nil {
 		return nil
 	}
-	if _, globalRouting, _ := genUtil.GetTransitGatewayLocationAndRouting(cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.GlobalRouting != nil && !*cluster.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
+	if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.GlobalRouting != nil && !*cluster.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
 		return field.Invalid(field.NewPath("spec.transitGateway.globalRouting"), cluster.Spec.TransitGateway.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
 	}
 	return nil

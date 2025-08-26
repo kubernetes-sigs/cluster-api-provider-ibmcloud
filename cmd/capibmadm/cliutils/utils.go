@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package utils contains utility and printer functions for cli.
-package utils
+// Package cliutils contains utility functions for cli.
+package cliutils
 
 import (
 	"context"
 	"fmt"
-
-	"github.com/go-openapi/strfmt"
 
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 
@@ -54,38 +52,4 @@ func GetResourceGroupID(ctx context.Context, resourceGroup string, accountID str
 
 	err = fmt.Errorf("could not retrieve resource group id for %s", resourceGroup)
 	return "", err
-}
-
-// DereferencePointer dereferences pointer.
-func DereferencePointer(value interface{}) interface{} {
-	switch v := value.(type) {
-	case *string:
-		if v != nil {
-			return *v
-		}
-		return ""
-	case *int, *int8, *int16, *int32, *int64:
-		i := value.(*int64)
-		if i != nil {
-			return *i
-		}
-		return 0
-	case *strfmt.DateTime:
-		if v != nil {
-			return *v
-		}
-		return strfmt.DateTime{}
-	case *bool:
-		if v != nil {
-			return *v
-		}
-		return false
-	case *float32, *float64:
-		f := value.(*float64)
-		if f != nil {
-			return *f
-		}
-		return 0
-	}
-	return nil
 }

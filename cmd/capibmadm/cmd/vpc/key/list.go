@@ -27,9 +27,9 @@ import (
 
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/clients/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/utils"
-	pkgUtils "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/utils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/pagingutils"
 )
 
 // ListCommand vpc key list command.
@@ -79,7 +79,7 @@ func listKeys(ctx context.Context) error {
 		return true, "", nil
 	}
 
-	if err = pkgUtils.PagingHelper(f); err != nil {
+	if err = pagingutils.PagingHelper(f); err != nil {
 		return err
 	}
 
@@ -91,16 +91,16 @@ func display(keyNesList []*vpcv1.KeyCollection) error {
 	for _, keyL := range keyNesList {
 		for _, key := range keyL.Keys {
 			keyToAppend := Key{
-				CreatedAt:   utils.DereferencePointer(key.CreatedAt).(strfmt.DateTime),
-				ID:          utils.DereferencePointer(key.ID).(string),
-				Name:        utils.DereferencePointer(key.Name).(string),
-				Type:        utils.DereferencePointer(key.Type).(string),
-				Length:      utils.DereferencePointer(key.Length).(int64),
-				FingerPrint: utils.DereferencePointer(key.Fingerprint).(string),
+				CreatedAt:   pointer.Dereference(key.CreatedAt).(strfmt.DateTime),
+				ID:          pointer.Dereference(key.ID).(string),
+				Name:        pointer.Dereference(key.Name).(string),
+				Type:        pointer.Dereference(key.Type).(string),
+				Length:      pointer.Dereference(key.Length).(int64),
+				FingerPrint: pointer.Dereference(key.Fingerprint).(string),
 			}
 
 			if key.ResourceGroup != nil {
-				keyToAppend.ResourceGroup = utils.DereferencePointer(key.ResourceGroup.Name).(string)
+				keyToAppend.ResourceGroup = pointer.Dereference(key.ResourceGroup.Name).(string)
 			}
 
 			keyListToDisplay = append(keyListToDisplay, keyToAppend)
