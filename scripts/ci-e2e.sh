@@ -180,6 +180,7 @@ main(){
     export EXP_CLUSTER_RESOURCE_SET=true
     export IBMACCOUNT_ID=${IBMACCOUNT_ID:-"7cfbd5381a434af7a09289e795840d4e"}
     export BASE64_API_KEY=$(tr -d '\n' <<<"$IBMCLOUD_API_KEY" | base64)
+    export CUSTOM_KIND_NODE_IMAGE=${CUSTOM_KIND_NODE_IMAGE:-}
     # Setting controller loglevel to allow debug logs from the VPC/PowerVS client
     export LOGLEVEL=5
 

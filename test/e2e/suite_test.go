@@ -44,9 +44,10 @@ import (
 )
 
 const (
-	KubernetesVersion = "KUBERNETES_VERSION"
-	CNIPath           = "CNI"
-	CNIResources      = "CNI_RESOURCES"
+	KubernetesVersion   = "KUBERNETES_VERSION"
+	CNIPath             = "CNI"
+	CNIResources        = "CNI_RESOURCES"
+	CustomKindNodeImage = "CUSTOM_KIND_NODE_IMAGE"
 )
 
 // Test suite flags.
@@ -192,13 +193,22 @@ func createClusterctlLocalRepository(config *clusterctl.E2EConfig, repositoryFol
 }
 
 func setupBootstrapCluster(config *clusterctl.E2EConfig, scheme *runtime.Scheme, useExistingCluster bool) (bootstrap.ClusterProvider, framework.ClusterProxy) {
-	var clusterProvider bootstrap.ClusterProvider
-	kubeconfigPath := ""
+	var (
+		clusterProvider bootstrap.ClusterProvider
+		kubeconfigPath  string
+	)
+	input := bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
+		Name:   config.ManagementClusterName,
+		Images: config.Images,
+	}
+
+	customImage := config.GetVariableOrEmpty(CustomKindNodeImage)
+	if customImage != "" {
+		input.CustomNodeImage = customImage
+	}
+
 	if !useExistingCluster {
-		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(context.TODO(), bootstrap.CreateKindBootstrapClusterAndLoadImagesInput{
-			Name:   config.ManagementClusterName,
-			Images: config.Images,
-		})
+		clusterProvider = bootstrap.CreateKindBootstrapClusterAndLoadImages(context.TODO(), input)
 		Expect(clusterProvider).ToNot(BeNil(), "Failed to create a bootstrap cluster")
 
 		kubeconfigPath = clusterProvider.GetKubeconfigPath()
