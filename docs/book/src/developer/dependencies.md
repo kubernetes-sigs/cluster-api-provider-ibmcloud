@@ -10,12 +10,12 @@
 - ##### K8s Packages
 | Package | Module name | Used by |
 | ------- | ----------- | ------- |
-| api | [k8s.io/api](https://k8s.io/api) | [go.mod][go.mod1] |
-| apiextensions-apiserver | [k8s.io/apiextensions-apiserver](https://k8s.io/apiextensions-apiserver) | [go.mod][go.mod1] |
-| apimachinery | [k8s.io/apimachinery](https://k8s.io/apimachinery) | [go.mod][go.mod1] |
-| cli-runtime | [k8s.io/cli-runtime](https://k8s.io/cli-runtime) | [go.mod][go.mod1] |
-| client-go | [k8s.io/client-go](https://k8s.io/client-go) | [go.mod][go.mod1] |
-| utils | [k8s.io/utils](https://k8s.io/utils) | [go.mod][go.mod1] |
+| api | [api](https://github.com/kubernetes/api) | [go.mod][go.mod1] |
+| apiextensions-apiserver | [apiextensions-apiserver](https://github.com/kubernetes/apiextensions-apiserver) | [go.mod][go.mod1] |
+| apimachinery | [apimachinery](https://github.com/kubernetes/apimachinery) | [go.mod][go.mod1] |
+| cli-runtime | [cli-runtime](https://github.com/kubernetes/cli-runtime) | [go.mod][go.mod1] |
+| client-go | [client-go](https://github.com/kubernetes/client-go) | [go.mod][go.mod1] |
+| utils | [utils](https://github.com/kubernetes/utils) | [go.mod][go.mod1] |
 | controller-runtime | [sigs.k8s.io/controller-runtime](https://sigs.k8s.io/controller-runtime) | [go.mod][go.mod1] |
 | controller-runtime/tools/setup-envtest | [sigs.k8s.io/controller-runtime/tools/setup-envtest](https://sigs.k8s.io/controller-runtime/tools/setup-envtest) | [hack/tools/go.mod][go.mod2] |
 | controller-tools | [sigs.k8s.io/controller-tools](https://sigs.k8s.io/controller-tools) | [hack/tools/go.mod][go.mod2] |
@@ -49,8 +49,8 @@
 #### Other Tools
 | Package | Used by | Source |
 | --- | ----------- | ------ |
-| kind | [ensure-kind.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/ensure-kind.sh#L24) | [kind](https://github.com/kubernetes-sigs/kind) |
-| kubebuilder-tools | [fetch_ext_bins.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/fetch_ext_bins.sh#L29) <br/> [Makefile](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/Makefile#L72) | [kubebuilder-tools](https://storage.googleapis.com/kubebuilder-tools) |
+| kind | [ensure-kind.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/ensure-kind.sh) | [kind](https://github.com/kubernetes-sigs/kind) |
+| kubebuilder | [Makefile](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/Makefile) | [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) |
 
 [go.mod1]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/go.mod
 [go.mod2]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/tools/go.mod

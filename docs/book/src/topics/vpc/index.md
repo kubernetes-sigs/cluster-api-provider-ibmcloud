@@ -1,6 +1,6 @@
 # VPC Cluster
 
 ## Contents
-- [Prerequisites](/topics/vpc/prerequisites.html)
-- [Uploading an image](/topics/vpc/uploading-an-image.html)
-- [Creating a cluster](/topics/vpc/creating-a-cluster.html)
+- [Prerequisites](../vpc/prerequisites.md)
+- [Uploading an image](../vpc/uploading-an-image.md)
+- [Creating a cluster](../vpc/creating-a-cluster.md)

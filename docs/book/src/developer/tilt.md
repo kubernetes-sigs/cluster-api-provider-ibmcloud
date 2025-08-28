@@ -97,11 +97,11 @@ extra_args:
 ---
 ## Different flavors of deploying workload clusters using CAPIBM.
 
-> **Note:** Currently, both [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) and [ClusterResourceset](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-resource-set.html) are experimental features. By default, the workload cluster is deployed using the external Cloud Controller Manager (CCM).
+> **Note:** Currently, [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) is an experimental features. By default, the workload cluster is deployed using the external Cloud Controller Manager (CCM).
 
 ### 1.  Configuration to deploy workload cluster from ClusterClass template
 
-To deploy workload cluster with [clusterclass-template](/topics/powervs/clusterclass-cluster.html), enable the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
+To deploy workload cluster with [clusterclass-template](../topics/powervs/creating-a-cluster.md#deploy-a-powervs-cluster-with-cluster-class), enable the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
 
 ```yaml
 default_registry: "localhost:5001"
@@ -183,7 +183,7 @@ Kind cluster becomes a management cluster after this point, check the pods runni
 
 ## Create workload clusters
 
-To provision your workload cluster, check the `Creating a cluster` section for [VPC](/topics/vpc/creating-a-cluster.html) and [PowerVS](/topics/powervs/creating-a-cluster.html). 
+To provision your workload cluster, check the `Creating a cluster` section for [VPC](../topics/vpc/creating-a-cluster.md) and [PowerVS](../topics/powervs/creating-a-cluster.md). 
 
 After deploying it, check the tilt logs and wait for the clusters to be created.
 

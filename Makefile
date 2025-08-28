@@ -515,7 +515,7 @@ define checkdiff
 	git --no-pager diff --name-only FETCH_HEAD
 endef
 
-ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions go-version
+ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions go-version yamllint linkcheck
 
 .PHONY: verify
 verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
@@ -583,9 +583,15 @@ else
 endif
 
 
-.PHONY: yamllint
-yamllint:
-	@docker run --rm $$(tty -s && echo "-it" || echo) -v $(PWD):/data cytopia/yamllint:latest /data --config-file /data/.yamllint --no-warnings
+CURR_DIR := $(shell pwd)
+.PHONY: verify-yamllint
+verify-yamllint:
+	@docker run -v $(CURR_DIR):/data cytopia/yamllint:latest /data --config-file /data/.yamllint --no-warnings
+
+MD_FILES := $(shell find . -iname "*.md")
+.PHONY: verify-linkcheck
+verify-linkcheck:
+	@docker run --init -w /input -v $(CURR_DIR):/input ghcr.io/tcort/markdown-link-check:3.12 -q -p $(MD_FILES)
 
 ## --------------------------------------
 ## Cleanup / Verification
