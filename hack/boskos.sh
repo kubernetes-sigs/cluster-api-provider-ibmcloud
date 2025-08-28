@@ -20,7 +20,7 @@ set -o pipefail
 
 REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 
-USER="cluster-api-provider-ibmcloud"
+USER=${USER:-"cluster-api-provider-ibmcloud"}
 
 release_account(){
     url="http://${BOSKOS_HOST}/release?name=${BOSKOS_RESOURCE_NAME}&dest=dirty&owner=${USER}"
@@ -43,12 +43,13 @@ checkout_account(){
 
     if [[ ${status_code} == 200 ]]; then
         export BOSKOS_RESOURCE_NAME=$(jq -r '.name' < output.json)
-        export IBMCLOUD_API_KEY=$(jq -r '.userdata["api-key"]' < output.json)
-        export BOSKOS_RESOURCE_GROUP=$(jq -r '.userdata["resource-group"]' < output.json)
         export BOSKOS_REGION=$(jq -r '.userdata["region"]' < output.json)
-        if [[ ${resource_type} == "powervs-service" ]]; then
-            export BOSKOS_RESOURCE_ID=$(jq -r '.userdata["service-instance-id"]' < output.json)
+        api_key=$(jq -er '.userdata["api-key"]' < output.json 2>/dev/null) && export IBMCLOUD_API_KEY="$api_key"
+        if [[  ${resource_type} =~ "powervs" ]]; then
+            export BOSKOS_SERVICE_INSTANCE_ID=$(jq -r '.userdata["service-instance-id"]' < output.json)
             export BOSKOS_ZONE=$(jq -r '.userdata["zone"]' < output.json)
+        elif [[  ${resource_type} =~ "vpc" ]]; then
+            export BOSKOS_RESOURCE_GROUP=$(jq -r '.userdata["resource-group"]' < output.json)
         fi
         rm -rf output.json
     else
