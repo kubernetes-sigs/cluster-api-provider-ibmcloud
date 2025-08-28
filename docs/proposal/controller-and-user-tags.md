@@ -19,12 +19,20 @@ Though its working as expected and fulfills the purpose, we see some drawbacks.
 
 ## Proposal
 This proposal presents adding two kinds of tags to the resources created by controller
-1. Controller tag
+1. Controller tags
 2. User tags
 
 
-### Controller tag
-A tag of format`sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>: owned` will be added by the controller to newly created cloud resources marking the resource as created by controller. During deletion phase the system will look for the presence of the tag inorder to proceed with deletion or to keep as it is.
+### Controller tags
+ Tags of format`powervs.cluster.x-k8s.io/owner: <cluster-name>` and `powervs.cluster.x-k8s.io/cluster-uuid: UUID` will be added by the controller to newly created cloud resources marking the resource as created by controller. During deletion phase the system will look for the presence of both the 
+ tags and match inorder to proceed with deletion or to keep as it is. UUID in tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` is cluster object ID
+ We will be adding two tags. Below are the cluster creation scenarios.
+ #### Creating a new cluster with infrastructure creation 
+ - When resources will be created for new cluster in the cloud both the tags will be attached.
+ #### Creating a new cluster with existing cluster
+ - When cluster is created using existing resources, no tags will be attached.
+ #### Creating a new cluster with infra creation and resources already exist with same clusterName.
+ - So when new cluster creation is triggered with creating infrastructure. Since the resources are already present with same name in the cloud. It will lead to security issues Since there is a possibilty the existing resources in the cloud belong to different user. So to handle this case this tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` is added. Before creating the resource in the cloud, first will check this tag is matching `powervs.cluster.x-k8s.io/owner: <cluster-name>` since clusterName is same but this tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` won't match. So will error out to user that resources with similar name already exist, he has to provide different name.
 
 
 #### Following resources will be getting tagged 
@@ -71,13 +79,13 @@ type Tag struct {
 
 
 ### Cluster creation workflow
- 1. The controller will attach the `sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>: owned` tag to the created resources.
+ 1. The controller will attach the `powervs.cluster.x-k8s.io/owner: <cluster-name>` and `powervs.cluster.x-k8s.io/cluster-uuid: UUID` tag to the created resources.
  2. If user tags are set in the spec, they will be attached to the resources. 
-![add-tag-workflow.png](../images/add-tag-workflow.png)
+![add-tag-workflow.svg](../images/add-tag-workflow.svg)
 
 
 ### Cluster Deletion workflow
-The controller will only delete the resources which are having this tag `sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>: owned` attched to it.
+The controller will only delete the resources which are having tags `powervs.cluster.x-k8s.io/owner: <cluster-name>` and `powervs.cluster.x-k8s.io/cluster-uuid: UUID` attached to it.
 ![delete-tag-workflow.png](../images/delete-tag-workflow.png)
 
 #### TransitGatway Deletion workflow
