@@ -34,6 +34,7 @@ import (
 	_ "sigs.k8s.io/cluster-api/hack/tools/conversion-verifier"
 	_ "sigs.k8s.io/cluster-api/hack/tools/mdbook/embed"
 	_ "sigs.k8s.io/cluster-api/hack/tools/mdbook/releaselink"
+	_ "sigs.k8s.io/cluster-api/hack/tools/mdbook/tabulate"
 	_ "sigs.k8s.io/controller-runtime/tools/setup-envtest"
 	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 	_ "sigs.k8s.io/kustomize/kustomize/v5"
