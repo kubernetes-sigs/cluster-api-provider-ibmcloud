@@ -46,7 +46,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 8. [COS Instance](https://www.ibm.com/products/cloud-object-storage)
 
 #### Note 
-- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `sigs.k8s.io/cluster-api-provider-ibmcloud/cluster/<cluster-name>/TG: vpcconnection, powervsconnection` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
+- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `powervs.cluster.x-k8s.io/owner/<cluster-name>/TG: vpcconnection, powervsconnection` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
 
 - To handle deletion DHCP server, have to tag DHCP Network. DHCP server doesn't support tagging.
 
@@ -81,6 +81,7 @@ type Tag struct {
 ### Cluster creation workflow
  1. The controller will attach the `powervs.cluster.x-k8s.io/owner: <cluster-name>` and `powervs.cluster.x-k8s.io/cluster-uuid: UUID` tag to the created resources.
  2. If user tags are set in the spec, they will be attached to the resources. 
+ In diagram resources represents all the cloud resources that will be created during cluster creation.For all the resources similar follow will be followed.
 ![add-tag-workflow.svg](../images/add-tag-workflow.svg)
 
 
