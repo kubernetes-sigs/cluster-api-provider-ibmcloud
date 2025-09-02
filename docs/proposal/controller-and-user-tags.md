@@ -24,15 +24,16 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
 
 ### Controller tags
- Tags of format`powervs.cluster.x-k8s.io/owner: <cluster-name>` and `powervs.cluster.x-k8s.io/cluster-uuid: UUID` will be added by the controller to newly created cloud resources marking the resource as created by controller. During deletion phase the system will look for the presence of both the 
+ Tags of format`powervs.cluster.x-k8s.io/owner: <cluster-name>` and `powervs.cluster.x-k8s.io/cluster-uuid: UUID` will be added by the controller to newly created cloud resources marking the resource as created by controller. When cluster creation is triggered with clustername "test-cluster", resources "test-cluster-serviceInstance, test-cluster-VPC, test-cluster-loadbalancer, test-cluster-TransitGateway, test-cluster-COSInstance" are created
+ When new cluster creation is triggered, if the resources are already present with same name in the cloud. It will lead to security issues because there is a possibilty the existing resources in the cloud belong to different user. So to handle this scenario this tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` is added. During deletion phase the system will look for the presence of both the 
  tags and match inorder to proceed with deletion or to keep as it is. UUID in tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` is cluster object ID
  We will be adding two tags. Below are the cluster creation scenarios.
- #### Creating a new cluster with infrastructure creation 
+ #### Creating a new cluster 
  - When resources will be created for new cluster in the cloud both the tags will be attached.
- #### Creating a new cluster with existing cluster
+ #### Creating a new cluster with reusing pre-created resources
  - When cluster is created using existing resources, no tags will be attached.
- #### Creating a new cluster with infra creation and resources already exist with same clusterName.
- - So when new cluster creation is triggered with creating infrastructure. Since the resources are already present with same name in the cloud. It will lead to security issues Since there is a possibilty the existing resources in the cloud belong to different user. So to handle this case this tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` is added. Before creating the resource in the cloud, first will check this tag is matching `powervs.cluster.x-k8s.io/owner: <cluster-name>` since clusterName is same but this tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` won't match. So will error out to user that resources with similar name already exist, he has to provide different name.
+ #### Creating a new cluster with reusing pre-created resources from old cluster.
+ - When creating the resources in the cloud, first will check this tag is matching `powervs.cluster.x-k8s.io/owner: <cluster-name>` since resources already exists with same name but this tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` won't match. So will error out to user that resources with similar name already exist, he has to provide different name to cluster.
 
 
 #### Following resources will be getting tagged 
