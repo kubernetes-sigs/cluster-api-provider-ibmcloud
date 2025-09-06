@@ -34,8 +34,9 @@ standard [backport policy](https://github.com/kubernetes-sigs/cluster-api/blob/m
 
 | Minor Release | API Version | Supported Until                                    |
 |---------------|-------------|----------------------------------------------------|
+| v0.12.x       | **v1beta2** | when v0.14.0 will be released                      |
 | v0.11.x       | **v1beta2** | when v0.13.0 will be released                      |
-| v0.10.x       | **v1beta2** | when v0.12.0 will be released                      |
+| v0.10.x       | **v1beta2** | EOL since 2025-09-04 - v0.12.0 release date        |
 | v0.9.x        | **v1beta2** | EOL since 2025-05-13 - v0.11.0 release date        |
 | v0.8.x        | **v1beta2** | EOL since 2025-02-12 - v0.10.0 release date        |
 | v0.7.x        | **v1beta2** | EOL since 2024-11-22 - v0.9.0 release date         |
