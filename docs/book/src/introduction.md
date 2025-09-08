@@ -15,8 +15,9 @@ previous cluster managers such as [kops](https://github.com/kubernetes/kops) and
 
 <h1>Cluster API Provider IBM Cloud documentation versions</h1>
 
-This book documents Cluster API Provider IBM Cloud v0.11. For other versions please see the corresponding documentation:
+This book documents Cluster API Provider IBM Cloud v0.12. For other versions please see the corresponding documentation:
 * [main.cluster-api-ibmcloud.sigs.k8s.io](https://main.cluster-api-ibmcloud.sigs.k8s.io)
+* [release-0-12.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-12.cluster-api-ibmcloud.sigs.k8s.io/)
 * [release-0-11.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-11.cluster-api-ibmcloud.sigs.k8s.io/)
 * [release-0-10.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-10.cluster-api-ibmcloud.sigs.k8s.io/)
 * [release-0-9.cluster-api-ibmcloud.sigs.k8s.io](https://release-0-9.cluster-api-ibmcloud.sigs.k8s.io/)
