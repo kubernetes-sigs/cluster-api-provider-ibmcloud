@@ -6,7 +6,7 @@ go 1.23.2
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.23.3
 	github.com/onsi/gomega => github.com/onsi/gomega v1.36.3
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.3
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.6
 )
 
 require (
@@ -40,8 +40,8 @@ require (
 	k8s.io/component-base v0.32.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	sigs.k8s.io/cluster-api v1.10.3
-	sigs.k8s.io/cluster-api/test v1.10.3
+	sigs.k8s.io/cluster-api v1.10.6
+	sigs.k8s.io/cluster-api/test v1.10.6
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/yaml v1.4.0
 )
@@ -98,7 +98,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
