@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.23.0
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.3
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.10.6
 
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
@@ -15,7 +15,7 @@ require (
 	gotest.tools/gotestsum v1.12.2
 	k8s.io/code-generator v0.32.3
 	k8s.io/release v0.16.9
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250613143655-9beb81e3a3ef
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20250825160708-c37851897736
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387
 	sigs.k8s.io/controller-tools v0.17.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.5.0
@@ -195,7 +195,7 @@ require (
 	github.com/go-toolsmith/astp v1.1.0 // indirect
 	github.com/go-toolsmith/strparse v1.1.0 // indirect
 	github.com/go-toolsmith/typep v1.1.0 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
 	github.com/goark/errs v1.3.2 // indirect
 	github.com/goark/go-cvss v1.6.6 // indirect
