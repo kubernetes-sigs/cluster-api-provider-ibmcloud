@@ -199,6 +199,9 @@ type IBMVPCMachineV1Beta2Status struct {
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// AdditionalVolumeIDs is a list of Volume IDs as per IBMCloud
+	// +optional
+	AdditionalVolumeIDs []string `json:"additionalVolumeIDs,omitempty"`
 }
 
 // +kubebuilder:object:root=true

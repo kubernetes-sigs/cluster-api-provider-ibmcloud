@@ -690,6 +690,12 @@ spec:
                 description: V1beta2 groups all the fields that will be added or modified
                   in IBMVPCMachine's status with the V1Beta2 version.
                 properties:
+                  additionalVolumeIDs:
+                    description: AdditionalVolumeIDs is a list of Volume IDs as per
+                      IBMCloud
+                    items:
+                      type: string
+                    type: array
                   conditions:
                     description: Conditions represents the observations of a IBMVPCMachine's
                       current state.
