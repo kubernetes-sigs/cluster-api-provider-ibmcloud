@@ -55,7 +55,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 - To handle deletion DHCP server, have to tag DHCP Network. DHCP server doesn't support tagging.
 
 ### User tags
-User can add tags to resources when creating PowerVS cluster.
+User can add tags to resources when creating PowerVS cluster. Incase of already existing resources, will just attach the user tags and during deletion user tags will be deleted as well.
 
 #### Proposed API changes
 UserTags field will contain list of tags that will be attached to resources.
