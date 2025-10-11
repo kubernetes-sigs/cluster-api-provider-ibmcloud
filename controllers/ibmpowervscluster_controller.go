@@ -201,8 +201,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	var errList []error
 	// receive return values from the channel and decide the requeue
 	for val := range ch {
-		//nolint:staticcheck
-		if val.Requeue {
+		if val.RequeueAfter > 0 {
 			requeue = true
 		}
 		if val.error != nil {
@@ -323,7 +322,7 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 		return
 	} else if requeue {
 		log.Info("PowerVS service instance creation is pending, requeuing")
-		ch <- reconcileResult{reconcile.Result{Requeue: true}, nil}
+		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
 		return
 	}
 	powerVSCluster.updateCondition(clusterv1beta1.Condition{
@@ -399,7 +398,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 		return
 	} else if requeue {
 		log.Info("VPC creation is pending, requeuing")
-		ch <- reconcileResult{reconcile.Result{Requeue: true}, nil}
+		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
 		return
 	}
 	powerVSCluster.updateCondition(clusterv1beta1.Condition{
@@ -432,7 +431,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 		return
 	} else if requeue {
 		log.Info("VPC subnet creation is pending, requeuing")
-		ch <- reconcileResult{reconcile.Result{Requeue: true}, nil}
+		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
 		return
 	}
 	powerVSCluster.updateCondition(clusterv1beta1.Condition{

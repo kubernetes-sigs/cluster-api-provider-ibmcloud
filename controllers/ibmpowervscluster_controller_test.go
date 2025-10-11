@@ -1370,7 +1370,7 @@ func TestReconcileVPCResources(t *testing.T) {
 			},
 			reconcileResult: reconcileResult{
 				Result: reconcile.Result{
-					Requeue: true,
+					RequeueAfter: 20 * time.Second,
 				},
 			},
 		},
@@ -1443,7 +1443,7 @@ func TestReconcileVPCResources(t *testing.T) {
 			},
 			reconcileResult: reconcileResult{
 				Result: reconcile.Result{
-					Requeue: true,
+					RequeueAfter: 20 * time.Second,
 				},
 			},
 			conditions: clusterv1beta1.Conditions{
@@ -1688,7 +1688,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			},
 			reconcileResult: reconcileResult{
 				Result: reconcile.Result{
-					Requeue: true,
+					RequeueAfter: 20 * time.Second,
 				},
 			},
 		},
