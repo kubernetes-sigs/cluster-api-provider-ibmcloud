@@ -19,7 +19,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.24.0
 	github.com/go-logr/logr v1.4.3
-	github.com/go-openapi/strfmt v0.24.0
+	github.com/go-openapi/strfmt v0.25.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.25.1
@@ -57,7 +57,6 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.39.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -84,7 +83,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/analysis v0.23.0 // indirect
-	github.com/go-openapi/errors v0.22.3 // indirect
+	github.com/go-openapi/errors v0.22.4 // indirect
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/loads v0.22.0 // indirect
@@ -150,7 +149,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
-	go.mongodb.org/mongo-driver v1.17.4 // indirect
+	go.mongodb.org/mongo-driver v1.17.6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
