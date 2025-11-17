@@ -196,6 +196,21 @@ linters:
           - gocritic
         path: _test\.go
         text: 'deferInLoop: Possible resource leak, ''defer'' is called in the ''for'' loop'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*(i|s|m)\.IBMPowerVSCluster.Spec.ServiceInstanceID is deprecated: use ServiceInstance instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*(i|s|m)\.IBMPowerVSImage.Spec.ServiceInstanceID is deprecated: use ServiceInstance instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*(i|s|m|params)\.IBMPowerVSMachine.Spec.ServiceInstanceID is deprecated: use ServiceInstance instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: spec.ServiceInstanceID is deprecated: use ServiceInstance instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: endpoints.(FetchRCEndpoint|FetchPVSEndpoint) is deprecated: Use FetchEndpoints instead.'
     paths:
       - zz_generated.*\.go$
       - third_party$
