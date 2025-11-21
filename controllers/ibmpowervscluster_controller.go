@@ -746,7 +746,7 @@ func (c *clusterDescendants) filterOwnedDescendants(cluster *infrav1.IBMPowerVSC
 			return nil //nolint:nilerr // We don't want to exit the EachListItem loop, just continue
 		}
 
-		if util.IsOwnedByObject(acc, cluster) {
+		if util.IsOwnedByObject(acc, cluster, cluster.GroupVersionKind().GroupKind()) {
 			ownedDescendants = append(ownedDescendants, obj)
 		}
 

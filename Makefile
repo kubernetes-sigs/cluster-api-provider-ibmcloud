@@ -84,7 +84,7 @@ RELEASE_NOTES_DIR := CHANGELOG
 OUTPUT_TYPE ?= type=registry
 
 # Go
-GO_VERSION ?=1.24.9
+GO_VERSION ?=1.24.10
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # Trivy
@@ -105,7 +105,7 @@ PULL_POLICY ?= Always
 # Set build time variables including version details
 LDFLAGS := $(shell ./hack/version.sh)
 
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.33.0
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.34.0
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
