@@ -84,7 +84,6 @@ enable_providers:
 - kubeadm-control-plane
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  EXP_CLUSTER_RESOURCE_SET: "true"
 ```
 
 Add following extra_args to log PowerVS REST API Requests/Responses
@@ -101,7 +100,7 @@ extra_args:
 
 ### 1.  Configuration to deploy workload cluster from ClusterClass template
 
-To deploy workload cluster with [clusterclass-template](../topics/powervs/creating-a-cluster.md#deploy-a-powervs-cluster-with-cluster-class), enable the feature gates `EXP_CLUSTER_RESOURCE_SET` and `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
+To deploy workload cluster with [clusterclass-template](../topics/powervs/creating-a-cluster.md#deploy-a-powervs-cluster-with-cluster-class), enable the feature gate `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
 
 ```yaml
 default_registry: "localhost:5001"
@@ -113,7 +112,6 @@ enable_providers:
 - kubeadm-control-plane
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  EXP_CLUSTER_RESOURCE_SET: "true"
   CLUSTER_TOPOLOGY: "true"
 ```
 
@@ -153,7 +151,6 @@ enable_providers:
   - kubeadm-control-plane
 kustomize_substitutions:
   IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  EXP_CLUSTER_RESOURCE_SET: "true"
 extra_args:
    core:
       - "--logging-format=json"
