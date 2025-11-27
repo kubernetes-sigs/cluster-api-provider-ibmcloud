@@ -396,6 +396,14 @@ metadata:
 spec:
   template:
     spec:
+      additionalVolumes:
+      - name: additional-volume-1
+        profile: general-purpose
+        sizeGiB: 50
+      - iops: 100
+        name: additional-volume-2
+        profile: custom
+        sizeGiB: 50
       bootVolume:
         sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
       image:

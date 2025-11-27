@@ -1162,3 +1162,80 @@ func (m *MachineScope) APIServerPort() int32 {
 	}
 	return infrav1.DefaultAPIServerPort
 }
+
+// GetVolumeAttachments returns the volume attachments for the instance.
+func (m *MachineScope) GetVolumeAttachments() ([]vpcv1.VolumeAttachment, error) {
+	options := vpcv1.ListInstanceVolumeAttachmentsOptions{
+		InstanceID: &m.IBMVPCMachine.Status.InstanceID,
+	}
+	result, _, err := m.IBMVPCClient.GetVolumeAttachments(&options)
+	if err != nil {
+		return nil, fmt.Errorf("error while getting volume attachments: %w", err)
+	}
+	return result.VolumeAttachments, nil
+}
+
+// GetVolumeState returns the volume's state.
+func (m *MachineScope) GetVolumeState(volumeID string) (string, error) {
+	options := vpcv1.GetVolumeOptions{
+		ID: &volumeID,
+	}
+	result, _, err := m.IBMVPCClient.GetVolume(&options)
+	if err != nil {
+		return "", fmt.Errorf("could not fetch volume status: %w", err)
+	}
+	return *result.Status, err
+}
+
+// CreateVolume creates a new Volume and attaches it to the instance.
+func (m *MachineScope) CreateVolume(vpcVolume *infrav1.VPCVolume) (string, error) {
+	volumeOptions := vpcv1.CreateVolumeOptions{}
+	var resourceGroupID string
+	if m.IBMVPCCluster.Status.ResourceGroup != nil {
+		resourceGroupID = m.IBMVPCCluster.Status.ResourceGroup.ID
+	} else {
+		resourceGroupID = m.IBMVPCCluster.Spec.ResourceGroup
+	}
+	// TODO: EncryptionKeyCRN is not supported for now, the field is omitted from the manifest
+	volumeOptions.VolumePrototype = &vpcv1.VolumePrototype{
+		ResourceGroup: &vpcv1.ResourceGroupIdentityByID{
+			ID: &resourceGroupID,
+		},
+		Profile: &vpcv1.VolumeProfileIdentityByName{
+			Name: &vpcVolume.Profile,
+		},
+		Zone: &vpcv1.ZoneIdentity{
+			Name: &m.IBMVPCMachine.Spec.Zone,
+		},
+		Capacity: &vpcVolume.SizeGiB,
+	}
+
+	if vpcVolume.Profile == "custom" {
+		volumeOptions.VolumePrototype.(*vpcv1.VolumePrototype).Iops = &vpcVolume.Iops
+	}
+
+	volumeResult, _, err := m.IBMVPCClient.CreateVolume(&volumeOptions)
+	if err != nil {
+		return "", fmt.Errorf("error while creating volume: %w", err)
+	}
+
+	return *volumeResult.ID, nil
+}
+
+// AttachVolume attaches the given volume to the instance.
+func (m *MachineScope) AttachVolume(deleteOnInstanceDelete bool, volumeID, volumeName string) error {
+	attachmentOptions := vpcv1.CreateInstanceVolumeAttachmentOptions{
+		InstanceID: &m.IBMVPCMachine.Status.InstanceID,
+		Volume: &vpcv1.VolumeAttachmentPrototypeVolume{
+			ID: &volumeID,
+		},
+		DeleteVolumeOnInstanceDelete: &deleteOnInstanceDelete,
+		Name:                         &volumeName,
+	}
+
+	_, _, err := m.IBMVPCClient.AttachVolumeToInstance(&attachmentOptions)
+	if err != nil {
+		err = fmt.Errorf("error while attaching volume to instance: %w", err)
+	}
+	return err
+}

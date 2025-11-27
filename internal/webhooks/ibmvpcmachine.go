@@ -45,8 +45,10 @@ func (r *IBMVPCMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // IBMVPCMachine implements a validation and defaulting webhook for IBMVPCMachine.
 type IBMVPCMachine struct{}
 
-var _ webhook.CustomDefaulter = &IBMVPCMachine{}
-var _ webhook.CustomValidator = &IBMVPCMachine{}
+var (
+	_ webhook.CustomDefaulter = &IBMVPCMachine{}
+	_ webhook.CustomValidator = &IBMVPCMachine{}
+)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (r *IBMVPCMachine) Default(_ context.Context, obj runtime.Object) error {
@@ -65,7 +67,7 @@ func (r *IBMVPCMachine) ValidateCreate(_ context.Context, obj runtime.Object) (a
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
 	}
 	var allErrs field.ErrorList
-	allErrs = append(allErrs, validateIBMVPCMachineBootVolume(objValue.Spec)...)
+	allErrs = append(allErrs, validateIBMVPCMachineVolume(objValue.Spec)...)
 	return nil, aggregateObjErrors(objValue.GroupVersionKind().GroupKind(), objValue.Name, allErrs)
 }
 
@@ -79,6 +81,6 @@ func (r *IBMVPCMachine) ValidateDelete(_ context.Context, _ runtime.Object) (adm
 	return nil, nil
 }
 
-func validateIBMVPCMachineBootVolume(spec infrav1.IBMVPCMachineSpec) field.ErrorList {
-	return validateBootVolume(spec)
+func validateIBMVPCMachineVolume(spec infrav1.IBMVPCMachineSpec) field.ErrorList {
+	return validateVolumes(spec)
 }

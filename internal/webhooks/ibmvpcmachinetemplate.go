@@ -45,8 +45,10 @@ func (r *IBMVPCMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error 
 // IBMVPCMachineTemplate implements a validation and defaulting webhook for IBMVPCMachineTemplate.
 type IBMVPCMachineTemplate struct{}
 
-var _ webhook.CustomDefaulter = &IBMVPCMachineTemplate{}
-var _ webhook.CustomValidator = &IBMVPCMachineTemplate{}
+var (
+	_ webhook.CustomDefaulter = &IBMVPCMachineTemplate{}
+	_ webhook.CustomValidator = &IBMVPCMachineTemplate{}
+)
 
 // Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
 func (r *IBMVPCMachineTemplate) Default(_ context.Context, obj runtime.Object) error {
@@ -65,7 +67,7 @@ func (r *IBMVPCMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Ob
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachineTemplate but got a %T", obj))
 	}
 	var allErrs field.ErrorList
-	allErrs = append(allErrs, validateIBMVPCMachineBootVolume(objValue.Spec.Template.Spec)...)
+	allErrs = append(allErrs, validateIBMVPCMachineVolume(objValue.Spec.Template.Spec)...)
 
 	return nil, aggregateObjErrors(objValue.GroupVersionKind().GroupKind(), objValue.Name, allErrs)
 }
