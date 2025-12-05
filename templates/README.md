@@ -1,9 +1,6 @@
 Render the template via clusterctl
 ==================================
 
-> **Note:**
-> Set `EXP_CLUSTER_RESOURCE_SET` to `true` as the cluster will be deployed with external cloud provider for both VPC and PowerVS, which will create the resources to run the cloud controller manager.
-
 ## VPC
 
 ```
