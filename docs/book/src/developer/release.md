@@ -35,14 +35,14 @@
     ```
 - Wait for the Google Cloudbuild to finish, which is triggered once the tag is created.
   - The status of the build jobs can be tracked from: [https://prow.k8s.io/?job=post-cluster-api-provider-ibmcloud-push-images](https://prow.k8s.io/?job=post-cluster-api-provider-ibmcloud-push-images)
-  - The built images are available here: [https://console.cloud.google.com/gcr/images/k8s-staging-capi-ibmcloud](https://console.cloud.google.com/gcr/images/k8s-staging-capi-ibmcloud)
+  - The built images are available here: [https://console.cloud.google.com/artifacts/docker/k8s-staging-capi-ibmcloud/us/gcr.io](https://console.cloud.google.com/artifacts/docker/k8s-staging-capi-ibmcloud/us/gcr.io)
 - Create a draft release with release notes for the created tag.
   - Use the `make release-notes` target to generate release notes. (Refer topic - [Prepare release notes](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/docs/book/src/developer/release.md#prepare-release-notes))
   - Update the controller image version towards the bottom of the release document.
 - Perform the [image promotion process](https://github.com/kubernetes/k8s.io/tree/main/registry.k8s.io#image-promoter):
   - Clone and pull down the latest from [kubernetes/k8s.io](https://github.com/kubernetes/k8s.io)
   - Create a new branch in your fork of `kubernetes/k8s.io`. 
-  - The staging repository is [here](https://console.cloud.google.com/gcr/images/k8s-staging-capi-ibmcloud/GLOBAL).
+  - The staging repository is [here](https://console.cloud.google.com/artifacts/docker/k8s-staging-capi-ibmcloud/us/gcr.io).
   - Once image is present in the above staging repository, find the sha256 tag for the image by following instructions
   ```shell
   $ manifest-tool inspect --raw gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller:v0.1.0 | jq '.digest'
