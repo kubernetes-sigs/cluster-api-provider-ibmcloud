@@ -160,6 +160,20 @@ func Test_validateVolumes(t *testing.T) {
 			},
 			wantError: false,
 		},
+		{
+			name: "Valid encryptionKeyCRN",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{SizeGiB: 20, EncryptionKeyCRN: "crn:v1:bluemix:public:kms:us-south:a/aa2432b1fa4d4ace891e9b80fc104e34:e4a29d1a-2ef0-42a6-8fd2-350deb1c647e:key:5437653b-c4b1-447f-9646-b2a2a4cd6179"},
+			},
+			wantError: false,
+		},
+		{
+			name: "Invalid encryptionKeyCRN",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{EncryptionKeyCRN: "invalid-crn-format"},
+			},
+			wantError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

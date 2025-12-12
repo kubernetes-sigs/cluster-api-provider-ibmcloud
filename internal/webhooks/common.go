@@ -18,6 +18,7 @@ package webhooks
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -25,6 +26,9 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
 )
+
+// IBM Cloud CRN validation regex.
+var crnRegex = regexp.MustCompile(`^crn:v[0-9]+:[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]+:[a-z0-9-]*:([a-z]\/[a-z0-9-]+)?:[a-z0-9-]*:[a-z0-9-]*:[a-zA-Z0-9-_\.\/]*$`)
 
 func defaultIBMPowerVSMachineSpec(spec *infrav1.IBMPowerVSMachineSpec) {
 	if spec.MemoryGiB == 0 {
@@ -99,6 +103,9 @@ func validateVolumes(spec infrav1.IBMVPCMachineSpec) field.ErrorList {
 		if spec.AdditionalVolumes[i].Iops != 0 && spec.AdditionalVolumes[i].Profile != customProfile {
 			allErrs = append(allErrs, field.Invalid(field.NewPath(fmt.Sprintf("spec.AdditionalVolumes[%d]", i)), spec, "iops applicable only to volumes using a profile of type `custom`"))
 		}
+		if spec.AdditionalVolumes[i].EncryptionKeyCRN != "" && !isValidCRN(spec.AdditionalVolumes[i].EncryptionKeyCRN) {
+			allErrs = append(allErrs, field.Invalid(field.NewPath(fmt.Sprintf("spec.AdditionalVolumes[%d]", i)), spec, "encryptionKeyCRN not in proper IBM Cloud CRN format"))
+		}
 	}
 
 	if spec.BootVolume == nil {
@@ -113,7 +120,15 @@ func validateVolumes(spec infrav1.IBMVPCMachineSpec) field.ErrorList {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.bootVolume.iops"), spec, "iops applicable only to volumes using a profile of type `custom`"))
 	}
 
-	//TODO: Add validation for the spec.BootVolume.EncryptionKeyCRN to ensure its in proper IBM Cloud CRN format
+	//  Validate spec.BootVolume.EncryptionKeyCRN to ensure its in proper IBM Cloud CRN format
+	if spec.BootVolume.EncryptionKeyCRN != "" && !isValidCRN(spec.BootVolume.EncryptionKeyCRN) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.bootVolume.encryptionKeyCRN"), spec, "encryptionKeyCRN not in proper IBM Cloud CRN format"))
+	}
 
 	return allErrs
+}
+
+// isValidCRN checks whether the provided string is a valid IBM Cloud CRN.
+func isValidCRN(crn string) bool {
+	return crnRegex.MatchString(crn)
 }
