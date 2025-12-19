@@ -141,11 +141,11 @@ capibmadm: ## Build the capibmadm binary into the ./bin folder
 
 # Build manager binary
 manager: generate fmt vet ## Build the manager binary into the ./bin folder
-	go build -ldflags "${LDFLAGS} -extldflags '-static'" -o $(BIN_DIR)/manager main.go
+	go build -ldflags "${LDFLAGS} -extldflags '-static'" -o $(BIN_DIR)/manager cmd/main.go
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
-	go run ./main.go
+	go run ./cmd/main.go
 
 # Install CRDs into a cluster
 install: generate-manifests $(KUSTOMIZE)
