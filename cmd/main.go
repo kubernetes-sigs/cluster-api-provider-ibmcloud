@@ -279,16 +279,26 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 		Recorder:        mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
 		os.Exit(1)
 	}
 
-	if err := (&controllers.IBMPowerVSClusterReconciler{
+	if err := (&controllers.IBMVPCMachineTemplateReconciler{
 		Client:          mgr.GetClient(),
-		Recorder:        mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
-		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
+		ServiceEndpoint: serviceEndpoint,
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ibmvpcmachinetemplate")
+		os.Exit(1)
+	}
+
+	if err := (&controllers.IBMPowerVSClusterReconciler{
+		Client:           mgr.GetClient(),
+		Recorder:         mgr.GetEventRecorderFor("ibmpowervscluster-controller"),
+		ServiceEndpoint:  serviceEndpoint,
+		Scheme:           mgr.GetScheme(),
+		WatchFilterValue: watchFilterValue,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSCluster")
 		os.Exit(1)
@@ -305,30 +315,21 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 		os.Exit(1)
 	}
 
+	if err := (&controllers.IBMPowerVSMachineTemplateReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(ctx, mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
+		os.Exit(1)
+	}
+
 	if err := (&controllers.IBMPowerVSImageReconciler{
 		Client:          mgr.GetClient(),
 		Recorder:        mgr.GetEventRecorderFor("ibmpowervsimage-controller"),
 		ServiceEndpoint: serviceEndpoint,
 		Scheme:          mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSImage")
-		os.Exit(1)
-	}
-
-	if err := (&controllers.IBMPowerVSMachineTemplateReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ibmpowervsmachinetemplate")
-		os.Exit(1)
-	}
-
-	if err := (&controllers.IBMVPCMachineTemplateReconciler{
-		Client:          mgr.GetClient(),
-		Scheme:          mgr.GetScheme(),
-		ServiceEndpoint: serviceEndpoint,
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ibmvpcmachinetemplate")
 		os.Exit(1)
 	}
 }

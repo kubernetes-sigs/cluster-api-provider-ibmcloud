@@ -1,5 +1,6 @@
 name: ibmcloud
 config:
   image: "gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller"
-  live_reload_deps: ["main.go", "go.mod", "go.sum", "api", "cloud", "cmd", "controllers", "pkg"]
+  live_reload_deps: ["cmd/main.go", "go.mod", "go.sum", "api", "cloud", "cmd", "controllers", "pkg"]
   label: CAPIBM
+  go_main: cmd/main.go

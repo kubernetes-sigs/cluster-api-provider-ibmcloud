@@ -34,7 +34,7 @@ RUN  --mount=type=cache,target=/root/.local/share/golang \
      go mod download
 
 # Copy the go source
-COPY main.go main.go
+COPY cmd/main.go cmd/main.go
 COPY api/ api/
 COPY controllers/ controllers/
 COPY cloud/ cloud/
@@ -48,7 +48,7 @@ ARG LDFLAGS
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.local/share/golang \
-    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GO111MODULE=on go build -ldflags "${LDFLAGS} -extldflags '-static'"  -o manager main.go
+    CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} GO111MODULE=on go build -ldflags "${LDFLAGS} -extldflags '-static'"  -o manager cmd/main.go
 
 ARG TARGETPLATFORM
 # Use distroless as minimal base image to package the manager binary
