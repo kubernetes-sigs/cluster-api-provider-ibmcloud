@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package powervs
 
 import (
 	"context"
@@ -334,7 +334,7 @@ func (r *IBMPowerVSImageReconciler) shouldAdopt(i infrav1.IBMPowerVSImage) bool 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *IBMPowerVSImageReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *IBMPowerVSImageReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.IBMPowerVSImage{}).
 		Complete(r)

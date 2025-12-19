@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package vpc
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"testing"
 	"time"
 
@@ -332,6 +333,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			IBMVPCClient:        mockvpc,
 			GlobalTaggingClient: mockgt,
 		}
+		options.ProviderIDFormat = string(options.ProviderIDFormatV2)
 		return gomock.NewController(t), mockvpc, mockgt, machineScope, reconciler
 	}
 
