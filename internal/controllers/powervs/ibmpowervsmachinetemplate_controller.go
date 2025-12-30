@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package powervs
 
 import (
 	"context"
@@ -46,7 +46,7 @@ type IBMPowerVSMachineTemplateReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-func (r *IBMPowerVSMachineTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *IBMPowerVSMachineTemplateReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.IBMPowerVSMachineTemplate{}).
 		Complete(r)

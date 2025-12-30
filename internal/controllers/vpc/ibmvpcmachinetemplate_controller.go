@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package vpc
 
 import (
 	"context"
@@ -45,7 +45,7 @@ type IBMVPCMachineTemplateReconciler struct {
 	ServiceEndpoint []endpoints.ServiceEndpoint
 }
 
-func (r *IBMVPCMachineTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *IBMVPCMachineTemplateReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.IBMVPCMachineTemplate{}).
 		Complete(r)

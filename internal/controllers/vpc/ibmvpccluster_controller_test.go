@@ -14,12 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package vpc
 
 import (
 	"errors"
 	"fmt"
-
 	"testing"
 	"time"
 
@@ -662,5 +661,18 @@ func cleanupVPCCluster(g *WithT, vpcCluster *infrav1.IBMVPCCluster, namespace *c
 		func(do ...client.Object) {
 			g.Expect(testEnv.Cleanup(ctx, do...)).To(Succeed())
 		}(vpcCluster, namespace)
+	}
+}
+
+func createObject(g *WithT, obj client.Object, namespace string) {
+	if obj.DeepCopyObject() != nil {
+		obj.SetNamespace(namespace)
+		g.Expect(testEnv.Create(ctx, obj)).To(Succeed())
+	}
+}
+
+func cleanupObject(g *WithT, obj client.Object) {
+	if obj.DeepCopyObject() != nil {
+		g.Expect(testEnv.Cleanup(ctx, obj)).To(Succeed())
 	}
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package powervs
 
 import (
 	"fmt"
@@ -61,6 +61,9 @@ func setup() {
 	if err := (&webhooks.IBMPowerVSCluster{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMPowerVSCluster webhook: %v", err))
 	}
+	if err := (&webhooks.IBMPowerVSClusterTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
+		panic(fmt.Sprintf("Unable to setup IBMPowerVSClusterTemplate webhook: %v", err))
+	}
 	if err := (&webhooks.IBMPowerVSMachine{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMPowerVSMachine webhook: %v", err))
 	}
@@ -69,18 +72,6 @@ func setup() {
 	}
 	if err := (&webhooks.IBMPowerVSImage{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMPowerVSImage webhook: %v", err))
-	}
-	if err := (&webhooks.IBMVPCCluster{}).SetupWebhookWithManager(testEnv); err != nil {
-		panic(fmt.Sprintf("Unable to setup IBMVPCCluster webhook: %v", err))
-	}
-	if err := (&webhooks.IBMVPCMachine{}).SetupWebhookWithManager(testEnv); err != nil {
-		panic(fmt.Sprintf("Unable to setup IBMVPCMachine webhook: %v", err))
-	}
-	if err := (&webhooks.IBMVPCMachineTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
-		panic(fmt.Sprintf("Unable to setup IBMVPCMachineTemplate webhook: %v", err))
-	}
-	if err := (&webhooks.IBMPowerVSClusterTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
-		panic(fmt.Sprintf("Unable to setup IBMPowerVSClusterTemplate webhook: %v", err))
 	}
 	go func() {
 		if err := testEnv.StartManager(ctx); err != nil {
