@@ -1455,22 +1455,22 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 		for _, existingRuleIntf := range existingSecurityGroupRules.Rules {
 			// Perform analysis of the existingRuleIntf, based on its Protocol type, further analysis is performed based on remaining attributes to find if the specific Rule and Remote match
 			switch reflect.TypeOf(existingRuleIntf).String() {
-			case infrav1.VPCSecurityGroupRuleProtocolAllType:
-				// If our Remote doesn't define all Protocols, we don't need further checks, move on to next Rule
-				if securityGroupRulePrototype.Protocol != infrav1.VPCSecurityGroupRuleProtocolAll {
+			case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
+				// If our Remote doesn't define icmp_tcp_udp Protocols, we don't need further checks, move on to next Rule
+				if securityGroupRulePrototype.Protocol != infrav1.VPCSecurityGroupRuleProtocolIcmpTCPUDP {
 					continue
 				}
-				existingRule := existingRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
+				existingRule := existingRuleIntf.(*vpcv1.SecurityGroupRuleProtocolIcmptcpudp)
 				// If the Remote doesn't have the same Direction as the Rule, no further checks are necessary
 				if securityGroupRule.Direction != infrav1.VPCSecurityGroupRuleDirection(*existingRule.Direction) {
 					continue
 				}
-				if found, err := s.checkSecurityGroupRuleProtocolAll(ctx, securityGroupRulePrototype, remote, existingRule); err != nil {
-					return fmt.Errorf("error failure checking security group rule protocol all: %w", err)
+				if found, err := s.checkSecurityGroupRuleProtocolIcmpTCPUDP(ctx, securityGroupRulePrototype, remote, existingRule); err != nil {
+					return fmt.Errorf("error failure checking security group rule protocol icmp_tcp_udp: %w", err)
 				} else if found {
 					// If we found the matching IBM Cloud Security Group Rule for the defined SecurityGroupRule and Remote, we can stop checking IBM Cloud Security Group Rules for this remote and move onto the next remote.
 					// The expectation is that only one IBM Cloud Security Group Rule will match, but if at least one matches the defined SecurityGroupRule, that is sufficient.
-					log.V(3).Info("security group rule all protocol match found")
+					log.V(3).Info("security group rule icmp_tcp_udp protocol match found")
 					remoteMatch = true
 					break
 				}
@@ -1527,8 +1527,8 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 	return nil
 }
 
-// checkSecurityGroupRuleProtocolAll analyzes an IBM Cloud Security Group Rule designated for 'all' protocols, to verify if the supplied Rule and Remote match the attributes from the existing 'ProtocolAll' Rule.
-func (s *ClusterScopeV2) checkSecurityGroupRuleProtocolAll(ctx context.Context, _ infrav1.VPCSecurityGroupRulePrototype, securityGroupRuleRemote infrav1.VPCSecurityGroupRuleRemote, existingRule *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll) (bool, error) {
+// checkSecurityGroupRuleProtocolIcmpTCPUDP analyzes an IBM Cloud Security Group Rule designated for 'icmp_tcp_udp' protocols, to verify if the supplied Rule and Remote match the attributes from the existing 'icmp_tcp_udp' Rule.
+func (s *ClusterScopeV2) checkSecurityGroupRuleProtocolIcmpTCPUDP(ctx context.Context, _ infrav1.VPCSecurityGroupRulePrototype, securityGroupRuleRemote infrav1.VPCSecurityGroupRuleRemote, existingRule *vpcv1.SecurityGroupRuleProtocolIcmptcpudp) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if exists, err := s.checkSecurityGroupRulePrototypeRemote(ctx, securityGroupRuleRemote, existingRule.Remote); err != nil {
 		return false, fmt.Errorf("error failed checking security group rule all remote: %w", err)
@@ -1706,8 +1706,8 @@ func (s *ClusterScopeV2) createSecurityGroupRule(ctx context.Context, securityGr
 		return fmt.Errorf("error failed to create security group rule remote: %w", err)
 	}
 	switch securityGroupRulePrototype.Protocol {
-	case infrav1.VPCSecurityGroupRuleProtocolAll:
-		prototype := &vpcv1.SecurityGroupRulePrototypeSecurityGroupRuleProtocolAll{
+	case infrav1.VPCSecurityGroupRuleProtocolIcmpTCPUDP:
+		prototype := &vpcv1.SecurityGroupRulePrototypeSecurityGroupRuleProtocolIcmptcpudpPrototype{
 			Direction: ptr.To(string(securityGroupRule.Direction)),
 			Protocol:  ptr.To(string(securityGroupRulePrototype.Protocol)),
 			Remote:    prototypeRemote,
@@ -1753,8 +1753,8 @@ func (s *ClusterScopeV2) createSecurityGroupRule(ctx context.Context, securityGr
 	// Typecast the resulting SecurityGroupRuleIntf, to retrieve the ID for logging
 	var ruleID *string
 	switch reflect.TypeOf(securityGroupRuleIntfDetails).String() {
-	case infrav1.VPCSecurityGroupRuleProtocolAllType:
-		rule := securityGroupRuleIntfDetails.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
+	case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
+		rule := securityGroupRuleIntfDetails.(*vpcv1.SecurityGroupRuleProtocolIcmptcpudp)
 		ruleID = rule.ID
 	case infrav1.VPCSecurityGroupRuleProtocolIcmpType:
 		rule := securityGroupRuleIntfDetails.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp)
