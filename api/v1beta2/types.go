@@ -285,8 +285,8 @@ var (
 )
 
 const (
-	// VPCSecurityGroupRuleProtocolAllType is a string representation of the 'SecurityGroupRuleSecurityGroupRuleProtocolAll' type.
-	VPCSecurityGroupRuleProtocolAllType = "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll"
+	// VPCSecurityGroupRuleProtocolIcmptcpudpType is a string representation of the 'SecurityGroupRuleProtocolIcmptcpudp' type.
+	VPCSecurityGroupRuleProtocolIcmptcpudpType = "*vpcv1.SecurityGroupRuleProtocolIcmptcpudp"
 
 	// VPCSecurityGroupRuleProtocolIcmpType is a string representation of the 'SecurityGroupRuleSecurityGroupRuleProtocolIcmp' type.
 	VPCSecurityGroupRuleProtocolIcmpType = "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp"
@@ -318,12 +318,12 @@ const (
 )
 
 // VPCSecurityGroupRuleProtocol represents the protocols for a Security Group Rule.
-// +kubebuilder:validation:Enum=all;icmp;tcp;udp
+// +kubebuilder:validation:Enum=icmp_tcp_udp;icmp;tcp;udp
 type VPCSecurityGroupRuleProtocol string
 
 const (
-	// VPCSecurityGroupRuleProtocolAll defines the Rule is for all network protocols.
-	VPCSecurityGroupRuleProtocolAll VPCSecurityGroupRuleProtocol = vpcv1.NetworkACLRuleProtocolAllConst
+	// VPCSecurityGroupRuleProtocolIcmpTCPUDP defines the Rule is for ICMP, TCP and UDP protocols.
+	VPCSecurityGroupRuleProtocolIcmpTCPUDP VPCSecurityGroupRuleProtocol = vpcv1.SecurityGroupRuleProtocolIcmpTCPUDPConst
 	// VPCSecurityGroupRuleProtocolIcmp defiens the Rule is for ICMP network protocol.
 	VPCSecurityGroupRuleProtocolIcmp VPCSecurityGroupRuleProtocol = vpcv1.NetworkACLRuleProtocolIcmpConst
 	// VPCSecurityGroupRuleProtocolTCP defines the Rule is for TCP network protocol.
@@ -519,8 +519,8 @@ type VPCSecurityGroupRuleRemote struct {
 
 // VPCSecurityGroupRulePrototype defines a VPC Security Group Rule's traffic specifics for a series of remotes (destinations or sources).
 // +kubebuilder:validation:XValidation:rule="self.protocol != 'icmp' ? (!has(self.icmpCode) && !has(self.icmpType)) : true",message="icmpCode and icmpType are only supported for VPCSecurityGroupRuleProtocolIcmp protocol"
-// +kubebuilder:validation:XValidation:rule="self.protocol == 'all' ? !has(self.portRange) : true",message="portRange is not valid for VPCSecurityGroupRuleProtocolAll protocol"
 // +kubebuilder:validation:XValidation:rule="self.protocol == 'icmp' ? !has(self.portRange) : true",message="portRange is not valid for VPCSecurityGroupRuleProtocolIcmp protocol"
+// +kubebuilder:validation:XValidation:rule="self.protocol == 'icmp_tcp_udp' ? !has(self.portRange) : true",message="portRange is not valid for VPCSecurityGroupRuleProtocolIcmpTCPUDP protocol"
 type VPCSecurityGroupRulePrototype struct {
 	// icmpCode is the ICMP code for the Rule.
 	// Only used when Protocol is VPCSecurityGroupRuleProtocolIcmp.
