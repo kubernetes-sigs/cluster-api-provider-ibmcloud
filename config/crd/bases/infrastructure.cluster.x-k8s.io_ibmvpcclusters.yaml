@@ -891,7 +891,7 @@ spec:
                                     description: protocol defines the traffic protocol
                                       used for the Security Group Rule.
                                     enum:
-                                    - all
+                                    - icmp_tcp_udp
                                     - icmp
                                     - tcp
                                     - udp
@@ -965,13 +965,13 @@ spec:
                                     for VPCSecurityGroupRuleProtocolIcmp protocol
                                   rule: 'self.protocol != ''icmp'' ? (!has(self.icmpCode)
                                     && !has(self.icmpType)) : true'
-                                - message: portRange is not valid for VPCSecurityGroupRuleProtocolAll
-                                    protocol
-                                  rule: 'self.protocol == ''all'' ? !has(self.portRange)
-                                    : true'
                                 - message: portRange is not valid for VPCSecurityGroupRuleProtocolIcmp
                                     protocol
                                   rule: 'self.protocol == ''icmp'' ? !has(self.portRange)
+                                    : true'
+                                - message: portRange is not valid for VPCSecurityGroupRuleProtocolIcmpTCPUDP
+                                    protocol
+                                  rule: 'self.protocol == ''icmp_tcp_udp'' ? !has(self.portRange)
                                     : true'
                               direction:
                                 description: direction defines whether the traffic
@@ -1028,7 +1028,7 @@ spec:
                                     description: protocol defines the traffic protocol
                                       used for the Security Group Rule.
                                     enum:
-                                    - all
+                                    - icmp_tcp_udp
                                     - icmp
                                     - tcp
                                     - udp
@@ -1102,13 +1102,13 @@ spec:
                                     for VPCSecurityGroupRuleProtocolIcmp protocol
                                   rule: 'self.protocol != ''icmp'' ? (!has(self.icmpCode)
                                     && !has(self.icmpType)) : true'
-                                - message: portRange is not valid for VPCSecurityGroupRuleProtocolAll
-                                    protocol
-                                  rule: 'self.protocol == ''all'' ? !has(self.portRange)
-                                    : true'
                                 - message: portRange is not valid for VPCSecurityGroupRuleProtocolIcmp
                                     protocol
                                   rule: 'self.protocol == ''icmp'' ? !has(self.portRange)
+                                    : true'
+                                - message: portRange is not valid for VPCSecurityGroupRuleProtocolIcmpTCPUDP
+                                    protocol
+                                  rule: 'self.protocol == ''icmp_tcp_udp'' ? !has(self.portRange)
                                     : true'
                             required:
                             - direction
