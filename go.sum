@@ -12,8 +12,8 @@ github.com/IBM-Cloud/power-go-client v1.14.4 h1:XXQp4atVwvCfDps1nF5zyi2FzNbsuHts
 github.com/IBM-Cloud/power-go-client v1.14.4/go.mod h1:TT0jJbptQuDRwB9PPYDcGe0ZwFSl5GiSrNuQeJzJYco=
 github.com/IBM/go-sdk-core/v5 v5.21.2 h1:mJ5QbLPOm4g5qhZiVB6wbSllfpeUExftGoyPek2hk4M=
 github.com/IBM/go-sdk-core/v5 v5.21.2/go.mod h1:ngpMgwkjur1VNUjqn11LPk3o5eCyOCRbcfg/0YAY7Hc=
-github.com/IBM/ibm-cos-sdk-go v1.12.4 h1:XUxGUQoqNH6Cpa/eSItbRhVRdmDIsd9jCTMeTVh1siE=
-github.com/IBM/ibm-cos-sdk-go v1.12.4/go.mod h1:s4abN0Kllr83a/aI5KEjNY6fZCQK4apt2w4QjVD0PU0=
+github.com/IBM/ibm-cos-sdk-go v1.13.0 h1:bN1e3ayGzBbgEhd57uOq1xqtbQJHZwJReg4AoAa5/ks=
+github.com/IBM/ibm-cos-sdk-go v1.13.0/go.mod h1:y6vy1Vie63M+PKaKM339Zifbo7MZ+pukm03ql95tSDw=
 github.com/IBM/networking-go-sdk v0.51.15 h1:JEljJvjUYeSL5F091sI3kZzD9wZYDWsnnKJIoR47XNk=
 github.com/IBM/networking-go-sdk v0.51.15/go.mod h1:TAXWyBUk3C3R7aS1m84EfKdnDcBMZMAClwLfDj/SYZc=
 github.com/IBM/platform-services-go-sdk v0.91.0 h1:5o4XotMmP9UfCg9BKG0cx/pTAMhBh0KzjyFQQyHZTgE=
