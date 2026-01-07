@@ -1459,13 +1459,13 @@ func (s *PowerVSClusterScope) createVPCSecurityGroupRule(ctx context.Context, se
 	}
 
 	switch reflect.TypeOf(ruleIntf).String() {
-	case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll":
-		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
+	case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
+		rule := ruleIntf.(*vpcv1.SecurityGroupRuleProtocolIcmptcpudp)
 		ruleID = rule.ID
-	case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp":
+	case infrav1.VPCSecurityGroupRuleProtocolTcpudpType:
 		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp)
 		ruleID = rule.ID
-	case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp":
+	case infrav1.VPCSecurityGroupRuleProtocolIcmpType:
 		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp)
 		ruleID = rule.ID
 	}
@@ -1606,8 +1606,8 @@ func (s *PowerVSClusterScope) validateSecurityGroupRule(originalSecurityGroupRul
 
 	for _, ogRuleIntf := range originalSecurityGroupRules {
 		switch reflect.TypeOf(ogRuleIntf).String() {
-		case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll":
-			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
+		case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
+			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleProtocolIcmptcpudp)
 			ruleID = ogRule.ID
 
 			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol {
@@ -1618,7 +1618,7 @@ func (s *PowerVSClusterScope) validateSecurityGroupRule(originalSecurityGroupRul
 					return nil, false, err
 				}
 			}
-		case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp":
+		case infrav1.VPCSecurityGroupRuleProtocolTcpudpType:
 			portMin := rule.PortRange.MinimumPort
 			portMax := rule.PortRange.MaximumPort
 			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp)
@@ -1632,7 +1632,7 @@ func (s *PowerVSClusterScope) validateSecurityGroupRule(originalSecurityGroupRul
 					return nil, false, err
 				}
 			}
-		case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp":
+		case infrav1.VPCSecurityGroupRuleProtocolIcmpType:
 			icmpCode := rule.ICMPCode
 			icmpType := rule.ICMPType
 			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp)
