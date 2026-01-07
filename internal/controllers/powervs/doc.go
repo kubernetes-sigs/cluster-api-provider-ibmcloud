@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package controllers implements controllers.
-package controllers
+// Package powervs implements controllers code for PowerVS resources.
+package powervs

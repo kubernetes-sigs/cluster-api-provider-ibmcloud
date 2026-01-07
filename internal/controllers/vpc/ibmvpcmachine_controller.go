@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package vpc
 
 import (
 	"context"
@@ -163,7 +163,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 // SetupWithManager creates a new IBMVPCMachine controller for a manager.
-func (r *IBMVPCMachineReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *IBMVPCMachineReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.IBMVPCMachine{}).
 		Complete(r)
