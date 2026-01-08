@@ -19,6 +19,7 @@ package vpc
 import (
 	"errors"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
 	"testing"
 	"time"
 
@@ -36,8 +37,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
@@ -145,7 +145,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 	var (
 		mockvpc      *mock.MockVpc
 		mockCtrl     *gomock.Controller
-		clusterScope *scope.ClusterScope
+		clusterScope *vpc.ClusterScope
 		reconciler   IBMVPCClusterReconciler
 	)
 
@@ -157,7 +157,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		clusterScope = &scope.ClusterScope{
+		clusterScope = &vpc.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Cluster:      &clusterv1.Cluster{},
 			Logger:       klog.Background(),
@@ -287,14 +287,14 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 }
 
 func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *scope.ClusterScope, IBMVPCClusterReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *vpc.ClusterScope, IBMVPCClusterReconciler) {
 		t.Helper()
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCClusterReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		clusterScope := &scope.ClusterScope{
+		clusterScope := &vpc.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Cluster:      &clusterv1.Cluster{},
 			Logger:       klog.Background(),
@@ -439,7 +439,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 	var (
 		mockvpc      *mock.MockVpc
 		mockCtrl     *gomock.Controller
-		clusterScope *scope.ClusterScope
+		clusterScope *vpc.ClusterScope
 		reconciler   IBMVPCClusterReconciler
 	)
 
@@ -451,7 +451,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		clusterScope = &scope.ClusterScope{
+		clusterScope = &vpc.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1.IBMVPCCluster{
@@ -554,14 +554,14 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 }
 
 func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *scope.ClusterScope, IBMVPCClusterReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *mock.MockVpc, *vpc.ClusterScope, IBMVPCClusterReconciler) {
 		t.Helper()
 		mockvpc := mock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCClusterReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		clusterScope := &scope.ClusterScope{
+		clusterScope := &vpc.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Logger:       klog.Background(),
 			IBMVPCCluster: &infrav1.IBMVPCCluster{

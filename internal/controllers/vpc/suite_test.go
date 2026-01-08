@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/vpc"
 	"testing"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -27,8 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	// +kubebuilder:scaffold:imports
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
@@ -58,13 +58,13 @@ func setup() {
 	if err != nil {
 		panic(err)
 	}
-	if err := (&webhooks.IBMVPCCluster{}).SetupWebhookWithManager(testEnv); err != nil {
+	if err := (&vpc.IBMVPCCluster{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMVPCCluster webhook: %v", err))
 	}
-	if err := (&webhooks.IBMVPCMachine{}).SetupWebhookWithManager(testEnv); err != nil {
+	if err := (&vpc.IBMVPCMachine{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMVPCMachine webhook: %v", err))
 	}
-	if err := (&webhooks.IBMVPCMachineTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
+	if err := (&vpc.IBMVPCMachineTemplate{}).SetupWebhookWithManager(testEnv); err != nil {
 		panic(fmt.Sprintf("Unable to setup IBMVPCMachineTemplate webhook: %v", err))
 	}
 	go func() {

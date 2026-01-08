@@ -42,14 +42,14 @@ import (
 	"sigs.k8s.io/cluster-api/util/conditions"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"         //nolint:staticcheck
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2" //nolint:staticcheck
-	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"                   //nolint:staticcheck                   //nolint:staticcheck
+	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"                   //nolint:staticcheck
 	"sigs.k8s.io/cluster-api/util/deprecated/v1beta1/paused"
 	"sigs.k8s.io/cluster-api/util/finalizers"
 	clog "sigs.k8s.io/cluster-api/util/log"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -169,7 +169,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Create the machine scope.
-	machineScope, err := scope.NewPowerVSMachineScope(scope.PowerVSMachineScopeParams{
+	machineScope, err := powervsscope.NewMachineScope(powervsscope.MachineScopeParams{
 		Client:            r.Client,
 		Logger:            log,
 		Cluster:           cluster,
@@ -206,7 +206,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcileNormal(ctx, machineScope)
 }
 
-func (r *IBMPowerVSMachineReconciler) reconcileDelete(ctx context.Context, scope *scope.PowerVSMachineScope) (_ ctrl.Result, reterr error) {
+func (r *IBMPowerVSMachineReconciler) reconcileDelete(ctx context.Context, scope *powervsscope.MachineScope) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	v1beta1conditions.MarkFalse(scope.IBMPowerVSMachine, infrav1.InstanceReadyCondition, clusterv1.DeletingReason, clusterv1beta1.ConditionSeverityInfo, "")
@@ -251,7 +251,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(ctx context.Context, scope
 }
 
 // handleLoadBalancerPoolMemberConfiguration handles load balancer pool member creation flow.
-func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
+func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(ctx context.Context, machineScope *powervsscope.MachineScope) (ctrl.Result, error) {
 	poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(ctx)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create VPC load balancer pool member: %w", err)
@@ -262,7 +262,7 @@ func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) { //nolint:gocyclo
+func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *powervsscope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
 
 	if machineScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*machineScope.Cluster.Status.Initialization.InfrastructureProvisioned {

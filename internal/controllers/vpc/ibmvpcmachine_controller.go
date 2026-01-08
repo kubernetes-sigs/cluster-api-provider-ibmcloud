@@ -48,8 +48,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/deprecated/v1beta1/paused"
 	"sigs.k8s.io/cluster-api/util/finalizers"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
 )
@@ -138,7 +138,7 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Create the machine scope.
-	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
+	machineScope, err := vpc.NewMachineScope(vpc.MachineScopeParams{
 		Client:          r.Client,
 		Cluster:         cluster,
 		IBMVPCCluster:   ibmVPCCluster,
@@ -169,7 +169,7 @@ func (r *IBMVPCMachineReconciler) SetupWithManager(_ context.Context, mgr ctrl.M
 		Complete(r)
 }
 
-func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
+func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineScope *vpc.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
 	if controllerutil.AddFinalizer(machineScope.IBMVPCMachine, infrav1.MachineFinalizer) {
 		return ctrl.Result{}, nil
@@ -344,12 +344,12 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 	return result, nil
 }
 
-func (r *IBMVPCMachineReconciler) getOrCreate(ctx context.Context, scope *scope.MachineScope) (*vpcv1.Instance, error) {
+func (r *IBMVPCMachineReconciler) getOrCreate(ctx context.Context, scope *vpc.MachineScope) (*vpcv1.Instance, error) {
 	instance, err := scope.CreateMachine(ctx)
 	return instance, err
 }
 
-func (r *IBMVPCMachineReconciler) reconcileDelete(ctx context.Context, scope *scope.MachineScope) (_ ctrl.Result, reterr error) {
+func (r *IBMVPCMachineReconciler) reconcileDelete(ctx context.Context, scope *vpc.MachineScope) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Handling deleted IBMVPCMachine")
 
@@ -426,7 +426,7 @@ func patchIBMVPCMachine(ctx context.Context, patchHelper *v1beta1patch.Helper, i
 		clusterv1beta1.PausedV1Beta2Condition,
 	}})
 }
-func (r *IBMVPCMachineReconciler) reconcileAdditionalVolumes(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
+func (r *IBMVPCMachineReconciler) reconcileAdditionalVolumes(ctx context.Context, machineScope *vpc.MachineScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	// Return immediately if no additional volumes exist
 	if len(machineScope.IBMVPCMachine.Spec.AdditionalVolumes) == 0 {

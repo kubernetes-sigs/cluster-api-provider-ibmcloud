@@ -44,8 +44,8 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions" //nolint:staticcheck
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	mockVPC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
@@ -260,7 +260,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 	var (
 		mockpowervs  *mock.MockPowerVS
 		mockCtrl     *gomock.Controller
-		machineScope *scope.PowerVSMachineScope
+		machineScope *powervsscope.MachineScope
 		reconciler   IBMPowerVSMachineReconciler
 	)
 
@@ -286,7 +286,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 
 			pvsmachine := newIBMPowerVSMachine()
 
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				IBMPowerVSClient:  mockpowervs,
 				IBMPowerVSMachine: pvsmachine,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
@@ -299,7 +299,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					ObjectMeta: metav1.ObjectMeta{
@@ -325,7 +325,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 			machine := newMachine()
 
 			mockClient := fake.NewClientBuilder().WithObjects([]client.Object{secret}...).Build()
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Client:           mockClient,
 				IBMPowerVSClient: mockpowervs,
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
@@ -353,7 +353,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 	var (
 		mockpowervs  *mock.MockPowerVS
 		mockCtrl     *gomock.Controller
-		machineScope *scope.PowerVSMachineScope
+		machineScope *powervsscope.MachineScope
 		reconciler   IBMPowerVSMachineReconciler
 		mockvpc      *mockVPC.MockVpc
 	)
@@ -378,7 +378,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
 						Initialization: clusterv1.ClusterInitializationStatus{},
@@ -396,7 +396,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
 						Initialization: clusterv1.ClusterInitializationStatus{
@@ -421,7 +421,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
 						Initialization: clusterv1.ClusterInitializationStatus{
@@ -451,7 +451,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			machine := newMachine()
 			pvsMachine := newIBMPowerVSMachine()
 			mockClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build()
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Client: mockClient,
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
@@ -491,7 +491,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			}
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Client: mockclient,
 
 				Cluster: &clusterv1.Cluster{
@@ -588,7 +588,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			}
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Client: mockclient,
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
@@ -704,7 +704,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			machine := newMachine()
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
-			machineScope = &scope.PowerVSMachineScope{
+			machineScope = &powervsscope.MachineScope{
 				Client: mockclient,
 				Cluster: &clusterv1.Cluster{
 					Status: clusterv1.ClusterStatus{
@@ -815,7 +815,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 		mockclient := fake.NewClientBuilder().WithObjects([]client.Object{secret, pvsmachine, machine}...).Build()
 
-		machineScope = &scope.PowerVSMachineScope{
+		machineScope = &powervsscope.MachineScope{
 			Client: mockclient,
 
 			Cluster: &clusterv1.Cluster{

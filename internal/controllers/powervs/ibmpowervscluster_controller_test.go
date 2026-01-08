@@ -48,8 +48,8 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	powervsmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	resourceclientmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
@@ -252,7 +252,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 
 		reconciler := &IBMPowerVSClusterReconciler{
 			Client: testEnv.Client,
-			ClientFactory: scope.ClientFactory{
+			ClientFactory: powervsscope.ClientFactory{
 				PowerVSClientFactory: func() (powervs.PowerVS, error) {
 					return nil, nil
 				},
@@ -328,7 +328,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 
 		reconciler := &IBMPowerVSClusterReconciler{
 			Client: testEnv.Client,
-			ClientFactory: scope.ClientFactory{
+			ClientFactory: powervsscope.ClientFactory{
 				PowerVSClientFactory: func() (powervs.PowerVS, error) {
 					return nil, nil
 				},
@@ -350,7 +350,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 	testCases := []struct {
 		name                string
-		powervsClusterScope func() *scope.PowerVSClusterScope
+		powervsClusterScope func() *powervsscope.ClusterScope
 		clusterStatus       bool
 		expectedResult      ctrl.Result
 		expectedError       error
@@ -358,8 +358,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 	}{
 		{
 			name: "Should add finalizer and reconcile IBMPowerVSCluster",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				return &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				return &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -371,8 +371,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "Should reconcile IBMPowerVSCluster status as Ready",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				return &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				return &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -384,8 +384,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When PowerVS zone does not support PER",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -405,8 +405,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When resource group name is not set",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -426,8 +426,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile PowerVS resource returns requeue as true",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -468,8 +468,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile PowerVS and VPC resource returns requeue as true",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -513,8 +513,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile VPC and PowerVS resource returns error",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers:  []string{infrav1.IBMPowerVSClusterFinalizer},
@@ -554,8 +554,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile TransitGateway returns error",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
@@ -604,8 +604,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile TransitGateway returns requeue as true",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
 
@@ -643,10 +643,10 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile COS service instance returns error",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
+			powervsClusterScope: func() *powervsscope.ClusterScope {
 				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
 				powerVSCluster.Spec.Ignition = &infrav1.Ignition{Version: "3.4"}
-				clusterScope := &scope.PowerVSClusterScope{
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: powerVSCluster,
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
@@ -679,8 +679,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile network is not ready",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
@@ -699,8 +699,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When getting loadbalancer hostname returns error",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
@@ -717,10 +717,10 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When loadbalancer hostname is nil",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
+			powervsClusterScope: func() *powervsscope.ClusterScope {
 				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
 				powerVSCluster.Spec.LoadBalancers[0].Name = "lb-name"
-				clusterScope := &scope.PowerVSClusterScope{
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: powerVSCluster,
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
@@ -734,8 +734,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		},
 		{
 			name: "When reconcile is successful",
-			powervsClusterScope: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powervsClusterScope: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					Cluster:           &clusterv1.Cluster{},
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
@@ -790,18 +790,18 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	var (
 		reconciler          IBMPowerVSClusterReconciler
-		clusterScope        *scope.PowerVSClusterScope
+		clusterScope        *powervsscope.ClusterScope
 		mockPowerVS         *powervsmock.MockPowerVS
 		mockTransitGateway  *tgmock.MockTransitGateway
 		mockVpc             *vpcmock.MockVpc
 		mockResourceClient  *resourceclientmock.MockResourceController
-		powervsClusterScope func() *scope.PowerVSClusterScope
+		powervsClusterScope func() *powervsscope.ClusterScope
 	)
 	reconciler = IBMPowerVSClusterReconciler{
 		Client: testEnv.Client,
 	}
-	powervsClusterScope = func() *scope.PowerVSClusterScope {
-		return &scope.PowerVSClusterScope{
+	powervsClusterScope = func() *powervsscope.ClusterScope {
+		return &powervsscope.ClusterScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "IBMPowerVSCluster",
@@ -832,7 +832,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("Reconciling delete IBMPowerVSCluster", func(t *testing.T) {
 		t.Run("Should reconcile successfully if no descendants are found", func(t *testing.T) {
 			g := NewWithT(t)
-			clusterScope = &scope.PowerVSClusterScope{
+			clusterScope = &powervsscope.ClusterScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -854,7 +854,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		})
 		t.Run("Should reconcile with requeue by deleting the cluster descendants", func(t *testing.T) {
 			g := NewWithT(t)
-			clusterScope = &scope.PowerVSClusterScope{
+			clusterScope = &powervsscope.ClusterScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "IBMPowerVSCluster",
@@ -1321,14 +1321,14 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 func TestReconcileVPCResources(t *testing.T) {
 	testCases := []struct {
 		name                    string
-		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
+		powerVSClusterScopeFunc func() *powervsscope.ClusterScope
 		reconcileResult         reconcileResult
 		conditions              clusterv1beta1.Conditions
 	}{
 		{
 			name: "when ReconcileVPC returns error",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 				}
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
@@ -1352,8 +1352,8 @@ func TestReconcileVPCResources(t *testing.T) {
 		},
 		{
 			name: "when ReconcileVPC returns requeue as true",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
 							VPC: &infrav1.ResourceReference{
@@ -1375,8 +1375,8 @@ func TestReconcileVPCResources(t *testing.T) {
 		},
 		{
 			name: "when Reconciling VPC subnets returns error",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							VPC: &infrav1.VPCResourceReference{
@@ -1414,8 +1414,8 @@ func TestReconcileVPCResources(t *testing.T) {
 		},
 		{
 			name: "when Reconciling VPC subnets returns requeue as true",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
@@ -1451,8 +1451,8 @@ func TestReconcileVPCResources(t *testing.T) {
 		},
 		{
 			name: "when Reconciling VPC security group returns error",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							VPC: &infrav1.VPCResourceReference{
@@ -1502,8 +1502,8 @@ func TestReconcileVPCResources(t *testing.T) {
 		},
 		{
 			name: "when Reconciling LoadBalancer returns error",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							VPC: &infrav1.VPCResourceReference{
@@ -1554,8 +1554,8 @@ func TestReconcileVPCResources(t *testing.T) {
 		},
 		{
 			name: "when Reconciling LoadBalancer returns with loadbalancer status as ready",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							VPC: &infrav1.VPCResourceReference{
@@ -1632,14 +1632,14 @@ func TestReconcileVPCResources(t *testing.T) {
 func TestReconcilePowerVSResources(t *testing.T) {
 	testCases := []struct {
 		name                    string
-		powerVSClusterScopeFunc func() *scope.PowerVSClusterScope
+		powerVSClusterScopeFunc func() *powervsscope.ClusterScope
 		reconcileResult         reconcileResult
 		conditions              clusterv1beta1.Conditions
 	}{
 		{
 			name: "When Reconciling PowerVS service instance returns error",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
 							ServiceInstance: &infrav1.ResourceReference{
@@ -1670,8 +1670,8 @@ func TestReconcilePowerVSResources(t *testing.T) {
 		},
 		{
 			name: "When Reconciling PowerVS service instance returns requeue as true",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
 							ServiceInstance: &infrav1.ResourceReference{
@@ -1693,8 +1693,8 @@ func TestReconcilePowerVSResources(t *testing.T) {
 		},
 		{
 			name: "When Reconciling network returns error",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "serviceInstanceID",
@@ -1731,8 +1731,8 @@ func TestReconcilePowerVSResources(t *testing.T) {
 		},
 		{
 			name: "When reconcile network returns with DHCP server in active state",
-			powerVSClusterScopeFunc: func() *scope.PowerVSClusterScope {
-				clusterScope := &scope.PowerVSClusterScope{
+			powerVSClusterScopeFunc: func() *powervsscope.ClusterScope {
+				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							ServiceInstanceID: "serviceInstanceID",
