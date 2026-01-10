@@ -43,8 +43,8 @@ import (
 	v1beta1patch "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/patch"                   //nolint:staticcheck
 	"sigs.k8s.io/cluster-api/util/finalizers"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
@@ -83,7 +83,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	var cluster *infrav1.IBMPowerVSCluster
-	scopeParams := scope.PowerVSImageScopeParams{
+	scopeParams := powervsscope.ImageScopeParams{
 		Client:          r.Client,
 		IBMPowerVSImage: ibmPowerVSImage,
 		ServiceEndpoint: r.ServiceEndpoint,
@@ -91,7 +91,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Externally managed clusters might not be available during image deletion. Get the cluster only when image is still not deleted.
 	if ibmPowerVSImage.DeletionTimestamp.IsZero() {
-		cluster, err = scope.GetClusterByName(ctx, r.Client, ibmPowerVSImage.Namespace, ibmPowerVSImage.Spec.ClusterName)
+		cluster, err = powervsscope.GetClusterByName(ctx, r.Client, ibmPowerVSImage.Namespace, ibmPowerVSImage.Spec.ClusterName)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -112,9 +112,9 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}()
 
 	// Create the scope
-	imageScope, err := scope.NewPowerVSImageScope(ctx, scopeParams)
+	imageScope, err := powervsscope.NewPowerVSImageScope(ctx, scopeParams)
 	if err != nil {
-		if errors.Is(err, scope.ErrServiceInsanceNotInActiveState) {
+		if errors.Is(err, powervsscope.ErrServiceInsanceNotInActiveState) {
 			v1beta2conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.WorkspaceReadyV1Beta2Condition,
 				Status: metav1.ConditionFalse,
@@ -132,7 +132,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	return r.reconcile(ctx, cluster, imageScope)
 }
 
-func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infrav1.IBMPowerVSCluster, imageScope *scope.PowerVSImageScope) (ctrl.Result, error) {
+func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infrav1.IBMPowerVSCluster, imageScope *powervsscope.ImageScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// Create new labels section for IBMPowerVSImage metadata if nil.
@@ -222,7 +222,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 	return reconcileImage(ctx, img, imageScope)
 }
 
-func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope *scope.PowerVSImageScope) (_ ctrl.Result, reterr error) {
+func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope *powervsscope.ImageScope) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 	if img != nil {
 		image, err := imageScope.IBMPowerVSClient.GetImage(*img.ImageID)
@@ -278,7 +278,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *scope.PowerVSImageScope) (_ ctrl.Result, reterr error) {
+func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *powervsscope.ImageScope) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Handling deleted IBMPowerVSImage")
 
@@ -324,7 +324,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSImageReconciler) getOrCreate(ctx context.Context, scope *scope.PowerVSImageScope) (*models.ImageReference, *models.JobReference, error) {
+func (r *IBMPowerVSImageReconciler) getOrCreate(ctx context.Context, scope *powervsscope.ImageScope) (*models.ImageReference, *models.JobReference, error) {
 	image, job, err := scope.CreateImageCOSBucket(ctx)
 	return image, job, err
 }

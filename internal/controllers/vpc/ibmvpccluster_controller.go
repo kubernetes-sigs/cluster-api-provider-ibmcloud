@@ -46,8 +46,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
+	vpcscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
@@ -109,7 +109,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
-	clusterScope, err := scope.NewClusterScope(scope.ClusterScopeParams{
+	clusterScope, err := vpcscope.NewClusterScope(vpcscope.ClusterScopeParams{
 		Client:          r.Client,
 		Cluster:         cluster,
 		IBMVPCCluster:   ibmVPCCluster,
@@ -172,7 +172,7 @@ func (r *IBMVPCClusterReconciler) reconcileV2(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	clusterScope, err := scope.NewVPCClusterScope(scope.VPCClusterScopeParams{
+	clusterScope, err := vpcscope.NewClusterScopeV2(vpcscope.ClusterScopeParamsV2{
 		Client:          r.Client,
 		Logger:          log,
 		Cluster:         cluster,
@@ -204,7 +204,7 @@ func (r *IBMVPCClusterReconciler) reconcileV2(ctx context.Context, req ctrl.Requ
 	return r.reconcileCluster(ctx, clusterScope)
 }
 
-func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *vpcscope.ClusterScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx).WithValues("controller", "IBMVPCCluster")
 	// If the IBMVPCCluster doesn't have our finalizer, add it.
 	if controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrav1.ClusterFinalizer) {
@@ -301,7 +301,7 @@ func (r *IBMVPCClusterReconciler) reconcile(ctx context.Context, clusterScope *s
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMVPCClusterReconciler) reconcileCluster(ctx context.Context, clusterScope *scope.VPCClusterScope) (ctrl.Result, error) {
+func (r *IBMVPCClusterReconciler) reconcileCluster(ctx context.Context, clusterScope *vpcscope.ClusterScopeV2) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	// If the IBMVPCCluster doesn't have our finalizer, add it.
 	if controllerutil.AddFinalizer(clusterScope.IBMVPCCluster, infrav1.ClusterFinalizer) {
@@ -445,7 +445,7 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(ctx context.Context, clusterS
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMVPCClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+func (r *IBMVPCClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *vpcscope.ClusterScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	// check if still have existing VSIs.
 	listVSIOpts := &vpcv1.ListInstancesOptions{
@@ -521,23 +521,23 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(ctx context.Context, clusterSc
 	return handleFinalizerRemoval(clusterScope)
 }
 
-func (r *IBMVPCClusterReconciler) reconcileDeleteV2(clusterScope *scope.VPCClusterScope) (ctrl.Result, error) { //nolint:unparam
+func (r *IBMVPCClusterReconciler) reconcileDeleteV2(clusterScope *vpcscope.ClusterScopeV2) (ctrl.Result, error) { //nolint:unparam
 	clusterScope.Info("Delete cluster is not implemented for reconcile v2")
 	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMVPCClusterReconciler) getOrCreate(clusterScope *scope.ClusterScope) (*vpcv1.LoadBalancer, error) {
+func (r *IBMVPCClusterReconciler) getOrCreate(clusterScope *vpcscope.ClusterScope) (*vpcv1.LoadBalancer, error) {
 	loadBalancer, err := clusterScope.CreateLoadBalancer()
 	return loadBalancer, err
 }
 
-func handleFinalizerRemoval(clusterScope *scope.ClusterScope) (ctrl.Result, error) {
+func handleFinalizerRemoval(clusterScope *vpcscope.ClusterScope) (ctrl.Result, error) {
 	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMVPCClusterReconciler) reconcileLBState(ctx context.Context, clusterScope *scope.ClusterScope, loadBalancer *vpcv1.LoadBalancer) {
+func (r *IBMVPCClusterReconciler) reconcileLBState(ctx context.Context, clusterScope *vpcscope.ClusterScope, loadBalancer *vpcv1.LoadBalancer) {
 	log := ctrl.LoggerFrom(ctx)
 	if clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port == 0 {
 		clusterScope.IBMVPCCluster.Spec.ControlPlaneEndpoint.Port = clusterScope.APIServerPort()

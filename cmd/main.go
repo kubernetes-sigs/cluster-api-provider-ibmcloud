@@ -43,10 +43,13 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util/flags"
 
-	infrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta1"
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
+	powervsinfrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta1"
+	powervsinfrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	vpcinfrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta1"
+	vpcinfrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
@@ -76,8 +79,10 @@ func init() {
 
 	_ = clientgoscheme.AddToScheme(scheme)
 
-	_ = infrav1beta1.AddToScheme(scheme)
-	_ = infrav1.AddToScheme(scheme)
+	_ = powervsinfrav1beta1.AddToScheme(scheme)
+	_ = powervsinfrav1.AddToScheme(scheme)
+	_ = vpcinfrav1beta1.AddToScheme(scheme)
+	_ = vpcinfrav1.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
@@ -233,7 +238,7 @@ func main() {
 				DisableFor: []client.Object{
 					// We want to avoid use of cache for IBMPowerVSCluster as we exclusively depend on IBMPowerVSCluster.Status.[Resource].ControllerCreated
 					// to mark resources created by controller.
-					&infrav1.IBMPowerVSCluster{},
+					&powervsinfrav1.IBMPowerVSCluster{},
 				},
 			},
 		},
@@ -335,35 +340,35 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 }
 
 func setupWebhooks(mgr ctrl.Manager) {
-	if err := (&webhooks.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&vpc.IBMVPCCluster{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCCluster")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&vpc.IBMVPCMachine{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachine")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&vpc.IBMVPCMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMVPCMachineTemplate")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&powervs.IBMPowerVSCluster{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSCluster")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&powervs.IBMPowerVSMachine{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachine")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&powervs.IBMPowerVSMachineTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSMachineTemplate")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&powervs.IBMPowerVSImage{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSImage")
 		os.Exit(1)
 	}
-	if err := (&webhooks.IBMPowerVSClusterTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&powervs.IBMPowerVSClusterTemplate{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "IBMPowerVSClusterTemplate")
 		os.Exit(1)
 	}
