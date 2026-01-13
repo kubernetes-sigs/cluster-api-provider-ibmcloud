@@ -148,15 +148,15 @@ run: generate fmt vet
 	go run ./cmd/main.go
 
 # Install CRDs into a cluster
-install: generate-manifests $(KUSTOMIZE)
+install: manifests $(KUSTOMIZE)
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 # Uninstall CRDs from a cluster
-uninstall: generate-manifests $(KUSTOMIZE)
+uninstall: manifests $(KUSTOMIZE)
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
-deploy: generate-manifests $(KUSTOMIZE)
+deploy: manifests $(KUSTOMIZE)
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
@@ -179,8 +179,8 @@ help:  # Display this help
 
 # Generate code
 .PHONY: generate
-generate: ## Run all generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
-	$(MAKE) generate-go generate-modules generate-manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
+generate: ## Run all generate-go generate-modules manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
+	$(MAKE) generate-go generate-modules manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
 
 generate-go-deepcopy: $(CONTROLLER_GEN) ## Generate deepcopy go code
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
@@ -189,8 +189,8 @@ generate-go-deepcopy: $(CONTROLLER_GEN) ## Generate deepcopy go code
 generate-go: $(MOCKGEN) ## Generate the Go mock code
 	go generate ./...
 
-.PHONY: generate-manifests
-generate-manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
+.PHONY: manifests
+manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 	$(CONTROLLER_GEN) $(CRD_OPTIONS) rbac:roleName=manager-role paths="./..." output:crd:artifacts:config=config/crd/bases
 
