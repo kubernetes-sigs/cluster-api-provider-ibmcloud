@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 	"testing"
 	"time"
@@ -40,8 +41,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	gtmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging/mock"
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
@@ -220,7 +220,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 	var (
 		mockvpc      *vpcmock.MockVpc
 		mockCtrl     *gomock.Controller
-		machineScope *scope.MachineScope
+		machineScope *vpc.MachineScope
 		reconciler   IBMVPCMachineReconciler
 	)
 
@@ -232,7 +232,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		machineScope = &scope.MachineScope{
+		machineScope = &vpc.MachineScope{
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -282,7 +282,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 }
 
 func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *gtmock.MockGlobalTagging, *scope.MachineScope, IBMVPCMachineReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *gtmock.MockGlobalTagging, *vpc.MachineScope, IBMVPCMachineReconciler) {
 		t.Helper()
 		mockvpc := vpcmock.NewMockVpc(gomock.NewController(t))
 		mockgt := gtmock.NewMockGlobalTagging(gomock.NewController(t))
@@ -290,7 +290,7 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		machineScope := &scope.MachineScope{
+		machineScope := &vpc.MachineScope{
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-machine",
@@ -584,7 +584,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 	var (
 		mockvpc      *vpcmock.MockVpc
 		mockCtrl     *gomock.Controller
-		machineScope *scope.MachineScope
+		machineScope *vpc.MachineScope
 		reconciler   IBMVPCMachineReconciler
 	)
 
@@ -596,7 +596,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		machineScope = &scope.MachineScope{
+		machineScope = &vpc.MachineScope{
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
@@ -638,14 +638,14 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 }
 
 func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
-	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *vpc.MachineScope, IBMVPCMachineReconciler) {
 		t.Helper()
 		mockvpc := vpcmock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		machineScope := &scope.MachineScope{
+		machineScope := &vpc.MachineScope{
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "capi-machine",
@@ -847,14 +847,14 @@ func TestReconcileAdditionalVolumes(t *testing.T) {
 	volumeGeneratedName := "foo-generated-name"
 	clusterResourceGroup := "foo-resource-group"
 
-	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *scope.MachineScope, IBMVPCMachineReconciler) {
+	setup := func(t *testing.T) (*gomock.Controller, *vpcmock.MockVpc, *vpc.MachineScope, IBMVPCMachineReconciler) {
 		t.Helper()
 		mockvpc := vpcmock.NewMockVpc(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
 			Client: testEnv.Client,
 			Log:    klog.Background(),
 		}
-		machineScope := &scope.MachineScope{
+		machineScope := &vpc.MachineScope{
 			IBMVPCCluster: &infrav1.IBMVPCCluster{
 				Spec: infrav1.IBMVPCClusterSpec{
 					ResourceGroup: clusterResourceGroup,

@@ -49,8 +49,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/finalizers"
 	"sigs.k8s.io/cluster-api/util/predicates"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
@@ -65,7 +65,7 @@ type IBMPowerVSClusterReconciler struct {
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
 
-	ClientFactory scope.ClientFactory
+	ClientFactory powervsscope.ClientFactory
 }
 
 type powerVSCluster struct {
@@ -121,7 +121,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Create the scope.
-	clusterScope, err := scope.NewPowerVSClusterScope(scope.PowerVSClusterScopeParams{
+	clusterScope, err := powervsscope.NewPowerVSClusterScope(powervsscope.ClusterScopeParams{
 		Client:            r.Client,
 		Cluster:           cluster,
 		IBMPowerVSCluster: ibmPowerVSCluster,
@@ -154,11 +154,11 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcile(ctx, clusterScope)
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) { //nolint:gocyclo
+func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
 	// check for annotation set for cluster resource and decide on proceeding with infra creation.
 	// do not proceed further if "powervs.cluster.x-k8s.io/create-infra=true" annotation is not set.
-	if !scope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
+	if !powervsscope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
 		log.V(3).Info("IBMPowerVSCluster has no create infrastructure annotation, setting cluster status to ready")
 		clusterScope.IBMPowerVSCluster.Status.Ready = true
 		return ctrl.Result{}, nil
@@ -292,7 +292,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Context, clusterScope *scope.PowerVSClusterScope, powerVSCluster *powerVSCluster, ch chan reconcileResult, wg *sync.WaitGroup) {
+func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Context, clusterScope *powervsscope.ClusterScope, powerVSCluster *powerVSCluster, ch chan reconcileResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	log := ctrl.LoggerFrom(ctx)
@@ -371,7 +371,7 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 	log.Info("PowerVS network creation is pending")
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context, clusterScope *scope.PowerVSClusterScope, powerVSCluster *powerVSCluster, ch chan reconcileResult, wg *sync.WaitGroup) {
+func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context, clusterScope *powervsscope.ClusterScope, powerVSCluster *powerVSCluster, ch chan reconcileResult, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	log := ctrl.LoggerFrom(ctx)
@@ -507,7 +507,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 	log.Info("VPC load balancer creation is pending")
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
+func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.Info("Reconciling IBMPowerVSCluster delete ")
@@ -520,7 +520,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	}
 
 	// check for annotation set for cluster resource and decide on proceeding with infra deletion.
-	if !scope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
+	if !powervsscope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
 		log.Info("IBMPowerVSCluster has no infra annotation, removing finalizer")
 		controllerutil.RemoveFinalizer(cluster, infrav1.IBMPowerVSClusterFinalizer)
 		return ctrl.Result{}, nil
@@ -641,7 +641,7 @@ func (update *powerVSCluster) updateCondition(condition clusterv1beta1.Condition
 	v1beta1conditions.Set(update.cluster, &condition)
 }
 
-func (r *IBMPowerVSClusterReconciler) deleteIBMPowerVSImage(ctx context.Context, clusterScope *scope.PowerVSClusterScope) (ctrl.Result, error) {
+func (r *IBMPowerVSClusterReconciler) deleteIBMPowerVSImage(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	cluster := clusterScope.IBMPowerVSCluster
 	descendants, err := r.listDescendants(ctx, cluster)
@@ -769,7 +769,7 @@ func (c *clusterDescendants) filterOwnedDescendants(cluster *infrav1.IBMPowerVSC
 // patchIBMPowerVSCluster updates the IBMPowerVSCluster and its status on the API server.
 func patchIBMPowerVSCluster(ctx context.Context, patchHelper *v1beta1patch.Helper, ibmPowerVSCluster *infrav1.IBMPowerVSCluster) error {
 	// we don't need to set any conditions for IBMPowerVSCluster without create infra annotation.
-	if !scope.CheckCreateInfraAnnotation(*ibmPowerVSCluster) {
+	if !powervsscope.CheckCreateInfraAnnotation(*ibmPowerVSCluster) {
 		if err := patchHelper.Patch(ctx, ibmPowerVSCluster); err != nil {
 			return fmt.Errorf("error patching IBMPowerVSCluster: %w", err)
 		}

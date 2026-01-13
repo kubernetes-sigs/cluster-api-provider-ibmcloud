@@ -19,6 +19,7 @@ package powervs
 import (
 	"errors"
 	"fmt"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"testing"
 	"time"
 
@@ -39,8 +40,7 @@ import (
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions"         //nolint:staticcheck
 	v1beta2conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions/v1beta2" //nolint:staticcheck
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 
 	. "github.com/onsi/gomega"
@@ -153,7 +153,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-powervs-cluster"},
 			}
-			imageScope := &scope.PowerVSImageScope{
+			imageScope := &powervs.ImageScope{
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "capi-image",
@@ -205,7 +205,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 			}
 
 			mockclient := fake.NewClientBuilder().WithObjects([]client.Object{powervsCluster, powervsImage}...).Build()
-			imageScope := &scope.PowerVSImageScope{
+			imageScope := &powervs.ImageScope{
 				Client:           mockclient,
 				IBMPowerVSImage:  powervsImage,
 				IBMPowerVSClient: mockpowervs,
@@ -325,7 +325,7 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 		mockpowervs *mock.MockPowerVS
 		mockCtrl    *gomock.Controller
 		reconciler  IBMPowerVSImageReconciler
-		imageScope  *scope.PowerVSImageScope
+		imageScope  *powervs.ImageScope
 	)
 
 	setup := func(t *testing.T) {
@@ -337,7 +337,7 @@ func TestIBMPowerVSImageReconciler_delete(t *testing.T) {
 			Client:   testEnv.Client,
 			Recorder: recorder,
 		}
-		imageScope = &scope.PowerVSImageScope{
+		imageScope = &powervs.ImageScope{
 			IBMPowerVSImage:  &infrav1.IBMPowerVSImage{},
 			IBMPowerVSClient: mockpowervs,
 		}
