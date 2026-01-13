@@ -38,7 +38,6 @@ following the steps below.
   **Replace the following snippet with the template of your choice.**
 
     > **Note:**
-    > - Set `EXP_CLUSTER_RESOURCE_SET` to `true` as the cluster will be deployed with external cloud provider which will create the resources to run the cloud controller manager.
     > - The `IBMPOWERVS_IMAGE_NAME` value below should reflect the name of the custom image and the `kubernetes-version` value below should reflect the kubernetes version of the custom image.
     > - While working with unreleased versions like from main branch, instead of `--flavor=powervs` use `--from=./templates/cluster-template-powervs.yaml`.
     > - Refer detailed information on PowerVS variables [here](#note-refer-below-for-more-detailed-information-on-powervs-variables)
