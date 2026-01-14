@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/component-base/logs"
@@ -77,13 +78,13 @@ var (
 func init() {
 	klog.InitFlags(nil)
 
-	_ = clientgoscheme.AddToScheme(scheme)
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	_ = powervsinfrav1beta1.AddToScheme(scheme)
-	_ = powervsinfrav1.AddToScheme(scheme)
-	_ = vpcinfrav1beta1.AddToScheme(scheme)
-	_ = vpcinfrav1.AddToScheme(scheme)
-	_ = clusterv1.AddToScheme(scheme)
+	utilruntime.Must(powervsinfrav1beta1.AddToScheme(scheme))
+	utilruntime.Must(powervsinfrav1.AddToScheme(scheme))
+	utilruntime.Must(vpcinfrav1beta1.AddToScheme(scheme))
+	utilruntime.Must(vpcinfrav1.AddToScheme(scheme))
+	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
