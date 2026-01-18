@@ -45,7 +45,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/flags"
 
 	powervsinfrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta1"
-	powervsinfrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsinfrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	powervsinfrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	vpcinfrav1beta1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta1"
 	vpcinfrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
@@ -79,8 +80,8 @@ func init() {
 	klog.InitFlags(nil)
 
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
 	utilruntime.Must(powervsinfrav1beta1.AddToScheme(scheme))
+	utilruntime.Must(powervsinfrav1beta2.AddToScheme(scheme))
 	utilruntime.Must(powervsinfrav1.AddToScheme(scheme))
 	utilruntime.Must(vpcinfrav1beta1.AddToScheme(scheme))
 	utilruntime.Must(vpcinfrav1.AddToScheme(scheme))

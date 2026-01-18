@@ -153,4 +153,44 @@ resources:
   kind: IBMPowerVSImage
   path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2
   version: v1beta2
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: IBMPowerVSCluster
+  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
+  version: v1beta3
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: IBMPowerVSClusterTemplate
+  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
+  version: v1beta3
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: IBMPowerVSMachine
+  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
+  version: v1beta3
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: IBMPowerVSMachineTemplate
+  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
+  version: v1beta3
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: cluster.x-k8s.io
+  group: infrastructure
+  kind: IBMPowerVSImage
+  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
+  version: v1beta3
 version: "3"

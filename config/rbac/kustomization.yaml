@@ -4,3 +4,23 @@ resources:
 - leader_election_role.yaml
 - leader_election_role_binding.yaml
 - service_account.yaml
+# For each CRD, "Admin", "Editor" and "Viewer" roles are scaffolded by
+# default, aiding admins in cluster management. Those roles are
+# not used by the cluster-api-provider-ibmcloud itself. You can comment the following lines
+# if you do not want those helpers be installed with your Project.
+#- ibmpowervsimage_admin_role.yaml
+#- ibmpowervsimage_editor_role.yaml
+#- ibmpowervsimage_viewer_role.yaml
+#- ibmpowervsmachinetemplate_admin_role.yaml
+#- ibmpowervsmachinetemplate_editor_role.yaml
+#- ibmpowervsmachinetemplate_viewer_role.yaml
+#- ibmpowervsmachine_admin_role.yaml
+#- ibmpowervsmachine_editor_role.yaml
+#- ibmpowervsmachine_viewer_role.yaml
+#- ibmpowervsclustertemplate_admin_role.yaml
+#- ibmpowervsclustertemplate_editor_role.yaml
+#- ibmpowervsclustertemplate_viewer_role.yaml
+#- ibmpowervscluster_admin_role.yaml
+#- ibmpowervscluster_editor_role.yaml
+#- ibmpowervscluster_viewer_role.yaml
+

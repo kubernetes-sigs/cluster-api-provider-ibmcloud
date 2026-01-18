@@ -26,130 +26,130 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
 
 func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSCluster)
 
-	return Convert_v1beta1_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(src, dst, nil)
 }
 
 func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSCluster)
 
-	return Convert_v1beta2_IBMPowerVSCluster_To_v1beta1_IBMPowerVSCluster(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSCluster_To_v1beta1_IBMPowerVSCluster(src, dst, nil)
 }
 
 func (src *IBMPowerVSClusterList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSClusterList)
 
-	return Convert_v1beta1_IBMPowerVSClusterList_To_v1beta2_IBMPowerVSClusterList(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSClusterList_To_v1beta3_IBMPowerVSClusterList(src, dst, nil)
 }
 
 func (dst *IBMPowerVSClusterList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSClusterList)
 
-	return Convert_v1beta2_IBMPowerVSClusterList_To_v1beta1_IBMPowerVSClusterList(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSClusterList_To_v1beta1_IBMPowerVSClusterList(src, dst, nil)
 }
 
 func (src *IBMPowerVSClusterTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSClusterTemplate)
 
-	return Convert_v1beta1_IBMPowerVSClusterTemplate_To_v1beta2_IBMPowerVSClusterTemplate(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSClusterTemplate_To_v1beta3_IBMPowerVSClusterTemplate(src, dst, nil)
 }
 
 func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSClusterTemplate)
 
-	return Convert_v1beta2_IBMPowerVSClusterTemplate_To_v1beta1_IBMPowerVSClusterTemplate(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSClusterTemplate_To_v1beta1_IBMPowerVSClusterTemplate(src, dst, nil)
 }
 
 func (src *IBMPowerVSClusterTemplateList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSClusterTemplateList)
 
-	return Convert_v1beta1_IBMPowerVSClusterTemplateList_To_v1beta2_IBMPowerVSClusterTemplateList(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSClusterTemplateList_To_v1beta3_IBMPowerVSClusterTemplateList(src, dst, nil)
 }
 
 func (dst *IBMPowerVSClusterTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSClusterTemplateList)
 
-	return Convert_v1beta2_IBMPowerVSClusterTemplateList_To_v1beta1_IBMPowerVSClusterTemplateList(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSClusterTemplateList_To_v1beta1_IBMPowerVSClusterTemplateList(src, dst, nil)
 }
 
 func (src *IBMPowerVSMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSMachine)
 
-	return Convert_v1beta1_IBMPowerVSMachine_To_v1beta2_IBMPowerVSMachine(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSMachine_To_v1beta3_IBMPowerVSMachine(src, dst, nil)
 }
 
 func (dst *IBMPowerVSMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSMachine)
 
-	return Convert_v1beta2_IBMPowerVSMachine_To_v1beta1_IBMPowerVSMachine(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSMachine_To_v1beta1_IBMPowerVSMachine(src, dst, nil)
 }
 
 func (src *IBMPowerVSMachineList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSMachineList)
 
-	return Convert_v1beta1_IBMPowerVSMachineList_To_v1beta2_IBMPowerVSMachineList(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSMachineList_To_v1beta3_IBMPowerVSMachineList(src, dst, nil)
 }
 
 func (dst *IBMPowerVSMachineList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSMachineList)
 
-	return Convert_v1beta2_IBMPowerVSMachineList_To_v1beta1_IBMPowerVSMachineList(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSMachineList_To_v1beta1_IBMPowerVSMachineList(src, dst, nil)
 }
 
 func (src *IBMPowerVSMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSMachineTemplate)
 
-	return Convert_v1beta1_IBMPowerVSMachineTemplate_To_v1beta2_IBMPowerVSMachineTemplate(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSMachineTemplate_To_v1beta3_IBMPowerVSMachineTemplate(src, dst, nil)
 }
 
 func (dst *IBMPowerVSMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSMachineTemplate)
 
-	return Convert_v1beta2_IBMPowerVSMachineTemplate_To_v1beta1_IBMPowerVSMachineTemplate(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSMachineTemplate_To_v1beta1_IBMPowerVSMachineTemplate(src, dst, nil)
 }
 
 func (src *IBMPowerVSMachineTemplateList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSMachineTemplateList)
 
-	return Convert_v1beta1_IBMPowerVSMachineTemplateList_To_v1beta2_IBMPowerVSMachineTemplateList(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSMachineTemplateList_To_v1beta3_IBMPowerVSMachineTemplateList(src, dst, nil)
 }
 
 func (dst *IBMPowerVSMachineTemplateList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSMachineTemplateList)
 
-	return Convert_v1beta2_IBMPowerVSMachineTemplateList_To_v1beta1_IBMPowerVSMachineTemplateList(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSMachineTemplateList_To_v1beta1_IBMPowerVSMachineTemplateList(src, dst, nil)
 }
 
 func (src *IBMPowerVSImage) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSImage)
 
-	return Convert_v1beta1_IBMPowerVSImage_To_v1beta2_IBMPowerVSImage(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSImage_To_v1beta3_IBMPowerVSImage(src, dst, nil)
 }
 
 func (dst *IBMPowerVSImage) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSImage)
 
-	return Convert_v1beta2_IBMPowerVSImage_To_v1beta1_IBMPowerVSImage(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSImage_To_v1beta1_IBMPowerVSImage(src, dst, nil)
 }
 
 func (src *IBMPowerVSImageList) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSImageList)
 
-	return Convert_v1beta1_IBMPowerVSImageList_To_v1beta2_IBMPowerVSImageList(src, dst, nil)
+	return Convert_v1beta1_IBMPowerVSImageList_To_v1beta3_IBMPowerVSImageList(src, dst, nil)
 }
 
 func (dst *IBMPowerVSImageList) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSImageList)
 
-	return Convert_v1beta2_IBMPowerVSImageList_To_v1beta1_IBMPowerVSImageList(src, dst, nil)
+	return Convert_v1beta3_IBMPowerVSImageList_To_v1beta1_IBMPowerVSImageList(src, dst, nil)
 }
 
-func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
+func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1.IBMPowerVSMachineSpec, s apiconversion.Scope) error {
 	out.SystemType = in.SysType
 	out.Processors = intstr.FromString(in.Processors)
 
@@ -168,10 +168,10 @@ func Convert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 		out.ProcessorType = infrav1.PowerVSProcessorTypeCapped
 	}
 
-	return autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in, out, s)
+	return autoConvert_v1beta1_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in, out, s)
 }
 
-func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
+func Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *infrav1.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apiconversion.Scope) error {
 	out.SysType = in.SystemType
 	out.Memory = strconv.FormatInt(int64(in.MemoryGiB), 10)
 
@@ -191,29 +191,29 @@ func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in *
 		out.ProcType = strings.ToLower(string(infrav1.PowerVSProcessorTypeCapped))
 	}
 
-	return autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in, out, s)
+	return autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta1_IBMPowerVSMachineSpec(in, out, s)
 }
 
-func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s apiconversion.Scope) error {
+func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s apiconversion.Scope) error {
 	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil {
 		out.ServiceInstanceID = *in.ServiceInstance.ID
 	}
-	return autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(in, out, s)
+	return autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta1_IBMPowerVSClusterSpec(in, out, s)
 }
 
-func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta1_IBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, out *IBMPowerVSClusterStatus, s apiconversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta1_IBMPowerVSClusterStatus(in, out, s)
+func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta1_IBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, out *IBMPowerVSClusterStatus, s apiconversion.Scope) error {
+	return autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta1_IBMPowerVSClusterStatus(in, out, s)
 }
 
-func Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta1_IBMPowerVSImageSpec(in *infrav1.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s apiconversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta1_IBMPowerVSImageSpec(in, out, s)
+func Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta1_IBMPowerVSImageSpec(in *infrav1.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s apiconversion.Scope) error {
+	return autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta1_IBMPowerVSImageSpec(in, out, s)
 }
 
-func Convert_v1beta2_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineStatus(in *infrav1.IBMPowerVSMachineStatus, out *IBMPowerVSMachineStatus, s apiconversion.Scope) error {
+func Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineStatus(in *infrav1.IBMPowerVSMachineStatus, out *IBMPowerVSMachineStatus, s apiconversion.Scope) error {
 	// CAPI V1Beta2 was added in CAPIBM v1beta2
-	return autoConvert_v1beta2_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineStatus(in, out, s)
+	return autoConvert_v1beta3_IBMPowerVSMachineStatus_To_v1beta1_IBMPowerVSMachineStatus(in, out, s)
 }
 
-func Convert_v1beta2_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(in *infrav1.IBMPowerVSImageStatus, out *IBMPowerVSImageStatus, s apiconversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(in, out, s)
+func Convert_v1beta3_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(in *infrav1.IBMPowerVSImageStatus, out *IBMPowerVSImageStatus, s apiconversion.Scope) error {
+	return autoConvert_v1beta3_IBMPowerVSImageStatus_To_v1beta1_IBMPowerVSImageStatus(in, out, s)
 }
