@@ -2248,11 +2248,15 @@ func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityG
 	// 4. Extract Rule ID based on returned interface type
 	var ruleID string
 	switch rule := ruleIntf.(type) {
-	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll:
+	case *vpcv1.SecurityGroupRuleProtocolAny:
+		ruleID = *rule.ID
+	case *vpcv1.SecurityGroupRuleProtocolIcmptcpudp:
 		ruleID = *rule.ID
 	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp:
 		ruleID = *rule.ID
 	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp:
+		ruleID = *rule.ID
+	case *vpcv1.SecurityGroupRuleProtocolIndividual:
 		ruleID = *rule.ID
 	default:
 		return "", fmt.Errorf("unrecognized rule type returned from API")
