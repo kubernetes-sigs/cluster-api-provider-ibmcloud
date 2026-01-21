@@ -2158,6 +2158,9 @@ func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityG
 	}
 
 	switch reflect.TypeOf(ruleIntf).String() {
+	case infrav1.VPCSecurityGroupRuleProtocolAnyType:
+		rule := ruleIntf.(*vpcv1.SecurityGroupRuleProtocolAny)
+		ruleID = rule.ID
 	case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
 		rule := ruleIntf.(*vpcv1.SecurityGroupRuleProtocolIcmptcpudp)
 		ruleID = rule.ID
@@ -2166,6 +2169,9 @@ func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityG
 		ruleID = rule.ID
 	case infrav1.VPCSecurityGroupRuleProtocolIcmpType:
 		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp)
+		ruleID = rule.ID
+	case infrav1.VPCSecurityGroupRuleProtocolIndividualType:
+		rule := ruleIntf.(*vpcv1.SecurityGroupRuleProtocolIndividual)
 		ruleID = rule.ID
 	}
 	log.Info("Created VPC security group rule", "ruleID", *ruleID)
@@ -2296,7 +2302,7 @@ func (s *ClusterScope) validateVPCSecurityGroupRuleRemote(originalSGRemote *vpcv
 }
 
 // validateSecurityGroupRule compares a specific security group's rule with the spec and existing security group's rule.
-func (s *ClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, direction infrav1.VPCSecurityGroupRuleDirection, rule *infrav1.VPCSecurityGroupRulePrototype, remote infrav1.VPCSecurityGroupRuleRemote) (ruleID *string, match bool, err error) {
+func (s *ClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, direction infrav1.VPCSecurityGroupRuleDirection, rule *infrav1.VPCSecurityGroupRulePrototype, remote infrav1.VPCSecurityGroupRuleRemote) (ruleID *string, match bool, err error) { //nolint: gocyclo
 	updateError := func(e error) {
 		err = fmt.Errorf("failed to validate VPC security group rule's remote: %w", e)
 	}
@@ -2305,6 +2311,18 @@ func (s *ClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vp
 
 	for _, ogRuleIntf := range originalSecurityGroupRules {
 		switch reflect.TypeOf(ogRuleIntf).String() {
+		case infrav1.VPCSecurityGroupRuleProtocolAnyType:
+			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleProtocolAny)
+			ruleID = ogRule.ID
+
+			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol {
+				ogRemote := ogRule.Remote.(*vpcv1.SecurityGroupRuleRemote)
+				match, err = s.validateVPCSecurityGroupRuleRemote(ogRemote, remote)
+				if err != nil {
+					updateError(err)
+					return nil, false, err
+				}
+			}
 		case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
 			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleProtocolIcmptcpudp)
 			ruleID = ogRule.ID
@@ -2338,6 +2356,18 @@ func (s *ClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vp
 			ruleID = ogRule.ID
 
 			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol && *ogRule.Code == *icmpCode && *ogRule.Type == *icmpType {
+				ogRemote := ogRule.Remote.(*vpcv1.SecurityGroupRuleRemote)
+				match, err = s.validateVPCSecurityGroupRuleRemote(ogRemote, remote)
+				if err != nil {
+					updateError(err)
+					return nil, false, err
+				}
+			}
+		case infrav1.VPCSecurityGroupRuleProtocolIndividualType:
+			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleProtocolIndividual)
+			ruleID = ogRule.ID
+
+			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol {
 				ogRemote := ogRule.Remote.(*vpcv1.SecurityGroupRuleRemote)
 				match, err = s.validateVPCSecurityGroupRuleRemote(ogRemote, remote)
 				if err != nil {
