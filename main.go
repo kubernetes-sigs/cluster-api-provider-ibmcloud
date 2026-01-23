@@ -191,7 +191,7 @@ func main() {
 		BurstSize: 100,
 	})
 
-	_, metricsOptions, err := flags.GetManagerOptions(managerOptions)
+	tlsOptions, metricsOptions, err := flags.GetManagerOptions(managerOptions)
 	if err != nil {
 		setupLog.Error(err, "Unable to start manager: invalid flags")
 		os.Exit(1)
@@ -227,6 +227,7 @@ func main() {
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Port:    webhookPort,
 			CertDir: webhookCertDir,
+			TLSOpts: tlsOptions,
 		}),
 		Client: client.Options{
 			Cache: &client.CacheOptions{
