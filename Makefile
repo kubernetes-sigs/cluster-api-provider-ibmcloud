@@ -196,11 +196,10 @@ manifests: $(CONTROLLER_GEN) ## Generate manifests e.g. CRD, RBAC etc.
 
 .PHONY: generate-go-conversions
 generate-go-conversions: $(CONVERSION_GEN) ## Generate conversions go code
-	$(MAKE) clean-generated-conversions SRC_DIRS="./api/powervs/v1beta1,./api/powervs/v1beta2,./api/vpc/v1beta1"
+	$(MAKE) clean-generated-conversions SRC_DIRS="./api/powervs/v1beta2,./api/vpc/v1beta1"
 	$(CONVERSION_GEN) \
 		--output-file=zz_generated.conversion.go \
 		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt \
-		./api/powervs/v1beta1 \
 		./api/powervs/v1beta2 \
 		./api/vpc/v1beta1
 
