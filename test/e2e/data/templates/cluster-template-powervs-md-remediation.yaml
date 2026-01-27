@@ -515,7 +515,7 @@ spec:
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSCluster
 metadata:
   labels:
@@ -529,7 +529,7 @@ spec:
     name: ${IBMPOWERVS_NETWORK_NAME}
   serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -547,7 +547,7 @@ spec:
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0

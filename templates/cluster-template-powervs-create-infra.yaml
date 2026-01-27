@@ -24,7 +24,7 @@ spec:
     kind: IBMPowerVSCluster
     name: ${CLUSTER_NAME}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSCluster
 metadata:
   annotations:
@@ -96,7 +96,7 @@ spec:
   replicas: ${CONTROL_PLANE_MACHINE_COUNT}
   version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-control-plane
@@ -136,7 +136,7 @@ spec:
         name: ${CLUSTER_NAME}-md-0
       version: ${KUBERNETES_VERSION}
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSMachineTemplate
 metadata:
   name: ${CLUSTER_NAME}-md-0
@@ -181,7 +181,7 @@ spec:
       - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
       - echo "{{ v1.local_hostname }}" >/etc/hostname
 ---
-apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSImage
 metadata:
   creationTimestamp: null

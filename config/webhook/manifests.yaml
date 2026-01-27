@@ -6,19 +6,18 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervscluster
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster
   failurePolicy: Fail
   name: mibmpowervscluster.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -27,19 +26,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsclustertemplate
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsclustertemplate
   failurePolicy: Fail
   name: mibmpowervsclustertemplate.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -48,19 +46,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsimage
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsimage
   failurePolicy: Fail
   name: mibmpowervsimage.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -69,19 +66,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsmachine
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsmachine
   failurePolicy: Fail
   name: mibmpowervsmachine.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -90,19 +86,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsmachinetemplate
+      path: /mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsmachinetemplate
   failurePolicy: Fail
   name: mibmpowervsmachinetemplate.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -180,19 +175,18 @@ metadata:
 webhooks:
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervscluster
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster
   failurePolicy: Fail
   name: vibmpowervscluster.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -201,19 +195,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsclustertemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsclustertemplate
   failurePolicy: Fail
   name: vibmpowervsclustertemplate.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -222,19 +215,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsimage
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsimage
   failurePolicy: Fail
   name: vibmpowervsimage.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -243,19 +235,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsmachine
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsmachine
   failurePolicy: Fail
   name: vibmpowervsmachine.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE
@@ -264,19 +255,18 @@ webhooks:
   sideEffects: None
 - admissionReviewVersions:
   - v1
-  - v1beta1
   clientConfig:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmpowervsmachinetemplate
+      path: /validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsmachinetemplate
   failurePolicy: Fail
   name: vibmpowervsmachinetemplate.kb.io
   rules:
   - apiGroups:
     - infrastructure.cluster.x-k8s.io
     apiVersions:
-    - v1beta2
+    - v1beta3
     operations:
     - CREATE
     - UPDATE

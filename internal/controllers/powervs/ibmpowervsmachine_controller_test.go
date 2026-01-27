@@ -44,7 +44,7 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 	v1beta1conditions "sigs.k8s.io/cluster-api/util/deprecated/v1beta1/conditions" //nolint:staticcheck
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"

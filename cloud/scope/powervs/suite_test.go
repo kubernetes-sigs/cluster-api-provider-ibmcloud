@@ -28,7 +28,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
 )

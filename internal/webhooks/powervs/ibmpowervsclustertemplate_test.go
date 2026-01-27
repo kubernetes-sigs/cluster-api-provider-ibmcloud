@@ -19,7 +19,7 @@ package powervs
 import (
 	"testing"
 
-	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 
 	. "github.com/onsi/gomega"
 )

@@ -15,4 +15,7 @@ limitations under the License.
 */
 
 // Package v1beta2 contains the IBMPowerVS v1beta2 API implementation.
+// +k8s:conversion-gen=sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
+// +kubebuilder:object:generate=true
+// +groupName=infrastructure.cluster.x-k8s.io
 package v1beta2
