@@ -32,7 +32,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
  Below are the cluster creation scenarios.
  #### Creating a new cluster 
- - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources.
+ - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources. During creation if resource is created successfully but failed to attach the tag, will retry for some time and if it still fails, we will set condition with descriptive message `Failed to attach tag to newly created Workspace workspace-name, either manually attach tag or delete the cluster and retry it in different region.`
  #### Creating a new cluster with reusing pre-created resources
  - When cluster is created using existing resources, no tag will be attached. We won't delete these resources, as these were not created by controller.
  #### Creating a new cluster with reusing pre-created resources from old cluster.
@@ -50,7 +50,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 8. [COS Instance](https://www.ibm.com/products/cloud-object-storage)
 
 #### Note 
-- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `powervs.cluster.x-k8s.io/owner/<cluster-name>/TG: vpcconnection, powervsconnection` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
+- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `powervs.cluster.x-k8s.io/owner/<cluster-name>/TG: vpcconnectionID, powervsconnectionID` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
 
 - To handle deletion DHCP server, have to tag DHCP Network. DHCP server doesn't support tagging.
 
