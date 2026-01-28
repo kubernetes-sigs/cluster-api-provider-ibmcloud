@@ -28,6 +28,7 @@ import (
 	// +kubebuilder:scaffold:imports
 	"github.com/spf13/pflag"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -39,9 +40,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/cluster-api/controllers/crdmigrator"
 	"sigs.k8s.io/cluster-api/util/flags"
 
 	powervsinfrav1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2"
@@ -60,19 +63,21 @@ import (
 )
 
 var (
-	watchNamespace       string
-	enableLeaderElection bool
-	healthAddr           string
-	syncPeriod           time.Duration
-	managerOptions       = flags.ManagerOptions{}
-	logOptions           = logs.NewOptions()
-	webhookPort          int
-	webhookCertDir       string
-	watchFilterValue     string
-	disableHTTP2         bool
-
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+
+	// flags.
+	watchNamespace         string
+	enableLeaderElection   bool
+	healthAddr             string
+	syncPeriod             time.Duration
+	managerOptions         = flags.ManagerOptions{}
+	logOptions             = logs.NewOptions()
+	webhookPort            int
+	webhookCertDir         string
+	watchFilterValue       string
+	disableHTTP2           bool
+	skipCRDMigrationPhases []string
 )
 
 func init() {
@@ -84,10 +89,13 @@ func init() {
 	utilruntime.Must(vpcinfrav1beta1.AddToScheme(scheme))
 	utilruntime.Must(vpcinfrav1.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
+	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
 func initFlags(fs *pflag.FlagSet) {
+	logsv1.AddFlags(logOptions, fs)
+
 	fs.BoolVar(
 		&enableLeaderElection,
 		"leader-elect",
@@ -136,15 +144,26 @@ func initFlags(fs *pflag.FlagSet) {
 		"The webhook server port the manager will listen on.",
 	)
 
-	fs.StringVar(&webhookCertDir, "webhook-cert-dir", "/tmp/k8s-webhook-server/serving-certs/",
+	fs.StringVar(&webhookCertDir,
+		"webhook-cert-dir",
+		"/tmp/k8s-webhook-server/serving-certs/",
 		"The webhook certificate directory, where the server should find the TLS certificate and key.")
 
-	fs.StringVar(&watchFilterValue, "watch-filter", "",
+	fs.StringVar(&watchFilterValue,
+		"watch-filter",
+		"",
 		fmt.Sprintf("Label value that the controller watches to reconcile cluster-api objects. Label key is always %s. If unspecified, the controller watches for all cluster-api objects.", clusterv1.WatchLabel))
-	fs.BoolVar(&disableHTTP2, "disable-http2", true, "http/2 should be disabled due to its vulnerabilities. More specifically, disabling http/2 will"+
-		" prevent from being vulnerable to the HTTP/2 Stream Cancellation and Rapid Reset CVEs.")
 
-	logsv1.AddFlags(logOptions, fs)
+	fs.BoolVar(&disableHTTP2,
+		"disable-http2",
+		true,
+		"http/2 should be disabled due to its vulnerabilities. More specifically, disabling http/2 will prevent from being vulnerable to the HTTP/2 Stream Cancellation and Rapid Reset CVEs.")
+
+	fs.StringSliceVar(&skipCRDMigrationPhases,
+		"skip-crd-migration-phases",
+		[]string{},
+		"List of CRD migration phases to skip. Valid values are: StorageVersionMigration, CleanupManagedFields.")
+
 	flags.AddManagerOptions(fs, &managerOptions)
 }
 
@@ -166,6 +185,11 @@ func validateFlags() error {
 // Add RBAC for the authorized diagnostics endpoint.
 // +kubebuilder:rbac:groups=authentication.k8s.io,resources=tokenreviews,verbs=create
 // +kubebuilder:rbac:groups=authorization.k8s.io,resources=subjectaccessreviews,verbs=create
+// ADD CRD RBAC for CRD Migrator.
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions;customresourcedefinitions/status,verbs=update;patch,resourceNames=ibmpowervsclusters.infrastructure.cluster.x-k8s.io;ibmpowervsclustertemplates.infrastructure.cluster.x-k8s.io;ibmpowervsmachines.infrastructure.cluster.x-k8s.io;ibmpowervsmachinetemplates.infrastructure.cluster.x-k8s.io;ibmpowervsimages.infrastructure.cluster.x-k8s.io
+// ADD CR RBAC for CRD Migrator.
+// +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclustertemplates,verbs=get;list;watch;patch;update
 
 func main() {
 	initFlags(pflag.CommandLine)
@@ -268,6 +292,32 @@ func main() {
 }
 
 func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpoint) {
+	// Note: The kubebuilder RBAC markers above has to be kept in sync
+	// with the CRDs that should be migrated by this provider.
+	crdMigratorConfig := map[client.Object]crdmigrator.ByObjectConfig{
+		&powervsinfrav1.IBMPowerVSCluster{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
+		&powervsinfrav1.IBMPowerVSClusterTemplate{}: {UseCache: false},
+		&powervsinfrav1.IBMPowerVSMachine{}:         {UseCache: true, UseStatusForStorageVersionMigration: true},
+		&powervsinfrav1.IBMPowerVSMachineTemplate{}: {UseCache: false},
+		&powervsinfrav1.IBMPowerVSImage{}:           {UseCache: true, UseStatusForStorageVersionMigration: true},
+	}
+
+	crdMigratorSkipPhases := []crdmigrator.Phase{}
+	for _, p := range skipCRDMigrationPhases {
+		crdMigratorSkipPhases = append(crdMigratorSkipPhases, crdmigrator.Phase(p))
+	}
+	if err := (&crdmigrator.CRDMigrator{
+		Client:                 mgr.GetClient(),
+		APIReader:              mgr.GetAPIReader(),
+		SkipCRDMigrationPhases: crdMigratorSkipPhases,
+		Config:                 crdMigratorConfig,
+		// The CRDMigrator is run with only concurrency 1 to ensure we don't overwhelm the apiserver by patching a
+		// lot of CRs concurrently.
+	}).SetupWithManager(ctx, mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
+		setupLog.Error(err, "Unable to create controller", "controller", "CRDMigrator")
+		os.Exit(1)
+	}
+
 	if err := (&controllers.IBMVPCClusterReconciler{
 		Client:          mgr.GetClient(),
 		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCCluster"),
