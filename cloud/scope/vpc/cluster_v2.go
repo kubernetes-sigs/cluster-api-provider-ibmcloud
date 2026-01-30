@@ -67,6 +67,11 @@ const (
 	individualSgrRegex = "^(ah|esp|gre|ip_in_ip|l2tp|rsvp|sctp|vrrp|number_(?:0|2|3|5|[7-9]|1[0-6]|1[8-9]|[2-3][0-9]|4[0-5]|4[89]|5[2-9]|[6-9][0-9]|10[0-9]|11[0-1]|11[3-4]|11[6-9]|12[0-9]|13[0-1]|13[3-9]|1[4-9][0-9]|2[0-4][0-9]|25[0-5]))$"
 )
 
+var (
+	// Compile the regexp object for the VPCSecurityGroupRuleProtocolIndividualType.
+	individualSgrRegexp = regexp.MustCompile(individualSgrRegex)
+)
+
 // ClusterScopeParamsV2 defines the input parameters used to create a new ClusterScopeV2.
 type ClusterScopeParamsV2 struct {
 	Client          client.Client
@@ -93,8 +98,6 @@ type ClusterScopeV2 struct {
 	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
-
-	individualSgrRegexp *regexp.Regexp
 }
 
 // NewClusterScopeV2 creates a new ClusterScopeV2 from the supplied parameters.
@@ -185,9 +188,6 @@ func NewClusterScopeV2(params ClusterScopeParamsV2) (*ClusterScopeV2, error) {
 		return nil, fmt.Errorf("failed to create resource manager client: %w", err)
 	}
 
-	// Compile the regexp object for the VPCSecurityGroupRuleProtocolIndividualType
-	individualSgrRegexp := regexp.MustCompile(individualSgrRegex)
-
 	clusterScope := &ClusterScopeV2{
 		Logger:                   params.Logger,
 		Client:                   params.Client,
@@ -199,7 +199,6 @@ func NewClusterScopeV2(params ClusterScopeParamsV2) (*ClusterScopeV2, error) {
 		ResourceControllerClient: resourceControllerClient,
 		ResourceManagerClient:    resourceManagerClient,
 		VPCClient:                vpcClient,
-		individualSgrRegexp:      individualSgrRegexp,
 	}
 	return clusterScope, nil
 }
@@ -1539,7 +1538,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 					break
 				}
 			case infrav1.VPCSecurityGroupRuleProtocolIndividualType:
-				matched := s.individualSgrRegexp.MatchString(string(securityGroupRulePrototype.Protocol))
+				matched := individualSgrRegexp.MatchString(string(securityGroupRulePrototype.Protocol))
 
 				// If our Remote doesn't define one of the individual Protocol, we don't need further checks, move on to next Rule
 				if !matched {
@@ -1824,7 +1823,7 @@ func (s *ClusterScopeV2) createSecurityGroupRule(ctx context.Context, securityGr
 	default:
 		// Check if protocol is part of the supported list else error
 		// If part of the supported list add it as Individual prototype
-		matched := s.individualSgrRegexp.MatchString(string(securityGroupRulePrototype.Protocol))
+		matched := individualSgrRegexp.MatchString(string(securityGroupRulePrototype.Protocol))
 
 		if matched {
 			prototype := &vpcv1.SecurityGroupRulePrototypeSecurityGroupRuleProtocolIndividualPrototype{
