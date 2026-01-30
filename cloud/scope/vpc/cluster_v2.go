@@ -1579,9 +1579,9 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 func (s *ClusterScopeV2) checkSecurityGroupRuleProtocolAny(ctx context.Context, _ infrav1.VPCSecurityGroupRulePrototype, securityGroupRuleRemote infrav1.VPCSecurityGroupRuleRemote, existingRule *vpcv1.SecurityGroupRuleProtocolAny) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if exists, err := s.checkSecurityGroupRulePrototypeRemote(ctx, securityGroupRuleRemote, existingRule.Remote); err != nil {
-		return false, fmt.Errorf("error failed checking security group rule all remote: %w", err)
+		return false, fmt.Errorf("error failed checking security group rule any remote: %w", err)
 	} else if exists {
-		log.V(3).Info("security group rule all protocols match")
+		log.V(3).Info("security group rule any protocol matches")
 		return true, nil
 	}
 	return false, nil
@@ -1591,9 +1591,9 @@ func (s *ClusterScopeV2) checkSecurityGroupRuleProtocolAny(ctx context.Context, 
 func (s *ClusterScopeV2) checkSecurityGroupRuleProtocolIcmpTCPUDP(ctx context.Context, _ infrav1.VPCSecurityGroupRulePrototype, securityGroupRuleRemote infrav1.VPCSecurityGroupRuleRemote, existingRule *vpcv1.SecurityGroupRuleProtocolIcmptcpudp) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if exists, err := s.checkSecurityGroupRulePrototypeRemote(ctx, securityGroupRuleRemote, existingRule.Remote); err != nil {
-		return false, fmt.Errorf("error failed checking security group rule all remote: %w", err)
+		return false, fmt.Errorf("error failed checking security group rule icmp-tcp-udp remote: %w", err)
 	} else if exists {
-		log.V(3).Info("security group rule all protocols match")
+		log.V(3).Info("security group rule icmp-tcp-udp protocol matches")
 		return true, nil
 	}
 	return false, nil
@@ -1652,9 +1652,9 @@ func (s *ClusterScopeV2) checkSecurityGroupRuleProtocolIndividual(ctx context.Co
 	}
 
 	if exists, err := s.checkSecurityGroupRulePrototypeRemote(ctx, securityGroupRuleRemote, existingRule.Remote); err != nil {
-		return false, fmt.Errorf("error failed checking security group rule all remote: %w", err)
+		return false, fmt.Errorf("error failed checking security group rule %s remote: %w", string(securityGroupRulePrototype.Protocol), err)
 	} else if exists {
-		log.V(3).Info("security group rule all protocols match")
+		log.V(3).Info("security group rule individual protocol matches", "protocol", string(securityGroupRulePrototype.Protocol))
 		return true, nil
 	}
 	return false, nil
