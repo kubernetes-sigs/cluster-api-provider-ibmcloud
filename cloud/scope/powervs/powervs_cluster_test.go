@@ -2167,7 +2167,7 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance(ctx)
 		g.Expect(err).ToNot(BeNil())
@@ -2191,7 +2191,7 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance(ctx)
@@ -2221,7 +2221,7 @@ func TestReconcilePowerVSServiceInstance(t *testing.T) {
 			Name: ptr.To("test-instance"),
 		}
 
-		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(instance, nil, nil)
 
 		requeue, err := clusterScope.ReconcilePowerVSServiceInstance(ctx)
@@ -2349,7 +2349,7 @@ func TestIsServiceInstanceExists(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists(ctx)
 		g.Expect(instanceID).To(Equal(""))
@@ -2373,7 +2373,7 @@ func TestIsServiceInstanceExists(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{Name: ptr.To("instance"), State: ptr.To("unknown")}, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{Name: ptr.To("instance"), State: ptr.To("unknown")}, nil)
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists(ctx)
 		g.Expect(instanceID).To(Equal(""))
@@ -2397,7 +2397,9 @@ func TestIsServiceInstanceExists(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetServiceInstance(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{GUID: ptr.To("guid"), Name: ptr.To("instance"), State: ptr.To("active")}, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{Name: "instance"})).Return(&resourcecontrollerv2.ResourceInstance{
+			Name: ptr.To("instance"), State: ptr.To("active"), GUID: ptr.To("guid"),
+		}, nil)
 
 		instanceID, requeue, err := clusterScope.isServiceInstanceExists(ctx)
 		g.Expect(instanceID).To(Equal("guid"))
@@ -5761,7 +5763,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error fetching instance by name"))
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, fmt.Errorf("error fetching instance by name"))
 
 		err = clusterScope.ReconcileCOSInstance(ctx)
 		g.Expect(err).ToNot(BeNil())
@@ -5796,7 +5798,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{
 			Name:  ptr.To("test-cos-resource-name"),
 			State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
 			GUID:  ptr.To("test-cos-instance-guid"),
@@ -5836,7 +5838,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 			ID:   ptr.To("test-resource-instance-id"),
 			GUID: ptr.To("test-resource-instance-guid"),
@@ -5877,7 +5879,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(nil, nil, errors.New("failed to create COS service instance"))
 
 		err = clusterScope.ReconcileCOSInstance(ctx)
@@ -5906,7 +5908,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{
 			Name:  ptr.To("test-cos-resource-name"),
 			State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
 			GUID:  ptr.To("test-cos-instance-guid"),
@@ -5942,7 +5944,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 				},
 			},
 		}
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 			ID:   ptr.To("test-resource-instance-id"),
@@ -5982,7 +5985,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 				},
 			},
 		}
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 			ID:   ptr.To("test-resource-instance-id"),
@@ -6027,7 +6031,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 				},
 			},
 		}
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 			ID:   ptr.To("test-resource-instance-id"),
@@ -6074,7 +6079,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 				},
 			},
 		}
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		mockResourceController.EXPECT().CreateResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 			ID:   ptr.To("test-resource-instance-id"),
@@ -6126,7 +6131,7 @@ func TestCheckCOSServiceInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error listing COS instances"))
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, fmt.Errorf("error listing COS instances"))
 
 		cosResourceInstance, err := clusterScope.checkCOSServiceInstance(ctx)
 		g.Expect(cosResourceInstance).To(BeNil())
@@ -6149,7 +6154,7 @@ func TestCheckCOSServiceInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 
 		cosResourceInstance, err := clusterScope.checkCOSServiceInstance(ctx)
 		g.Expect(cosResourceInstance).To(BeNil())
@@ -6172,7 +6177,7 @@ func TestCheckCOSServiceInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{
 			Name:  ptr.To("test-cos-resource-name"),
 			State: ptr.To("failed"),
 		}, nil)
@@ -6198,7 +6203,7 @@ func TestCheckCOSServiceInstance(t *testing.T) {
 			},
 		}
 
-		mockResourceController.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{
 			Name:  ptr.To("test-cos-resource-name"),
 			State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
 		}, nil)
