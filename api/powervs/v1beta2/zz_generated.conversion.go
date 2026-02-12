@@ -99,16 +99,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSClusterStatus)(nil), (*v1beta3.IBMPowerVSClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(a.(*IBMPowerVSClusterStatus), b.(*v1beta3.IBMPowerVSClusterStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSClusterStatus)(nil), (*IBMPowerVSClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(a.(*v1beta3.IBMPowerVSClusterStatus), b.(*IBMPowerVSClusterStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*IBMPowerVSClusterTemplate)(nil), (*v1beta3.IBMPowerVSClusterTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSClusterTemplate_To_v1beta3_IBMPowerVSClusterTemplate(a.(*IBMPowerVSClusterTemplate), b.(*v1beta3.IBMPowerVSClusterTemplate), scope)
 	}); err != nil {
@@ -149,16 +139,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSClusterV1Beta2Status)(nil), (*v1beta3.IBMPowerVSClusterV1Beta2Status)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSClusterV1Beta2Status_To_v1beta3_IBMPowerVSClusterV1Beta2Status(a.(*IBMPowerVSClusterV1Beta2Status), b.(*v1beta3.IBMPowerVSClusterV1Beta2Status), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSClusterV1Beta2Status)(nil), (*IBMPowerVSClusterV1Beta2Status)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSClusterV1Beta2Status_To_v1beta2_IBMPowerVSClusterV1Beta2Status(a.(*v1beta3.IBMPowerVSClusterV1Beta2Status), b.(*IBMPowerVSClusterV1Beta2Status), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*IBMPowerVSImage)(nil), (*v1beta3.IBMPowerVSImage)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSImage_To_v1beta3_IBMPowerVSImage(a.(*IBMPowerVSImage), b.(*v1beta3.IBMPowerVSImage), scope)
 	}); err != nil {
@@ -189,26 +169,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSImageStatus)(nil), (*v1beta3.IBMPowerVSImageStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(a.(*IBMPowerVSImageStatus), b.(*v1beta3.IBMPowerVSImageStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSImageStatus)(nil), (*IBMPowerVSImageStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(a.(*v1beta3.IBMPowerVSImageStatus), b.(*IBMPowerVSImageStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSImageV1Beta2Status)(nil), (*v1beta3.IBMPowerVSImageV1Beta2Status)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSImageV1Beta2Status_To_v1beta3_IBMPowerVSImageV1Beta2Status(a.(*IBMPowerVSImageV1Beta2Status), b.(*v1beta3.IBMPowerVSImageV1Beta2Status), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSImageV1Beta2Status)(nil), (*IBMPowerVSImageV1Beta2Status)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSImageV1Beta2Status_To_v1beta2_IBMPowerVSImageV1Beta2Status(a.(*v1beta3.IBMPowerVSImageV1Beta2Status), b.(*IBMPowerVSImageV1Beta2Status), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*IBMPowerVSMachine)(nil), (*v1beta3.IBMPowerVSMachine)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSMachine_To_v1beta3_IBMPowerVSMachine(a.(*IBMPowerVSMachine), b.(*v1beta3.IBMPowerVSMachine), scope)
 	}); err != nil {
@@ -236,16 +196,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSMachineSpec)(nil), (*IBMPowerVSMachineSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(a.(*v1beta3.IBMPowerVSMachineSpec), b.(*IBMPowerVSMachineSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSMachineStatus)(nil), (*v1beta3.IBMPowerVSMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineStatus(a.(*IBMPowerVSMachineStatus), b.(*v1beta3.IBMPowerVSMachineStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSMachineStatus)(nil), (*IBMPowerVSMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(a.(*v1beta3.IBMPowerVSMachineStatus), b.(*IBMPowerVSMachineStatus), scope)
 	}); err != nil {
 		return err
 	}
@@ -296,16 +246,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSMachineTemplateStatus)(nil), (*IBMPowerVSMachineTemplateStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_IBMPowerVSMachineTemplateStatus_To_v1beta2_IBMPowerVSMachineTemplateStatus(a.(*v1beta3.IBMPowerVSMachineTemplateStatus), b.(*IBMPowerVSMachineTemplateStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSMachineV1Beta2Status)(nil), (*v1beta3.IBMPowerVSMachineV1Beta2Status)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSMachineV1Beta2Status_To_v1beta3_IBMPowerVSMachineV1Beta2Status(a.(*IBMPowerVSMachineV1Beta2Status), b.(*v1beta3.IBMPowerVSMachineV1Beta2Status), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSMachineV1Beta2Status)(nil), (*IBMPowerVSMachineV1Beta2Status)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSMachineV1Beta2Status_To_v1beta2_IBMPowerVSMachineV1Beta2Status(a.(*v1beta3.IBMPowerVSMachineV1Beta2Status), b.(*IBMPowerVSMachineV1Beta2Status), scope)
 	}); err != nil {
 		return err
 	}
@@ -509,6 +449,46 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*v1.Condition)(nil), (*v1beta1.Condition)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1_Condition_To_v1beta1_Condition(a.(*v1.Condition), b.(*v1beta1.Condition), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta1.Condition)(nil), (*v1.Condition)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta1_Condition_To_v1_Condition(a.(*v1beta1.Condition), b.(*v1.Condition), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*IBMPowerVSClusterStatus)(nil), (*v1beta3.IBMPowerVSClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(a.(*IBMPowerVSClusterStatus), b.(*v1beta3.IBMPowerVSClusterStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*IBMPowerVSImageStatus)(nil), (*v1beta3.IBMPowerVSImageStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(a.(*IBMPowerVSImageStatus), b.(*v1beta3.IBMPowerVSImageStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*IBMPowerVSMachineStatus)(nil), (*v1beta3.IBMPowerVSMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineStatus(a.(*IBMPowerVSMachineStatus), b.(*v1beta3.IBMPowerVSMachineStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSClusterStatus)(nil), (*IBMPowerVSClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(a.(*v1beta3.IBMPowerVSClusterStatus), b.(*IBMPowerVSClusterStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSImageStatus)(nil), (*IBMPowerVSImageStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(a.(*v1beta3.IBMPowerVSImageStatus), b.(*IBMPowerVSImageStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSMachineStatus)(nil), (*IBMPowerVSMachineStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(a.(*v1beta3.IBMPowerVSMachineStatus), b.(*IBMPowerVSMachineStatus), scope)
+	}); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -624,7 +604,17 @@ func Convert_v1beta3_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(in *v1beta3.
 
 func autoConvert_v1beta2_IBMPowerVSClusterList_To_v1beta3_IBMPowerVSClusterList(in *IBMPowerVSClusterList, out *v1beta3.IBMPowerVSClusterList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta3.IBMPowerVSCluster)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta3.IBMPowerVSCluster, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta2_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -635,7 +625,17 @@ func Convert_v1beta2_IBMPowerVSClusterList_To_v1beta3_IBMPowerVSClusterList(in *
 
 func autoConvert_v1beta3_IBMPowerVSClusterList_To_v1beta2_IBMPowerVSClusterList(in *v1beta3.IBMPowerVSClusterList, out *IBMPowerVSClusterList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]IBMPowerVSCluster)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IBMPowerVSCluster, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta3_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -706,17 +706,33 @@ func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterSta
 	out.TransitGateway = (*v1beta3.TransitGatewayStatus)(unsafe.Pointer(in.TransitGateway))
 	out.COSInstance = (*v1beta3.ResourceReference)(unsafe.Pointer(in.COSInstance))
 	out.LoadBalancers = *(*map[string]v1beta3.VPCLoadBalancerStatus)(unsafe.Pointer(&in.LoadBalancers))
-	out.Conditions = *(*v1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
-	out.V1Beta2 = (*v1beta3.IBMPowerVSClusterV1Beta2Status)(unsafe.Pointer(in.V1Beta2))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]v1.Condition, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_Condition_To_v1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
+	// WARNING: in.V1Beta2 requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-// Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, out *v1beta3.IBMPowerVSClusterStatus, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in, out, s)
-}
-
 func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(in *v1beta3.IBMPowerVSClusterStatus, out *IBMPowerVSClusterStatus, s conversion.Scope) error {
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(v1beta1.Conditions, len(*in))
+		for i := range *in {
+			if err := Convert_v1_Condition_To_v1beta1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	out.Ready = in.Ready
 	out.ResourceGroup = (*ResourceReference)(unsafe.Pointer(in.ResourceGroup))
 	out.ServiceInstance = (*ResourceReference)(unsafe.Pointer(in.ServiceInstance))
@@ -728,14 +744,8 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 	out.TransitGateway = (*TransitGatewayStatus)(unsafe.Pointer(in.TransitGateway))
 	out.COSInstance = (*ResourceReference)(unsafe.Pointer(in.COSInstance))
 	out.LoadBalancers = *(*map[string]VPCLoadBalancerStatus)(unsafe.Pointer(&in.LoadBalancers))
-	out.Conditions = *(*v1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
-	out.V1Beta2 = (*IBMPowerVSClusterV1Beta2Status)(unsafe.Pointer(in.V1Beta2))
+	// WARNING: in.Deprecated requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(in *v1beta3.IBMPowerVSClusterStatus, out *IBMPowerVSClusterStatus, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSClusterTemplate_To_v1beta3_IBMPowerVSClusterTemplate(in *IBMPowerVSClusterTemplate, out *v1beta3.IBMPowerVSClusterTemplate, s conversion.Scope) error {
@@ -836,26 +846,6 @@ func Convert_v1beta3_IBMPowerVSClusterTemplateSpec_To_v1beta2_IBMPowerVSClusterT
 	return autoConvert_v1beta3_IBMPowerVSClusterTemplateSpec_To_v1beta2_IBMPowerVSClusterTemplateSpec(in, out, s)
 }
 
-func autoConvert_v1beta2_IBMPowerVSClusterV1Beta2Status_To_v1beta3_IBMPowerVSClusterV1Beta2Status(in *IBMPowerVSClusterV1Beta2Status, out *v1beta3.IBMPowerVSClusterV1Beta2Status, s conversion.Scope) error {
-	out.Conditions = *(*[]v1.Condition)(unsafe.Pointer(&in.Conditions))
-	return nil
-}
-
-// Convert_v1beta2_IBMPowerVSClusterV1Beta2Status_To_v1beta3_IBMPowerVSClusterV1Beta2Status is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSClusterV1Beta2Status_To_v1beta3_IBMPowerVSClusterV1Beta2Status(in *IBMPowerVSClusterV1Beta2Status, out *v1beta3.IBMPowerVSClusterV1Beta2Status, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSClusterV1Beta2Status_To_v1beta3_IBMPowerVSClusterV1Beta2Status(in, out, s)
-}
-
-func autoConvert_v1beta3_IBMPowerVSClusterV1Beta2Status_To_v1beta2_IBMPowerVSClusterV1Beta2Status(in *v1beta3.IBMPowerVSClusterV1Beta2Status, out *IBMPowerVSClusterV1Beta2Status, s conversion.Scope) error {
-	out.Conditions = *(*[]v1.Condition)(unsafe.Pointer(&in.Conditions))
-	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSClusterV1Beta2Status_To_v1beta2_IBMPowerVSClusterV1Beta2Status is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSClusterV1Beta2Status_To_v1beta2_IBMPowerVSClusterV1Beta2Status(in *v1beta3.IBMPowerVSClusterV1Beta2Status, out *IBMPowerVSClusterV1Beta2Status, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSClusterV1Beta2Status_To_v1beta2_IBMPowerVSClusterV1Beta2Status(in, out, s)
-}
-
 func autoConvert_v1beta2_IBMPowerVSImage_To_v1beta3_IBMPowerVSImage(in *IBMPowerVSImage, out *v1beta3.IBMPowerVSImage, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(&in.Spec, &out.Spec, s); err != nil {
@@ -890,7 +880,17 @@ func Convert_v1beta3_IBMPowerVSImage_To_v1beta2_IBMPowerVSImage(in *v1beta3.IBMP
 
 func autoConvert_v1beta2_IBMPowerVSImageList_To_v1beta3_IBMPowerVSImageList(in *IBMPowerVSImageList, out *v1beta3.IBMPowerVSImageList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta3.IBMPowerVSImage)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta3.IBMPowerVSImage, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta2_IBMPowerVSImage_To_v1beta3_IBMPowerVSImage(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -901,7 +901,17 @@ func Convert_v1beta2_IBMPowerVSImageList_To_v1beta3_IBMPowerVSImageList(in *IBMP
 
 func autoConvert_v1beta3_IBMPowerVSImageList_To_v1beta2_IBMPowerVSImageList(in *v1beta3.IBMPowerVSImageList, out *IBMPowerVSImageList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]IBMPowerVSImage)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IBMPowerVSImage, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta3_IBMPowerVSImage_To_v1beta2_IBMPowerVSImage(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -949,49 +959,39 @@ func autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(
 	out.ImageID = in.ImageID
 	out.ImageState = v1beta3.PowerVSImageState(in.ImageState)
 	out.JobID = in.JobID
-	out.Conditions = *(*v1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
-	out.V1Beta2 = (*v1beta3.IBMPowerVSImageV1Beta2Status)(unsafe.Pointer(in.V1Beta2))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]v1.Condition, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_Condition_To_v1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
+	// WARNING: in.V1Beta2 requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-// Convert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(in *IBMPowerVSImageStatus, out *v1beta3.IBMPowerVSImageStatus, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(in, out, s)
-}
-
 func autoConvert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(in *v1beta3.IBMPowerVSImageStatus, out *IBMPowerVSImageStatus, s conversion.Scope) error {
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(v1beta1.Conditions, len(*in))
+		for i := range *in {
+			if err := Convert_v1_Condition_To_v1beta1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	out.Ready = in.Ready
 	out.ImageID = in.ImageID
 	out.ImageState = PowerVSImageState(in.ImageState)
 	out.JobID = in.JobID
-	out.Conditions = *(*v1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
-	out.V1Beta2 = (*IBMPowerVSImageV1Beta2Status)(unsafe.Pointer(in.V1Beta2))
+	// WARNING: in.Deprecated requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(in *v1beta3.IBMPowerVSImageStatus, out *IBMPowerVSImageStatus, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(in, out, s)
-}
-
-func autoConvert_v1beta2_IBMPowerVSImageV1Beta2Status_To_v1beta3_IBMPowerVSImageV1Beta2Status(in *IBMPowerVSImageV1Beta2Status, out *v1beta3.IBMPowerVSImageV1Beta2Status, s conversion.Scope) error {
-	out.Conditions = *(*[]v1.Condition)(unsafe.Pointer(&in.Conditions))
-	return nil
-}
-
-// Convert_v1beta2_IBMPowerVSImageV1Beta2Status_To_v1beta3_IBMPowerVSImageV1Beta2Status is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSImageV1Beta2Status_To_v1beta3_IBMPowerVSImageV1Beta2Status(in *IBMPowerVSImageV1Beta2Status, out *v1beta3.IBMPowerVSImageV1Beta2Status, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSImageV1Beta2Status_To_v1beta3_IBMPowerVSImageV1Beta2Status(in, out, s)
-}
-
-func autoConvert_v1beta3_IBMPowerVSImageV1Beta2Status_To_v1beta2_IBMPowerVSImageV1Beta2Status(in *v1beta3.IBMPowerVSImageV1Beta2Status, out *IBMPowerVSImageV1Beta2Status, s conversion.Scope) error {
-	out.Conditions = *(*[]v1.Condition)(unsafe.Pointer(&in.Conditions))
-	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSImageV1Beta2Status_To_v1beta2_IBMPowerVSImageV1Beta2Status is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSImageV1Beta2Status_To_v1beta2_IBMPowerVSImageV1Beta2Status(in *v1beta3.IBMPowerVSImageV1Beta2Status, out *IBMPowerVSImageV1Beta2Status, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSImageV1Beta2Status_To_v1beta2_IBMPowerVSImageV1Beta2Status(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSMachine_To_v1beta3_IBMPowerVSMachine(in *IBMPowerVSMachine, out *v1beta3.IBMPowerVSMachine, s conversion.Scope) error {
@@ -1028,7 +1028,17 @@ func Convert_v1beta3_IBMPowerVSMachine_To_v1beta2_IBMPowerVSMachine(in *v1beta3.
 
 func autoConvert_v1beta2_IBMPowerVSMachineList_To_v1beta3_IBMPowerVSMachineList(in *IBMPowerVSMachineList, out *v1beta3.IBMPowerVSMachineList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1beta3.IBMPowerVSMachine)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1beta3.IBMPowerVSMachine, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta2_IBMPowerVSMachine_To_v1beta3_IBMPowerVSMachine(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1039,7 +1049,17 @@ func Convert_v1beta2_IBMPowerVSMachineList_To_v1beta3_IBMPowerVSMachineList(in *
 
 func autoConvert_v1beta3_IBMPowerVSMachineList_To_v1beta2_IBMPowerVSMachineList(in *v1beta3.IBMPowerVSMachineList, out *IBMPowerVSMachineList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]IBMPowerVSMachine)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IBMPowerVSMachine, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta3_IBMPowerVSMachine_To_v1beta2_IBMPowerVSMachine(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -1101,19 +1121,35 @@ func autoConvert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineSta
 	out.Fault = in.Fault
 	out.FailureReason = (*string)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*v1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]v1.Condition, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_Condition_To_v1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	out.Region = (*string)(unsafe.Pointer(in.Region))
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
-	out.V1Beta2 = (*v1beta3.IBMPowerVSMachineV1Beta2Status)(unsafe.Pointer(in.V1Beta2))
+	// WARNING: in.V1Beta2 requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-// Convert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineStatus is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineStatus(in *IBMPowerVSMachineStatus, out *v1beta3.IBMPowerVSMachineStatus, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineStatus(in, out, s)
-}
-
 func autoConvert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(in *v1beta3.IBMPowerVSMachineStatus, out *IBMPowerVSMachineStatus, s conversion.Scope) error {
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make(v1beta1.Conditions, len(*in))
+		for i := range *in {
+			if err := Convert_v1_Condition_To_v1beta1_Condition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	out.InstanceID = in.InstanceID
 	out.Ready = in.Ready
 	out.Addresses = *(*[]corev1.NodeAddress)(unsafe.Pointer(&in.Addresses))
@@ -1122,16 +1158,10 @@ func autoConvert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineSta
 	out.Fault = in.Fault
 	out.FailureReason = (*string)(unsafe.Pointer(in.FailureReason))
 	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Conditions = *(*v1beta1.Conditions)(unsafe.Pointer(&in.Conditions))
 	out.Region = (*string)(unsafe.Pointer(in.Region))
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
-	out.V1Beta2 = (*IBMPowerVSMachineV1Beta2Status)(unsafe.Pointer(in.V1Beta2))
+	// WARNING: in.Deprecated requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(in *v1beta3.IBMPowerVSMachineStatus, out *IBMPowerVSMachineStatus, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSMachineTemplate_To_v1beta3_IBMPowerVSMachineTemplate(in *IBMPowerVSMachineTemplate, out *v1beta3.IBMPowerVSMachineTemplate, s conversion.Scope) error {
@@ -1254,26 +1284,6 @@ func autoConvert_v1beta3_IBMPowerVSMachineTemplateStatus_To_v1beta2_IBMPowerVSMa
 // Convert_v1beta3_IBMPowerVSMachineTemplateStatus_To_v1beta2_IBMPowerVSMachineTemplateStatus is an autogenerated conversion function.
 func Convert_v1beta3_IBMPowerVSMachineTemplateStatus_To_v1beta2_IBMPowerVSMachineTemplateStatus(in *v1beta3.IBMPowerVSMachineTemplateStatus, out *IBMPowerVSMachineTemplateStatus, s conversion.Scope) error {
 	return autoConvert_v1beta3_IBMPowerVSMachineTemplateStatus_To_v1beta2_IBMPowerVSMachineTemplateStatus(in, out, s)
-}
-
-func autoConvert_v1beta2_IBMPowerVSMachineV1Beta2Status_To_v1beta3_IBMPowerVSMachineV1Beta2Status(in *IBMPowerVSMachineV1Beta2Status, out *v1beta3.IBMPowerVSMachineV1Beta2Status, s conversion.Scope) error {
-	out.Conditions = *(*[]v1.Condition)(unsafe.Pointer(&in.Conditions))
-	return nil
-}
-
-// Convert_v1beta2_IBMPowerVSMachineV1Beta2Status_To_v1beta3_IBMPowerVSMachineV1Beta2Status is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSMachineV1Beta2Status_To_v1beta3_IBMPowerVSMachineV1Beta2Status(in *IBMPowerVSMachineV1Beta2Status, out *v1beta3.IBMPowerVSMachineV1Beta2Status, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSMachineV1Beta2Status_To_v1beta3_IBMPowerVSMachineV1Beta2Status(in, out, s)
-}
-
-func autoConvert_v1beta3_IBMPowerVSMachineV1Beta2Status_To_v1beta2_IBMPowerVSMachineV1Beta2Status(in *v1beta3.IBMPowerVSMachineV1Beta2Status, out *IBMPowerVSMachineV1Beta2Status, s conversion.Scope) error {
-	out.Conditions = *(*[]v1.Condition)(unsafe.Pointer(&in.Conditions))
-	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSMachineV1Beta2Status_To_v1beta2_IBMPowerVSMachineV1Beta2Status is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSMachineV1Beta2Status_To_v1beta2_IBMPowerVSMachineV1Beta2Status(in *v1beta3.IBMPowerVSMachineV1Beta2Status, out *IBMPowerVSMachineV1Beta2Status, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSMachineV1Beta2Status_To_v1beta2_IBMPowerVSMachineV1Beta2Status(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_IBMPowerVSResourceReference(in *IBMPowerVSResourceReference, out *v1beta3.IBMPowerVSResourceReference, s conversion.Scope) error {

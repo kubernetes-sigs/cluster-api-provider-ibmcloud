@@ -211,6 +211,10 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: endpoints.(FetchRCEndpoint|FetchPVSEndpoint) is deprecated: Use FetchEndpoints instead.'
+      # v1Beta2 deprecated fields
+      - linters:
+          - staticcheck
+        text: 'SA1019: .*\.Deprecated\.V1Beta2.* is deprecated'
     paths:
       - zz_generated.*\.go$
       - third_party$

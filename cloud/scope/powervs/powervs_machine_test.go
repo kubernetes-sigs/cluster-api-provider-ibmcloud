@@ -42,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	resourcecontrollermock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
@@ -1343,9 +1342,9 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			expectedOutput := (*models.PVMInstanceReference)(nil)
 			scope := setupPowerVSMachineScope(clusterName, "foo-machine-2", ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			scope.IBMPowerVSMachine.Status.Conditions = append(scope.IBMPowerVSMachine.Status.Conditions, clusterv1beta1.Condition{
+			scope.IBMPowerVSMachine.Status.Conditions = append(scope.IBMPowerVSMachine.Status.Conditions, metav1.Condition{
 				Type:   infrav1.InstanceReadyCondition,
-				Status: corev1.ConditionUnknown,
+				Status: metav1.ConditionUnknown,
 			})
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			out, err := scope.CreateMachine(ctx)
