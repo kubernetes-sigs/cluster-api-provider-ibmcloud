@@ -30,12 +30,16 @@ type ResourceController interface {
 	ListResourceInstances(listResourceInstancesOptions *resourcecontrollerv2.ListResourceInstancesOptions) (result *resourcecontrollerv2.ResourceInstancesList, response *core.DetailedResponse, err error)
 	GetResourceInstance(*resourcecontrollerv2.GetResourceInstanceOptions) (*resourcecontrollerv2.ResourceInstance, *core.DetailedResponse, error)
 	CreateResourceInstance(*resourcecontrollerv2.CreateResourceInstanceOptions) (*resourcecontrollerv2.ResourceInstance, *core.DetailedResponse, error)
+	// Deprecated. Will be removed in future versions. Use GetResourceInstanceByFilter method instead.
 	GetServiceInstance(string, string, *string) (*resourcecontrollerv2.ResourceInstance, error)
 	DeleteResourceInstance(*resourcecontrollerv2.DeleteResourceInstanceOptions) (*core.DetailedResponse, error)
 
+	// Deprecated. Will be removed in future versions. Use GetResourceInstanceByFilter method instead.
 	GetInstanceByName(string, string, string) (*resourcecontrollerv2.ResourceInstance, error)
 	CreateResourceKey(*resourcecontrollerv2.CreateResourceKeyOptions) (*resourcecontrollerv2.ResourceKey, *core.DetailedResponse, error)
 
 	SetServiceURL(string) error
 	GetServiceURL() string
+
+	GetResourceInstanceByFilter(InstanceFilter) (*resourcecontrollerv2.ResourceInstance, error)
 }

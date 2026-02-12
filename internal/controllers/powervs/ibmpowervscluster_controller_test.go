@@ -651,7 +651,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
 				mockResourceClient := getMockResourceController(t)
-				mockResourceClient.EXPECT().GetInstanceByName(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("error getting instance by name"))
+				mockResourceClient.EXPECT().GetResourceInstanceByFilter(gomock.Any()).Return(nil, errors.New("error getting instance by name"))
 				clusterScope.ResourceClient = mockResourceClient
 				clusterScope.IBMVPCClient = getMockVPC(t)
 				clusterScope.TransitGatewayClient = getMockTransitGateway(t)

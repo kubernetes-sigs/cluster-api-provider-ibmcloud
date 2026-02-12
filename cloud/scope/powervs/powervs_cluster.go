@@ -843,8 +843,14 @@ func (s *ClusterScope) isServiceInstanceExists(ctx context.Context) (string, boo
 
 // getServiceInstance return resource instance by name.
 func (s *ClusterScope) getServiceInstance() (*resourcecontrollerv2.ResourceInstance, error) {
+	resourceInstance := resourcecontroller.InstanceFilter{
+		Name:           *s.GetServiceName(infrav1.ResourceTypeServiceInstance),
+		Zone:           s.IBMPowerVSCluster.Spec.Zone,
+		ResourceID:     resourcecontroller.PowerVSResourceID,
+		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
+	}
 	//TODO: Support regular expression
-	return s.ResourceClient.GetServiceInstance("", *s.GetServiceName(infrav1.ResourceTypeServiceInstance), s.IBMPowerVSCluster.Spec.Zone)
+	return s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
 }
 
 // createServiceInstance creates the service instance.
@@ -2376,10 +2382,17 @@ func (s *ClusterScope) createCOSBucket() error {
 func (s *ClusterScope) checkCOSServiceInstance(ctx context.Context) (*resourcecontrollerv2.ResourceInstance, error) {
 	log := ctrl.LoggerFrom(ctx)
 	// check cos service instance
-	serviceInstance, err := s.ResourceClient.GetInstanceByName(*s.GetServiceName(infrav1.ResourceTypeCOSInstance), resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID)
+	resourceInstance := resourcecontroller.InstanceFilter{
+		Name:           *s.GetServiceName(infrav1.ResourceTypeCOSInstance),
+		ResourceID:     resourcecontroller.CosResourceID,
+		ResourcePlanID: resourcecontroller.CosResourcePlanID,
+	}
+
+	serviceInstance, err := s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get COS service instance: %w", err)
 	}
+
 	if serviceInstance == nil {
 		log.V(3).Info("COS service instance is not found", "cosInstanceName", *s.GetServiceName(infrav1.ResourceTypeCOSInstance))
 		return nil, nil

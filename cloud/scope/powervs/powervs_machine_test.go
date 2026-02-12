@@ -427,7 +427,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 				},
 			},
 		}
-		mockResourceController.EXPECT().GetServiceInstance("", "foo-cluster", gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{GUID: ptr.To("foo-id")}, nil)
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{GUID: ptr.To("foo-id")}, nil)
 		scope.ResourceClient = mockResourceController
 		serviceInstanceID, err := scope.GetServiceInstanceID()
 		g.Expect(serviceInstanceID).To(Equal("foo-id"))
@@ -452,7 +452,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 				},
 			},
 		}
-		mockResourceController.EXPECT().GetServiceInstance("", "foo-cluster", gomock.Any()).Return(nil, fmt.Errorf("failed to list instance id"))
+		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{Name: "foo-cluster"})).Return(nil, fmt.Errorf("failed to list instance id"))
 		scope.ResourceClient = mockResourceController
 		serviceInstanceID, err := scope.GetServiceInstanceID()
 		g.Expect(serviceInstanceID).To(Equal(""))
@@ -982,7 +982,7 @@ func TestCreateCOSClient(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, errors.New("error listing COS instances"))
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{Name: cosInstanceName})).Return(nil, errors.New("error listing COS instances"))
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient(ctx)
 			g.Expect(result).To(BeNil())
@@ -994,8 +994,7 @@ func TestCreateCOSClient(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, nil)
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient(ctx)
 			g.Expect(result).To(BeNil())
@@ -1010,8 +1009,7 @@ func TestCreateCOSClient(t *testing.T) {
 			serviceInstance := &resourcecontrollerv2.ResourceInstance{
 				State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)),
 			}
-			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient(ctx)
 			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1.ServiceInstanceStateProvisioning)
@@ -1028,8 +1026,7 @@ func TestCreateCOSClient(t *testing.T) {
 				State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
 			}
 			scope.SetRegion(region)
-			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient(ctx)
 			expectedError := "failed to determine COS bucket region, both bucket region and VPC region not set"
@@ -1046,8 +1043,7 @@ func TestCreateCOSClient(t *testing.T) {
 				GUID:  ptr.To("foo-guid"),
 			}
 			scope.SetRegion(region)
-			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
 			scope.ResourceClient = mockResourceController
 			expectedBucketRegion := region
 			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1.CosInstance{BucketRegion: expectedBucketRegion}
@@ -1193,8 +1189,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 			}
 			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 			mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
-			cosInstanceName := fmt.Sprintf("%s-%s", clusterName, "cosinstance")
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(nil, errors.New("error listing cos instances"))
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, errors.New("error listing cos instances"))
 			scope := MachineScope{
 				Client: client,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
@@ -1231,14 +1226,13 @@ func TestDeleteMachineIgnition(t *testing.T) {
 			}
 			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 			mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
-			cosInstanceName := fmt.Sprintf("%s-%s", clusterName, "cosinstance")
 			serviceInstance := new(resourcecontrollerv2.ResourceInstance)
 			state := string(infrav1.ServiceInstanceStateActive)
 			serviceInstance.State = &state
 			guid := "foo-guid"
 			serviceInstance.GUID = &guid
 			expectedBucketRegion := region
-			mockResourceController.EXPECT().GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID).Return(serviceInstance, nil)
+			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
 			scope := MachineScope{
 				Client: client,
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{

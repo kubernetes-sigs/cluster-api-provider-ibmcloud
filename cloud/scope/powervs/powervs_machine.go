@@ -559,7 +559,13 @@ func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 		cosInstanceName = m.IBMPowerVSCluster.Spec.CosInstance.Name
 	}
 
-	serviceInstance, err := m.ResourceClient.GetInstanceByName(cosInstanceName, resourcecontroller.CosResourceID, resourcecontroller.CosResourcePlanID)
+	resourceInstance := resourcecontroller.InstanceFilter{
+		Name:           cosInstanceName,
+		ResourceID:     resourcecontroller.CosResourceID,
+		ResourcePlanID: resourcecontroller.CosResourcePlanID,
+	}
+
+	serviceInstance, err := m.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
 	if err != nil {
 		log.Error(err, "failed to get COS service instance", "name", cosInstanceName)
 		return nil, err
@@ -919,11 +925,20 @@ func (m *MachineScope) GetServiceInstanceID() (string, error) {
 	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
 		return *m.IBMPowerVSCluster.Spec.ServiceInstance.ID, nil
 	}
+
 	// If we are not able to find service instance id, derive it from name if defined.
 	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.Name == nil {
 		return "", fmt.Errorf("failed to find service instance id as both name and id are not set")
 	}
-	serviceInstance, err := m.ResourceClient.GetServiceInstance("", *m.IBMPowerVSCluster.Spec.ServiceInstance.Name, ptr.To(m.GetZone()))
+
+	resourceInstance := resourcecontroller.InstanceFilter{
+		Name:           *m.IBMPowerVSCluster.Spec.ServiceInstance.Name,
+		ResourceID:     resourcecontroller.PowerVSResourceID,
+		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
+		Zone:           ptr.To(m.GetZone()),
+	}
+
+	serviceInstance, err := m.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
 	if err != nil {
 		return "", err
 	}

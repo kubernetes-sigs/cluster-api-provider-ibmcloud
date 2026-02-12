@@ -102,7 +102,14 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (scope *
 		if params.IBMPowerVSImage.Spec.ServiceInstance != nil && params.IBMPowerVSImage.Spec.ServiceInstance.Name != nil {
 			name = *params.IBMPowerVSImage.Spec.ServiceInstance.Name
 		}
-		serviceInstance, err := rc.GetServiceInstance("", name, params.Zone)
+		resourceInstance := resourcecontroller.InstanceFilter{
+			Name:           name,
+			Zone:           params.Zone,
+			ResourceID:     resourcecontroller.PowerVSResourceID,
+			ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
+		}
+
+		serviceInstance, err := rc.GetResourceInstanceByFilter(resourceInstance)
 		if err != nil {
 			log.Error(err, "error failed to get service instance id from name", "name", name)
 			return nil, err

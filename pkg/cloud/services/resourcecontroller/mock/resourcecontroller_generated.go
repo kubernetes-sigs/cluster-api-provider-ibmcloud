@@ -30,6 +30,7 @@ import (
 	core "github.com/IBM/go-sdk-core/v5/core"
 	resourcecontrollerv2 "github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	gomock "go.uber.org/mock/gomock"
+	resourcecontroller "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 )
 
 // MockResourceController is a mock of ResourceController interface.
@@ -132,6 +133,21 @@ func (m *MockResourceController) GetResourceInstance(arg0 *resourcecontrollerv2.
 func (mr *MockResourceControllerMockRecorder) GetResourceInstance(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceInstance", reflect.TypeOf((*MockResourceController)(nil).GetResourceInstance), arg0)
+}
+
+// GetResourceInstanceByFilter mocks base method.
+func (m *MockResourceController) GetResourceInstanceByFilter(arg0 resourcecontroller.InstanceFilter) (*resourcecontrollerv2.ResourceInstance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResourceInstanceByFilter", arg0)
+	ret0, _ := ret[0].(*resourcecontrollerv2.ResourceInstance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResourceInstanceByFilter indicates an expected call of GetResourceInstanceByFilter.
+func (mr *MockResourceControllerMockRecorder) GetResourceInstanceByFilter(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResourceInstanceByFilter", reflect.TypeOf((*MockResourceController)(nil).GetResourceInstanceByFilter), arg0)
 }
 
 // GetServiceInstance mocks base method.
