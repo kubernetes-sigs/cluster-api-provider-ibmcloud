@@ -2185,6 +2185,12 @@ func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, ogSecuri
 	log.V(3).Info("Creating VPC security group rules")
 
 	for _, rule := range ogSecurityGroupRules {
+		// Work on a copy with normalized prototypes so the deprecated 'all' protocol is
+		// translated without mutating the cluster spec.
+		rule := *rule
+		rule.Destination = normalizedVPCSecurityGroupRulePrototype(rule.Destination)
+		rule.Source = normalizedVPCSecurityGroupRulePrototype(rule.Source)
+
 		var protocol *string
 		var portMax, portMin *int64
 
@@ -2307,6 +2313,9 @@ func (s *ClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vp
 		err = fmt.Errorf("failed to validate VPC security group rule's remote: %w", e)
 	}
 
+	// Normalize the deprecated 'all' protocol so the comparison matches existing IBM Cloud
+	// rules. Returns a copy, so the cluster spec is not mutated.
+	rule = normalizedVPCSecurityGroupRulePrototype(rule)
 	protocol := string(rule.Protocol)
 
 	for _, ogRuleIntf := range originalSecurityGroupRules {
