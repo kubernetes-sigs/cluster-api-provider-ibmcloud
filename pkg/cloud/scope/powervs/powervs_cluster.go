@@ -2148,6 +2148,11 @@ func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []
 	log.V(3).Info("Creating VPC security group rules", "securityGroupID", securityGroupID, "ruleCount", len(rules))
 
 	for _, rule := range rules {
+		// Work on a copy with normalized prototypes so the deprecated 'all' protocol is
+		// translated without mutating the cluster spec.
+		rule.Source = normalizedVPCSecurityGroupRulePrototype(rule.Source)
+		rule.Destination = normalizedVPCSecurityGroupRulePrototype(rule.Destination)
+
 		direction := string(rule.Direction)
 
 		var protocol string
