@@ -27,17 +27,19 @@ SHELL=/bin/bash
 
 # Directories.
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
+ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 BIN_DIR := bin
 TOOLS_DIR := hack/tools
-TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
-GO_INSTALL = ./scripts/go_install.sh
+TOOLS_BIN_DIR := $(abspath $(TOOLS_DIR)/$(BIN_DIR))
+GO_INSTALL := ./scripts/go_install.sh
 E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
 E2E_TEMPLATES := $(REPO_ROOT)/test/e2e/data/templates
 TEMPLATES_DIR := $(REPO_ROOT)/templates
 
+export PATH := $(abspath $(TOOLS_BIN_DIR)):$(PATH)
+
 GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
-GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
 KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 GOJQ := $(TOOLS_BIN_DIR)/gojq
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
@@ -50,6 +52,15 @@ CONVERSION_VERIFIER := $(TOOLS_BIN_DIR)/conversion-verifier
 SETUP_ENVTEST := $(TOOLS_BIN_DIR)/setup-envtest
 GOVULNCHECK := $(TOOLS_BIN_DIR)/govulncheck
 RELEASE_NOTES := $(TOOLS_BIN_DIR)/release-notes
+
+GOLANGCI_LINT_BIN := golangci-lint
+GOLANGCI_LINT_VER ?= v2.7.2
+GOLANGCI_LINT := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER))
+GOLANGCI_LINT_PKG := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+
+GOLANGCI_LINT_KAL_BIN := golangci-lint-kube-api-linter
+GOLANGCI_LINT_KAL_VER := $(shell cat ./hack/tools/.custom-gcl.yaml | grep version: | sed 's/version: //')
+GOLANGCI_LINT_KAL := $(abspath $(TOOLS_BIN_DIR)/$(GOLANGCI_LINT_KAL_BIN))
 
 STAGING_REGISTRY ?= gcr.io/k8s-staging-capi-ibmcloud
 STAGING_BUCKET ?= artifacts.k8s-staging-capi-ibmcloud.appspot.com
@@ -496,11 +507,20 @@ docker-build-core-image: ensure-buildx ## Build the multiarch core docker image
 
 .PHONY: lint
 lint: $(GOLANGCI_LINT) ## Lint codebase
-	$(GOLANGCI_LINT) run -v --fast-only=false
+	$(GOLANGCI_LINT) run -v $(GOLANGCI_LINT_EXTRA_ARGS)
+	$(GOLANGCI_LINT_KAL) run -v --config $(ROOT_DIR)/.golangci-kal.yml $(GOLANGCI_LINT_EXTRA_ARGS)
 
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
+
+.PHONY: lint-api
+lint-api: $(GOLANGCI_LINT_KAL)
+	$(GOLANGCI_LINT_KAL) run -v --config $(ROOT_DIR)/.golangci-kal.yml $(GOLANGCI_LINT_EXTRA_ARGS)
+
+.PHONY: lint-api-fix
+lint-api-fix: $(GOLANGCI_LINT_KAL)
+	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint-api
 
 APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
 
@@ -675,3 +695,15 @@ else
 	sed -i '' "s/GO_VERSION ?=[[:digit:]].[[:digit:]]\{1,\}.[[:digit:]]\{1,\}/GO_VERSION ?=$(VERSION)/" hack/ccm/Makefile
 	echo "Updated go version to $(VERSION) in Makefile"
 endif
+
+## --------------------------------------
+## Hack / Tools
+## --------------------------------------
+
+##@ hack/tools:
+
+$(GOLANGCI_LINT): # Build golangci-lint from tools folder.
+	GOBIN=$(TOOLS_BIN_DIR) $(GO_INSTALL) $(GOLANGCI_LINT_PKG) $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
+
+$(GOLANGCI_LINT_KAL): $(GOLANGCI_LINT) # Build golangci-lint-kal from custom configuration.
+	cd $(TOOLS_DIR); $(GOLANGCI_LINT) custom
