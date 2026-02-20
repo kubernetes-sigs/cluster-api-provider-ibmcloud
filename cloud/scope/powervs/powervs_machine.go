@@ -238,7 +238,7 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*models.PVMIns
 }
 
 // CreateMachine creates a PowerVS machine.
-func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceReference, error) { //nolint:gocyclo
+func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceReference, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	machineSpec := m.IBMPowerVSMachine.Spec
@@ -254,10 +254,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	// Check if create request has been already triggered.
 	// If InstanceReadyCondition is Unknown then return and wait for it to get updated.
 	for _, con := range m.IBMPowerVSMachine.Status.Conditions {
-		if con.Type == infrav1.InstanceReadyCondition && con.Status == corev1.ConditionUnknown {
-			return nil, nil
-		}
-		if con.Type == infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition && con.Status == corev1.ConditionUnknown {
+		if con.Type == infrav1.InstanceReadyCondition && con.Status == metav1.ConditionUnknown {
 			return nil, nil
 		}
 	}
