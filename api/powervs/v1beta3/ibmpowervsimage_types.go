@@ -19,7 +19,7 @@ package v1beta3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 const (
@@ -77,6 +77,13 @@ type IBMPowerVSImageSpec struct {
 
 // IBMPowerVSImageStatus defines the observed state of IBMPowerVSImage.
 type IBMPowerVSImageStatus struct {
+	// conditions represents the observations of a IBMPowerVSImage's current state.
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +kubebuilder:validation:MaxItems=32
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
 	// Ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
@@ -92,13 +99,9 @@ type IBMPowerVSImageStatus struct {
 	// +optional
 	JobID string `json:"jobID,omitempty"`
 
-	// Conditions defines current service state of the IBMPowerVSImage.
+	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
 	// +optional
-	Conditions clusterv1beta1.Conditions `json:"conditions,omitempty"`
-
-	// v1beta2 groups all the fields that will be added or modified in IBMPowerVSCluster's status with the V1Beta2 version.
-	// +optional
-	V1Beta2 *IBMPowerVSImageV1Beta2Status `json:"v1beta2,omitempty"`
+	Deprecated *IBMPowerVSImageDeprecatedStatus `json:"deprecated,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -134,39 +137,53 @@ type IBMPowerVSImageList struct {
 	Items           []IBMPowerVSImage `json:"items"`
 }
 
-// IBMPowerVSImageV1Beta2Status groups all the fields that will be added or modified in IBMPowerVSCluster with the V1Beta2 version.
+// IBMPowerVSImageDeprecatedStatus groups all the status fields that are deprecated and will be removed in a future version.
 // See https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more context.
-type IBMPowerVSImageV1Beta2Status struct {
-	// conditions represents the observations of a DevCluster's current state.
+type IBMPowerVSImageDeprecatedStatus struct {
+	// v1beta2 groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.
+	//
+	// Deprecated: This field is deprecated and is going to be removed when support for v1beta1 will be dropped. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
+	//
 	// +optional
-	// +listType=map
-	// +listMapKey=type
-	// +kubebuilder:validation:MaxItems=32
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	V1Beta2 *IBMPowerVSImageV1Beta2DeprecatedStatus `json:"v1beta2,omitempty"`
+}
+
+// IBMPowerVSImageV1Beta2DeprecatedStatus groups all the status fields that are deprecated and will be removed when support for v1beta1 will be dropped.
+// See https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more context.
+type IBMPowerVSImageV1Beta2DeprecatedStatus struct {
+	// conditions defines current service state of the VSphereMachine.
+	//
+	// Deprecated: This field is deprecated and is going to be removed when support for v1beta1 will be dropped. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
+	//
+	// +optional
+	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
 }
 
 // GetConditions returns the observations of the operational state of the IBMPowerVSImage resource.
-func (r *IBMPowerVSImage) GetConditions() clusterv1beta1.Conditions {
+func (r *IBMPowerVSImage) GetConditions() []metav1.Condition {
 	return r.Status.Conditions
 }
 
-// SetConditions sets the underlying service state of the IBMPowerVSImage to the predescribed clusterv1beta1.Conditions.
-func (r *IBMPowerVSImage) SetConditions(conditions clusterv1beta1.Conditions) {
+// SetConditions sets conditions for an API object.
+func (r *IBMPowerVSImage) SetConditions(conditions []metav1.Condition) {
 	r.Status.Conditions = conditions
 }
 
-// GetV1Beta2Conditions returns the set of conditions for this object.
-func (r *IBMPowerVSImage) GetV1Beta2Conditions() []metav1.Condition {
-	if r.Status.V1Beta2 == nil {
+// GetV1Beta1Conditions returns the set of conditions for this object.
+func (r *IBMPowerVSImage) GetV1Beta1Conditions() clusterv1.Conditions {
+	if r.Status.Deprecated == nil || r.Status.Deprecated.V1Beta2 == nil {
 		return nil
 	}
-	return r.Status.V1Beta2.Conditions
+	return r.Status.Deprecated.V1Beta2.Conditions
 }
 
-// SetV1Beta2Conditions sets conditions for an API object.
-func (r *IBMPowerVSImage) SetV1Beta2Conditions(conditions []metav1.Condition) {
-	if r.Status.V1Beta2 == nil {
-		r.Status.V1Beta2 = &IBMPowerVSImageV1Beta2Status{}
+// SetV1Beta1Conditions sets conditions for an API object.
+func (r *IBMPowerVSImage) SetV1Beta1Conditions(conditions clusterv1.Conditions) {
+	if r.Status.Deprecated == nil {
+		r.Status.Deprecated = &IBMPowerVSImageDeprecatedStatus{}
 	}
-	r.Status.V1Beta2.Conditions = conditions
+	if r.Status.Deprecated.V1Beta2 == nil {
+		r.Status.Deprecated.V1Beta2 = &IBMPowerVSImageV1Beta2DeprecatedStatus{}
+	}
+	r.Status.Deprecated.V1Beta2.Conditions = conditions
 }
