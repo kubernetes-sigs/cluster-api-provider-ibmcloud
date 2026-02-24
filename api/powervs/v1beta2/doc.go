@@ -18,4 +18,6 @@ limitations under the License.
 // +k8s:conversion-gen=sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3
 // +kubebuilder:object:generate=true
 // +groupName=infrastructure.cluster.x-k8s.io
+//
+// Deprecated: This package is deprecated and is going to be removed when support for v1beta2 will be dropped.
 package v1beta2

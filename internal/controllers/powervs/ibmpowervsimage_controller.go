@@ -170,7 +170,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 		imageScope.SetImageState(*job.Status.State)
 		switch imageScope.GetImageState() {
 		case infrav1.PowerVSImageStateCompleted:
-			deprecatedv1beta1conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1.ImageImportedCondition)
+			deprecatedv1beta1conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1.ImageImportedV1Beta2Condition)
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionTrue,
@@ -179,31 +179,31 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 		case infrav1.PowerVSImageStateFailed:
 			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1.PowerVSImageStateFailed))
-			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedCondition, infrav1.ImageImportFailedReason, clusterv1.ConditionSeverityError, "%s", job.Status.Message)
+			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedV1Beta2Condition, infrav1.ImageImportFailedV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", job.Status.Message)
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionFalse,
-				Reason: infrav1.ImageImportFailedReason,
+				Reason: infrav1.IBMPowerVSImageImportFailedReason,
 			})
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, fmt.Errorf("failed to import image, message: %s", job.Status.Message)
 		case infrav1.PowerVSImageStateQueued:
 			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1.PowerVSImageStateQueued))
-			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedCondition, string(infrav1.PowerVSImageStateQueued), clusterv1.ConditionSeverityInfo, "%s", job.Status.Message)
+			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedV1Beta2Condition, string(infrav1.PowerVSImageStateQueued), clusterv1.ConditionSeverityInfo, "%s", job.Status.Message)
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionFalse,
-				Reason: infrav1.ImageQueuedReason,
+				Reason: infrav1.IBMPowerVSImageQueuedReason,
 			})
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		default:
 			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1.PowerVSImageStateImporting))
-			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedCondition, *job.Status.State, clusterv1.ConditionSeverityInfo, "%s", job.Status.Message)
+			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageImportedV1Beta2Condition, *job.Status.State, clusterv1.ConditionSeverityInfo, "%s", job.Status.Message)
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionFalse,
-				Reason: infrav1.ImageNotReadyReason,
+				Reason: infrav1.IBMPowerVSImageNotReadyReason,
 			})
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 		}
@@ -239,7 +239,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 		case infrav1.PowerVSImageStateQueued:
 			log.Info("Image is in queued state")
 			imageScope.SetNotReady()
-			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageReadyCondition, infrav1.ImageNotReadyReason, clusterv1.ConditionSeverityWarning, "")
+			deprecatedv1beta1conditions.MarkFalse(imageScope.IBMPowerVSImage, infrav1.ImageReadyV1Beta2Condition, infrav1.ImageNotReadyV1Beta2Reason, clusterv1.ConditionSeverityWarning, "")
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionFalse,
@@ -249,7 +249,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 		case infrav1.PowerVSImageStateACTIVE:
 			log.Info("Image is in active state")
 			imageScope.SetReady()
-			deprecatedv1beta1conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1.ImageReadyCondition)
+			deprecatedv1beta1conditions.MarkTrue(imageScope.IBMPowerVSImage, infrav1.ImageReadyV1Beta2Condition)
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionTrue,
@@ -259,7 +259,7 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 		default:
 			imageScope.SetNotReady()
 			log.Info("PowerVS image state is undefined", "state", image.State, "image-id", imageScope.GetImageID())
-			deprecatedv1beta1conditions.MarkUnknown(imageScope.IBMPowerVSImage, infrav1.ImageReadyCondition, "", "")
+			deprecatedv1beta1conditions.MarkUnknown(imageScope.IBMPowerVSImage, infrav1.ImageReadyV1Beta2Condition, "", "")
 			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionFalse,
@@ -281,11 +281,11 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 	log := ctrl.LoggerFrom(ctx)
 	log.Info("Handling deleted IBMPowerVSImage")
 
-	deprecatedv1beta1conditions.MarkFalse(scope.IBMPowerVSImage, infrav1.ImageReadyCondition, clusterv1.DeletingReason, clusterv1.ConditionSeverityInfo, "")
+	deprecatedv1beta1conditions.MarkFalse(scope.IBMPowerVSImage, infrav1.ImageReadyV1Beta2Condition, infrav1.DeletingV1Beta2Reason, clusterv1.ConditionSeverityInfo, "")
 	conditions.Set(scope.IBMPowerVSImage, metav1.Condition{
 		Type:   infrav1.IBMPowerVSImageReadyCondition,
 		Status: metav1.ConditionFalse,
-		Reason: infrav1.ImageDeletingReason,
+		Reason: infrav1.IBMPowerVSImageDeletingReason,
 	})
 
 	defer func() {
@@ -310,7 +310,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 
 	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1.DeletePolicyRetain) {
 		if err := scope.DeleteImage(); err != nil {
-			deprecatedv1beta1conditions.MarkFalse(scope.IBMPowerVSImage, infrav1.ImageReadyCondition, clusterv1.InternalErrorReason, clusterv1.ConditionSeverityWarning, "")
+			deprecatedv1beta1conditions.MarkFalse(scope.IBMPowerVSImage, infrav1.ImageReadyV1Beta2Condition, infrav1.InternalErrorV1Beta2Reason, clusterv1.ConditionSeverityWarning, "")
 			conditions.Set(scope.IBMPowerVSImage, metav1.Condition{
 				Type:    infrav1.IBMPowerVSImageReadyCondition,
 				Status:  metav1.ConditionFalse,
@@ -362,7 +362,7 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *patch.Helper, ibmPow
 	// always update the readyCondition.
 	deprecatedv1beta1conditions.SetSummary(ibmPowerVSImage,
 		deprecatedv1beta1conditions.WithConditions(
-			infrav1.ImageReadyCondition,
+			infrav1.ImageReadyV1Beta2Condition,
 		),
 	)
 
