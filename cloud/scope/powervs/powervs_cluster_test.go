@@ -8125,7 +8125,7 @@ func TestValidateVPCSecurityGroupRule(t *testing.T) {
 			ID: ptr.To("ruleID"),
 		}
 
-		var vpcSecurityGroupRules []vpcv1.SecurityGroupRuleIntf
+		vpcSecurityGroupRules := make([]vpcv1.SecurityGroupRuleIntf, 0, 1)
 		vpcSecurityGroupRules = append(vpcSecurityGroupRules, &vpcSecurityGroupRule)
 		vpcSecurityGroup := infrav1.VPCSecurityGroup{
 			ID:    ptr.To("securityGroupID"),
@@ -8174,7 +8174,7 @@ func TestValidateVPCSecurityGroupRule(t *testing.T) {
 			ID: ptr.To("ruleID"),
 		}
 
-		var vpcSecurityGroupRules []vpcv1.SecurityGroupRuleIntf
+		vpcSecurityGroupRules := make([]vpcv1.SecurityGroupRuleIntf, 0, 1)
 		vpcSecurityGroupRules = append(vpcSecurityGroupRules, &vpcSecurityGroupRule)
 		vpcSecurityGroup := infrav1.VPCSecurityGroup{
 			ID:    ptr.To("securityGroupID"),

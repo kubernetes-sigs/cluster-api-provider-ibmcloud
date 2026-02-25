@@ -1047,7 +1047,7 @@ func (m *MachineScope) IsReady() bool {
 
 // SetAddresses sets the Machine's addresses.
 func (m *MachineScope) SetAddresses(instance *vpcv1.Instance) {
-	addresses := make([]corev1.NodeAddress, 0)
+	addresses := make([]corev1.NodeAddress, 0, 1)
 	addresses = append(addresses, corev1.NodeAddress{
 		Type:    corev1.NodeInternalDNS,
 		Address: *instance.Name,
