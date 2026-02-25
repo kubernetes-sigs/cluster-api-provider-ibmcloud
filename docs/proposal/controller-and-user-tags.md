@@ -32,7 +32,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
  Below are the cluster creation scenarios.
  #### Creating a new cluster 
- - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources. During creation if resource is created successfully but failed to attach the tag, will retry for some time and if it still fails, we will set condition with descriptive message `Failed to attach tag to newly created Workspace workspace-name, either manually attach tag or delete the cluster and retry it in different region.`
+ - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources. If a resource is created successfully but tag attachment fails, the controller will retry for a configured period. If retries are exhausted, a condition will be set with a descriptive message such as: "Failed to attach tag to newly created Workspace workspace-name. Please manually attach the tag or delete the cluster and recreate it in a different region."
  #### Creating a new cluster with reusing pre-created resources
  - When cluster is created using existing resources, no tag will be attached. We won't delete these resources, as these were not created by controller.
  #### Creating a new cluster with reusing pre-created resources from old cluster.
