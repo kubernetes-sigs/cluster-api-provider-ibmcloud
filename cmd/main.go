@@ -302,7 +302,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 		&powervsinfrav1.IBMPowerVSImage{}:           {UseCache: true, UseStatusForStorageVersionMigration: true},
 	}
 
-	crdMigratorSkipPhases := []crdmigrator.Phase{}
+	crdMigratorSkipPhases := make([]crdmigrator.Phase, 0, 1)
 	for _, p := range skipCRDMigrationPhases {
 		crdMigratorSkipPhases = append(crdMigratorSkipPhases, crdmigrator.Phase(p))
 	}

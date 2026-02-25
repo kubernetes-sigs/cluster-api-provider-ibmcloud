@@ -2128,7 +2128,7 @@ func (s *ClusterScopeV2) buildLoadBalancerBackendPool(pool infrav1.VPCLoadBalanc
 
 // getDefaultBalancerBackendPools returns a list of default Load Balancer Backend Pools for a Load Balancer.
 func (s *ClusterScopeV2) getDefaultLoadBalancerBackendPools() []vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext {
-	defaultPools := make([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext, 0)
+	defaultPools := make([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext, 0, 1)
 
 	// For now, only one default pool is expected.
 	defaultPool := infrav1.VPCLoadBalancerBackendPoolSpec{
@@ -2171,7 +2171,7 @@ func (s *ClusterScopeV2) buildLoadBalancerListener(additionalListener infrav1.Ad
 
 // getDefaultLoadBalancerListeners returns a list of default Load Balancer Listeners for a Load Balancer.
 func (s *ClusterScopeV2) getDefaultLoadBalancerListeners(defaultBackendPool bool) []vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext {
-	defaultListeners := make([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext, 0)
+	defaultListeners := make([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext, 0, 1)
 
 	// For now only one default listener is expected.
 	defaultListener := infrav1.AdditionalListenerSpec{

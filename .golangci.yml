@@ -164,6 +164,10 @@ linters:
         text: exported (method|function|type|const) (.+) should have comment or be unexported
       - linters:
           - revive
+        path: \.go$
+        text: 'var-naming: avoid package names that conflict with Go standard library package names'
+      - linters:
+          - revive
         path: .*(api|types)\/.*\/.*conversion.*\.go$
         text: 'var-naming: don''t use underscores in Go names;'
       - linters:
