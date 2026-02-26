@@ -31,6 +31,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -159,7 +160,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	// do not proceed further if "powervs.cluster.x-k8s.io/create-infra=true" annotation is not set.
 	if !powervsscope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
 		log.V(3).Info("IBMPowerVSCluster has no create infrastructure annotation, setting cluster status to ready")
-		clusterScope.IBMPowerVSCluster.Status.Ready = true
+		clusterScope.IBMPowerVSCluster.Status.Initialization.Provisioned = ptr.To(true)
 		return ctrl.Result{}, nil
 	}
 
@@ -287,7 +288,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	// update cluster object with load balancer host name
 	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Host = *hostName
 	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Port = clusterScope.APIServerPort()
-	clusterScope.IBMPowerVSCluster.Status.Ready = true
+	clusterScope.IBMPowerVSCluster.Status.Initialization.Provisioned = ptr.To(true)
 	return ctrl.Result{}, nil
 }
 

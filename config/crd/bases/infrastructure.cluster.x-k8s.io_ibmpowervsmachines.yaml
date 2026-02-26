@@ -457,7 +457,7 @@ spec:
       name: Age
       type: date
     - description: Cluster infrastructure is ready for IBM PowerVS instances
-      jsonPath: .status.ready
+      jsonPath: ".status.initialization.provisioned\t"
       name: Ready
       type: string
     - description: Instance Internal Addresses
@@ -601,8 +601,10 @@ spec:
                   when ProcessorType selected as Shared or Capped, the default is set to 0.25.
                 x-kubernetes-int-or-string: true
               providerID:
-                description: ProviderID is the unique identifier as specified by the
+                description: providerID is the unique identifier as specified by the
                   cloud provider.
+                maxLength: 512
+                minLength: 1
                 type: string
               serviceInstance:
                 description: |-
@@ -662,22 +664,34 @@ spec:
             description: status defines the observed state of IBMPowerVSMachine
             properties:
               addresses:
-                description: Addresses contains the vsi associated addresses.
+                description: addresses contains the instance associated addresses.
                 items:
-                  description: NodeAddress contains information for the node's address.
+                  description: MachineAddress contains information for the node's
+                    address.
                   properties:
                     address:
-                      description: The node address.
+                      description: address is the machine address.
+                      maxLength: 256
+                      minLength: 1
                       type: string
                     type:
-                      description: Node address type, one of Hostname, ExternalIP
-                        or InternalIP.
+                      description: type is the machine address type, one of Hostname,
+                        ExternalIP, InternalIP, ExternalDNS or InternalDNS.
+                      enum:
+                      - Hostname
+                      - ExternalIP
+                      - InternalIP
+                      - ExternalDNS
+                      - InternalDNS
                       type: string
                   required:
                   - address
                   - type
                   type: object
+                maxItems: 10
+                minItems: 1
                 type: array
+                x-kubernetes-list-type: atomic
               conditions:
                 description: conditions represents the observations of a IBMPowerVSMachine's
                   current state.
@@ -856,14 +870,23 @@ spec:
               health:
                 description: Health is the health of the vsi.
                 type: string
+              initialization:
+                description: |-
+                  initialization provides observations of the IBMPowerVSMachine initialization process.
+                  NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+                minProperties: 1
+                properties:
+                  provisioned:
+                    description: |-
+                      provisioned is true when the infrastructure provider reports that the Machine's infrastructure is fully provisioned.
+                      NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+                    type: boolean
+                type: object
               instanceID:
                 type: string
               instanceState:
                 description: InstanceState is the status of the vsi.
                 type: string
-              ready:
-                description: Ready is true when the provider resource is ready.
-                type: boolean
               region:
                 description: Region specifies the Power VS Service instance region.
                 type: string

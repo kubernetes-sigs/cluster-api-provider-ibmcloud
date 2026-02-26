@@ -19,7 +19,6 @@ package v1beta3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
@@ -40,6 +39,10 @@ type IBMPowerVSClusterSpec struct {
 	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
+	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// +optional
+	ControlPlaneEndpoint APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
+
 	// Network is the reference to the Network to use for this cluster.
 	// when the field is omitted, A DHCP service will be created in the Power VS workspace and its private network will be used.
 	// the DHCP service created network will have the following name format
@@ -55,10 +58,6 @@ type IBMPowerVSClusterSpec struct {
 	// it will automatically create network with name DHCPSERVER<DHCPServer.Name>_Private in PowerVS workspace.
 	// +optional
 	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
-
-	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
-	// +optional
-	ControlPlaneEndpoint clusterv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
 
 	// serviceInstance is the reference to the Power VS server workspace on which the server instance(VM) will be created.
 	// Power VS server workspace is a container for all Power VS instances at a specific geographic region.
@@ -149,14 +148,16 @@ type IBMPowerVSClusterSpec struct {
 // IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
 type IBMPowerVSClusterStatus struct {
 	// conditions represents the observations of a IBMPowerVSCluster's current state.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// ready is true when the provider resource is ready.
-	// +kubebuilder:default=false
-	Ready bool `json:"ready"`
+	// initialization provides observations of the IBMPowerVSCluster initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Cluster provisioning.
+	// +optional
+	Initialization IBMPowerVSClusterInitializationStatus `json:"initialization,omitempty,omitzero"`
 
 	// ResourceGroup is the reference to the Power VS resource group under which the resources will be created.
 	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
@@ -227,6 +228,31 @@ type IBMPowerVSClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []IBMPowerVSCluster `json:"items"`
+}
+
+// APIEndpoint represents a reachable Kubernetes API endpoint.
+// +kubebuilder:validation:MinProperties=1
+type APIEndpoint struct {
+	// host is the hostname on which the API server is serving.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=512
+	Host string `json:"host,omitempty"`
+
+	// port is the port on which the API server is serving.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port int32 `json:"port,omitempty"`
+}
+
+// IBMPowerVSClusterInitializationStatus provides observations of the IBMPowerVSCluster initialization process.
+// +kubebuilder:validation:MinProperties=1
+type IBMPowerVSClusterInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Cluster's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // DHCPServer contains the DHCP server configurations.

@@ -17,12 +17,17 @@ limitations under the License.
 package v1beta2
 
 import (
+	"reflect"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryconversion "k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
@@ -73,6 +78,9 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 			clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta2.Conditions, &out.Conditions)
 		}
 	}
+
+	// Move initialization to old field
+	out.Ready = ptr.Deref(in.Initialization.Provisioned, false)
 
 	// Move new conditions (v1beta2) to the v1beta2 field.
 	if in.Conditions == nil {
@@ -129,6 +137,9 @@ func Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(
 			clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta2.Conditions, &out.Conditions)
 		}
 	}
+
+	// Move initialization to old field
+	out.Ready = ptr.Deref(in.Initialization.Provisioned, false)
 
 	// Move new conditions (v1beta2) to the v1beta2 field.
 	if in.Conditions == nil {
@@ -203,16 +214,62 @@ func Convert_v1beta1_Condition_To_v1_Condition(in *clusterv1beta1.Condition, out
 	return clusterv1beta1.Convert_v1beta1_Condition_To_v1_Condition(in, out, s)
 }
 
+func Convert_v1beta3_IBMPowerVSMachineTemplateResource_To_v1beta2_IBMPowerVSMachineTemplateResource(in *infrav1.IBMPowerVSMachineTemplateResource, out *IBMPowerVSMachineTemplateResource, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta3_IBMPowerVSMachineTemplateResource_To_v1beta2_IBMPowerVSMachineTemplateResource(in, out, s); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Convert_v1beta1_APIEndpoint_To_v1beta3_APIEndpoint(in *clusterv1beta1.APIEndpoint, out *infrav1.APIEndpoint, _ apimachineryconversion.Scope) error {
+	out.Host = in.Host
+	out.Port = in.Port
+	return nil
+}
+
+func Convert_v1beta3_APIEndpoint_To_v1beta1_APIEndpoint(in *infrav1.APIEndpoint, out *clusterv1beta1.APIEndpoint, _ apimachineryconversion.Scope) error {
+	out.Host = in.Host
+	out.Port = in.Port
+	return nil
+}
+
+func Convert_v1beta1_ObjectMeta_To_v1beta2_ObjectMeta(in *clusterv1beta1.ObjectMeta, out *clusterv1.ObjectMeta, s apimachineryconversion.Scope) error {
+	return clusterv1beta1.Convert_v1beta1_ObjectMeta_To_v1beta2_ObjectMeta(in, out, s)
+}
+
+func Convert_v1beta2_ObjectMeta_To_v1beta1_ObjectMeta(in *clusterv1.ObjectMeta, out *clusterv1beta1.ObjectMeta, s apimachineryconversion.Scope) error {
+	return clusterv1beta1.Convert_v1beta2_ObjectMeta_To_v1beta1_ObjectMeta(in, out, s)
+}
+
 func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSCluster)
 
-	return Convert_v1beta2_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(src, dst, nil)
+	if err := Convert_v1beta2_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(src, dst, nil); err != nil {
+		return err
+	}
+
+	restored := &infrav1.IBMPowerVSCluster{}
+	ok, err := utilconversion.UnmarshalData(src, restored)
+	if err != nil {
+		return err
+	}
+
+	initialization := infrav1.IBMPowerVSClusterInitializationStatus{}
+	clusterv1.Convert_bool_To_Pointer_bool(src.Status.Ready, ok, restored.Status.Initialization.Provisioned, &initialization.Provisioned)
+	if !reflect.DeepEqual(initialization, infrav1.IBMPowerVSClusterInitializationStatus{}) {
+		dst.Status.Initialization = initialization
+	}
+	return nil
 }
 
 func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSCluster)
+	if err := Convert_v1beta3_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(src, dst, nil); err != nil {
+		return err
+	}
 
-	return Convert_v1beta3_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(src, dst, nil)
+	return utilconversion.MarshalData(src, dst)
 }
 
 func (src *IBMPowerVSClusterTemplate) ConvertTo(dstRaw conversion.Hub) error {
@@ -230,25 +287,72 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 func (src *IBMPowerVSMachine) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSMachine)
 
-	return Convert_v1beta2_IBMPowerVSMachine_To_v1beta3_IBMPowerVSMachine(src, dst, nil)
+	if err := Convert_v1beta2_IBMPowerVSMachine_To_v1beta3_IBMPowerVSMachine(src, dst, nil); err != nil {
+		return err
+	}
+
+	restored := &infrav1.IBMPowerVSMachine{}
+	ok, err := utilconversion.UnmarshalData(src, restored)
+	if err != nil {
+		return err
+	}
+
+	initialization := infrav1.IBMPowerVSMachineInitializationStatus{}
+	clusterv1.Convert_bool_To_Pointer_bool(src.Status.Ready, ok, restored.Status.Initialization.Provisioned, &initialization.Provisioned)
+	if !reflect.DeepEqual(initialization, infrav1.IBMPowerVSMachineInitializationStatus{}) {
+		dst.Status.Initialization = initialization
+	}
+
+	return nil
 }
 
 func (dst *IBMPowerVSMachine) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSMachine)
 
-	return Convert_v1beta3_IBMPowerVSMachine_To_v1beta2_IBMPowerVSMachine(src, dst, nil)
+	if err := Convert_v1beta3_IBMPowerVSMachine_To_v1beta2_IBMPowerVSMachine(src, dst, nil); err != nil {
+		return err
+	}
+
+	if dst.Spec.ProviderID != nil && *dst.Spec.ProviderID == "" {
+		dst.Spec.ProviderID = nil
+	}
+
+	return utilconversion.MarshalData(src, dst)
 }
 
 func (src *IBMPowerVSMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*infrav1.IBMPowerVSMachineTemplate)
 
-	return Convert_v1beta2_IBMPowerVSMachineTemplate_To_v1beta3_IBMPowerVSMachineTemplate(src, dst, nil)
+	if err := Convert_v1beta2_IBMPowerVSMachineTemplate_To_v1beta3_IBMPowerVSMachineTemplate(src, dst, nil); err != nil {
+		return err
+	}
+
+	// Manually restore data.
+	restored := &infrav1.IBMPowerVSMachineTemplate{}
+	ok, err := utilconversion.UnmarshalData(src, restored)
+	if err != nil {
+		return err
+	}
+
+	if ok {
+		dst.Status = restored.Status
+	}
+
+	return nil
 }
 
 func (dst *IBMPowerVSMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSMachineTemplate)
 
-	return Convert_v1beta3_IBMPowerVSMachineTemplate_To_v1beta2_IBMPowerVSMachineTemplate(src, dst, nil)
+	if err := Convert_v1beta3_IBMPowerVSMachineTemplate_To_v1beta2_IBMPowerVSMachineTemplate(src, dst, nil); err != nil {
+		return err
+	}
+
+	if dst.Spec.Template.Spec.ProviderID != nil && *dst.Spec.Template.Spec.ProviderID == "" {
+		dst.Spec.Template.Spec.ProviderID = nil
+	}
+
+	return utilconversion.MarshalData(src, dst)
 }
 
 func (src *IBMPowerVSImage) ConvertTo(dstRaw conversion.Hub) error {

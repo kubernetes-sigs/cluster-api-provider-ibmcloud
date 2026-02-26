@@ -122,9 +122,11 @@ type IBMPowerVSMachineSpec struct {
 	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
 	Network IBMPowerVSResourceReference `json:"network"`
 
-	// ProviderID is the unique identifier as specified by the cloud provider.
+	// providerID is the unique identifier as specified by the cloud provider.
 	// +optional
-	ProviderID *string `json:"providerID,omitempty"`
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=512
+	ProviderID string `json:"providerID,omitempty"`
 }
 
 // IBMPowerVSMachineStatus defines the observed state of IBMPowerVSMachine.
@@ -136,14 +138,19 @@ type IBMPowerVSMachineStatus struct {
 	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
+	// initialization provides observations of the IBMPowerVSMachine initialization process.
+	// NOTE: Fields in this struct are part of the Cluster API contract and are used to orchestrate initial Machine provisioning.
+	// +optional
+	Initialization IBMPowerVSMachineInitializationStatus `json:"initialization,omitempty,omitzero"`
+
 	InstanceID string `json:"instanceID,omitempty"`
 
-	// Ready is true when the provider resource is ready.
+	// addresses contains the instance associated addresses.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=10
+	// +listType=atomic
 	// +optional
-	Ready bool `json:"ready"`
-
-	// Addresses contains the vsi associated addresses.
-	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
+	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`
 
 	// Health is the health of the vsi.
 	// +optional
@@ -219,7 +226,7 @@ type IBMPowerVSMachineStatus struct {
 // +kubebuilder:printcolumn:name="Cluster",type="string",JSONPath=".metadata.labels.cluster\\.x-k8s\\.io/cluster-name",description="Cluster to which this IBMPowerVSMachine belongs"
 // +kubebuilder:printcolumn:name="Machine",type="string",priority=1,JSONPath=".metadata.ownerReferences[?(@.kind==\"Machine\")].name",description="Machine object to which this IBMPowerVSMachine belongs"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Time duration since creation of IBMPowerVSMachine"
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Cluster infrastructure is ready for IBM PowerVS instances"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.initialization.provisioned	",description="Cluster infrastructure is ready for IBM PowerVS instances"
 // +kubebuilder:printcolumn:name="Internal-IP",type="string",priority=1,JSONPath=".status.addresses[?(@.type==\"InternalIP\")].address",description="Instance Internal Addresses"
 // +kubebuilder:printcolumn:name="External-IP",type="string",priority=1,JSONPath=".status.addresses[?(@.type==\"ExternalIP\")].address",description="Instance External Addresses"
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.instanceState",description="PowerVS instance state"
@@ -249,6 +256,15 @@ type IBMPowerVSMachineList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []IBMPowerVSMachine `json:"items"`
+}
+
+// IBMPowerVSMachineInitializationStatus provides observations of the IBMPowerVSMachine initialization process.
+// +kubebuilder:validation:MinProperties=1
+type IBMPowerVSMachineInitializationStatus struct {
+	// provisioned is true when the infrastructure provider reports that the Machine's infrastructure is fully provisioned.
+	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Machine provisioning.
+	// +optional
+	Provisioned *bool `json:"provisioned,omitempty"`
 }
 
 // IBMPowerVSMachineDeprecatedStatus groups all the status fields that are deprecated and will be removed in a future version.

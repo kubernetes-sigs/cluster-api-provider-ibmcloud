@@ -18,12 +18,13 @@ package v1beta2
 
 import (
 	"reflect"
-	"sigs.k8s.io/randfill"
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"sigs.k8s.io/randfill"
 
 	utilconversion "sigs.k8s.io/cluster-api/util/conversion"
 
@@ -60,7 +61,7 @@ func TestFuzzyConversion(t *testing.T) {
 		Scheme:      scheme,
 		Hub:         &infrav1.IBMPowerVSMachineTemplate{},
 		Spoke:       &IBMPowerVSMachineTemplate{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{IBMPowerVSMachineTemplateFuzzFuncs},
 	}))
 	t.Run("for IBMPowerVSImage", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
@@ -100,6 +101,7 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 func IBMPowerVSMachineFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		hubIBMPowerVSMachineStatus,
+		spokeIBMPowerVSMachineSpec,
 		spokeIBMPowerVSMachineStatus,
 	}
 }
@@ -114,6 +116,14 @@ func hubIBMPowerVSMachineStatus(in *infrav1.IBMPowerVSMachineStatus, c randfill.
 	}
 }
 
+func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) {
+	c.FillNoCustom(in)
+
+	if in.ProviderID != nil && *in.ProviderID == "" {
+		in.ProviderID = nil
+	}
+}
+
 func spokeIBMPowerVSMachineStatus(in *IBMPowerVSMachineStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
 	// Drop empty structs with only omit empty fields.
@@ -122,6 +132,19 @@ func spokeIBMPowerVSMachineStatus(in *IBMPowerVSMachineStatus, c randfill.Contin
 			in.V1Beta2 = nil
 		}
 	}
+}
+
+func IBMPowerVSMachineTemplateFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
+	return []interface{}{
+		hubIBMPowerVSMachineTemplateResource,
+		spokeIBMPowerVSMachineSpec,
+	}
+}
+
+func hubIBMPowerVSMachineTemplateResource(in *infrav1.IBMPowerVSMachineTemplateResource, c randfill.Continue) {
+	c.FillNoCustom(in)
+
+	in.ObjectMeta = clusterv1.ObjectMeta{} // Field does not exist in v1beta2.
 }
 
 func IBMPowerVSImageFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
