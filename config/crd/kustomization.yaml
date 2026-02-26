@@ -34,7 +34,8 @@ configurations:
 labels:
 - includeSelectors: true
   pairs:
-    cluster.x-k8s.io/v1beta1: v1beta1_v1beta2
+    cluster.x-k8s.io/v1beta1: v1beta2
+    cluster.x-k8s.io/v1beta2: v1beta3
 patches:
 - path: patches/webhook_in_ibmvpcclusters.yaml
 - path: patches/webhook_in_ibmvpcmachines.yaml
