@@ -28,6 +28,7 @@ func init() {
 
 // IBMPowerVSClusterTemplateSpec defines the desired state of IBMPowerVSClusterTemplate.
 type IBMPowerVSClusterTemplateSpec struct {
+	// template is the IBMPowerVSClusterTemplateResource.
 	Template IBMPowerVSClusterTemplateResource `json:"template"`
 }
 
@@ -60,9 +61,10 @@ type IBMPowerVSClusterTemplateList struct {
 
 // IBMPowerVSClusterTemplateResource describes the data needed to create an IBMPowerVSCluster from a template.
 type IBMPowerVSClusterTemplateResource struct {
-	// Standard object's metadata.
+	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	ObjectMeta clusterv1beta1.ObjectMeta `json:"metadata,omitempty"`
-	Spec       IBMPowerVSClusterSpec     `json:"spec"`
+	// spec is the IBMPowerVSClusterSpec.
+	Spec IBMPowerVSClusterSpec `json:"spec"`
 }

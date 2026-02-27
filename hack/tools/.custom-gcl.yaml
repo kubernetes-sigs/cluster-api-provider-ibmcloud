@@ -1,0 +1,7 @@
+version: v2.8.0 # golangci-lint base version.
+name: golangci-lint-kube-api-linter
+destination: ./bin
+plugins:
+- module: 'sigs.k8s.io/kube-api-linter'
+  # To get the latest version, run: cd hack/tools && go list -m -json sigs.k8s.io/kube-api-linter@latest
+  version: v0.0.0-20260206102632-39e3d06a2850

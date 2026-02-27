@@ -47,9 +47,9 @@ func init() {
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
 type IBMPowerVSMachineSpec struct {
-	// Deprecated: use ServiceInstance instead
+	// serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 	//
-	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
+	// Deprecated: use ServiceInstance instead
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
@@ -62,15 +62,15 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
-	// SSHKey is the name of the SSH key pair provided to the vsi for authenticating users.
+	// sshKey is the name of the SSH key pair provided to the vsi for authenticating users.
 	SSHKey string `json:"sshKey,omitempty"`
 
-	// Image the reference to the image which is used to create the instance.
+	// image the reference to the image which is used to create the instance.
 	// supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
 	// +optional
 	Image *IBMPowerVSResourceReference `json:"image,omitempty"`
 
-	// ImageRef is an optional reference to a provider-specific resource that holds
+	// imageRef is an optional reference to a provider-specific resource that holds
 	// the details for provisioning the Image for a Cluster.
 	// +optional
 	ImageRef *corev1.LocalObjectReference `json:"imageRef,omitempty"`
@@ -118,11 +118,11 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	MemoryGiB int32 `json:"memoryGiB,omitempty"`
 
-	// Network is the reference to the Network to use for this instance.
+	// network is the reference to the Network to use for this instance.
 	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
 	Network IBMPowerVSResourceReference `json:"network"`
 
-	// ProviderID is the unique identifier as specified by the cloud provider.
+	// providerID is the unique identifier as specified by the cloud provider.
 	// +optional
 	ProviderID *string `json:"providerID,omitempty"`
 }
@@ -136,28 +136,30 @@ type IBMPowerVSMachineStatus struct {
 	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
+	// instanceID is the instance ID.
 	InstanceID string `json:"instanceID,omitempty"`
 
-	// Ready is true when the provider resource is ready.
+	// ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
 
-	// Addresses contains the vsi associated addresses.
+	// addresses contains the vsi associated addresses.
+	// +listType=atomic
 	Addresses []corev1.NodeAddress `json:"addresses,omitempty"`
 
-	// Health is the health of the vsi.
+	// health is the health of the vsi.
 	// +optional
 	Health string `json:"health,omitempty"`
 
-	// InstanceState is the status of the vsi.
+	// instanceState is the status of the vsi.
 	// +optional
 	InstanceState PowerVSInstanceState `json:"instanceState,omitempty"`
 
-	// Fault will report if any fault messages for the vsi.
+	// fault will report if any fault messages for the vsi.
 	// +optional
 	Fault string `json:"fault,omitempty"`
 
-	// FailureReason will be set in the event that there is a terminal problem
+	// failureReason will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a succinct value suitable
 	// for machine interpretation.
 	//
@@ -179,7 +181,7 @@ type IBMPowerVSMachineStatus struct {
 	// +optional
 	FailureReason *string `json:"failureReason,omitempty"`
 
-	// FailureMessage will be set in the event that there is a terminal problem
+	// failureMessage will be set in the event that there is a terminal problem
 	// reconciling the Machine and will contain a more verbose string suitable
 	// for logging and human consumption.
 	//
@@ -201,10 +203,10 @@ type IBMPowerVSMachineStatus struct {
 	// +optional
 	FailureMessage *string `json:"failureMessage,omitempty"`
 
-	// Region specifies the Power VS Service instance region.
+	// region specifies the Power VS Service instance region.
 	Region *string `json:"region,omitempty"`
 
-	// Zone specifies the Power VS Service instance zone.
+	// zone specifies the Power VS Service instance zone.
 	Zone *string `json:"zone,omitempty"`
 
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
