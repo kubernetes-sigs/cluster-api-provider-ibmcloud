@@ -296,26 +296,26 @@ spec:
             description: spec defines the desired state of IBMPowerVSImage
             properties:
               bucket:
-                description: Cloud Object Storage bucket name; bucket-name[/optional/folder]
+                description: bucket is the Cloud Object Storage bucket name; bucket-name[/optional/folder]
                 type: string
               clusterName:
-                description: ClusterName is the name of the Cluster this object belongs
+                description: clusterName is the name of the Cluster this object belongs
                   to.
                 minLength: 1
                 type: string
               deletePolicy:
                 default: delete
-                description: DeletePolicy defines the policy used to identify images
+                description: deletePolicy defines the policy used to identify images
                   to be preserved beyond the lifecycle of associated cluster.
                 enum:
                 - delete
                 - retain
                 type: string
               object:
-                description: Cloud Object Storage image filename.
+                description: object is the Cloud Object Storage image filename.
                 type: string
               region:
-                description: Cloud Object Storage region.
+                description: region is the Cloud Object Storage region.
                 type: string
               serviceInstance:
                 description: |-
@@ -328,30 +328,30 @@ spec:
                   when omitted system will dynamically create the service instance
                 properties:
                   id:
-                    description: ID of resource
+                    description: id of resource
                     minLength: 1
                     type: string
                   name:
-                    description: Name of resource
+                    description: name of resource
                     minLength: 1
                     type: string
                   regex:
                     description: |-
-                      Regular expression to match resource,
+                      regex is the regular expression to match resource,
                       In case of multiple resources matches the provided regular expression the first matched resource will be selected
                     minLength: 1
                     type: string
                 type: object
               serviceInstanceID:
                 description: |-
-                  Deprecated: use ServiceInstance instead
+                  serviceInstanceID is the id of the power cloud instance where the image will get imported.
 
-                  ServiceInstanceID is the id of the power cloud instance where the image will get imported.
+                  Deprecated: use ServiceInstance instead
                 type: string
               storageType:
                 default: tier1
-                description: Type of storage, storage pool with the most available
-                  space will be selected.
+                description: storageType is the type of storage, storage pool with
+                  the most available space will be selected.
                 enum:
                 - tier0
                 - tier1
@@ -498,16 +498,16 @@ spec:
                     type: object
                 type: object
               imageID:
-                description: ImageID is the id of the imported image.
+                description: imageID is the id of the imported image.
                 type: string
               imageState:
-                description: ImageState is the status of the imported image.
+                description: imageState is the status of the imported image.
                 type: string
               jobID:
-                description: JobID is the job ID of an import operation.
+                description: jobID is the job ID of an import operation.
                 type: string
               ready:
-                description: Ready is true when the provider resource is ready.
+                description: ready is true when the provider resource is ready.
                 type: boolean
             type: object
         required:

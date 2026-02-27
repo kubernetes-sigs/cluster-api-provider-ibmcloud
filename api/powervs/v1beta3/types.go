@@ -380,10 +380,12 @@ type VPCSecurityGroup struct {
 
 	// rules are the Security Group Rules for the Security Group.
 	// +optional
+	// +listType=atomic
 	Rules []*VPCSecurityGroupRule `json:"rules,omitempty"`
 
 	// tags are tags to add to the Security Group.
 	// +optional
+	// +listType=set
 	Tags []*string `json:"tags,omitempty"`
 }
 
@@ -429,7 +431,7 @@ type VPCSecurityGroupRuleRemote struct {
 	// +optional
 	CIDRSubnetName *string `json:"cidrSubnetName,omitempty"`
 
-	//  address is the address to use for the remote's destination/source.
+	// address is the address to use for the remote's destination/source.
 	// Only used when remoteType is VPCSecurityGroupRuleRemoteTypeAddress.
 	// +optional
 	Address *string `json:"address,omitempty"`
@@ -470,30 +472,38 @@ type VPCSecurityGroupRulePrototype struct {
 	// remotes is a set of VPCSecurityGroupRuleRemote's that define the traffic allowed by the Rule's remote.
 	// Specifying multiple VPCSecurityGroupRuleRemote's creates a unique Security Group Rule with the shared Protocol, PortRange, etc.
 	// This allows for easier management of Security Group Rule's for sets of CIDR's, IP's, etc.
+	// +listType=atomic
 	Remotes []VPCSecurityGroupRuleRemote `json:"remotes"`
 }
 
 // Subnet describes a subnet.
 type Subnet struct {
+	// cidr is the IPv4 CIDR block for the subnet.
 	Ipv4CidrBlock *string `json:"cidr,omitempty"`
+	// name is the name of the subnet.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength:=63
 	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
 	Name *string `json:"name,omitempty"`
+	// id is the ID of the subnet.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength:=64
 	// +kubebuilder:validation:Pattern=`^[-0-9a-z_]+$`
-	ID   *string `json:"id,omitempty"`
+	ID *string `json:"id,omitempty"`
+	// zone is the zone of the subnet.
 	Zone *string `json:"zone,omitempty"`
 }
 
 // VPCEndpoint describes a VPCEndpoint.
 type VPCEndpoint struct {
+	// address is the VPC endpoint address.
 	Address *string `json:"address"`
-	// Deprecated: This field has no function and is going to be removed in the next release.
+	// floatingIPID is the floating IP ID.
 	//
+	// Deprecated: This field has no function and is going to be removed in the next release.
 	// +optional
 	FIPID *string `json:"floatingIPID,omitempty"`
+	// loadBalancerIPID is the load balancer IP ID.
 	// +optional
 	LBID *string `json:"loadBalancerIPID,omitempty"`
 }
@@ -541,17 +551,17 @@ type VPCResource struct {
 // Only one of ID, Name or RegEx may be specified. Specifying more than one will result in
 // a validation error.
 type IBMPowerVSResourceReference struct {
-	// ID of resource
+	// id of resource
 	// +kubebuilder:validation:MinLength=1
 	// +optional
 	ID *string `json:"id,omitempty"`
 
-	// Name of resource
+	// name of resource
 	// +kubebuilder:validation:MinLength=1
 	// +optional
 	Name *string `json:"name,omitempty"`
 
-	// Regular expression to match resource,
+	// regex is the regular expression to match resource,
 	// In case of multiple resources matches the provided regular expression the first matched resource will be selected
 	// +kubebuilder:validation:MinLength=1
 	// +optional

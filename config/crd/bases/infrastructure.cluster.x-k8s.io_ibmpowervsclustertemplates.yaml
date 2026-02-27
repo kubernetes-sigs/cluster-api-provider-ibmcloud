@@ -967,12 +967,11 @@ spec:
             description: spec defines the desired state of IBMPowerVSClusterTemplate
             properties:
               template:
-                description: IBMPowerVSClusterTemplateResource describes the data
-                  needed to create an IBMPowerVSCluster from a template.
+                description: template is the IBMPowerVSClusterTemplateResource.
                 properties:
                   metadata:
                     description: |-
-                      Standard object's metadata.
+                      metadata is the standard object's metadata.
                       More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
                     properties:
                       annotations:
@@ -995,11 +994,10 @@ spec:
                         type: object
                     type: object
                   spec:
-                    description: IBMPowerVSClusterSpec defines the desired state of
-                      IBMPowerVSCluster.
+                    description: spec is the IBMPowerVSClusterSpec.
                     properties:
                       controlPlaneEndpoint:
-                        description: ControlPlaneEndpoint represents the endpoint
+                        description: controlPlaneEndpoint represents the endpoint
                           used to communicate with the control plane.
                         properties:
                           host:
@@ -1046,32 +1044,32 @@ spec:
                           it will automatically create network with name DHCPSERVER<DHCPServer.Name>_Private in PowerVS workspace.
                         properties:
                           cidr:
-                            description: Optional cidr for DHCP private network
+                            description: cidr for DHCP private network
                             type: string
                           dnsServer:
                             default: 1.1.1.1
-                            description: Optional DNS Server for DHCP service
+                            description: dnsServer for DHCP service
                             type: string
                           id:
-                            description: Optional id of the existing DHCPServer
+                            description: id of the existing DHCPServer
                             type: string
                           name:
-                            description: Optional name of DHCP Service. Only alphanumeric
-                              characters and dashes are allowed.
+                            description: name of DHCP Service. Only alphanumeric characters
+                              and dashes are allowed.
                             type: string
                           snat:
                             default: true
-                            description: Optional indicates if SNAT will be enabled
-                              for DHCP service
+                            description: snat indicates if SNAT will be enabled for
+                              DHCP service
                             type: boolean
                         type: object
                       ignition:
-                        description: Ignition defined options related to the bootstrapping
+                        description: ignition defined options related to the bootstrapping
                           systems where Ignition is used.
                         properties:
                           version:
                             default: "2.3"
-                            description: Version defines which version of Ignition
+                            description: version defines which version of Ignition
                               will be used to generate bootstrap data.
                             enum:
                             - "2.3"
@@ -1097,7 +1095,7 @@ spec:
                             of an VPC load balancer.
                           properties:
                             additionalListeners:
-                              description: AdditionalListeners sets the additional
+                              description: additionalListeners sets the additional
                                 listeners for the control plane load balancer.
                               items:
                                 description: |-
@@ -1113,7 +1111,7 @@ spec:
                                     pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                     type: string
                                   port:
-                                    description: Port sets the port for the additional
+                                    description: port sets the port for the additional
                                       listener.
                                     format: int64
                                     maximum: 65535
@@ -1131,7 +1129,7 @@ spec:
                                     type: string
                                   selector:
                                     description: |-
-                                      The selector is used to find IBMPowerVSMachines with matching labels.
+                                      selector is used to find IBMPowerVSMachines with matching labels.
                                       If the label matches, the machine is then added to the load balancer listener configuration.
                                     properties:
                                       matchExpressions:
@@ -1274,6 +1272,7 @@ spec:
                                 - protocol
                                 type: object
                               type: array
+                              x-kubernetes-list-type: atomic
                             id:
                               description: id of the loadbalancer
                               maxLength: 64
@@ -1281,7 +1280,7 @@ spec:
                               pattern: ^[-0-9a-z_]+$
                               type: string
                             name:
-                              description: Name sets the name of the VPC load balancer.
+                              description: name sets the name of the VPC load balancer.
                               maxLength: 63
                               minLength: 1
                               pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
@@ -1311,6 +1310,7 @@ spec:
                                 - message: an id or name must be provided
                                   rule: has(self.id) || has(self.name)
                               type: array
+                              x-kubernetes-list-type: atomic
                             subnets:
                               description: |-
                                 subnets defines the VPC Subnets to attach to the load balancer.
@@ -1331,11 +1331,13 @@ spec:
                                 - message: an id or name must be provided
                                   rule: has(self.id) || has(self.name)
                               type: array
+                              x-kubernetes-list-type: atomic
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       network:
                         description: |-
-                          Network is the reference to the Network to use for this cluster.
+                          network is the reference to the Network to use for this cluster.
                           when the field is omitted, A DHCP service will be created in the Power VS workspace and its private network will be used.
                           the DHCP service created network will have the following name format
                           1. in the case of DHCPServer.Name is not set the name will be DHCPSERVER<CLUSTER_NAME>_Private.
@@ -1345,16 +1347,16 @@ spec:
                           Network.RegEx is not yet supported and system will ignore the value.
                         properties:
                           id:
-                            description: ID of resource
+                            description: id of resource
                             minLength: 1
                             type: string
                           name:
-                            description: Name of resource
+                            description: name of resource
                             minLength: 1
                             type: string
                           regex:
                             description: |-
-                              Regular expression to match resource,
+                              regex is the regular expression to match resource,
                               In case of multiple resources matches the provided regular expression the first matched resource will be selected
                             minLength: 1
                             type: string
@@ -1367,16 +1369,16 @@ spec:
                           ResourceGroup.ID and ResourceGroup.Regex is not yet supported and system will ignore the value.
                         properties:
                           id:
-                            description: ID of resource
+                            description: id of resource
                             minLength: 1
                             type: string
                           name:
-                            description: Name of resource
+                            description: name of resource
                             minLength: 1
                             type: string
                           regex:
                             description: |-
-                              Regular expression to match resource,
+                              regex is the regular expression to match resource,
                               In case of multiple resources matches the provided regular expression the first matched resource will be selected
                             minLength: 1
                             type: string
@@ -1396,25 +1398,25 @@ spec:
                           ServiceInstance.Regex is not yet supported not yet supported and system will ignore the value.
                         properties:
                           id:
-                            description: ID of resource
+                            description: id of resource
                             minLength: 1
                             type: string
                           name:
-                            description: Name of resource
+                            description: name of resource
                             minLength: 1
                             type: string
                           regex:
                             description: |-
-                              Regular expression to match resource,
+                              regex is the regular expression to match resource,
                               In case of multiple resources matches the provided regular expression the first matched resource will be selected
                             minLength: 1
                             type: string
                         type: object
                       serviceInstanceID:
                         description: |-
-                          Deprecated: use ServiceInstance instead
+                          serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 
-                          ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
+                          Deprecated: use ServiceInstance instead
                         type: string
                       transitGateway:
                         description: |-
@@ -1469,7 +1471,7 @@ spec:
                             type: string
                         type: object
                       vpcSecurityGroups:
-                        description: VPCSecurityGroups to attach it to the VPC resource
+                        description: vpcSecurityGroups to attach it to the VPC resource
                         items:
                           description: VPCSecurityGroup defines a VPC Security Group
                             that should exist or be created within the specified VPC,
@@ -1555,8 +1557,8 @@ spec:
                                             The type of remote defines the additional remote details where are used for defining the remote.
                                           properties:
                                             address:
-                                              description: |2-
-                                                 address is the address to use for the remote's destination/source.
+                                              description: |-
+                                                address is the address to use for the remote's destination/source.
                                                 Only used when remoteType is VPCSecurityGroupRuleRemoteTypeAddress.
                                               type: string
                                             cidrSubnetName:
@@ -1607,6 +1609,7 @@ spec:
                                               && !has(self.cidrSubnetName) && !has(self.address))
                                               : true'
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                     required:
                                     - protocol
                                     - remotes
@@ -1696,8 +1699,8 @@ spec:
                                             The type of remote defines the additional remote details where are used for defining the remote.
                                           properties:
                                             address:
-                                              description: |2-
-                                                 address is the address to use for the remote's destination/source.
+                                              description: |-
+                                                address is the address to use for the remote's destination/source.
                                                 Only used when remoteType is VPCSecurityGroupRuleRemoteTypeAddress.
                                               type: string
                                             cidrSubnetName:
@@ -1748,6 +1751,7 @@ spec:
                                               && !has(self.cidrSubnetName) && !has(self.address))
                                               : true'
                                         type: array
+                                        x-kubernetes-list-type: atomic
                                     required:
                                     - protocol
                                     - remotes
@@ -1790,16 +1794,19 @@ spec:
                                   rule: 'self.direction == ''outbound'' ? !has(self.source)
                                     : true'
                               type: array
+                              x-kubernetes-list-type: atomic
                             tags:
                               description: tags are tags to add to the Security Group.
                               items:
                                 type: string
                               type: array
+                              x-kubernetes-list-type: set
                           type: object
                           x-kubernetes-validations:
                           - message: either an id or name must be specified
                             rule: has(self.id) || has(self.name)
                         type: array
+                        x-kubernetes-list-type: atomic
                       vpcSubnets:
                         description: |-
                           vpcSubnets contains information about IBM Cloud VPC Subnet resources.
@@ -1813,21 +1820,26 @@ spec:
                           description: Subnet describes a subnet.
                           properties:
                             cidr:
+                              description: cidr is the IPv4 CIDR block for the subnet.
                               type: string
                             id:
+                              description: id is the ID of the subnet.
                               maxLength: 64
                               minLength: 1
                               pattern: ^[-0-9a-z_]+$
                               type: string
                             name:
+                              description: name is the name of the subnet.
                               maxLength: 63
                               minLength: 1
                               pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                               type: string
                             zone:
+                              description: zone is the zone of the subnet.
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       zone:
                         description: |-
                           zone is the name of Power VS zone where the cluster will be created

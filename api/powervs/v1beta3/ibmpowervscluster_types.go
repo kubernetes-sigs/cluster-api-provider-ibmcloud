@@ -35,12 +35,12 @@ func init() {
 
 // IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster.
 type IBMPowerVSClusterSpec struct {
-	// Deprecated: use ServiceInstance instead
+	// serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 	//
-	// ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
+	// Deprecated: use ServiceInstance instead
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
-	// Network is the reference to the Network to use for this cluster.
+	// network is the reference to the Network to use for this cluster.
 	// when the field is omitted, A DHCP service will be created in the Power VS workspace and its private network will be used.
 	// the DHCP service created network will have the following name format
 	// 1. in the case of DHCPServer.Name is not set the name will be DHCPSERVER<CLUSTER_NAME>_Private.
@@ -56,7 +56,7 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
 
-	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
+	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
 
@@ -106,10 +106,12 @@ type IBMPowerVSClusterSpec struct {
 	// when VPCSubnets[].Name is not set, system will set name as CLUSTER_NAME-vpcsubnet-INDEX.
 	// if subnet with name VPCSubnets[].Name not found, system will create new subnet in VPCSubnets[].Zone.
 	// +optional
+	// +listType=atomic
 	VPCSubnets []Subnet `json:"vpcSubnets,omitempty"`
 
-	// VPCSecurityGroups to attach it to the VPC resource
+	// vpcSecurityGroups to attach it to the VPC resource
 	// +optional
+	// +listType=atomic
 	VPCSecurityGroups []VPCSecurityGroup `json:"vpcSecurityGroups,omitempty"`
 
 	// transitGateway contains information about IBM Cloud TransitGateway
@@ -128,6 +130,7 @@ type IBMPowerVSClusterSpec struct {
 	// when LoadBalancers[].Name is set, system will first check for loadbalancer with Name, if not exist system will create new loadbalancer.
 	// For each loadbalancer a default backed pool and front listener will be configured with port 6443.
 	// +optional
+	// +listType=atomic
 	LoadBalancers []VPCLoadBalancerSpec `json:"loadBalancers,omitempty"`
 
 	// cosInstance contains options to configure a supporting IBM Cloud COS bucket for this
@@ -141,7 +144,7 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	CosInstance *CosInstance `json:"cosInstance,omitempty"`
 
-	// Ignition defined options related to the bootstrapping systems where Ignition is used.
+	// ignition defined options related to the bootstrapping systems where Ignition is used.
 	// +optional
 	Ignition *Ignition `json:"ignition,omitempty"`
 }
@@ -149,6 +152,7 @@ type IBMPowerVSClusterSpec struct {
 // IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
 type IBMPowerVSClusterStatus struct {
 	// conditions represents the observations of a IBMPowerVSCluster's current state.
+	// +optional
 	// +listType=map
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=32
@@ -158,13 +162,13 @@ type IBMPowerVSClusterStatus struct {
 	// +kubebuilder:default=false
 	Ready bool `json:"ready"`
 
-	// ResourceGroup is the reference to the Power VS resource group under which the resources will be created.
+	// resourceGroupID is the reference to the Power VS resource group under which the resources will be created.
 	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
 
 	// serviceInstance is the reference to the Power VS service on which the server instance(VM) will be created.
 	ServiceInstance *ResourceReference `json:"serviceInstance,omitempty"`
 
-	// networkID is the reference to the Power VS network to use for this cluster.
+	// network is the reference to the Power VS network to use for this cluster.
 	Network *ResourceReference `json:"network,omitempty"`
 
 	// dhcpServer is the reference to the Power VS DHCP server.
@@ -231,20 +235,20 @@ type IBMPowerVSClusterList struct {
 
 // DHCPServer contains the DHCP server configurations.
 type DHCPServer struct {
-	// Optional cidr for DHCP private network
+	// cidr for DHCP private network
 	Cidr *string `json:"cidr,omitempty"`
 
-	// Optional DNS Server for DHCP service
+	// dnsServer for DHCP service
 	// +kubebuilder:default="1.1.1.1"
 	DNSServer *string `json:"dnsServer,omitempty"`
 
-	// Optional name of DHCP Service. Only alphanumeric characters and dashes are allowed.
+	// name of DHCP Service. Only alphanumeric characters and dashes are allowed.
 	Name *string `json:"name,omitempty"`
 
-	// Optional id of the existing DHCPServer
+	// id of the existing DHCPServer
 	ID *string `json:"id,omitempty"`
 
-	// Optional indicates if SNAT will be enabled for DHCP service
+	// snat indicates if SNAT will be enabled for DHCP service
 	// +kubebuilder:default=true
 	Snat *bool `json:"snat,omitempty"`
 }
@@ -309,7 +313,7 @@ type CosInstance struct {
 
 // Ignition defines options related to the bootstrapping systems where Ignition is used.
 type Ignition struct {
-	// Version defines which version of Ignition will be used to generate bootstrap data.
+	// version defines which version of Ignition will be used to generate bootstrap data.
 	//
 	// +optional
 	// +kubebuilder:default="2.3"
@@ -321,8 +325,8 @@ type Ignition struct {
 type ResourceReference struct {
 	// id represents the id of the resource.
 	ID *string `json:"id,omitempty"`
-	// +kubebuilder:default=false
 	// controllerCreated indicates whether the resource is created by the controller.
+	// +kubebuilder:default=false
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }
 
@@ -330,8 +334,8 @@ type ResourceReference struct {
 type TransitGatewayStatus struct {
 	// id represents the id of the resource.
 	ID *string `json:"id,omitempty"`
-	// +kubebuilder:default=false
 	// controllerCreated indicates whether the resource is created by the controller.
+	// +kubebuilder:default=false
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 	// vpcConnection defines the vpc connection status in transit gateway.
 	VPCConnection *ResourceReference `json:"vpcConnection,omitempty"`

@@ -505,27 +505,27 @@ spec:
             properties:
               image:
                 description: |-
-                  Image the reference to the image which is used to create the instance.
+                  image the reference to the image which is used to create the instance.
                   supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
                 properties:
                   id:
-                    description: ID of resource
+                    description: id of resource
                     minLength: 1
                     type: string
                   name:
-                    description: Name of resource
+                    description: name of resource
                     minLength: 1
                     type: string
                   regex:
                     description: |-
-                      Regular expression to match resource,
+                      regex is the regular expression to match resource,
                       In case of multiple resources matches the provided regular expression the first matched resource will be selected
                     minLength: 1
                     type: string
                 type: object
               imageRef:
                 description: |-
-                  ImageRef is an optional reference to a provider-specific resource that holds
+                  imageRef is an optional reference to a provider-specific resource that holds
                   the details for provisioning the Image for a Cluster.
                 properties:
                   name:
@@ -550,20 +550,20 @@ spec:
                 type: integer
               network:
                 description: |-
-                  Network is the reference to the Network to use for this instance.
+                  network is the reference to the Network to use for this instance.
                   supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
                 properties:
                   id:
-                    description: ID of resource
+                    description: id of resource
                     minLength: 1
                     type: string
                   name:
-                    description: Name of resource
+                    description: name of resource
                     minLength: 1
                     type: string
                   regex:
                     description: |-
-                      Regular expression to match resource,
+                      regex is the regular expression to match resource,
                       In case of multiple resources matches the provided regular expression the first matched resource will be selected
                     minLength: 1
                     type: string
@@ -601,7 +601,7 @@ spec:
                   when ProcessorType selected as Shared or Capped, the default is set to 0.25.
                 x-kubernetes-int-or-string: true
               providerID:
-                description: ProviderID is the unique identifier as specified by the
+                description: providerID is the unique identifier as specified by the
                   cloud provider.
                 type: string
               serviceInstance:
@@ -615,28 +615,28 @@ spec:
                   when omitted system will dynamically create the service instance
                 properties:
                   id:
-                    description: ID of resource
+                    description: id of resource
                     minLength: 1
                     type: string
                   name:
-                    description: Name of resource
+                    description: name of resource
                     minLength: 1
                     type: string
                   regex:
                     description: |-
-                      Regular expression to match resource,
+                      regex is the regular expression to match resource,
                       In case of multiple resources matches the provided regular expression the first matched resource will be selected
                     minLength: 1
                     type: string
                 type: object
               serviceInstanceID:
                 description: |-
-                  Deprecated: use ServiceInstance instead
+                  serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 
-                  ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
+                  Deprecated: use ServiceInstance instead
                 type: string
               sshKey:
-                description: SSHKey is the name of the SSH key pair provided to the
+                description: sshKey is the name of the SSH key pair provided to the
                   vsi for authenticating users.
                 type: string
               systemType:
@@ -662,7 +662,7 @@ spec:
             description: status defines the observed state of IBMPowerVSMachine
             properties:
               addresses:
-                description: Addresses contains the vsi associated addresses.
+                description: addresses contains the vsi associated addresses.
                 items:
                   description: NodeAddress contains information for the node's address.
                   properties:
@@ -678,6 +678,7 @@ spec:
                   - type
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               conditions:
                 description: conditions represents the observations of a IBMPowerVSMachine's
                   current state.
@@ -810,7 +811,7 @@ spec:
                 type: object
               failureMessage:
                 description: |-
-                  FailureMessage will be set in the event that there is a terminal problem
+                  failureMessage will be set in the event that there is a terminal problem
                   reconciling the Machine and will contain a more verbose string suitable
                   for logging and human consumption.
 
@@ -831,7 +832,7 @@ spec:
                 type: string
               failureReason:
                 description: |-
-                  FailureReason will be set in the event that there is a terminal problem
+                  failureReason will be set in the event that there is a terminal problem
                   reconciling the Machine and will contain a succinct value suitable
                   for machine interpretation.
 
@@ -851,24 +852,25 @@ spec:
                   Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
                 type: string
               fault:
-                description: Fault will report if any fault messages for the vsi.
+                description: fault will report if any fault messages for the vsi.
                 type: string
               health:
-                description: Health is the health of the vsi.
+                description: health is the health of the vsi.
                 type: string
               instanceID:
+                description: instanceID is the instance ID.
                 type: string
               instanceState:
-                description: InstanceState is the status of the vsi.
+                description: instanceState is the status of the vsi.
                 type: string
               ready:
-                description: Ready is true when the provider resource is ready.
+                description: ready is true when the provider resource is ready.
                 type: boolean
               region:
-                description: Region specifies the Power VS Service instance region.
+                description: region specifies the Power VS Service instance region.
                 type: string
               zone:
-                description: Zone specifies the Power VS Service instance zone.
+                description: zone specifies the Power VS Service instance zone.
                 type: string
             type: object
         required:
