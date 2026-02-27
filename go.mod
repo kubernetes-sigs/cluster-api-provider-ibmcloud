@@ -15,7 +15,7 @@ require (
 	github.com/IBM/ibm-cos-sdk-go v1.13.0
 	github.com/IBM/networking-go-sdk v0.51.16
 	github.com/IBM/platform-services-go-sdk v0.95.0
-	github.com/IBM/vpc-go-sdk v0.76.2
+	github.com/IBM/vpc-go-sdk v0.80.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.26.0
 	github.com/go-logr/logr v1.4.3
