@@ -698,12 +698,12 @@ func (m *MachineScope) GetNetworks() (*models.Networks, error) {
 
 // SetReady will set the status as ready for the machine.
 func (m *MachineScope) SetReady() {
-	m.IBMPowerVSMachine.Status.Ready = true
+	m.IBMPowerVSMachine.Status.Initialization.Provisioned = ptr.To(true)
 }
 
 // SetNotReady will set status as not ready for the machine.
 func (m *MachineScope) SetNotReady() {
-	m.IBMPowerVSMachine.Status.Ready = false
+	m.IBMPowerVSMachine.Status.Initialization.Provisioned = ptr.To(false)
 }
 
 // SetFailureReason will set status FailureReason for the machine.
@@ -720,7 +720,7 @@ func (m *MachineScope) SetFailureMessage(message string) {
 
 // IsReady will return the status for the machine.
 func (m *MachineScope) IsReady() bool {
-	return m.IBMPowerVSMachine.Status.Ready
+	return ptr.Deref(m.IBMPowerVSMachine.Status.Initialization.Provisioned, false)
 }
 
 // SetInstanceID will set the instance id for the machine.
@@ -745,33 +745,33 @@ func (m *MachineScope) SetHealth(health *models.PVMInstanceHealth) {
 // SetAddresses will set the addresses for the machine.
 func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMInstance) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
-	var addresses []corev1.NodeAddress
+	var addresses []clusterv1.MachineAddress
 	// Setting the name of the vm to the InternalDNS and Hostname as the vm uses that as hostname.
-	addresses = append(addresses, corev1.NodeAddress{
-		Type:    corev1.NodeInternalDNS,
+	addresses = append(addresses, clusterv1.MachineAddress{
+		Type:    clusterv1.MachineInternalDNS,
 		Address: *instance.ServerName,
 	})
-	addresses = append(addresses, corev1.NodeAddress{
-		Type:    corev1.NodeHostName,
+	addresses = append(addresses, clusterv1.MachineAddress{
+		Type:    clusterv1.MachineHostName,
 		Address: *instance.ServerName,
 	})
 	for _, network := range instance.Networks {
 		if strings.TrimSpace(network.IPAddress) != "" {
-			addresses = append(addresses, corev1.NodeAddress{
-				Type:    corev1.NodeInternalIP,
+			addresses = append(addresses, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineInternalIP,
 				Address: strings.TrimSpace(network.IPAddress),
 			})
 		}
 		if strings.TrimSpace(network.ExternalIP) != "" {
-			addresses = append(addresses, corev1.NodeAddress{
-				Type:    corev1.NodeExternalIP,
+			addresses = append(addresses, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineExternalIP,
 				Address: strings.TrimSpace(network.ExternalIP),
 			})
 		}
 	}
 	m.IBMPowerVSMachine.Status.Addresses = addresses
 	if len(addresses) > 2 {
-		// If the address length is more than 2 means either NodeInternalIP or NodeExternalIP is updated so return
+		// If the address length is more than 2 means either MachineInternalIP or MachineExternalIP is updated so return
 		return
 	}
 	// In this case there is no IP found under instance.Networks, So try to fetch the IP from cache or DHCP server
@@ -782,8 +782,8 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 		log.Error(err, "failed to fetch the DHCP IP address from cache store")
 	} else if exists {
 		log.V(3).Info("Found IP for machine from DHCP cache", "IP", obj.(powervs.VMip).IP)
-		addresses = append(addresses, corev1.NodeAddress{
-			Type:    corev1.NodeInternalIP,
+		addresses = append(addresses, clusterv1.MachineAddress{
+			Type:    clusterv1.MachineInternalIP,
 			Address: obj.(powervs.VMip).IP,
 		})
 		m.IBMPowerVSMachine.Status.Addresses = addresses
@@ -860,8 +860,8 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 		return
 	}
 	log.V(3).Info("Found internal IP for VM from DHCP lease", "IP", *internalIP)
-	addresses = append(addresses, corev1.NodeAddress{
-		Type:    corev1.NodeInternalIP,
+	addresses = append(addresses, clusterv1.MachineAddress{
+		Type:    clusterv1.MachineInternalIP,
 		Address: *internalIP,
 	})
 	// Update the cache with the ip and VM name
@@ -953,14 +953,14 @@ func (m *MachineScope) SetProviderID(instanceID string) error {
 	if err != nil {
 		return err
 	}
-	m.IBMPowerVSMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), serviceInstanceID, instanceID))
+	m.IBMPowerVSMachine.Spec.ProviderID = fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), serviceInstanceID, instanceID)
 	return nil
 }
 
 // GetMachineInternalIP returns the machine's internal IP.
 func (m *MachineScope) GetMachineInternalIP() string {
 	for _, address := range m.IBMPowerVSMachine.Status.Addresses {
-		if address.Type == corev1.NodeInternalIP {
+		if address.Type == clusterv1.MachineInternalIP {
 			return address.Address
 		}
 	}

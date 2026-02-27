@@ -19,7 +19,7 @@ package v1beta3
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
+	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
 func init() {
@@ -60,9 +60,9 @@ type IBMPowerVSClusterTemplateList struct {
 
 // IBMPowerVSClusterTemplateResource describes the data needed to create an IBMPowerVSCluster from a template.
 type IBMPowerVSClusterTemplateResource struct {
-	// Standard object's metadata.
+	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
-	ObjectMeta clusterv1beta1.ObjectMeta `json:"metadata,omitempty"`
-	Spec       IBMPowerVSClusterSpec     `json:"spec"`
+	ObjectMeta clusterv1.ObjectMeta  `json:"metadata,omitempty,omitzero"`
+	Spec       IBMPowerVSClusterSpec `json:"spec"`
 }
