@@ -1145,16 +1145,3 @@ func (m *MachineScope) bucketName() string {
 	}
 	return fmt.Sprintf("%s-%s", m.IBMPowerVSCluster.GetName(), "cosbucket")
 }
-
-// TODO: duplicate function, optimize it.
-func (m *MachineScope) bucketRegion() string {
-	if m.IBMPowerVSCluster.Spec.CosInstance != nil && m.IBMPowerVSCluster.Spec.CosInstance.BucketRegion != "" {
-		return m.IBMPowerVSCluster.Spec.CosInstance.BucketRegion
-	}
-	// if the bucket region is not set, use vpc region
-	vpcDetails := m.IBMPowerVSCluster.Spec.VPC
-	if vpcDetails != nil && vpcDetails.Region != nil {
-		return *vpcDetails.Region
-	}
-	return ""
-}
