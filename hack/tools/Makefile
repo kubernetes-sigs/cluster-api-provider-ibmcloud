@@ -129,3 +129,8 @@ $(GOVULNCHECK): $(BIN_DIR) go.mod go.sum ## Build a local copy of govulncheck.
 RELEASE_NOTES := $(BIN_DIR)/release-notes
 $(RELEASE_NOTES): $(BIN_DIR) go.mod go.sum ## Build a local copy of release-notes.
 	go build -tags=capibmtools -o $@ k8s.io/release/cmd/release-notes
+
+GOLANGCI_LINT_KAL := $(BIN_DIR)/golangci-lint-kube-api-linter
+$(GOLANGCI_LINT_KAL): $(BIN_DIR) $(GOLANGCI_LINT) .custom-gcl.yaml ## Build a local copy of golangci-lint-kube-api-linter.
+	rm -f $(GOLANGCI_LINT_KAL)
+	$(GOLANGCI_LINT) custom
