@@ -219,6 +219,11 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: .*\.Deprecated\.V1Beta2.* is deprecated'
+      # Specific exclude rules for deprecated packages that are still part of the codebase. These
+      # should be removed as the referenced deprecated packages are removed from the project.
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: This package is deprecated and is going to be removed when support for v1beta2 will be dropped.'
     paths:
       - zz_generated.*\.go$
       - third_party$

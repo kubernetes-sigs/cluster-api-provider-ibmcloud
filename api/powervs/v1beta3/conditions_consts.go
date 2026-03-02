@@ -110,27 +110,9 @@ const (
 	// IBMPowerVSImageReadyUnknownReason surfaces when at least one of the IBMPowerVSImage readiness criteria is unknown
 	// and none of the IBMPowerVSImage readiness criteria is met.
 	IBMPowerVSImageReadyUnknownReason = clusterv1.ReadyUnknownReason
-)
 
-// Power VS Image related conditions and corresponding reasons.
-const (
-	// ImageReadyCondition reports on current status of the image. Ready indicates the image is in a active state.
-	ImageReadyCondition clusterv1.ConditionType = "ImageReady"
-
-	// ImageImportedCondition reports on current status of the image import job. Ready indicates the import job is finished.
-	ImageImportedCondition clusterv1.ConditionType = "ImageImported"
-
-	// ImageDeletingReason surfaces when the image is in deleting state.
-	ImageDeletingReason = clusterv1.DeletingReason
-
-	// ImageNotReadyReason used when the image is not ready.
-	ImageNotReadyReason = "ImageNotReady"
-
-	// ImageImportFailedReason used when the image import is failed.
-	ImageImportFailedReason = "ImageImportFailed"
-
-	// ImageQueuedReason used when the image is in queued state.
-	ImageQueuedReason = "ImageQueued"
+	// IBMPowerVSImageImportFailedReason used when the image import is failed.
+	IBMPowerVSImageImportFailedReason = "ImageImportFailed"
 )
 
 const (
@@ -187,9 +169,15 @@ const (
 	// IBMPowerVSClusterNotReadyReason surfaces when the IBMPowerVSCluster readiness criteria is not met.
 	IBMPowerVSClusterNotReadyReason = clusterv1.NotReadyReason
 
+	// IBMPowerVSImageDeletingReason surfaces when the image is in deleting state.
+	IBMPowerVSImageDeletingReason = clusterv1.DeletingReason
+
 	// IBMPowerVSClusterReadyUnknownReason surfaces when at least one of the IBMPowerVSCluster readiness criteria is unknown
 	// and none of the IBMPowerVSCluster readiness criteria is met.
 	IBMPowerVSClusterReadyUnknownReason = clusterv1.ReadyUnknownReason
+
+	// IBMPowerVSImageQueuedReason used when the image is in queued state.
+	IBMPowerVSImageQueuedReason = "ImageQueued"
 )
 
 const (
