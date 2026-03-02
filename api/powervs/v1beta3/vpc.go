@@ -20,7 +20,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 // VPCLoadBalancerSpec defines the desired state of an VPC load balancer.
 type VPCLoadBalancerSpec struct {
-	// Name sets the name of the VPC load balancer.
+	// name sets the name of the VPC load balancer.
 	// +kubebuilder:validation:MinLength:=1
 	// +kubebuilder:validation:MaxLength:=63
 	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
@@ -39,7 +39,7 @@ type VPCLoadBalancerSpec struct {
 	// +optional
 	Public *bool `json:"public,omitempty"`
 
-	// AdditionalListeners sets the additional listeners for the control plane load balancer.
+	// additionalListeners sets the additional listeners for the control plane load balancer.
 	// +listType=map
 	// +listMapKey=port
 	// +optional
@@ -71,7 +71,7 @@ type AdditionalListenerSpec struct {
 	// +optional
 	DefaultPoolName *string `json:"defaultPoolName,omitempty"`
 
-	// Port sets the port for the additional listener.
+	// port sets the port for the additional listener.
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	Port int64 `json:"port"`
@@ -81,9 +81,8 @@ type AdditionalListenerSpec struct {
 	// +optional
 	Protocol *VPCLoadBalancerListenerProtocol `json:"protocol,omitempty"`
 
-	// The selector is used to find IBMPowerVSMachines with matching labels.
+	// selector is used to find IBMPowerVSMachines with matching labels.
 	// If the label matches, the machine is then added to the load balancer listener configuration.
-	// +kubebuilder:validation:Optional
 	Selector metav1.LabelSelector `json:"selector,omitempty"`
 }
 
@@ -150,10 +149,10 @@ type VPCLoadBalancerHealthMonitorSpec struct {
 type VPCSecurityGroupStatus struct {
 	// id represents the id of the resource.
 	ID *string `json:"id,omitempty"`
-	// rules contains the id of rules created under the security group
+	// ruleIDs contains the id of rules created under the security group
 	RuleIDs []*string `json:"ruleIDs,omitempty"`
-	// +kubebuilder:default=false
 	// controllerCreated indicates whether the resource is created by the controller.
+	// +kubebuilder:default=false
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }
 
@@ -162,12 +161,12 @@ type VPCLoadBalancerStatus struct {
 	// id of VPC load balancer.
 	// +optional
 	ID *string `json:"id,omitempty"`
-	// State is the status of the load balancer.
+	// state is the status of the load balancer.
 	State VPCLoadBalancerState `json:"state,omitempty"`
 	// hostname is the hostname of load balancer.
 	// +optional
 	Hostname *string `json:"hostname,omitempty"`
-	// +kubebuilder:default=false
 	// controllerCreated indicates whether the resource is created by the controller.
+	// +kubebuilder:default=false
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
 }

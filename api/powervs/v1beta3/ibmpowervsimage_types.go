@@ -34,13 +34,13 @@ func init() {
 
 // IBMPowerVSImageSpec defines the desired state of IBMPowerVSImage.
 type IBMPowerVSImageSpec struct {
-	// ClusterName is the name of the Cluster this object belongs to.
+	// clusterName is the name of the Cluster this object belongs to.
 	// +kubebuilder:validation:MinLength=1
 	ClusterName string `json:"clusterName"`
 
-	// Deprecated: use ServiceInstance instead
+	// serviceInstanceID is the id of the power cloud instance where the image will get imported.
 	//
-	// ServiceInstanceID is the id of the power cloud instance where the image will get imported.
+	// Deprecated: use ServiceInstance instead
 	ServiceInstanceID string `json:"serviceInstanceID"`
 
 	// serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
@@ -53,22 +53,22 @@ type IBMPowerVSImageSpec struct {
 	// +optional
 	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
-	// Cloud Object Storage bucket name; bucket-name[/optional/folder]
+	// bucket is the Cloud Object Storage bucket name; bucket-name[/optional/folder]
 	Bucket *string `json:"bucket"`
 
-	// Cloud Object Storage image filename.
+	// object is the Cloud Object Storage image filename.
 	Object *string `json:"object"`
 
-	// Cloud Object Storage region.
+	// region is the Cloud Object Storage region.
 	Region *string `json:"region"`
 
-	// Type of storage, storage pool with the most available space will be selected.
+	// storageType is the type of storage, storage pool with the most available space will be selected.
 	// +kubebuilder:default=tier1
 	// +kubebuilder:validation:Enum=tier0;tier1;tier3
 	// +optional
 	StorageType string `json:"storageType,omitempty"`
 
-	// DeletePolicy defines the policy used to identify images to be preserved beyond the lifecycle of associated cluster.
+	// deletePolicy defines the policy used to identify images to be preserved beyond the lifecycle of associated cluster.
 	// +kubebuilder:default=delete
 	// +kubebuilder:validation:Enum=delete;retain
 	// +optional
@@ -84,18 +84,18 @@ type IBMPowerVSImageStatus struct {
 	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// Ready is true when the provider resource is ready.
+	// ready is true when the provider resource is ready.
 	// +optional
 	Ready bool `json:"ready"`
 
-	// ImageID is the id of the imported image.
+	// imageID is the id of the imported image.
 	ImageID string `json:"imageID,omitempty"`
 
-	// ImageState is the status of the imported image.
+	// imageState is the status of the imported image.
 	// +optional
 	ImageState PowerVSImageState `json:"imageState,omitempty"`
 
-	// JobID is the job ID of an import operation.
+	// jobID is the job ID of an import operation.
 	// +optional
 	JobID string `json:"jobID,omitempty"`
 

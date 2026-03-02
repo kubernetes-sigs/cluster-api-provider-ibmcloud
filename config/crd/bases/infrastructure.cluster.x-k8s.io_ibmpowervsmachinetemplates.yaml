@@ -260,36 +260,34 @@ spec:
             description: spec defines the desired state of IBMPowerVSMachineTemplate
             properties:
               template:
-                description: IBMPowerVSMachineTemplateResource holds the IBMPowerVSMachine
-                  spec.
+                description: template is the IBMPowerVSMachineTemplateResource.
                 properties:
                   spec:
-                    description: IBMPowerVSMachineSpec defines the desired state of
-                      IBMPowerVSMachine.
+                    description: spec is the IBMPowerVSMachineSpec.
                     properties:
                       image:
                         description: |-
-                          Image the reference to the image which is used to create the instance.
+                          image the reference to the image which is used to create the instance.
                           supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
                         properties:
                           id:
-                            description: ID of resource
+                            description: id of resource
                             minLength: 1
                             type: string
                           name:
-                            description: Name of resource
+                            description: name of resource
                             minLength: 1
                             type: string
                           regex:
                             description: |-
-                              Regular expression to match resource,
+                              regex is the regular expression to match resource,
                               In case of multiple resources matches the provided regular expression the first matched resource will be selected
                             minLength: 1
                             type: string
                         type: object
                       imageRef:
                         description: |-
-                          ImageRef is an optional reference to a provider-specific resource that holds
+                          imageRef is an optional reference to a provider-specific resource that holds
                           the details for provisioning the Image for a Cluster.
                         properties:
                           name:
@@ -314,20 +312,20 @@ spec:
                         type: integer
                       network:
                         description: |-
-                          Network is the reference to the Network to use for this instance.
+                          network is the reference to the Network to use for this instance.
                           supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
                         properties:
                           id:
-                            description: ID of resource
+                            description: id of resource
                             minLength: 1
                             type: string
                           name:
-                            description: Name of resource
+                            description: name of resource
                             minLength: 1
                             type: string
                           regex:
                             description: |-
-                              Regular expression to match resource,
+                              regex is the regular expression to match resource,
                               In case of multiple resources matches the provided regular expression the first matched resource will be selected
                             minLength: 1
                             type: string
@@ -365,7 +363,7 @@ spec:
                           when ProcessorType selected as Shared or Capped, the default is set to 0.25.
                         x-kubernetes-int-or-string: true
                       providerID:
-                        description: ProviderID is the unique identifier as specified
+                        description: providerID is the unique identifier as specified
                           by the cloud provider.
                         type: string
                       serviceInstance:
@@ -379,28 +377,28 @@ spec:
                           when omitted system will dynamically create the service instance
                         properties:
                           id:
-                            description: ID of resource
+                            description: id of resource
                             minLength: 1
                             type: string
                           name:
-                            description: Name of resource
+                            description: name of resource
                             minLength: 1
                             type: string
                           regex:
                             description: |-
-                              Regular expression to match resource,
+                              regex is the regular expression to match resource,
                               In case of multiple resources matches the provided regular expression the first matched resource will be selected
                             minLength: 1
                             type: string
                         type: object
                       serviceInstanceID:
                         description: |-
-                          Deprecated: use ServiceInstance instead
+                          serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
 
-                          ServiceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
+                          Deprecated: use ServiceInstance instead
                         type: string
                       sshKey:
-                        description: SSHKey is the name of the SSH key pair provided
+                        description: sshKey is the name of the SSH key pair provided
                           to the vsi for authenticating users.
                         type: string
                       systemType:
@@ -439,7 +437,7 @@ spec:
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                   x-kubernetes-int-or-string: true
                 description: |-
-                  Capacity defines the resource capacity for this machine.
+                  capacity defines the resource capacity for this machine.
                   This value is used for autoscaling from zero operations as defined in:
                   https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md
                 type: object

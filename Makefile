@@ -38,6 +38,7 @@ TEMPLATES_DIR := $(REPO_ROOT)/templates
 
 GO_APIDIFF := $(TOOLS_BIN_DIR)/go-apidiff
 GOLANGCI_LINT := $(TOOLS_BIN_DIR)/golangci-lint
+GOLANGCI_LINT_KAL := $(TOOLS_BIN_DIR)/golangci-lint-kube-api-linter
 KUSTOMIZE := $(TOOLS_BIN_DIR)/kustomize
 GOJQ := $(TOOLS_BIN_DIR)/gojq
 CONVERSION_GEN := $(TOOLS_BIN_DIR)/conversion-gen
@@ -501,6 +502,14 @@ lint: $(GOLANGCI_LINT) ## Lint codebase
 .PHONY: lint-fix
 lint-fix: $(GOLANGCI_LINT) ## Lint the codebase and run auto-fixers if supported by the linter
 	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint
+
+.PHONY: lint-api
+lint-api: $(GOLANGCI_LINT_KAL)
+	$(GOLANGCI_LINT_KAL) run -v --config ./.golangci-kal.yml $(GOLANGCI_LINT_EXTRA_ARGS)
+
+.PHONY: lint-api-fix
+lint-api-fix: $(GOLANGCI_LINT_KAL)
+	GOLANGCI_LINT_EXTRA_ARGS=--fix $(MAKE) lint-api
 
 APIDIFF_OLD_COMMIT ?= $(shell git rev-parse origin/main)
 

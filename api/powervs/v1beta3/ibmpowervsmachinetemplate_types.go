@@ -27,12 +27,13 @@ func init() {
 
 // IBMPowerVSMachineTemplateSpec defines the desired state of IBMPowerVSMachineTemplate.
 type IBMPowerVSMachineTemplateSpec struct {
+	// template is the IBMPowerVSMachineTemplateResource.
 	Template IBMPowerVSMachineTemplateResource `json:"template"`
 }
 
 // IBMPowerVSMachineTemplateStatus defines the observed state of IBMPowerVSMachineTemplate.
 type IBMPowerVSMachineTemplateStatus struct {
-	// Capacity defines the resource capacity for this machine.
+	// capacity defines the resource capacity for this machine.
 	// This value is used for autoscaling from zero operations as defined in:
 	// https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md
 	// +optional
@@ -71,5 +72,6 @@ type IBMPowerVSMachineTemplateList struct {
 
 // IBMPowerVSMachineTemplateResource holds the IBMPowerVSMachine spec.
 type IBMPowerVSMachineTemplateResource struct {
+	// spec is the IBMPowerVSMachineSpec.
 	Spec IBMPowerVSMachineSpec `json:"spec"`
 }
