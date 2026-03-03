@@ -32,7 +32,28 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
  Below are the cluster creation scenarios.
  #### Creating a new cluster 
- - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources. If a resource is created successfully but tag attachment fails, the controller will retry for a configured period. If retries are exhausted, a condition will be set with a descriptive message such as: "Failed to attach tag to newly created Workspace workspace-name. Please manually attach the tag or delete the cluster and recreate it in a different region."
+ - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources.
+ ##### Tag Attachment Scenarios
+   - Success Scenario
+
+   	When the controller successfully attaches the tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` to a newly created resource, the cluster creation process proceeds normally and completes successfully.
+   - Deletion Behavior
+
+	During cluster deletion, the controller identifies resources with the matching tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and deletes them, allowing the cluster to be deleted successfully.
+
+   - Failure Scenario
+
+   	If a resource is created successfully but tag attachment fails then:
+   	1. Retry Attempts: The controller retries attaching the tag multiple times over a configured period.
+	2. After Retries Fail: If all retries fail, the controller:
+		- Sets a warning condition on the cluster
+   		- Adds an error message like: "Failed to attach tag to newly created Workspace <workspace-name>. Please manually attach the tag or delete the cluster and recreate it."
+   	3. Allows the cluster creation to proceed and complete successfully despite the tag attachment failure.
+   - Deletion Behavior
+
+    When the user triggers deletion of a cluster where tag attachment previously failed, the controller will check the condition status. Based on this condition, the controller will determine whether to proceed with resource deletion.
+    
+ 
  #### Creating a new cluster with reusing pre-created resources
  - When cluster is created using existing resources, no tag will be attached. We won't delete these resources, as these were not created by controller.
  #### Creating a new cluster with reusing pre-created resources from old cluster.
