@@ -21,12 +21,12 @@ following the steps below.
     IBMVPC_ZONE=us-south-1 \
     IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
     IBMVPC_NAME=ibm-vpc-0 \
-    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2004-kube-v1-26-2 \
+    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2404-kube-v1-34-2 \
     IBMVPC_PROFILE=bx2-4x16 \
     IBMVPC_SSHKEY_NAME=capi-vpc-key \
     IBMACCOUNT_ID="ibm-accountid" \
     BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
-    clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.26.2 \
+    clusterctl generate cluster ibm-vpc-0 --kubernetes-version v1.34.2 \
     --target-namespace default \
     --control-plane-machine-count=1 \
     --worker-machine-count=2 | kubectl apply -f -
@@ -69,15 +69,15 @@ following the steps below.
     ```console
     ~ kubectl get kubeadmcontrolplane
     NAME                       INITIALIZED   API SERVER AVAILABLE   VERSION   REPLICAS   READY   UPDATED   UNAVAILABLE
-    ibm-vpc-0-control-plane    true          true                   v1.26.2   1          1       1
+    ibm-vpc-0-control-plane    true          true                   v1.34.2   1          1       1
     ```
 
     Machines
     ```console
     ~ kubectl get machines
-    ibm-vpc-0-control-plane-vzz47     ibmvpc://ibm-vpc-0/ibm-vpc-0-control-plane-rg6xv   Running        v1.26.2
-    ibm-vpc-0-md-0-5444cfcbcd-6gg5z   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-dbxb7            Running        v1.26.2
-    ibm-vpc-0-md-0-5444cfcbcd-7kr9x   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-k7blr            Running        v1.26.2
+    ibm-vpc-0-control-plane-vzz47     ibmvpc://ibm-vpc-0/ibm-vpc-0-control-plane-rg6xv   Running        v1.34.2
+    ibm-vpc-0-md-0-5444cfcbcd-6gg5z   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-dbxb7            Running        v1.34.2
+    ibm-vpc-0-md-0-5444cfcbcd-7kr9x   ibmvpc://ibm-vpc-0/ibm-vpc-0-md-0-k7blr            Running        v1.34.2
     ```
 
 3. Deploy Container Network Interface (CNI)
@@ -94,9 +94,9 @@ following the steps below.
     ```console
     ~ kubectl get nodes
     NAME                             STATUS   ROLES    AGE   VERSION
-    ibm-vpc-0-control-plane-rg6xv    Ready    master   41h   v1.26.2
-    ibm-vpc-0-md-0-4dc5c             Ready    <none>   41h   v1.26.2
-    ibm-vpc-0-md-0-dbxb7             Ready    <none>   20h   v1.26.2
+    ibm-vpc-0-control-plane-rg6xv    Ready    master   41h   v1.34.2
+    ibm-vpc-0-md-0-4dc5c             Ready    <none>   41h   v1.34.2
+    ibm-vpc-0-md-0-dbxb7             Ready    <none>   20h   v1.34.2
     ```
 
 **Change disk size for the boot volume**
@@ -115,12 +115,12 @@ There are two following variables for controlling the volume size for the boot d
     IBMVPC_ZONE=us-south-1 \
     IBMVPC_RESOURCEGROUP=4f15679623607b855b1a27a67f20e1c7 \
     IBMVPC_NAME=ibm-vpc-0 \
-    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2004-kube-v1-26-2 \
+    IBMVPC_IMAGE_NAME=capibm-vpc-ubuntu-2404-kube-v1-34-2 \
     IBMVPC_PROFILE=bx2-4x16 \
     IBMVPC_SSHKEY_NAME=capi-vpc-key \
     IBMACCOUNT_ID="ibm-accountid" \
     BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
-    clusterctl generate cluster ibm-vpc-clusterclass --kubernetes-version v1.26.2 --target-namespace default --control-plane-machine-count=1 --worker-machine-count=2 --from=./templates/cluster-template-vpc-clusterclass.yaml | kubectl apply -f -
+    clusterctl generate cluster ibm-vpc-clusterclass --kubernetes-version v1.34.2 --target-namespace default --control-plane-machine-count=1 --worker-machine-count=2 --from=./templates/cluster-template-vpc-clusterclass.yaml | kubectl apply -f -
  
 **Note:** Refer below for more detailed information on VPC variables.
 - IBMVPC_CLUSTER_CLASS_NAME : Name of the cluster that user provides.
