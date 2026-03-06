@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud
 
-go 1.24.0
+go 1.25.0
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
@@ -30,7 +30,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.48.0
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 	golang.org/x/text v0.34.0
 	k8s.io/api v0.34.3
 	k8s.io/apiextensions-apiserver v0.34.3
