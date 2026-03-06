@@ -2931,15 +2931,23 @@ func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.Resour
 	return false
 }
 
-// TODO: duplicate function, optimize it.
-func (s *ClusterScope) bucketRegion() string {
-	if s.COSInstance() != nil && s.COSInstance().BucketRegion != "" {
-		return s.COSInstance().BucketRegion
+func bucketRegionFrom(cos *infrav1.CosInstance, vpc *infrav1.VPCResourceReference) string {
+	if cos != nil && cos.BucketRegion != "" {
+		return cos.BucketRegion
 	}
 	// if the bucket region is not set, use vpc region
-	vpcDetails := s.VPC()
-	if vpcDetails != nil && vpcDetails.Region != nil {
-		return *vpcDetails.Region
+	if vpc != nil && vpc.Region != nil {
+		return *vpc.Region
 	}
 	return ""
+}
+
+// bucketRegion returns the region to use for COS bucket for the ClusterScope.
+func (s *ClusterScope) bucketRegion() string {
+	return bucketRegionFrom(s.COSInstance(), s.VPC())
+}
+
+// bucketRegion returns the region to use for COS bucket for the MachineScope.
+func (m *MachineScope) bucketRegion() string {
+	return bucketRegionFrom(m.IBMPowerVSCluster.Spec.CosInstance, m.IBMPowerVSCluster.Spec.VPC)
 }
