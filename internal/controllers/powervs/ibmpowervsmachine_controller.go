@@ -28,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -525,7 +526,7 @@ func patchIBMPowerVSMachine(ctx context.Context, patchHelper *patch.Helper, ibmP
 	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
 	// first reconcile.
 	if c := conditions.Get(ibmPowerVSMachine, infrav1.InstanceReadyCondition); c == nil {
-		if ibmPowerVSMachine.Status.Ready {
+		if ptr.Deref(ibmPowerVSMachine.Status.Initialization.Provisioned, false) {
 			conditions.Set(ibmPowerVSMachine, metav1.Condition{
 				Type:   infrav1.InstanceReadyCondition,
 				Status: metav1.ConditionTrue,

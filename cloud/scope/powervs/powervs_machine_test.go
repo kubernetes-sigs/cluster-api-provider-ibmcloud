@@ -478,7 +478,9 @@ func TestSetNotReady(t *testing.T) {
 		machineScope := MachineScope{
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				Status: infrav1.IBMPowerVSMachineStatus{
-					Ready: true,
+					Initialization: infrav1.IBMPowerVSMachineInitializationStatus{
+						Provisioned: ptr.To(true),
+					},
 				},
 			},
 		}
@@ -870,9 +872,9 @@ func TestGetMachineInternalIP(t *testing.T) {
 			scope := MachineScope{
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					Status: infrav1.IBMPowerVSMachineStatus{
-						Addresses: []corev1.NodeAddress{
+						Addresses: []clusterv1.MachineAddress{
 							{
-								Type:    corev1.NodeInternalIP,
+								Type:    clusterv1.MachineInternalIP,
 								Address: expectedAddress,
 							},
 						},
@@ -887,9 +889,9 @@ func TestGetMachineInternalIP(t *testing.T) {
 			scope := MachineScope{
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					Status: infrav1.IBMPowerVSMachineStatus{
-						Addresses: []corev1.NodeAddress{
+						Addresses: []clusterv1.MachineAddress{
 							{
-								Type:    corev1.NodeExternalIP,
+								Type:    clusterv1.MachineExternalIP,
 								Address: "198.0.0.1",
 							},
 						},
@@ -952,8 +954,8 @@ func TestSetProviderID(t *testing.T) {
 		scope.SetZone("us-south-1")
 		scope.SetRegion(region)
 		err := scope.SetProviderID(providerID)
-		expectedProviderID := ptr.To(fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", scope.GetRegion(), scope.GetZone(), "foo-service-instance-id", providerID))
-		g.Expect(*scope.IBMPowerVSMachine.Spec.ProviderID).To(Equal(*expectedProviderID))
+		expectedProviderID := fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", scope.GetRegion(), scope.GetZone(), "foo-service-instance-id", providerID)
+		g.Expect(scope.IBMPowerVSMachine.Spec.ProviderID).To(Equal(expectedProviderID))
 		g.Expect(err).To(BeNil())
 	})
 }
@@ -1505,7 +1507,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockCtrl.Finish()
 	}
 
-	nodeAddress := "10.0.0.1"
+	machineAddress := "10.0.0.1"
 	loadBalancerID := "xyz-xyz-xyz"
 	loadBalancerName := "load-balancer-0"
 	t.Run("Skip adding listener if the machine label and listener label doesnot match", func(t *testing.T) {
@@ -2006,10 +2008,10 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				IBMVPCClient: mockClient,
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					Status: infrav1.IBMPowerVSMachineStatus{
-						Addresses: []corev1.NodeAddress{
+						Addresses: []clusterv1.MachineAddress{
 							{
-								Address: nodeAddress,
-								Type:    corev1.NodeInternalIP,
+								Address: machineAddress,
+								Type:    clusterv1.MachineInternalIP,
 							},
 						},
 					},
@@ -2087,10 +2089,10 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				IBMVPCClient: mockClient,
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					Status: infrav1.IBMPowerVSMachineStatus{
-						Addresses: []corev1.NodeAddress{
+						Addresses: []clusterv1.MachineAddress{
 							{
-								Address: nodeAddress,
-								Type:    corev1.NodeInternalIP,
+								Address: machineAddress,
+								Type:    clusterv1.MachineInternalIP,
 							},
 						},
 					},
@@ -2120,7 +2122,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 					{
 						Port: core.Int64Ptr(3040),
 						Target: &vpcv1.LoadBalancerPoolMemberTarget{
-							Address: ptr.To(nodeAddress),
+							Address: ptr.To(machineAddress),
 						},
 					},
 				},
@@ -2183,13 +2185,13 @@ func TestSetAddresses(t *testing.T) {
 	leaseIP := "192.168.0.10"
 	instanceMac := "ff:11:33:dd:00:22"
 	dhcpServerID := "test-server-id"
-	defaultExpectedMachineAddress := []corev1.NodeAddress{
+	defaultExpectedMachineAddress := []clusterv1.MachineAddress{
 		{
-			Type:    corev1.NodeInternalDNS,
+			Type:    clusterv1.MachineInternalDNS,
 			Address: instanceName,
 		},
 		{
-			Type:    corev1.NodeHostName,
+			Type:    clusterv1.MachineHostName,
 			Address: instanceName,
 		},
 	}
@@ -2202,7 +2204,7 @@ func TestSetAddresses(t *testing.T) {
 		testcase            string
 		powerVSClientFunc   func(*gomock.Controller) *mock.MockPowerVS
 		pvmInstance         *models.PVMInstance
-		expectedNodeAddress []corev1.NodeAddress
+		expectedNodeAddress []clusterv1.MachineAddress
 		expectedError       error
 		dhcpCacheStoreFunc  func() cache.Store
 		setNetworkID        bool
@@ -2221,8 +2223,8 @@ func TestSetAddresses(t *testing.T) {
 				},
 				ServerName: ptr.To(instanceName),
 			},
-			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
-				Type:    corev1.NodeExternalIP,
+			expectedNodeAddress: append(defaultExpectedMachineAddress, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineExternalIP,
 				Address: "10.11.2.3",
 			}),
 			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
@@ -2241,8 +2243,8 @@ func TestSetAddresses(t *testing.T) {
 				},
 				ServerName: ptr.To(instanceName),
 			},
-			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
-				Type:    corev1.NodeInternalIP,
+			expectedNodeAddress: append(defaultExpectedMachineAddress, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineInternalIP,
 				Address: "192.168.10.3",
 			}),
 			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
@@ -2262,13 +2264,13 @@ func TestSetAddresses(t *testing.T) {
 				},
 				ServerName: ptr.To(instanceName),
 			},
-			expectedNodeAddress: append(defaultExpectedMachineAddress, []corev1.NodeAddress{
+			expectedNodeAddress: append(defaultExpectedMachineAddress, []clusterv1.MachineAddress{
 				{
-					Type:    corev1.NodeInternalIP,
+					Type:    clusterv1.MachineInternalIP,
 					Address: "192.168.10.3",
 				},
 				{
-					Type:    corev1.NodeExternalIP,
+					Type:    clusterv1.MachineExternalIP,
 					Address: "10.11.2.3",
 				},
 			}...),
@@ -2376,8 +2378,8 @@ func TestSetAddresses(t *testing.T) {
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
-			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
-				Type:    corev1.NodeInternalIP,
+			expectedNodeAddress: append(defaultExpectedMachineAddress, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineInternalIP,
 				Address: leaseIP,
 			}),
 			dhcpCacheStoreFunc: defaultDhcpCacheStoreFunc,
@@ -2392,8 +2394,8 @@ func TestSetAddresses(t *testing.T) {
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
-			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
-				Type:    corev1.NodeInternalIP,
+			expectedNodeAddress: append(defaultExpectedMachineAddress, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineInternalIP,
 				Address: leaseIP,
 			}),
 			dhcpCacheStoreFunc: func() cache.Store {
@@ -2414,8 +2416,8 @@ func TestSetAddresses(t *testing.T) {
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
-			expectedNodeAddress: append(defaultExpectedMachineAddress, corev1.NodeAddress{
-				Type:    corev1.NodeInternalIP,
+			expectedNodeAddress: append(defaultExpectedMachineAddress, clusterv1.MachineAddress{
+				Type:    clusterv1.MachineInternalIP,
 				Address: leaseIP,
 			}),
 			dhcpCacheStoreFunc: func() cache.Store {

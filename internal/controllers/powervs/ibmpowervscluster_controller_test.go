@@ -774,7 +774,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				g.Expect(err).To(BeNil())
 			}
 			g.Expect(res).To(Equal(tc.expectedResult))
-			g.Expect(powerVSClusterScope.IBMPowerVSCluster.Status.Ready).To(Equal(tc.clusterStatus))
+			g.Expect(ptr.Deref(powerVSClusterScope.IBMPowerVSCluster.Status.Initialization.Provisioned, false)).To(Equal(tc.clusterStatus))
 			g.Expect(powerVSClusterScope.IBMPowerVSCluster.Finalizers).To(ContainElement(infrav1.IBMPowerVSClusterFinalizer))
 			if len(tc.conditions) > 1 {
 				ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
