@@ -122,6 +122,11 @@ func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) 
 	if in.ProviderID != nil && *in.ProviderID == "" {
 		in.ProviderID = nil
 	}
+
+	// Set ImageRef to nil if it has an empty name
+	if in.ImageRef != nil && in.ImageRef.Name == "" {
+		in.ImageRef = nil
+	}
 }
 
 func spokeIBMPowerVSMachineStatus(in *IBMPowerVSMachineStatus, c randfill.Continue) {

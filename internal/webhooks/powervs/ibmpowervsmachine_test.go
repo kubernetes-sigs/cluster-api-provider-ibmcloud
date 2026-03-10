@@ -20,7 +20,6 @@ import (
 	"context"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -95,8 +94,10 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					Network: infrav1.IBMPowerVSResourceReference{
 						Name: ptr.To("capi-net"),
 					},
-					Image:    &infrav1.IBMPowerVSResourceReference{},
-					ImageRef: &corev1.LocalObjectReference{},
+					Image: &infrav1.IBMPowerVSResourceReference{},
+					ImageRef: infrav1.ImageReference{
+						Name: "test-image",
+					},
 				},
 			},
 			wantErr: true,
@@ -379,7 +380,7 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.IBMPowerVSResourceReference{
 						Name: ptr.To("capi-net"),
 					},
-					ImageRef: &corev1.LocalObjectReference{
+					ImageRef: infrav1.ImageReference{
 						Name: "capi-image",
 					},
 				},

@@ -115,11 +115,11 @@ func validateIBMPowerVSMachineTemplateNetwork(machineTemplate *infrav1.IBMPowerV
 func validateIBMPowerVSMachineTemplateImage(machineTemplate *infrav1.IBMPowerVSMachineTemplate) *field.Error {
 	mt := machineTemplate.Spec.Template
 
-	if mt.Spec.Image == nil && mt.Spec.ImageRef == nil {
+	if mt.Spec.Image == nil && mt.Spec.ImageRef.Name == "" {
 		return field.Invalid(field.NewPath(""), "", "One of - Image or ImageRef must be specified")
 	}
 
-	if mt.Spec.Image != nil && mt.Spec.ImageRef != nil {
+	if mt.Spec.Image != nil && mt.Spec.ImageRef.Name != "" {
 		return field.Invalid(field.NewPath(""), "", "Only one of - Image or ImageRef maybe be specified")
 	}
 

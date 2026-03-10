@@ -113,11 +113,11 @@ func validateIBMPowerVSMachineNetwork(machine *infrav1.IBMPowerVSMachine) *field
 }
 
 func validateIBMPowerVSMachineImage(machine *infrav1.IBMPowerVSMachine) *field.Error {
-	if machine.Spec.Image == nil && machine.Spec.ImageRef == nil {
+	if machine.Spec.Image == nil && machine.Spec.ImageRef.Name == "" {
 		return field.Invalid(field.NewPath(""), "", "One of - Image or ImageRef must be specified")
 	}
 
-	if machine.Spec.Image != nil && machine.Spec.ImageRef != nil {
+	if machine.Spec.Image != nil && machine.Spec.ImageRef.Name != "" {
 		return field.Invalid(field.NewPath(""), "", "Only one of - Image or ImageRef maybe be specified")
 	}
 

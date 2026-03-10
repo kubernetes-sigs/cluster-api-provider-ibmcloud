@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"reflect"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apimachineryconversion "k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/utils/ptr"
@@ -365,4 +366,40 @@ func (dst *IBMPowerVSImage) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*infrav1.IBMPowerVSImage)
 
 	return Convert_v1beta3_IBMPowerVSImage_To_v1beta2_IBMPowerVSImage(src, dst, nil)
+}
+
+// Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec converts v1beta2 IBMPowerVSMachineSpec to v1beta3.
+func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *infrav1.IBMPowerVSMachineSpec, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Manual conversion for ImageRef
+	// Only convert if ImageRef is not nil and has a non-empty Name
+	if in.ImageRef != nil && in.ImageRef.Name != "" {
+		out.ImageRef = infrav1.ImageReference{
+			Name: in.ImageRef.Name,
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec converts v1beta3 IBMPowerVSMachineSpec to v1beta2.
+func Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *infrav1.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Manual conversion for ImageRef
+	// Set to nil if Name is empty, otherwise convert to LocalObjectReference
+	if in.ImageRef.Name != "" {
+		out.ImageRef = &corev1.LocalObjectReference{
+			Name: in.ImageRef.Name,
+		}
+	} else {
+		out.ImageRef = nil
+	}
+
+	return nil
 }
