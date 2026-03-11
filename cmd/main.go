@@ -25,6 +25,9 @@ import (
 	"os"
 	"time"
 
+	infrastructurev1beta3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/roks/v1beta3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/controllers/roks"
+
 	// +kubebuilder:scaffold:imports
 	"github.com/spf13/pflag"
 
@@ -90,6 +93,7 @@ func init() {
 	utilruntime.Must(vpcinfrav1.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	utilruntime.Must(infrastructurev1beta3.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -283,6 +287,13 @@ func main() {
 	setupWebhooks(mgr)
 	setupChecks(mgr)
 
+	if err := (&roks.ROKSControlPlaneReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "ROKSControlPlane")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {
