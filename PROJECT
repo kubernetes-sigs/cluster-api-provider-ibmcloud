@@ -156,6 +156,6 @@ resources:
   domain: cluster.x-k8s.io
   group: infrastructure
   kind: ROKSControlPlane
-  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta3
+  path: sigs.k8s.io/cluster-api-provider-ibmcloud/api/roks/v1beta3
   version: v1beta3
 version: "3"

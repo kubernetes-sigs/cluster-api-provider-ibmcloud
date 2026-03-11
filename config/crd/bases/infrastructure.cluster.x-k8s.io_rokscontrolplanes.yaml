@@ -39,10 +39,73 @@ spec:
           spec:
             description: spec defines the desired state of ROKSControlPlane
             properties:
-              foo:
-                description: foo is an example field of ROKSControlPlane. Edit rokscontrolplane_types.go
-                  to remove/update
+              availabilityZones:
+                description: |-
+                  IBM AvailabilityZones of the worker nodes
+                  should match the AvailabilityZones of the Subnets.
+                items:
+                  type: string
+                type: array
+              controlPlaneEndpoint:
+                description: ControlPlaneEndpoint represents the endpoint used to
+                  communicate with the control plane.
+                properties:
+                  host:
+                    description: host is the hostname on which the API server is serving.
+                    maxLength: 512
+                    type: string
+                  port:
+                    description: port is the port on which the API server is serving.
+                    format: int32
+                    type: integer
+                type: object
+              cosInstanceCRN:
+                description: CosInstance for the ROKS Cluster
                 type: string
+              flavor:
+                description: Worker node flavour.
+                type: string
+              operatingSystem:
+                description: Operating System for the worker node
+                type: string
+              provider:
+                description: VPC provider type.
+                type: string
+              roksClusterName:
+                maxLength: 54
+                pattern: ^[a-z]([-a-z0-9]*[a-z0-9])?$
+                type: string
+                x-kubernetes-validations:
+                - message: roksClusterName is immutable
+                  rule: self == oldSelf
+              subnets:
+                description: |-
+                  The Subnet IDs to use when installing the cluster.
+                  SubnetIDs should come in pairs; two per availability zone, one private and one public.
+                items:
+                  type: string
+                type: array
+              version:
+                description: OpenShift semantic version, for example "4.14.5".
+                type: string
+              vpcID:
+                description: VPC ID.
+                type: string
+              workerCount:
+                description: No of worker nodes.
+                format: int64
+                type: integer
+            required:
+            - availabilityZones
+            - cosInstanceCRN
+            - flavor
+            - operatingSystem
+            - provider
+            - roksClusterName
+            - subnets
+            - version
+            - vpcID
+            - workerCount
             type: object
           status:
             description: status defines the observed state of ROKSControlPlane
@@ -116,6 +179,48 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              consoleURL:
+                description: ConsoleURL is the url for the openshift console.
+                type: string
+              externalManagedControlPlane:
+                default: true
+                description: |-
+                  ExternalManagedControlPlane indicates to cluster-api that the control plane
+                  is managed by an external service such as AKS, EKS, GKE, etc.
+                type: boolean
+              failureMessage:
+                description: |-
+                  FailureMessage will be set in the event that there is a terminal problem
+                  reconciling the state and will be set to a descriptive error message.
+
+                  This field should not be set for transitive errors that a controller
+                  faces that are expected to be fixed automatically over
+                  time (like service outages), but instead indicate that something is
+                  fundamentally wrong with the spec or the configuration of
+                  the controller, and that manual intervention is required.
+                type: string
+              id:
+                description: ID is the cluster ID given by ROKS.
+                type: string
+              initialized:
+                description: |-
+                  Initialized denotes whether or not the control plane has the
+                  uploaded kubernetes config-map.
+                type: boolean
+              oidcEndpointURL:
+                description: OIDCEndpointURL is the endpoint url for the managed OIDC
+                  provider.
+                type: string
+              ready:
+                default: false
+                description: Ready denotes that the ROKSControlPlane API Server is
+                  ready to receive requests.
+                type: boolean
+              version:
+                description: OpenShift semantic version, for example "4.14.5".
+                type: string
+            required:
+            - ready
             type: object
         required:
         - spec

@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	infrastructurev1beta3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta3"
+	infrastructurev1beta3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/roks/v1beta3"
 )
 
 var _ = Describe("ROKSControlPlane Controller", func() {

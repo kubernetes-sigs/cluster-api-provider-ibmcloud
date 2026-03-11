@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	infrastructurev1beta3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/v1beta3"
+	infrastructurev1beta3 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/roks/v1beta3"
 )
 
 // ROKSControlPlaneReconciler reconciles a ROKSControlPlane object
