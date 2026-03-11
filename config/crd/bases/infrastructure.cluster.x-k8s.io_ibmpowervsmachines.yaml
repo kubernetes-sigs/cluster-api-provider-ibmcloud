@@ -525,20 +525,17 @@ spec:
                 type: object
               imageRef:
                 description: |-
-                  imageRef is an optional reference to a provider-specific resource that holds
-                  the details for provisioning the Image for a Cluster.
+                  imageRef is a reference to a IBMPowerVSImage resource, which will be imported from IBM COS Bucket to PowerVS workspace.
+                  This is an alternative to the image field.
                 properties:
                   name:
-                    default: ""
-                    description: |-
-                      Name of the referent.
-                      This field is effectively required, but due to backwards compatibility is
-                      allowed to be empty. Instances of this type with an empty value here are
-                      almost certainly wrong.
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                    description: name of the IBMPowerVSImage resource.
+                    maxLength: 253
+                    minLength: 1
                     type: string
+                required:
+                - name
                 type: object
-                x-kubernetes-map-type: atomic
               memoryGiB:
                 description: |-
                   memoryGiB is the size of a virtual machine's memory, in GiB.

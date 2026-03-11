@@ -17,7 +17,6 @@ limitations under the License.
 package v1beta3
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -70,10 +69,10 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	Image *IBMPowerVSResourceReference `json:"image,omitempty"`
 
-	// imageRef is an optional reference to a provider-specific resource that holds
-	// the details for provisioning the Image for a Cluster.
+	// imageRef is a reference to a IBMPowerVSImage resource, which will be imported from IBM COS Bucket to PowerVS workspace.
+	// This is an alternative to the image field.
 	// +optional
-	ImageRef *corev1.LocalObjectReference `json:"imageRef,omitempty"`
+	ImageRef ImageReference `json:"imageRef,omitempty,omitzero"`
 
 	// systemType is the System type used to host the instance.
 	// systemType determines the number of cores and memory that is available.
@@ -288,6 +287,15 @@ type IBMPowerVSMachineV1Beta2DeprecatedStatus struct {
 	//
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+// ImageReference is a reference to an IBMPowerVSImage resource.
+type ImageReference struct {
+	// name of the IBMPowerVSImage resource.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	Name string `json:"name,omitempty"`
 }
 
 // GetConditions returns the observations of the operational state of the IBMPowerVSMachine resource.

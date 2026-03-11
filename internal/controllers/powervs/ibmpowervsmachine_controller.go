@@ -146,7 +146,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 	// Fetch the IBMPowerVSImage.
 	var ibmPowerVSImage *infrav1.IBMPowerVSImage
-	if ibmPowerVSMachine.Spec.ImageRef != nil {
+	if ibmPowerVSMachine.Spec.ImageRef.Name != "" {
 		ibmPowerVSImage = &infrav1.IBMPowerVSImage{}
 		ibmPowerVSImageName := client.ObjectKey{
 			Namespace: ibmPowerVSMachine.Namespace,

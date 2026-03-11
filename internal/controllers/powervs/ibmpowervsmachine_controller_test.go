@@ -178,7 +178,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					Finalizers: []string{infrav1.IBMPowerVSMachineFinalizer},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
 					ServiceInstanceID: "service-instance-1",
-					ImageRef: &corev1.LocalObjectReference{
+					ImageRef: infrav1.ImageReference{
 						Name: "capi-image",
 					}},
 			},
