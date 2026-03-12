@@ -19,7 +19,6 @@ package roks
 import (
 	"context"
 
-	"github.com/prometheus/common/log"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,8 +49,10 @@ type ROKSControlPlaneReconciler struct {
 func (r *ROKSControlPlaneReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = logf.FromContext(ctx)
 
-	log.Info("Reconciling ROKSControlPlane")
-	defer log.Info("Finished reconciling ROKSControlPlane")
+	log := ctrl.LoggerFrom(ctx)
+
+	log.Info("Reconciling ROKSControlPlaneReconciler")
+	defer log.Info("Finished reconciling ROKSControlPlaneReconciler")
 
 	return ctrl.Result{}, nil
 }
