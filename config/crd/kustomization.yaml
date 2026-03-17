@@ -35,7 +35,6 @@ labels:
 - includeSelectors: true
   pairs:
     cluster.x-k8s.io/v1beta1: v1beta2
-    cluster.x-k8s.io/v1beta2: v1beta3
 patches:
 - path: patches/webhook_in_ibmvpcclusters.yaml
 - path: patches/webhook_in_ibmvpcmachines.yaml
@@ -51,3 +50,16 @@ patches:
 - path: patches/cainjection_in_ibmpowervsmachinetemplates.yaml
 - path: patches/cainjection_in_ibmvpcmachinetemplates.yaml
 - path: patches/cainjection_in_ibmpowervsimages.yaml
+# Contract label patches - PowerVS v1beta3 implements Cluster API v1beta2 contract
+- patch: |-
+    apiVersion: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    metadata:
+      name: powervs-contract-label
+      labels:
+        cluster.x-k8s.io/v1beta2: v1beta3
+  target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: ibmpowervs.*
