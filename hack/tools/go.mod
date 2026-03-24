@@ -1,6 +1,6 @@
 module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
-go 1.24.0
+go 1.25
 
 replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.12.3
 
