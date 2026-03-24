@@ -52,24 +52,13 @@ This proposal presents adding two kinds of tags to the resources created by cont
    	  - Adds an error message like: "Failed to attach tag to newly created Workspace <workspace-name>. Please delete the cluster and recreate it in different region."
    	  ```
    	  status:
-   	        addresses:
-   	        - address: karthikkn-capi-powervs-control-plane-4vfvx
-   	          type: InternalDNS
-   	        - address: karthikkn-capi-powervs-control-plane-4vfvx
-   	          type: Hostname
-   	        - address: 192.168.0.12
-   	          type: InternalIP
    	        conditions:
    	        - lastTransitionTime: "2025-03-26T06:06:11Z"
    	          status: "True"
    	          type: Ready
    	        - lastTransitionTime: "2025-03-26T06:06:11Z"
    	          status: "False"
-   	          type: TagAttachmentFailed
-   	        health: WARNING
-   	        instanceID: b13dc26f-d491-442d-afde-83487aed2628
-   	        instanceState: ACTIVE
-   	        ready: true
+   	          type: WorkspaceReady
    	        v1beta2:
    	          conditions:
    	          - lastTransitionTime: "2025-03-26T06:06:11Z"
@@ -79,11 +68,11 @@ This proposal presents adding two kinds of tags to the resources created by cont
    	            status: "True"
    	            type: Ready
    	          - lastTransitionTime: "2025-03-26T06:06:11Z"
-   	            message: "Failed to attach tag to newly created Instance. Please delete the cluster and recreate it in different region"
+   	            message: "Failed to attach tag to newly created Workspace. Please delete the cluster and recreate it in different region"
    	            observedGeneration: 2
-   	            reason: TagAttachmentFailed
+   	            reason: WorkspaceTagAttachmentFailed
    	            status: "False"
-   	            type: TagAttachmentFailed
+   	            type: WorkspaceReady
    	  ```
    3. Allows the cluster creation to proceed and complete successfully despite the tag attachment failure.
 
