@@ -22,7 +22,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -66,8 +65,7 @@ func (r *IBMVPCMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Ob
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachineTemplate but got a %T", obj))
 	}
-	var allErrs field.ErrorList
-	allErrs = append(allErrs, validateIBMVPCMachineVolume(objValue.Spec.Template.Spec)...)
+	allErrs := validateIBMVPCMachineVolume(objValue.Spec.Template.Spec)
 
 	return nil, aggregateObjErrors(objValue.GroupVersionKind().GroupKind(), objValue.Name, allErrs)
 }

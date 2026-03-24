@@ -66,8 +66,7 @@ func (r *IBMVPCMachine) ValidateCreate(_ context.Context, obj runtime.Object) (a
 	if !ok {
 		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
 	}
-	var allErrs field.ErrorList
-	allErrs = append(allErrs, validateIBMVPCMachineVolume(objValue.Spec)...)
+	allErrs := validateIBMVPCMachineVolume(objValue.Spec)
 	return nil, aggregateObjErrors(objValue.GroupVersionKind().GroupKind(), objValue.Name, allErrs)
 }
 
