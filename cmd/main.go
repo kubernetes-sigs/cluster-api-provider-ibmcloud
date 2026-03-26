@@ -25,6 +25,9 @@ import (
 	"os"
 	"time"
 
+	infrastructurev1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/roks/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/controllers/roks"
+
 	// +kubebuilder:scaffold:imports
 	"github.com/spf13/pflag"
 
@@ -76,6 +79,8 @@ var (
 	webhookPort            int
 	webhookCertDir         string
 	watchFilterValue       string
+	apiKey                 string
+	region                 string
 	disableHTTP2           bool
 	skipCRDMigrationPhases []string
 )
@@ -90,6 +95,7 @@ func init() {
 	utilruntime.Must(vpcinfrav1.AddToScheme(scheme))
 	utilruntime.Must(clusterv1.AddToScheme(scheme))
 	utilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	utilruntime.Must(infrastructurev1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -164,6 +170,16 @@ func initFlags(fs *pflag.FlagSet) {
 		[]string{},
 		"List of CRD migration phases to skip. Valid values are: StorageVersionMigration, CleanupManagedFields.")
 
+	flag.StringVar(&apiKey,
+		"api-key",
+		os.Getenv("IBMCLOUD_API_KEY"),
+		"IBM Cloud API key (can also be set via IBMCLOUD_API_KEY environment variable)")
+
+	flag.StringVar(&region,
+		"region",
+		os.Getenv("IBMCLOUD_REGION"),
+		"IBM Cloud region (can also be set via IBMCLOUD_REGION environment variable)")
+
 	flags.AddManagerOptions(fs, &managerOptions)
 }
 
@@ -192,11 +208,23 @@ func validateFlags() error {
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclustertemplates,verbs=get;list;watch;patch;update
 
 func main() {
+
 	initFlags(pflag.CommandLine)
 	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 	pflag.Parse()
 
 	ctrl.SetLogger(klog.Background())
+
+	// Validate required flags
+	if apiKey == "" {
+		setupLog.Error(nil, "IBM Cloud API key is required (--api-key or IBMCLOUD_API_KEY)")
+		os.Exit(1)
+	}
+
+	if region == "" {
+		setupLog.Info("IBM Cloud region not specified, using default 'us-south'")
+		region = "us-south"
+	}
 
 	// Parse service endpoints.
 	serviceEndpoint, err := endpoints.ParseServiceEndpointFlag(endpoints.ServiceEndpointFormat)
@@ -283,6 +311,16 @@ func main() {
 	setupWebhooks(mgr)
 	setupChecks(mgr)
 
+	if err := (&roks.ROKSControlPlaneReconciler{
+		Client:   mgr.GetClient(),
+		Scheme:   mgr.GetScheme(),
+		Recorder: mgr.GetEventRecorderFor("rokscontrolplane-controller"),
+		APIKey:   apiKey,
+		Region:   region,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "Failed to create controller", "controller", "ROKSControlPlane")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctx); err != nil {
@@ -302,7 +340,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 		&powervsinfrav1.IBMPowerVSImage{}:           {UseCache: true, UseStatusForStorageVersionMigration: true},
 	}
 
-	crdMigratorSkipPhases := make([]crdmigrator.Phase, 0, 1)
+	crdMigratorSkipPhases := []crdmigrator.Phase{}
 	for _, p := range skipCRDMigrationPhases {
 		crdMigratorSkipPhases = append(crdMigratorSkipPhases, crdmigrator.Phase(p))
 	}
