@@ -1,0 +1,4 @@
+## Append samples of your project ##
+resources:
+- infrastructure_v1beta2_rokscontrolplane.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

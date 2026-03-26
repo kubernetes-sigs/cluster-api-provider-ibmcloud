@@ -4,6 +4,7 @@ go 1.24.13
 
 // Keep these modules sync with sigs.k8s.io/cluster-api repository
 replace (
+	github.com/IBM/container-services-go-sdk => /Users/sameershaikh/go/src/github.com/IBM/container-services-go-sdk
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega => github.com/onsi/gomega v1.38.2
 	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.12.3
@@ -11,6 +12,7 @@ replace (
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.15.0
+	github.com/IBM/container-services-go-sdk v0.0.0-00010101000000-000000000000
 	github.com/IBM/go-sdk-core/v5 v5.21.2
 	github.com/IBM/ibm-cos-sdk-go v1.14.0
 	github.com/IBM/networking-go-sdk v0.52.0
@@ -23,7 +25,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/gomega v1.39.1
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20250403153021-219b161805db
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
@@ -57,9 +59,9 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
-	github.com/Microsoft/go-winio v0.5.0 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
+	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.1 // indirect

@@ -41,6 +41,7 @@ labels:
     cluster.x-k8s.io/provider: infrastructure-ibmcloud
 patches:
 - path: manager_credentials_patch.yaml
+- path: manager_env_patch.yaml
 - path: manager_image_patch.yaml
 - path: manager_pull_policy.yaml
 - path: manager_webhook_patch.yaml

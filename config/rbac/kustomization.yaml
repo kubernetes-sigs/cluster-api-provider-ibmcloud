@@ -8,6 +8,9 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the cluster-api-provider-ibmcloud itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- rokscontrolplane_admin_role.yaml
+- rokscontrolplane_editor_role.yaml
+- rokscontrolplane_viewer_role.yaml
 #- ibmpowervsimage_admin_role.yaml
 #- ibmpowervsimage_editor_role.yaml
 #- ibmpowervsimage_viewer_role.yaml
