@@ -2203,6 +2203,28 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lb infrav1.VPCLoa
 		}
 		options.Subnets = append(options.Subnets, subnet)
 	}
+
+	// Use security groups from spec if provided
+	if len(lb.SecurityGroups) > 0 {
+		for _, sg := range lb.SecurityGroups {
+			sgIdentity := &vpcv1.SecurityGroupIdentity{}
+			if sg.ID != nil {
+				sgIdentity.ID = sg.ID
+			} else if sg.Name != nil {
+				// If name is provided, look up the security group ID
+				sgDetails, err := s.IBMVPCClient.GetSecurityGroupByName(*sg.Name)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get security group by name %s: %w", *sg.Name, err)
+				}
+				if sgDetails == nil {
+					return nil, fmt.Errorf("security group with name %s not found", *sg.Name)
+				}
+				sgIdentity.ID = sgDetails.ID
+			}
+			options.SecurityGroups = append(options.SecurityGroups, sgIdentity)
+		}
+	}
+
 	options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
 		{
 			Algorithm:     core.StringPtr("round_robin"),
