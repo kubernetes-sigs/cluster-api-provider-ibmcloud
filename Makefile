@@ -85,11 +85,11 @@ RELEASE_NOTES_DIR := CHANGELOG
 OUTPUT_TYPE ?= type=registry
 
 # Go
-GO_VERSION ?=1.24.13
+GO_VERSION ?=1.25.8
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # Trivy
-TRIVY_VER := 0.61.1
+TRIVY_VER := 0.69.3
 
 # kind
 CAPI_KIND_CLUSTER_NAME ?= capi-test
@@ -236,6 +236,10 @@ endif
 ## --------------------------------------
 
 ##@ test:
+
+# Workaround for Go 1.25.x missing covdata tool (https://github.com/golang/go/issues/75031)
+GOVERSION := $(shell go env GOVERSION)
+export GOTOOLCHAIN := $(GOVERSION)+auto
 
 .PHONY: setup-envtest
 setup-envtest: $(SETUP_ENVTEST) # Build setup-envtest from tools folder
