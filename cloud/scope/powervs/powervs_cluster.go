@@ -953,7 +953,7 @@ func (s *ClusterScope) checkDHCPServer(ctx context.Context) (*string, error) {
 			return nil, fmt.Errorf("failed to fetch DHCP server: %w", err)
 		}
 		if s.GetNetworkID() == nil {
-			if dhcpServer.Network != nil {
+			if dhcpServer.Network != nil && dhcpServer.Network.ID != nil {
 				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
 					return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
 				}
@@ -961,7 +961,7 @@ func (s *ClusterScope) checkDHCPServer(ctx context.Context) (*string, error) {
 			} else {
 				return nil, fmt.Errorf("found DHCP server with ID `%s`, but network is nil", *s.DHCPServer().ID)
 			}
-		} else if dhcpServer.Network != nil && *dhcpServer.Network.ID != *s.GetNetworkID() {
+		} else if dhcpServer.Network != nil && dhcpServer.Network.ID != nil && *dhcpServer.Network.ID != *s.GetNetworkID() {
 			return nil, fmt.Errorf("network details set via spec and DHCP server's network are not matching")
 		}
 		return dhcpServer.ID, nil
@@ -976,7 +976,7 @@ func (s *ClusterScope) checkDHCPServer(ctx context.Context) (*string, error) {
 		return nil, fmt.Errorf("failed to fetch all DHCP servers: %w", err)
 	}
 	for _, dhcpServer := range dhcpServers {
-		if dhcpServer.Network != nil && *dhcpServer.Network.Name == networkName {
+		if dhcpServer.Network != nil && dhcpServer.Network.Name != nil && *dhcpServer.Network.Name == networkName {
 			if s.GetNetworkID() == nil {
 				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
 					return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
@@ -1024,6 +1024,10 @@ func (s *ClusterScope) isDHCPServerActive(ctx context.Context) (bool, error) {
 	dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(*s.GetDHCPServerID())
 	if err != nil {
 		return false, err
+	}
+
+	if dhcpServer == nil {
+		return false, fmt.Errorf("dhcp server details is nil for dhcpServerID: %s", *s.GetDHCPServerID())
 	}
 
 	active, err := s.checkDHCPServerStatus(ctx, *dhcpServer)
