@@ -122,6 +122,7 @@ type ClusterScope struct {
 	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
+	ResourceGroupID   string
 }
 
 func getTGPowerVSConnectionName(tgName string) string { return fmt.Sprintf("%s-pvs-con", tgName) }
@@ -156,6 +157,12 @@ func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		return nil, err
 	}
 
+	// fetch resource group id
+	rsID := GetResourceGroupIDV1(params.IBMPowerVSCluster)
+	if rsID == "" {
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", params.IBMPowerVSCluster.Spec.ResourceGroup)
+	}
+
 	// if powervs.cluster.x-k8s.io/create-infra=true annotation is not set, create only powerVSClient.
 	if !CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
 		return &ClusterScope{
@@ -164,6 +171,7 @@ func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 			Cluster:           params.Cluster,
 			IBMPowerVSCluster: params.IBMPowerVSCluster,
 			ServiceEndpoint:   params.ServiceEndpoint,
+			ResourceGroupID:   rsID,
 		}, nil
 	}
 
@@ -272,6 +280,7 @@ func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		TransitGatewayClient:  tgClient,
 		ResourceClient:        resourceClient,
 		ResourceManagerClient: rmClient,
+		ResourceGroupID:       rsID,
 	}
 	return clusterScope, nil
 }
@@ -686,6 +695,18 @@ func (s *ClusterScope) GetResourceGroupID() string {
 	return ""
 }
 
+// GetResourceGroupIDV1 returns the resource group id if it present under spec or status filed of IBMPowerVSCluster object
+// or returns empty string.
+func GetResourceGroupIDV1(s *infrav1.IBMPowerVSCluster) string {
+	if s.Spec.ResourceGroup != nil && s.Spec.ResourceGroup.ID != nil {
+		return *s.Spec.ResourceGroup.ID
+	}
+	if s.Status.ResourceGroup != nil && s.Status.ResourceGroup.ID != nil {
+		return *s.Status.ResourceGroup.ID
+	}
+	return ""
+}
+
 // IsPowerVSZoneSupportsPER checks whether PowerVS zone supports PER capabilities.
 func (s *ClusterScope) IsPowerVSZoneSupportsPER() error {
 	zone := s.Zone()
@@ -856,11 +877,6 @@ func (s *ClusterScope) getServiceInstance() (*resourcecontrollerv2.ResourceInsta
 // createServiceInstance creates the service instance.
 func (s *ClusterScope) createServiceInstance(ctx context.Context) (*resourcecontrollerv2.ResourceInstance, error) {
 	log := ctrl.LoggerFrom(ctx)
-	// fetch resource group id.
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
-	}
 
 	// create service instance.
 	log.V(3).Info("Creating new PowerVS service instance", "serviceInstanceName", s.GetServiceName(infrav1.ResourceTypeServiceInstance))
@@ -871,7 +887,7 @@ func (s *ClusterScope) createServiceInstance(ctx context.Context) (*resourcecont
 	serviceInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
 		Name:           s.GetServiceName(infrav1.ResourceTypeServiceInstance),
 		Target:         zone,
-		ResourceGroup:  &resourceGroupID,
+		ResourceGroup:  &s.ResourceGroupID,
 		ResourcePlanID: ptr.To(resourcecontroller.PowerVSResourcePlanID),
 	})
 	if err != nil {
@@ -1174,13 +1190,9 @@ func (s *ClusterScope) getVPCByName() (*vpcv1.VPC, error) {
 
 // createVPC creates VPC.
 func (s *ClusterScope) createVPC() (*string, error) {
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
-	}
 	addressPrefixManagement := "auto"
 	vpcOption := &vpcv1.CreateVPCOptions{
-		ResourceGroup:           &vpcv1.ResourceGroupIdentity{ID: &resourceGroupID},
+		ResourceGroup:           &vpcv1.ResourceGroupIdentity{ID: &s.ResourceGroupID},
 		Name:                    s.GetServiceName(infrav1.ResourceTypeVPC),
 		AddressPrefixManagement: &addressPrefixManagement,
 	}
@@ -1305,13 +1317,6 @@ func (s *ClusterScope) checkVPCSubnet(ctx context.Context, subnetName string) (s
 
 // createVPCSubnet creates a VPC subnet.
 func (s *ClusterScope) createVPCSubnet(subnet infrav1.Subnet) (*string, error) {
-	// TODO(karthik-k-n): consider moving to clusterscope
-	// fetch resource group id
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
-	}
-
 	// create subnet
 	vpcID := s.GetVPCID()
 	if vpcID == nil {
@@ -1332,7 +1337,7 @@ func (s *ClusterScope) createVPCSubnet(subnet infrav1.Subnet) (*string, error) {
 			Name: subnet.Zone,
 		},
 		ResourceGroup: &vpcv1.ResourceGroupIdentity{
-			ID: &resourceGroupID,
+			ID: &s.ResourceGroupID,
 		},
 	})
 
@@ -1557,7 +1562,7 @@ func (s *ClusterScope) createVPCSecurityGroup(ctx context.Context, spec infrav1.
 		},
 		Name: spec.Name,
 		ResourceGroup: &vpcv1.ResourceGroupIdentity{
-			ID: ptr.To(s.GetResourceGroupID()),
+			ID: ptr.To(s.ResourceGroupID),
 		},
 	}
 
@@ -1992,12 +1997,6 @@ func (s *ClusterScope) createTransitGatewayConnections(ctx context.Context, tg *
 
 // createTransitGateway creates transit gateway and sets the transit gateway status.
 func (s *ClusterScope) createTransitGateway(ctx context.Context) error {
-	// fetch resource group id
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
-	}
-
 	if s.IBMPowerVSCluster.Status.ServiceInstance == nil || s.IBMPowerVSCluster.Status.VPC == nil {
 		return fmt.Errorf("failed to proeceed with transit gateway creation as either one of VPC or PowerVS service instance reconciliation is not successful")
 	}
@@ -2022,7 +2021,7 @@ func (s *ClusterScope) createTransitGateway(ctx context.Context) error {
 		Location:      location,
 		Name:          tgName,
 		Global:        globalRouting,
-		ResourceGroup: &tgapiv1.ResourceGroupIdentity{ID: ptr.To(resourceGroupID)},
+		ResourceGroup: &tgapiv1.ResourceGroupIdentity{ID: ptr.To(s.ResourceGroupID)},
 	})
 	if err != nil {
 		return err
@@ -2176,12 +2175,6 @@ func (s *ClusterScope) checkLoadBalancer(ctx context.Context, lb infrav1.VPCLoad
 func (s *ClusterScope) createLoadBalancer(ctx context.Context, lb infrav1.VPCLoadBalancerSpec) (*infrav1.VPCLoadBalancerStatus, error) {
 	log := ctrl.LoggerFrom(ctx)
 	options := &vpcv1.CreateLoadBalancerOptions{}
-	// TODO(karthik-k-n): consider moving resource group id to clusterscope
-	// fetch resource group id
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
-	}
 
 	var isPublic bool
 	if lb.Public != nil && *lb.Public {
@@ -2190,7 +2183,7 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lb infrav1.VPCLoa
 	options.SetIsPublic(isPublic)
 	options.SetName(lb.Name)
 	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
-		ID: &resourceGroupID,
+		ID: &s.ResourceGroupID,
 	})
 
 	subnetIDs := s.GetVPCSubnetIDs()
@@ -2404,18 +2397,12 @@ func (s *ClusterScope) checkCOSServiceInstance(ctx context.Context) (*resourceco
 }
 
 func (s *ClusterScope) createCOSServiceInstance() (*resourcecontrollerv2.ResourceInstance, error) {
-	// fetch resource group id.
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
-	}
-
 	target := "Global"
 	// create service instance
 	serviceInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
 		Name:           s.GetServiceName(infrav1.ResourceTypeCOSInstance),
 		Target:         &target,
-		ResourceGroup:  &resourceGroupID,
+		ResourceGroup:  &s.ResourceGroupID,
 		ResourcePlanID: ptr.To(resourcecontroller.CosResourcePlanID),
 	})
 	if err != nil {
