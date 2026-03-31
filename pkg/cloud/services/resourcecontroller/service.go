@@ -235,7 +235,7 @@ func (s *Service) GetResourceInstanceByFilter(filter InstanceFilter) (*resourcec
 		if serviceInstances != nil {
 			for _, resource := range serviceInstances.Resources {
 				if filter.Zone != nil && *filter.Zone != "" {
-					if resource.RegionID != nil && resource.RegionID == filter.Zone {
+					if resource.RegionID != nil && *resource.RegionID == *filter.Zone {
 						serviceInstancesList = append(serviceInstancesList, resource)
 					}
 				} else {
