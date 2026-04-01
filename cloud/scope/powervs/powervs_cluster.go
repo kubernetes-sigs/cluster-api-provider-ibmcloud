@@ -2931,15 +2931,7 @@ func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.Resour
 	return false
 }
 
-// TODO: duplicate function, optimize it.
+// bucketRegion returns the region to use for COS bucket for the ClusterScope.
 func (s *ClusterScope) bucketRegion() string {
-	if s.COSInstance() != nil && s.COSInstance().BucketRegion != "" {
-		return s.COSInstance().BucketRegion
-	}
-	// if the bucket region is not set, use vpc region
-	vpcDetails := s.VPC()
-	if vpcDetails != nil && vpcDetails.Region != nil {
-		return *vpcDetails.Region
-	}
-	return ""
+	return fetchBucketRegion(s.COSInstance(), s.VPC())
 }
