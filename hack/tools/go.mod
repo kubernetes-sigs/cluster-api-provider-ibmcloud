@@ -2,7 +2,7 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 
 go 1.25.0
 
-replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.12.4
+replace sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.12.5
 
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
@@ -15,7 +15,7 @@ require (
 	gotest.tools/gotestsum v1.13.0
 	k8s.io/code-generator v0.34.3
 	k8s.io/release v0.16.9
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260317115140-233b59b164f5
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260408095133-efc7142fa2ca
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387
 	sigs.k8s.io/controller-tools v0.19.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.8.1
