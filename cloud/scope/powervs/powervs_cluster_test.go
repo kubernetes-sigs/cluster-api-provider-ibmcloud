@@ -22,8 +22,6 @@ import (
 	"os"
 	"testing"
 
-	"go.uber.org/mock/gomock"
-
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/ibm-cos-sdk-go/aws/awserr"
@@ -32,6 +30,7 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
+	"go.uber.org/mock/gomock"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -86,7 +85,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name: "Successfully create cluster scope when create infra annotation is not set",
+			name: "Error when ResourceGroup ID is not set",
 			params: ClusterScopeParams{
 				Client:  testEnv.Client,
 				Cluster: newCluster(clusterName),
@@ -101,6 +100,31 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 								UID:        "1",
 							}}},
 					Spec: infrav1.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "Successfully create cluster scope when create infra annotation is not set",
+			params: ClusterScopeParams{
+				Client:  testEnv.Client,
+				Cluster: newCluster(clusterName),
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						GenerateName: "powervs-test-",
+						OwnerReferences: []metav1.OwnerReference{
+							{
+								APIVersion: clusterv1.GroupVersion.String(),
+								Kind:       "Cluster",
+								Name:       "capi-test",
+								UID:        "1",
+							}}},
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						Zone: ptr.To("zone"),
+						ResourceGroup: &infrav1.IBMPowerVSResourceReference{
+							ID: ptr.To("resource-group-id"),
+						},
+					},
 				},
 				ClientFactory: ClientFactory{
 					AuthenticatorFactory: func() (core.Authenticator, error) {
@@ -132,6 +156,9 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 					Spec: infrav1.IBMPowerVSClusterSpec{
 						Zone: ptr.To("zone"),
 						VPC:  &infrav1.VPCResourceReference{Region: ptr.To("eu-gb")},
+						ResourceGroup: &infrav1.IBMPowerVSResourceReference{
+							ID: ptr.To("resource-group-id"),
+						},
 					},
 				},
 				ClientFactory: ClientFactory{
@@ -2693,15 +2720,23 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 	teardown := func() {
 		mockCtrl.Finish()
 	}
-	t.Run("When resourceGroupID is not set", func(t *testing.T) {
+	t.Run("When CreateVPC returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
 		clusterScope := ClusterScope{
-			IBMVPCClient:      mockVPC,
+			IBMVPCClient: mockVPC,
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: clusterv1.ClusterNetwork{},
+				},
+			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
+			ResourceGroupID:   "resourceGroupID",
 		}
+
+		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(nil, nil, fmt.Errorf("failed to create VPC"))
 
 		vpcID, err := clusterScope.createVPC()
 		g.Expect(err).ToNot(BeNil())
@@ -2714,9 +2749,14 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &clusterv1.Cluster{},
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: clusterv1.ClusterNetwork{},
+				},
+			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+			ResourceGroupID: "resourceGroupID",
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
@@ -2727,16 +2767,21 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 		g.Expect(vpcID).To(Equal(vpcOutput.ID))
 	})
 
-	t.Run("When resourceGroupID is not nil and CreateSecurityGroupRule returns error", func(t *testing.T) {
+	t.Run("When CreateSecurityGroupRule returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
-			Cluster:      &clusterv1.Cluster{},
+			Cluster: &clusterv1.Cluster{
+				Spec: clusterv1.ClusterSpec{
+					ClusterNetwork: clusterv1.ClusterNetwork{},
+				},
+			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
 				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+			ResourceGroupID: "resourceGroupID",
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
@@ -3596,6 +3641,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 						{Name: ptr.To("subnet5Name")},
 					}},
 			},
+			ResourceGroupID: "resourceGroupID",
 		}
 
 		vpcZones, err := regionUtil.VPCZonesForVPCRegion(*clusterScope.IBMPowerVSCluster.Spec.VPC.Region)
@@ -3655,6 +3701,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 						{Name: ptr.To("subnet3Name"), Zone: ptr.To("eu-de-3")},
 					}},
 			},
+			ResourceGroupID: "resourceGroupID",
 		}
 
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(len(clusterScope.IBMPowerVSCluster.Spec.VPCSubnets))
@@ -3701,6 +3748,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")}},
 			},
+			ResourceGroupID: "resourceGroupID",
 		}
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("ClusterName-vpcsubnet-eu-de-1")}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil).Times(3)
@@ -3730,6 +3778,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets:    []infrav1.Subnet{{Name: ptr.To("subnet1Name")}}},
 			},
+			ResourceGroupID: "resourceGroupID",
 		}
 		subnet1Details := &vpcv1.Subnet{ID: ptr.To("subnet1ID"), Name: ptr.To("subnet1Name")}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
@@ -3875,7 +3924,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 		g.Expect(err).ToNot(BeNil())
 	})
 
-	t.Run("When createVPCSubnet returns error as Resourcegroup is not set", func(t *testing.T) {
+	t.Run("When createVPCSubnet returns error as VPC ID is not set", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -3888,6 +3937,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPC: &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
 				},
 			},
+			ResourceGroupID: "resourceGroupID",
 		}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
 		requeue, err := clusterScope.ReconcileVPCSubnets(ctx)
@@ -6443,34 +6493,14 @@ func TestCreateCOSServiceInstance(t *testing.T) {
 		mockCtrl.Finish()
 	}
 
-	t.Run("When creating COS resource instance fails due to missing resource group id", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-
-		clusterScope := ClusterScope{
-			ResourceClient: mockResourceController,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					ServiceInstance: &infrav1.ResourceReference{
-						ID: ptr.To("test-serviceinstance-id"),
-					},
-				},
-			},
-		}
-
-		cosResourceInstance, err := clusterScope.createCOSServiceInstance()
-		g.Expect(cosResourceInstance).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
 	t.Run("When creating COS resource instance fails", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 
 		clusterScope := ClusterScope{
-			ResourceClient: mockResourceController,
+			ResourceClient:  mockResourceController,
+			ResourceGroupID: "test-resourcegroup-id",
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
@@ -6498,7 +6528,8 @@ func TestCreateCOSServiceInstance(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := ClusterScope{
-			ResourceClient: mockResourceController,
+			ResourceClient:  mockResourceController,
+			ResourceGroupID: "test-resourcegroup-id",
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
