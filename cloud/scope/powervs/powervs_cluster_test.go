@@ -9655,3 +9655,127 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 		g.Expect(err).ToNot(BeNil())
 	})
 }
+
+func TestClusterScope_BucketRegion(t *testing.T) {
+	testRegion := "us-south"
+	vpcRegion := "us-east"
+
+	testcases := []struct {
+		name                 string
+		expectedBucketRegion string
+		clusterScope         ClusterScope
+	}{
+		{
+			name:                 "Returns bucket region from COS instance when set",
+			expectedBucketRegion: testRegion,
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						CosInstance: &infrav1.CosInstance{
+							BucketRegion: testRegion,
+						},
+						VPC: &infrav1.VPCResourceReference{
+							Region: ptr.To(vpcRegion),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:                 "Returns VPC region when COS bucket region is not set",
+			expectedBucketRegion: vpcRegion,
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						CosInstance: &infrav1.CosInstance{},
+						VPC: &infrav1.VPCResourceReference{
+							Region: ptr.To(vpcRegion),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:                 "Returns VPC region when COS instance is nil",
+			expectedBucketRegion: vpcRegion,
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						VPC: &infrav1.VPCResourceReference{
+							Region: ptr.To(vpcRegion),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:                 "Returns empty string when both COS bucket region and VPC region are not set",
+			expectedBucketRegion: "",
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						CosInstance: &infrav1.CosInstance{},
+						VPC:         &infrav1.VPCResourceReference{},
+					},
+				},
+			},
+		},
+		{
+			name:                 "Returns empty string when COS instance is nil and VPC region is not set",
+			expectedBucketRegion: "",
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						VPC: &infrav1.VPCResourceReference{},
+					},
+				},
+			},
+		},
+		{
+			name:                 "Returns empty string when both COS instance and VPC are nil",
+			expectedBucketRegion: "",
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{},
+				},
+			},
+		},
+		{
+			name:                 "Prioritizes COS bucket region over VPC region",
+			expectedBucketRegion: testRegion,
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						CosInstance: &infrav1.CosInstance{
+							BucketRegion: testRegion,
+						},
+						VPC: &infrav1.VPCResourceReference{
+							Region: ptr.To(vpcRegion),
+						},
+					},
+				},
+			},
+		},
+		{
+			name:                 "Returns empty string when COS bucket region is empty and VPC is nil",
+			expectedBucketRegion: "",
+			clusterScope: ClusterScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						CosInstance: &infrav1.CosInstance{
+							BucketRegion: "",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		g := NewWithT(t)
+		t.Run(tc.name, func(_ *testing.T) {
+			region := tc.clusterScope.bucketRegion()
+			g.Expect(region).To(Equal(tc.expectedBucketRegion))
+		})
+	}
+}

@@ -57,3 +57,14 @@ func CheckCreateInfraAnnotation(cluster infrav1.IBMPowerVSCluster) bool {
 	}
 	return createInfra
 }
+
+func fetchBucketRegion(cos *infrav1.CosInstance, vpc *infrav1.VPCResourceReference) string {
+	if cos != nil && cos.BucketRegion != "" {
+		return cos.BucketRegion
+	}
+	// if the bucket region is not set, use vpc region
+	if vpc != nil && vpc.Region != nil {
+		return *vpc.Region
+	}
+	return ""
+}
