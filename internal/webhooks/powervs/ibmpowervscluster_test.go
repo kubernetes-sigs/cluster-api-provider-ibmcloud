@@ -35,7 +35,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should allow if either Network ID or name is set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -47,7 +47,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should error if both Network ID and name are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID:   ptr.To("capi-net-id"),
 						Name: ptr.To("capi-net"),
@@ -60,7 +60,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should error if all Network ID, name and regex are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID:    ptr.To("capi-net-id"),
 						Name:  ptr.To("capi-net"),
@@ -74,7 +74,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should error if both Network name and DHCP name are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						Name: ptr.To("capi-net"),
 					},
@@ -89,7 +89,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should error if both Network id and DHCP name are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -104,7 +104,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should error if both Network name and DHCP id are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						Name: ptr.To("capi-net"),
 					},
@@ -119,7 +119,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			name: "Should error if both Network id and DHCP id are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -158,7 +158,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should allow if either Network ID or name is set",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -166,7 +166,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -178,7 +178,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should error if both Network ID and name are set",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -186,7 +186,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID:   ptr.To("capi-net-id"),
 						Name: ptr.To("capi-net-name"),
@@ -199,7 +199,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should allow if Network ID is set",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						RegEx: ptr.To("^capi-net-id$"),
 					},
@@ -207,7 +207,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						RegEx: ptr.To("^capi-net-id$"),
 					},
@@ -219,7 +219,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should error if all Network ID, name and regex are set",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -227,7 +227,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID:    ptr.To("capi-net-id"),
 						Name:  ptr.To("capi-net-name"),
@@ -241,7 +241,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should error if the additionalListener selector is changed for same port and protocol",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -265,7 +265,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -293,7 +293,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should work if there is an additional listener added",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -317,7 +317,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -354,7 +354,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			name: "Should work if the additionalListener selector is updated with new port and protocol",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},
@@ -378,7 +378,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "capi-si-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
 					Network: infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-net-id"),
 					},

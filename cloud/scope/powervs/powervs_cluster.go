@@ -174,41 +174,8 @@ func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		},
 	}
 
-	// if Spec.ServiceInstanceID is set fetch zone associated with it or else use Spec.Zone.
-	if params.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
-		// Create Resource Controller client.
-		var serviceOption resourcecontroller.ServiceOptions
-		// Fetch the resource controller endpoint.
-		rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
-		if rcEndpoint != "" {
-			serviceOption.URL = rcEndpoint
-			params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
-		}
-		rc, err := resourcecontroller.NewService(serviceOption)
-		if err != nil {
-			return nil, err
-		}
-
-		// Fetch the resource controller endpoint.
-		if rcEndpoint := endpoints.FetchRCEndpoint(params.ServiceEndpoint); rcEndpoint != "" {
-			params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
-			if err := rc.SetServiceURL(rcEndpoint); err != nil {
-				return nil, fmt.Errorf("failed to set resource controller endpoint: %w", err)
-			}
-		}
-
-		res, _, err := rc.GetResourceInstance(
-			&resourcecontrollerv2.GetResourceInstanceOptions{
-				ID: core.StringPtr(params.IBMPowerVSCluster.Spec.ServiceInstanceID),
-			})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get resource instance: %w", err)
-		}
-		piOptions.Zone = *res.RegionID
-		piOptions.CloudInstanceID = params.IBMPowerVSCluster.Spec.ServiceInstanceID
-	} else {
-		piOptions.Zone = *params.IBMPowerVSCluster.Spec.Zone
-	}
+	// Use Spec.Zone for the PowerVS zone.
+	piOptions.Zone = *params.IBMPowerVSCluster.Spec.Zone
 
 	// Get the authenticator.
 	auth, err := params.getAuthenticator()
@@ -808,9 +775,7 @@ func (s *ClusterScope) isServiceInstanceExists(ctx context.Context) (string, boo
 		serviceInstance *resourcecontrollerv2.ResourceInstance
 	)
 
-	if s.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
-		id = s.IBMPowerVSCluster.Spec.ServiceInstanceID
-	} else if s.IBMPowerVSCluster.Spec.ServiceInstance != nil && s.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
+	if s.IBMPowerVSCluster.Spec.ServiceInstance != nil && s.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
 		id = *s.IBMPowerVSCluster.Spec.ServiceInstance.ID
 	}
 
@@ -2482,9 +2447,7 @@ func (s *ClusterScope) fetchVPCCRN() (*string, error) {
 func (s *ClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) {
 	serviceInstanceID := s.GetServiceInstanceID()
 	if serviceInstanceID == "" {
-		if s.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
-			serviceInstanceID = s.IBMPowerVSCluster.Spec.ServiceInstanceID
-		} else if s.IBMPowerVSCluster.Spec.ServiceInstance != nil && s.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
+		if s.IBMPowerVSCluster.Spec.ServiceInstance != nil && s.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
 			serviceInstanceID = *s.IBMPowerVSCluster.Spec.ServiceInstance.ID
 		}
 	}

@@ -54,10 +54,11 @@ type ImageScopeParams struct {
 
 // ImageScope defines a scope defined around a Power VS Cluster.
 type ImageScope struct {
-	Client           client.Client
-	IBMPowerVSClient powervs.PowerVS
-	IBMPowerVSImage  *infrav1.IBMPowerVSImage
-	ServiceEndpoint  []endpoints.ServiceEndpoint
+	Client            client.Client
+	IBMPowerVSClient  powervs.PowerVS
+	IBMPowerVSImage   *infrav1.IBMPowerVSImage
+	ServiceEndpoint   []endpoints.ServiceEndpoint
+	serviceInstanceID string
 }
 
 // NewPowerVSImageScope creates a new ImageScope from the supplied parameters.
@@ -92,10 +93,7 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (scope *
 	}
 
 	var serviceInstanceID string
-	spec := params.IBMPowerVSImage.Spec
-	if spec.ServiceInstanceID != "" {
-		serviceInstanceID = spec.ServiceInstanceID
-	} else if params.IBMPowerVSImage.Spec.ServiceInstance != nil && params.IBMPowerVSImage.Spec.ServiceInstance.ID != nil {
+	if params.IBMPowerVSImage.Spec.ServiceInstance != nil && params.IBMPowerVSImage.Spec.ServiceInstance.ID != nil {
 		serviceInstanceID = *params.IBMPowerVSImage.Spec.ServiceInstance.ID
 	} else {
 		name := fmt.Sprintf("%s-%s", params.IBMPowerVSImage.Spec.ClusterName, "serviceInstance")
@@ -154,6 +152,7 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (scope *
 	options.CloudInstanceID = serviceInstanceID
 	c.WithClients(options)
 	scope.IBMPowerVSClient = c
+	scope.serviceInstanceID = serviceInstanceID
 	return scope, nil
 }
 
@@ -224,7 +223,7 @@ func (i *ImageScope) DeleteImage() error {
 
 // GetImportJob will get the image import job.
 func (i *ImageScope) GetImportJob() (*models.Job, error) {
-	return i.IBMPowerVSClient.GetCosImages(i.IBMPowerVSImage.Spec.ServiceInstanceID)
+	return i.IBMPowerVSClient.GetCosImages(i.serviceInstanceID)
 }
 
 // DeleteImportJob will delete the image import job.

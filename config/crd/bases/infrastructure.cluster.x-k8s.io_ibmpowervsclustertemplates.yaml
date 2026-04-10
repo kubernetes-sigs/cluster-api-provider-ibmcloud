@@ -1413,12 +1413,6 @@ spec:
                             minLength: 1
                             type: string
                         type: object
-                      serviceInstanceID:
-                        description: |-
-                          serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
-
-                          Deprecated: use ServiceInstance instead
-                        type: string
                       transitGateway:
                         description: |-
                           transitGateway contains information about IBM Cloud TransitGateway
@@ -1845,7 +1839,6 @@ spec:
                         type: string
                     required:
                     - network
-                    - serviceInstanceID
                     type: object
                 required:
                 - spec

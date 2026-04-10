@@ -155,9 +155,7 @@ func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error)
 	scope.ResourceClient = rc
 
 	var serviceInstanceID, serviceInstanceName string
-	if params.IBMPowerVSMachine.Spec.ServiceInstanceID != "" {
-		serviceInstanceID = params.IBMPowerVSMachine.Spec.ServiceInstanceID
-	} else if params.IBMPowerVSMachine.Spec.ServiceInstance != nil && params.IBMPowerVSMachine.Spec.ServiceInstance.ID != nil {
+	if params.IBMPowerVSMachine.Spec.ServiceInstance != nil && params.IBMPowerVSMachine.Spec.ServiceInstance.ID != nil {
 		serviceInstanceID = *params.IBMPowerVSMachine.Spec.ServiceInstance.ID
 	} else {
 		serviceInstanceName = fmt.Sprintf("%s-%s", params.IBMPowerVSCluster.GetName(), "serviceInstance")
@@ -915,9 +913,6 @@ func (m *MachineScope) GetZone() string {
 func (m *MachineScope) GetServiceInstanceID() (string, error) {
 	if m.IBMPowerVSCluster.Status.ServiceInstance != nil && m.IBMPowerVSCluster.Status.ServiceInstance.ID != nil {
 		return *m.IBMPowerVSCluster.Status.ServiceInstance.ID, nil
-	}
-	if m.IBMPowerVSCluster.Spec.ServiceInstanceID != "" {
-		return m.IBMPowerVSCluster.Spec.ServiceInstanceID, nil
 	}
 	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
 		return *m.IBMPowerVSCluster.Spec.ServiceInstance.ID, nil

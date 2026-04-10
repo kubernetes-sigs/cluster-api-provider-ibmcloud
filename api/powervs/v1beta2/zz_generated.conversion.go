@@ -90,16 +90,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSClusterSpec)(nil), (*v1beta3.IBMPowerVSClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(a.(*IBMPowerVSClusterSpec), b.(*v1beta3.IBMPowerVSClusterSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSClusterSpec)(nil), (*IBMPowerVSClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(a.(*v1beta3.IBMPowerVSClusterSpec), b.(*IBMPowerVSClusterSpec), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*IBMPowerVSClusterTemplate)(nil), (*v1beta3.IBMPowerVSClusterTemplate)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSClusterTemplate_To_v1beta3_IBMPowerVSClusterTemplate(a.(*IBMPowerVSClusterTemplate), b.(*v1beta3.IBMPowerVSClusterTemplate), scope)
 	}); err != nil {
@@ -157,16 +147,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSImageList)(nil), (*IBMPowerVSImageList)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_IBMPowerVSImageList_To_v1beta2_IBMPowerVSImageList(a.(*v1beta3.IBMPowerVSImageList), b.(*IBMPowerVSImageList), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*IBMPowerVSImageSpec)(nil), (*v1beta3.IBMPowerVSImageSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(a.(*IBMPowerVSImageSpec), b.(*v1beta3.IBMPowerVSImageSpec), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.IBMPowerVSImageSpec)(nil), (*IBMPowerVSImageSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(a.(*v1beta3.IBMPowerVSImageSpec), b.(*IBMPowerVSImageSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -455,8 +435,18 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*IBMPowerVSClusterSpec)(nil), (*v1beta3.IBMPowerVSClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(a.(*IBMPowerVSClusterSpec), b.(*v1beta3.IBMPowerVSClusterSpec), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*IBMPowerVSClusterStatus)(nil), (*v1beta3.IBMPowerVSClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(a.(*IBMPowerVSClusterStatus), b.(*v1beta3.IBMPowerVSClusterStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*IBMPowerVSImageSpec)(nil), (*v1beta3.IBMPowerVSImageSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(a.(*IBMPowerVSImageSpec), b.(*v1beta3.IBMPowerVSImageSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -485,8 +475,18 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSClusterSpec)(nil), (*IBMPowerVSClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(a.(*v1beta3.IBMPowerVSClusterSpec), b.(*IBMPowerVSClusterSpec), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSClusterStatus)(nil), (*IBMPowerVSClusterStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(a.(*v1beta3.IBMPowerVSClusterStatus), b.(*IBMPowerVSClusterStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSImageSpec)(nil), (*IBMPowerVSImageSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(a.(*v1beta3.IBMPowerVSImageSpec), b.(*IBMPowerVSImageSpec), scope)
 	}); err != nil {
 		return err
 	}
@@ -666,7 +666,7 @@ func Convert_v1beta3_IBMPowerVSClusterList_To_v1beta2_IBMPowerVSClusterList(in *
 }
 
 func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, out *v1beta3.IBMPowerVSClusterSpec, s conversion.Scope) error {
-	out.ServiceInstanceID = in.ServiceInstanceID
+	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
@@ -687,13 +687,7 @@ func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(
 	return nil
 }
 
-// Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, out *v1beta3.IBMPowerVSClusterSpec, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in, out, s)
-}
-
 func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *v1beta3.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s conversion.Scope) error {
-	out.ServiceInstanceID = in.ServiceInstanceID
 	if err := Convert_v1beta3_APIEndpoint_To_v1beta1_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
@@ -712,11 +706,6 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 	out.CosInstance = (*CosInstance)(unsafe.Pointer(in.CosInstance))
 	out.Ignition = (*Ignition)(unsafe.Pointer(in.Ignition))
 	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *v1beta3.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, out *v1beta3.IBMPowerVSClusterStatus, s conversion.Scope) error {
@@ -971,7 +960,7 @@ func Convert_v1beta3_IBMPowerVSImageList_To_v1beta2_IBMPowerVSImageList(in *v1be
 
 func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *IBMPowerVSImageSpec, out *v1beta3.IBMPowerVSImageSpec, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
-	out.ServiceInstanceID = in.ServiceInstanceID
+	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
 	out.ServiceInstance = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
 	out.Bucket = (*string)(unsafe.Pointer(in.Bucket))
 	out.Object = (*string)(unsafe.Pointer(in.Object))
@@ -981,14 +970,8 @@ func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *
 	return nil
 }
 
-// Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec is an autogenerated conversion function.
-func Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *IBMPowerVSImageSpec, out *v1beta3.IBMPowerVSImageSpec, s conversion.Scope) error {
-	return autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in, out, s)
-}
-
 func autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *v1beta3.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
-	out.ServiceInstanceID = in.ServiceInstanceID
 	out.ServiceInstance = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
 	out.Bucket = (*string)(unsafe.Pointer(in.Bucket))
 	out.Object = (*string)(unsafe.Pointer(in.Object))
@@ -996,11 +979,6 @@ func autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *
 	out.StorageType = in.StorageType
 	out.DeletePolicy = in.DeletePolicy
 	return nil
-}
-
-// Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec is an autogenerated conversion function.
-func Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *v1beta3.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s conversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(in *IBMPowerVSImageStatus, out *v1beta3.IBMPowerVSImageStatus, s conversion.Scope) error {
@@ -1118,7 +1096,7 @@ func Convert_v1beta3_IBMPowerVSMachineList_To_v1beta2_IBMPowerVSMachineList(in *
 }
 
 func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *v1beta3.IBMPowerVSMachineSpec, s conversion.Scope) error {
-	out.ServiceInstanceID = in.ServiceInstanceID
+	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
 	out.ServiceInstance = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
 	out.SSHKey = in.SSHKey
 	out.Image = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
@@ -1137,7 +1115,6 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(
 }
 
 func autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *v1beta3.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s conversion.Scope) error {
-	out.ServiceInstanceID = in.ServiceInstanceID
 	out.ServiceInstance = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
 	out.SSHKey = in.SSHKey
 	out.Image = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))

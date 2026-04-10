@@ -29,7 +29,8 @@ metadata:
     cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
   name: "${CLUSTER_NAME}"
 spec:
-  serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+  serviceInstance:
+    id: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
   network:
     name: "${IBMPOWERVS_NETWORK_NAME}"
   controlPlaneEndpoint:

@@ -180,7 +180,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					UID:  "1",
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "service-instance-1",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
 				},
 			}
 			powervsImage := &infrav1.IBMPowerVSImage{

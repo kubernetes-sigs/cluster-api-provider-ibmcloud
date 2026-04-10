@@ -27,6 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -45,12 +46,12 @@ func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
 			Namespace: "default",
 		},
 		Spec: infrav1.IBMPowerVSImageSpec{
-			ClusterName:       "test-cluster",
-			ServiceInstanceID: "test-service-ID",
-			StorageType:       "foo-tier",
-			Object:            core.StringPtr("foo-obj"),
-			Bucket:            core.StringPtr("foo-bucket"),
-			Region:            core.StringPtr("foo-zone"),
+			ClusterName:     "test-cluster",
+			ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-service-ID")},
+			StorageType:     "foo-tier",
+			Object:          core.StringPtr("foo-obj"),
+			Bucket:          core.StringPtr("foo-bucket"),
+			Region:          core.StringPtr("foo-zone"),
 		},
 	}
 }

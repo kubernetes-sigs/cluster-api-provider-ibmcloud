@@ -49,7 +49,7 @@ func TestFuzzyConversion(t *testing.T) {
 		Scheme:      scheme,
 		Hub:         &infrav1.IBMPowerVSClusterTemplate{},
 		Spoke:       &IBMPowerVSClusterTemplate{},
-		FuzzerFuncs: []fuzzer.FuzzerFuncs{},
+		FuzzerFuncs: []fuzzer.FuzzerFuncs{IBMPowerVSClusterTemplateFuzzFuncs},
 	}))
 	t.Run("for IBMPowerVSMachine", utilconversion.FuzzTestFunc(utilconversion.FuzzTestFuncInput{
 		Scheme:      scheme,
@@ -75,6 +75,7 @@ func IBMPowerVSClusterFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} 
 	return []interface{}{
 		hubIBMPowerVSClusterStatus,
 		spokeIBMPowerVSClusterStatus,
+		spokeIBMPowerVSClusterSpec,
 	}
 }
 
@@ -98,6 +99,24 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 	}
 }
 
+func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) {
+	c.FillNoCustom(in)
+
+	// Ensure ServiceInstance and ServiceInstanceID are in sync for round-trip conversion
+	// This handles the deprecated field migration
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil && *in.ServiceInstance.ID != "" {
+		// If ServiceInstance.ID is set, ensure ServiceInstanceID matches
+		in.ServiceInstanceID = *in.ServiceInstance.ID
+	} else if in.ServiceInstanceID != "" {
+		// If ServiceInstanceID is set, ensure ServiceInstance matches
+		if in.ServiceInstance == nil {
+			in.ServiceInstance = &IBMPowerVSResourceReference{}
+		}
+		id := in.ServiceInstanceID
+		in.ServiceInstance.ID = &id
+	}
+}
+
 func IBMPowerVSMachineFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		hubIBMPowerVSMachineStatus,
@@ -116,6 +135,19 @@ func hubIBMPowerVSMachineStatus(in *infrav1.IBMPowerVSMachineStatus, c randfill.
 	}
 }
 
+func IBMPowerVSClusterTemplateFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
+	return []interface{}{
+		spokeIBMPowerVSClusterTemplateResource,
+	}
+}
+
+func spokeIBMPowerVSClusterTemplateResource(in *IBMPowerVSClusterTemplateResource, c randfill.Continue) {
+	c.FillNoCustom(in)
+
+	// Handle the nested spec
+	spokeIBMPowerVSClusterSpec(&in.Spec, c)
+}
+
 func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
 
@@ -126,6 +158,20 @@ func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) 
 	// Set ImageRef to nil if it has an empty name
 	if in.ImageRef != nil && in.ImageRef.Name == "" {
 		in.ImageRef = nil
+	}
+
+	// Ensure ServiceInstance and ServiceInstanceID are in sync for round-trip conversion
+	// This handles the deprecated field migration
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil && *in.ServiceInstance.ID != "" {
+		// If ServiceInstance.ID is set, ensure ServiceInstanceID matches
+		in.ServiceInstanceID = *in.ServiceInstance.ID
+	} else if in.ServiceInstanceID != "" {
+		// If ServiceInstanceID is set, ensure ServiceInstance matches
+		if in.ServiceInstance == nil {
+			in.ServiceInstance = &IBMPowerVSResourceReference{}
+		}
+		id := in.ServiceInstanceID
+		in.ServiceInstance.ID = &id
 	}
 }
 
@@ -142,8 +188,15 @@ func spokeIBMPowerVSMachineStatus(in *IBMPowerVSMachineStatus, c randfill.Contin
 func IBMPowerVSMachineTemplateFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		hubIBMPowerVSMachineTemplateResource,
-		spokeIBMPowerVSMachineSpec,
+		spokeIBMPowerVSMachineTemplateResource,
 	}
+}
+
+func spokeIBMPowerVSMachineTemplateResource(in *IBMPowerVSMachineTemplateResource, c randfill.Continue) {
+	c.FillNoCustom(in)
+
+	// Handle the nested spec
+	spokeIBMPowerVSMachineSpec(&in.Spec, c)
 }
 
 func hubIBMPowerVSMachineTemplateResource(in *infrav1.IBMPowerVSMachineTemplateResource, c randfill.Continue) {
@@ -156,6 +209,25 @@ func IBMPowerVSImageFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
 		hubIBMPowerVSImageStatus,
 		spokeIBMPowerVSImageStatus,
+		spokeIBMPowerVSImageSpec,
+	}
+}
+
+func spokeIBMPowerVSImageSpec(in *IBMPowerVSImageSpec, c randfill.Continue) {
+	c.FillNoCustom(in)
+
+	// Ensure ServiceInstance and ServiceInstanceID are in sync for round-trip conversion
+	// This handles the deprecated field migration
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil && *in.ServiceInstance.ID != "" {
+		// If ServiceInstance.ID is set, ensure ServiceInstanceID matches
+		in.ServiceInstanceID = *in.ServiceInstance.ID
+	} else if in.ServiceInstanceID != "" {
+		// If ServiceInstanceID is set, ensure ServiceInstance matches
+		if in.ServiceInstance == nil {
+			in.ServiceInstance = &IBMPowerVSResourceReference{}
+		}
+		id := in.ServiceInstanceID
+		in.ServiceInstance.ID = &id
 	}
 }
 

@@ -69,7 +69,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
 			},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -111,7 +111,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -141,7 +141,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				GenerateName: "powervs-test-",
 				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 			},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -196,7 +196,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstanceID: "foo"},
+			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -842,7 +842,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 						Name: "capi-powervs-cluster",
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstanceID: "service-instance-1",
+						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
 					},
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
@@ -864,7 +864,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 						Name: "capi-powervs-cluster",
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstanceID: "service-instance-1",
+						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
 					},
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
@@ -1268,8 +1268,8 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			ControllerCreated: ptr.To(true),
 		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
-			ServiceInstanceID: "service-instance-1",
-			Ignition:          &infrav1.Ignition{Version: "3.4"},
+			ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
+			Ignition:        &infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1300,8 +1300,8 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
-			ServiceInstanceID: "service-instance-1",
-			Ignition:          &infrav1.Ignition{Version: "3.4"},
+			ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
+			Ignition:        &infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1697,7 +1697,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstanceID: "serviceInstanceID",
+							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("serviceInstanceID")},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
 							Network:         &infrav1.ResourceReference{ID: ptr.To("NetworkID")},
@@ -1735,7 +1735,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstanceID: "serviceInstanceID",
+							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("serviceInstanceID")},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
 							Network:         &infrav1.ResourceReference{ID: ptr.To("netID")},

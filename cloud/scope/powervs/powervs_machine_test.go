@@ -339,7 +339,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 			machineScope: MachineScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstanceID: "service-instance-1",
+						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
 					},
 				},
 			},
@@ -366,7 +366,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 						},
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstanceID: "service-instance-in-spec",
+						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-in-spec")},
 					},
 				},
 			},

@@ -19,6 +19,8 @@ package powervs
 import (
 	"testing"
 
+	"k8s.io/utils/ptr"
+
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 
 	. "github.com/onsi/gomega"
@@ -39,7 +41,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstanceID: "test-instance1",
+							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance1")},
 						},
 					},
 				},
@@ -48,7 +50,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstanceID: "test-instance1",
+							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance1")},
 						},
 					},
 				},
@@ -61,7 +63,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstanceID: "test-instance1",
+							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance1")},
 						},
 					},
 				},
@@ -70,7 +72,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstanceID: "test-instance2",
+							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance2")},
 						},
 					},
 				},

@@ -72,7 +72,8 @@ spec:
         port: ${API_SERVER_PORT:=6443}
       network:
         name: ${IBMPOWERVS_NETWORK_NAME}
-      serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+      serviceInstance:
+        id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
@@ -286,7 +287,8 @@ spec:
         name: ${IBMPOWERVS_NETWORK_NAME}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+      serviceInstance:
+        id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
 ---
@@ -304,7 +306,8 @@ spec:
         name: ${IBMPOWERVS_NETWORK_NAME}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      serviceInstanceID: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+      serviceInstance:
+        id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
 ---

@@ -35,7 +35,8 @@ metadata:
 spec:
   template:
     spec:
-      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      serviceInstance:
+        id: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
         name: "${IBMPOWERVS_IMAGE_NAME}"
@@ -53,7 +54,8 @@ metadata:
 spec:
   template:
     spec:
-      serviceInstanceID: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      serviceInstance:
+        id: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
         name: "${IBMPOWERVS_IMAGE_NAME}"
