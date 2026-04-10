@@ -402,6 +402,58 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Should not panic with nil protocol in additionalListener",
+			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: nil,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			newPowervsCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					ServiceInstanceID: "capi-si-id",
+					Network: infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-net-id"),
+					},
+					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						{
+							Name: "load-balancer-1",
+							AdditionalListeners: []infrav1.AdditionalListenerSpec{
+								{
+									Port:     23,
+									Protocol: nil,
+									Selector: metav1.LabelSelector{
+										MatchLabels: map[string]string{
+											"listener-selector": "port-23",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {
