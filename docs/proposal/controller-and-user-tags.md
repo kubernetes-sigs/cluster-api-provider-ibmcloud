@@ -46,8 +46,8 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
    If a resource is created successfully but tag attachment fails then:
    
-   1. Retry Attempts: The controller retries attaching the tag multiple times over a configured period.
-   2. After Retries Fail: If all retries fail, the controller:
+   1. Reconciliation Attempts: The controller re-attempts attaching the tag during subsequent reconciliations.
+   2. If reconciliation continues to fail, the controller:
    	  - Sets a warning condition on the cluster. Below is the condition example.
    	  - Adds an error message like: "Failed to attach tag to newly created Workspace <workspace-name>. Please delete the cluster and recreate it in different region."
    	  ```
