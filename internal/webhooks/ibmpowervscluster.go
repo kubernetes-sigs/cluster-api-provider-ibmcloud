@@ -251,13 +251,29 @@ func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1.IBMPower
 	newLoadBalancerListeners := map[string]metav1.LabelSelector{}
 	for _, loadbalancer := range newCluster.Spec.LoadBalancers {
 		for _, additionalListener := range loadbalancer.AdditionalListeners {
-			newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener.Selector
+			var key string
+			if additionalListener.Protocol != nil {
+				key = fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)
+			} else {
+				// Use default protocol marker when protocol is not specified
+				key = fmt.Sprintf("%d-<default>", additionalListener.Port)
+			}
+			newLoadBalancerListeners[key] = additionalListener.Selector
 		}
 	}
 	for _, loadbalancer := range oldCluster.Spec.LoadBalancers {
 		for _, additionalListener := range loadbalancer.AdditionalListeners {
-			if selector, ok := newLoadBalancerListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)]; ok && !reflect.DeepEqual(selector, additionalListener.Selector) {
-				allErrs = append(allErrs, field.Forbidden(field.NewPath("selector"), "Selector is immutable"))
+			var key string
+			if additionalListener.Protocol != nil {
+				key = fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)
+			} else {
+				// Use default protocol marker when protocol is not specified
+				key = fmt.Sprintf("%d-<default>", additionalListener.Port)
+			}
+			if selector, ok := newLoadBalancerListeners[key]; ok && !reflect.DeepEqual(selector, additionalListener.Selector) {
+				allErrs = append(allErrs, field.Forbidden(
+					field.NewPath("spec", "loadBalancers", "additionalListeners", "selector"),
+					fmt.Sprintf("Selector is immutable for port %d", additionalListener.Port)))
 			}
 		}
 	}
