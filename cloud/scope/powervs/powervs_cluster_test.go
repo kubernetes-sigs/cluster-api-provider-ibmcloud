@@ -2298,7 +2298,9 @@ func TestIsServiceInstanceExists(t *testing.T) {
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstanceID: "instance-id",
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("instance-id"),
+					},
 				},
 			},
 		}

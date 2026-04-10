@@ -415,12 +415,6 @@ spec:
                             minLength: 1
                             type: string
                         type: object
-                      serviceInstanceID:
-                        description: |-
-                          serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
-
-                          Deprecated: use ServiceInstance instead
-                        type: string
                       sshKey:
                         description: sshKey is the name of the SSH key pair provided
                           to the vsi for authenticating users.
@@ -442,7 +436,6 @@ spec:
                         type: string
                     required:
                     - network
-                    - serviceInstanceID
                     type: object
                 required:
                 - spec

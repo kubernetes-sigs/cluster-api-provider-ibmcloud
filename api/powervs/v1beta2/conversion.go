@@ -382,6 +382,18 @@ func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in *
 		}
 	}
 
+	// Manual conversion for ServiceInstanceID to ServiceInstance
+	// Only set ServiceInstance if ServiceInstanceID was explicitly set in v1beta2
+	if in.ServiceInstanceID != "" {
+		if out.ServiceInstance == nil {
+			out.ServiceInstance = &infrav1.IBMPowerVSResourceReference{}
+		}
+		out.ServiceInstance.ID = ptr.To(in.ServiceInstanceID)
+	} else if in.ServiceInstance == nil {
+		// If ServiceInstanceID is empty and ServiceInstance is nil in v1beta2, keep it nil in v1beta3
+		out.ServiceInstance = nil
+	}
+
 	return nil
 }
 
@@ -399,6 +411,81 @@ func Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 		}
 	} else {
 		out.ImageRef = nil
+	}
+
+	// Manual conversion for ServiceInstance to ServiceInstanceID (deprecated field)
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil {
+		out.ServiceInstanceID = *in.ServiceInstance.ID
+	}
+
+	return nil
+}
+
+// Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec converts v1beta2 IBMPowerVSClusterSpec to v1beta3.
+func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, out *infrav1.IBMPowerVSClusterSpec, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Manual conversion for ServiceInstanceID to ServiceInstance
+	// Only set ServiceInstance if ServiceInstanceID was explicitly set in v1beta2
+	if in.ServiceInstanceID != "" {
+		if out.ServiceInstance == nil {
+			out.ServiceInstance = &infrav1.IBMPowerVSResourceReference{}
+		}
+		out.ServiceInstance.ID = ptr.To(in.ServiceInstanceID)
+	} else if in.ServiceInstance == nil {
+		// If ServiceInstanceID is empty and ServiceInstance is nil in v1beta2, keep it nil in v1beta3
+		out.ServiceInstance = nil
+	}
+
+	return nil
+}
+
+// Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec converts v1beta2 IBMPowerVSImageSpec to v1beta3.
+func Convert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *IBMPowerVSImageSpec, out *infrav1.IBMPowerVSImageSpec, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Manual conversion for ServiceInstanceID to ServiceInstance
+	// Only set ServiceInstance if ServiceInstanceID was explicitly set in v1beta2
+	if in.ServiceInstanceID != "" {
+		if out.ServiceInstance == nil {
+			out.ServiceInstance = &infrav1.IBMPowerVSResourceReference{}
+		}
+		out.ServiceInstance.ID = ptr.To(in.ServiceInstanceID)
+	} else if in.ServiceInstance == nil {
+		// If ServiceInstanceID is empty and ServiceInstance is nil in v1beta2, keep it nil in v1beta3
+		out.ServiceInstance = nil
+	}
+
+	return nil
+}
+
+// Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec converts v1beta3 IBMPowerVSClusterSpec to v1beta2.
+func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Manual conversion for ServiceInstance to ServiceInstanceID (deprecated field)
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil {
+		out.ServiceInstanceID = *in.ServiceInstance.ID
+	}
+
+	return nil
+}
+
+// Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec converts v1beta3 IBMPowerVSImageSpec to v1beta2.
+func Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *infrav1.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s apimachineryconversion.Scope) error {
+	if err := autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// Manual conversion for ServiceInstance to ServiceInstanceID (deprecated field)
+	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil {
+		out.ServiceInstanceID = *in.ServiceInstance.ID
 	}
 
 	return nil

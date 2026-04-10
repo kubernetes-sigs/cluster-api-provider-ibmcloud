@@ -342,12 +342,6 @@ spec:
                     minLength: 1
                     type: string
                 type: object
-              serviceInstanceID:
-                description: |-
-                  serviceInstanceID is the id of the power cloud instance where the image will get imported.
-
-                  Deprecated: use ServiceInstance instead
-                type: string
               storageType:
                 default: tier1
                 description: storageType is the type of storage, storage pool with
@@ -362,7 +356,6 @@ spec:
             - clusterName
             - object
             - region
-            - serviceInstanceID
             type: object
           status:
             description: status defines the observed state of IBMPowerVSImage

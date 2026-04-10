@@ -46,11 +46,6 @@ func init() {
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
 type IBMPowerVSMachineSpec struct {
-	// serviceInstanceID is the id of the power cloud instance where the vsi instance will get deployed.
-	//
-	// Deprecated: use ServiceInstance instead
-	ServiceInstanceID string `json:"serviceInstanceID"`
-
 	// serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
 	// Power VS workspace is a container for all Power VS instances at a specific geographic region.
 	// serviceInstance can be created via IBM Cloud catalog or CLI.
