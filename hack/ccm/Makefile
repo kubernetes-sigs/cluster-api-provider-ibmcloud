@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Go
-GO_VERSION ?=1.25.8
+GO_VERSION ?=1.25.9
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 REGISTRY=gcr.io/k8s-staging-capi-ibmcloud
