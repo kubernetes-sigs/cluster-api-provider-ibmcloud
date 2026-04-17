@@ -72,6 +72,82 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "Should fail to validate IBMPowerVSMachine - invalid SystemType",
+			powerVSMachine: &infrav1.IBMPowerVSMachine{
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					ServiceInstanceID: "capi-si-id",
+					SystemType:        "invalid-type",
+					ProcessorType:     infrav1.PowerVSProcessorTypeShared,
+					MemoryGiB:         4,
+					Processors:        intstr.FromString("0.25"),
+					Network: infrav1.IBMPowerVSResourceReference{
+						Name: ptr.To("capi-net"),
+					},
+					Image: &infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-image-id"),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Should successfully validate IBMPowerVSMachine - valid SystemType s922",
+			powerVSMachine: &infrav1.IBMPowerVSMachine{
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					ServiceInstanceID: "capi-si-id",
+					SystemType:        "s922",
+					ProcessorType:     infrav1.PowerVSProcessorTypeShared,
+					MemoryGiB:         4,
+					Processors:        intstr.FromString("0.25"),
+					Network: infrav1.IBMPowerVSResourceReference{
+						Name: ptr.To("capi-net"),
+					},
+					Image: &infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-image-id"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should successfully validate IBMPowerVSMachine - valid SystemType e1080",
+			powerVSMachine: &infrav1.IBMPowerVSMachine{
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					ServiceInstanceID: "capi-si-id",
+					SystemType:        "e1080",
+					ProcessorType:     infrav1.PowerVSProcessorTypeShared,
+					MemoryGiB:         4,
+					Processors:        intstr.FromString("0.25"),
+					Network: infrav1.IBMPowerVSResourceReference{
+						Name: ptr.To("capi-net"),
+					},
+					Image: &infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-image-id"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should successfully validate IBMPowerVSMachine - empty SystemType (optional)",
+			powerVSMachine: &infrav1.IBMPowerVSMachine{
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					ServiceInstanceID: "capi-si-id",
+					SystemType:        "",
+					ProcessorType:     infrav1.PowerVSProcessorTypeShared,
+					MemoryGiB:         4,
+					Processors:        intstr.FromString("0.25"),
+					Network: infrav1.IBMPowerVSResourceReference{
+						Name: ptr.To("capi-net"),
+					},
+					Image: &infrav1.IBMPowerVSResourceReference{
+						ID: ptr.To("capi-image-id"),
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "Should fail to validate IBMPowerVSMachine - no Image or Imagref in Spec",
 			powerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{

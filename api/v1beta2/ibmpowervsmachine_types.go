@@ -17,6 +17,12 @@ limitations under the License.
 package v1beta2
 
 import (
+	"context"
+	"fmt"
+	"sort"
+
+	"github.com/IBM-Cloud/power-go-client/clients/instance"
+	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -81,7 +87,9 @@ type IBMPowerVSMachineSpec struct {
 	// When omitted, this means that the user has no opinion and the platform is left to choose a
 	// reasonable default, which is subject to change over time. The current default is s922 which is generally available.
 	// + This is not an enum because we expect other values to be added later which should be supported implicitly.
-	// +kubebuilder:validation:Enum:="s922";"e980";"s1022";"e1050";"e1080";"s1122";""
+	// + Validation of supported system types is performed dynamically by the validating webhook at runtime.
+	// + The webhook calls GetAllSupportedSystemTypes() to fetch current supported types from PowerVS API.
+	// +kubebuilder:validation:Pattern=`^[a-z][0-9]+$|^$`
 	// +optional
 	SystemType string `json:"systemType,omitempty"`
 
@@ -303,4 +311,51 @@ type IBMPowerVSMachineList struct {
 
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSMachine{}, &IBMPowerVSMachineList{})
+}
+
+// GetAllSupportedSystemTypes retrieves a string list of all current supported system types across ALL PowerVS regions.
+// This function dynamically queries the PowerVS API to get all datacenters and aggregates their supported system types.
+func GetAllSupportedSystemTypes(ctx context.Context, piSession *ibmpisession.IBMPISession) ([]string, error) {
+	if piSession == nil {
+		return nil, fmt.Errorf("PISession is required to fetch supported system types")
+	}
+
+	// Dynamically get all available datacenters from PowerVS API
+	datacenterClient := instance.NewIBMPIDatacenterClient(ctx, piSession, "")
+	datacenters, err := datacenterClient.GetAll()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all datacenters: %w", err)
+	}
+
+	if datacenters == nil || len(datacenters.Datacenters) == 0 {
+		return nil, fmt.Errorf("no datacenters found")
+	}
+
+	// Use a map to collect unique system types across all datacenters
+	systemTypesMap := make(map[string]bool)
+
+	for _, dc := range datacenters.Datacenters {
+		// Skip datacenters without system type information
+		if dc.CapabilitiesDetails == nil || dc.CapabilitiesDetails.SupportedSystems == nil {
+			continue
+		}
+
+		// Add all system types from this datacenter (map automatically deduplicates)
+		for _, sysType := range dc.CapabilitiesDetails.SupportedSystems.General {
+			systemTypesMap[sysType] = true
+		}
+	}
+
+	if len(systemTypesMap) == 0 {
+		return nil, fmt.Errorf("no system types found across any PowerVS datacenters")
+	}
+
+	// Convert map to sorted slice for consistent output
+	systemTypes := make([]string, 0, len(systemTypesMap))
+	for sysType := range systemTypesMap {
+		systemTypes = append(systemTypes, sysType)
+	}
+	sort.Strings(systemTypes)
+
+	return systemTypes, nil
 }
