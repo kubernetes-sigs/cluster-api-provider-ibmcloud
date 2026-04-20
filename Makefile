@@ -571,7 +571,7 @@ verify-container-images: ## Verify container images
 .PHONY: verify-govulncheck
 verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
 	$(GOVULNCHECK) ./... && R1=$$? || R1=$$?; \
-	$(GOVULNCHECK) -C "$(TOOLS_DIR)" ./... && R2=$$? || R2=$$?; \
+	cd $(TOOLS_DIR) && echo 'package tools' > temp_govulncheck.go && $(REPO_ROOT)/$(GOVULNCHECK) ./... && R2=$$? || R2=$$? && rm -f temp_govulncheck.go; \
 	if [ "$$R1" -ne "0" ] || [ "$$R2" -ne "0" ]; then \
 		exit 1; \
 	fi
