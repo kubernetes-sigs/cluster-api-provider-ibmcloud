@@ -24,7 +24,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
-	github.com/ppc64le-cloud/powervs-utils v0.0.0-20250403153021-219b161805db
+	github.com/ppc64le-cloud/powervs-utils v0.0.0-20260417184652-84e90bc52f3d
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.11.1
