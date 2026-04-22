@@ -126,6 +126,10 @@ GOVULNCHECK := $(BIN_DIR)/govulncheck
 $(GOVULNCHECK): $(BIN_DIR) go.mod go.sum ## Build a local copy of govulncheck.
 	go build -tags=capibmtools -o $@ golang.org/x/vuln/cmd/govulncheck
 
+RELEASE_NOTES_VERSION := v0.21.1
 RELEASE_NOTES := $(BIN_DIR)/release-notes
-$(RELEASE_NOTES): $(BIN_DIR) go.mod go.sum ## Build a local copy of release-notes.
-	go build -tags=capibmtools -o $@ k8s.io/release/cmd/release-notes
+$(RELEASE_NOTES): $(BIN_DIR) ## Download release-notes binary.
+	@echo "Downloading release-notes $(RELEASE_NOTES_VERSION)"
+	@curl -sSfL https://github.com/kubernetes/release/releases/download/$(RELEASE_NOTES_VERSION)/release-notes-$(shell go env GOARCH)-$(shell go env GOOS) -o $@
+	@chmod +x $@
+
