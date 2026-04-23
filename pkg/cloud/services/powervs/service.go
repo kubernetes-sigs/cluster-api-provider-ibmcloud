@@ -193,6 +193,11 @@ func (s *Service) GetNetworkByName(networkName string) (*models.NetworkReference
 	return network, nil
 }
 
+// GetPISession returns the IBMPISession for this service.
+func (s *Service) GetPISession() *ibmpisession.IBMPISession {
+	return s.session
+}
+
 // GetDatacenterCapabilities fetches the datacenter capabilities for the given zone.
 func (s *Service) GetDatacenterCapabilities(zone string) (map[string]bool, error) {
 	// though the function name is WithDatacenterRegion it takes zone as parameter

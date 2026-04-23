@@ -17,6 +17,7 @@ limitations under the License.
 package powervs
 
 import (
+	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 )
 
@@ -45,4 +46,5 @@ type PowerVS interface {
 	WithClients(options ServiceOptions) *Service
 	GetNetworkByName(networkName string) (*models.NetworkReference, error)
 	GetDatacenterCapabilities(zone string) (map[string]bool, error)
+	GetPISession() *ibmpisession.IBMPISession
 }

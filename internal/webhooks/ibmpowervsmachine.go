@@ -146,32 +146,24 @@ func validateIBMPowerVSMachineProcessors(machine *infrav1.IBMPowerVSMachine) *fi
 	return nil
 }
 
-// validateIBMPowerVSMachineSystemType validates the system type against dynamically fetched supported types.
-// NOTE: This validation requires a PISession which is not available in the webhook context.
-// For now, we use a fallback list of known system types.
-// In production I suggest:
-// 1. Implementing a caching mechanism that periodically fetches supported types
-// 2. Or use a ConfigMap to store the supported types list (still hardcoded)
-// 3. Or accept any system type and let the controller handle validation
+// validateIBMPowerVSMachineSystemType validates the system type format.
+// NOTE: Dynamic validation against PowerVS API is performed by the controller during reconciliation.
+// The webhook only validates the format to ensure it matches the expected pattern.
+// This follows the CAPI architectural pattern where:
+//   - Webhooks protect invariants (format, required fields, basic structure)
+//   - Controllers enforce reality (cloud API validation, resource availability)
+//
+// The kubebuilder validation pattern `^[a-z][0-9]+$|^$` is already enforced by the API server,
+// which allows any systemType matching PowerVS naming convention (e.g., s922, e980, s1122, etc.).
+// The controller will validate against actual PowerVS capabilities at reconciliation time.
 func validateIBMPowerVSMachineSystemType(machine *infrav1.IBMPowerVSMachine) *field.Error {
-	// If SystemType is empty, it's optional and valid
+	// SystemType is optional - empty string is valid
 	if machine.Spec.SystemType == "" {
 		return nil
 	}
 
-	// Fallback to known system types since we don't have PISession in webhook context
-	supportedTypes := []string{"s922", "e980", "s1022", "s1122", "e1050", "e1080"}
-
-	// Check if the provided system type is in the supported list
-	for _, validType := range supportedTypes {
-		if machine.Spec.SystemType == validType {
-			return nil
-		}
-	}
-
-	return field.Invalid(
-		field.NewPath("spec", "systemType"),
-		machine.Spec.SystemType,
-		fmt.Sprintf("must be one of: %v", supportedTypes),
-	)
+	// The pattern validation is handled by kubebuilder at the API server level.
+	// No additional validation is needed here - the controller will validate
+	// against actual PowerVS supported types during reconciliation.
+	return nil
 }

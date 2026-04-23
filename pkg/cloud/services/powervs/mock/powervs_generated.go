@@ -27,6 +27,7 @@ package mock
 import (
 	reflect "reflect"
 
+	ibmpisession "github.com/IBM-Cloud/power-go-client/ibmpisession"
 	models "github.com/IBM-Cloud/power-go-client/power/models"
 	gomock "go.uber.org/mock/gomock"
 	powervs "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -335,6 +336,20 @@ func (m *MockPowerVS) GetNetworkByName(networkName string) (*models.NetworkRefer
 func (mr *MockPowerVSMockRecorder) GetNetworkByName(networkName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByName", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByName), networkName)
+}
+
+// GetPISession mocks base method.
+func (m *MockPowerVS) GetPISession() *ibmpisession.IBMPISession {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPISession")
+	ret0, _ := ret[0].(*ibmpisession.IBMPISession)
+	return ret0
+}
+
+// GetPISession indicates an expected call of GetPISession.
+func (mr *MockPowerVSMockRecorder) GetPISession() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPISession", reflect.TypeOf((*MockPowerVS)(nil).GetPISession))
 }
 
 // WithClients mocks base method.

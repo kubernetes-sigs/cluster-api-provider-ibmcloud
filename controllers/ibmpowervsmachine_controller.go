@@ -312,6 +312,36 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		return reconcile.Result{}, nil
 	}
 
+	// Validate systemType before creating the machine
+	if machineScope.IBMPowerVSMachine.Spec.SystemType != "" {
+		valid, supportedTypes, err := validateSystemType(ctx, machineScope)
+		if err != nil {
+			log.Error(err, "Failed to validate systemType")
+			v1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyCondition, infrav1.InvalidConfigurationReason, clusterv1beta1.ConditionSeverityError, "Failed to validate systemType: %s", err.Error())
+			v1beta2conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
+				Type:    infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition,
+				Status:  metav1.ConditionFalse,
+				Reason:  infrav1.InvalidConfigurationReason,
+				Message: fmt.Sprintf("Failed to validate systemType: %v", err),
+			})
+			return ctrl.Result{}, fmt.Errorf("failed to validate systemType: %w", err)
+		}
+		if !valid {
+			errMsg := fmt.Sprintf("SystemType '%s' is not supported. Supported types: %v", machineScope.IBMPowerVSMachine.Spec.SystemType, supportedTypes)
+			log.Info(errMsg)
+			v1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyCondition, infrav1.InvalidConfigurationReason, clusterv1beta1.ConditionSeverityError, "%s", errMsg)
+			v1beta2conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
+				Type:    infrav1.IBMPowerVSMachineInstanceReadyV1Beta2Condition,
+				Status:  metav1.ConditionFalse,
+				Reason:  infrav1.InvalidConfigurationReason,
+				Message: errMsg,
+			})
+			// Don't return error - just mark as invalid and don't create VM
+			return ctrl.Result{}, nil
+		}
+		log.Info("SystemType validation passed", "systemType", machineScope.IBMPowerVSMachine.Spec.SystemType)
+	}
+
 	machine, err := machineScope.CreateMachine(ctx)
 	if err != nil {
 		log.Error(err, "Unable to create PowerVS machine")

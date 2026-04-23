@@ -87,8 +87,10 @@ type IBMPowerVSMachineSpec struct {
 	// When omitted, this means that the user has no opinion and the platform is left to choose a
 	// reasonable default, which is subject to change over time. The current default is s922 which is generally available.
 	// + This is not an enum because we expect other values to be added later which should be supported implicitly.
-	// + Validation of supported system types is performed dynamically by the validating webhook at runtime.
-	// + The webhook calls GetAllSupportedSystemTypes() to fetch current supported types from PowerVS API.
+	// + The pattern validation allows any systemType matching PowerVS naming convention (lowercase letter + numbers).
+	// + Dynamic validation against PowerVS API is performed by the controller during reconciliation.
+	// + The controller validates the systemType against currentPowerVS datacenter capabilities.
+	// + If the systemType is not supported, the machine will be marked with InvalidConfiguration condition.
 	// +kubebuilder:validation:Pattern=`^[a-z][0-9]+$|^$`
 	// +optional
 	SystemType string `json:"systemType,omitempty"`
