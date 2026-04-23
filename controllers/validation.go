@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package powervs
+package controllers
 
 import (
 	"context"
@@ -23,7 +23,7 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 
-	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope"
 )
 
 // validateSystemType validates that the specified systemType is supported by PowerVS.
@@ -33,7 +33,7 @@ import (
 //   - bool: true if valid (or empty, since systemType is optional)
 //   - []string: list of supported system types (for error messages)
 //   - error: any error encountered during validation
-func validateSystemType(ctx context.Context, machineScope *powervsscope.MachineScope) (bool, []string, error) {
+func validateSystemType(ctx context.Context, machineScope *powervsscope.PowerVSMachineScope) (bool, []string, error) {
 	systemType := machineScope.IBMPowerVSMachine.Spec.SystemType
 
 	// SystemType is optional - empty string is valid
