@@ -46,10 +46,9 @@ This proposal presents adding two kinds of tags to the resources created by cont
 
    If a resource is created successfully but tag attachment fails then:
    
-   1. Reconciliation Attempts: The controller re-attempts attaching the tag during subsequent reconciliations.
-   2. If reconciliation continues to fail, the controller:
-   	  - Sets a warning condition on the cluster. Below is the condition example.
-   	  - Adds an error message like: "Failed to attach tag to newly created Workspace <workspace-name>. Please delete the cluster and recreate it in different region."
+   1. Reconciliation Attempts: The controller attempts attaching the tag during reconciliations.
+   2. If tag attachment fails, the controller:
+   	  - Sets a condition on the cluster, condition example for workspace. "Failed to attach tag to newly created Workspace <workspace-name>. Please delete the cluster and recreate it in different region."
    	  ```
    	  status:
    	        conditions:
@@ -74,11 +73,12 @@ This proposal presents adding two kinds of tags to the resources created by cont
    	            status: "False"
    	            type: WorkspaceReady
    	  ```
-   3. Allows the cluster creation to proceed and complete successfully despite the tag attachment failure.
+   3. The controller will try to check on each reconciliations if tag is attached. Since tag attachment is failing it will try to attach the tag again. If it is failing again. It will repeat the same process. If tag attachment is succesfull, it will move ahead with other resources creation.
+   4. If the tag attachment continues to fail, reconciliations will be happening infinityly. Then user has to intervene.
 
    - **Deletion Behavior**
 
-   	 When the user triggers deletion of a cluster where tag attachment previously failed, the controller will check the condition status that is set during tag attachment failure. Based on this condition set, the controller will determine whether to proceed with resource deletion.
+   	 When the user triggers deletion of a cluster where tag attachment previously failed, the controller will check the condition that is set during tag attachment failure. Since the condition set, the controller will proceed with resource deletion.
     
  
  #### Creating a new cluster with reusing pre-created resources
