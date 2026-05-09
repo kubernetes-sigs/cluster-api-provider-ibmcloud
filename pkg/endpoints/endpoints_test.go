@@ -22,6 +22,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testVPCHost   = "https://vpchost:8080"
+	testRCHost    = "https://rchost:8080"
+	testRegionLon = "lon"
+	testRegionUS  = "us-south"
+	testPowerVSID = "powervs"
+)
+
 func TestParseFlags(t *testing.T) {
 	testCases := []struct {
 		name           string
@@ -43,11 +51,11 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			name:        "single region, single vpc service",
-			flagToParse: "eu-gb:vpc=https://vpchost:8080",
+			flagToParse: "eu-gb:vpc=" + testVPCHost,
 			expectedOutput: []ServiceEndpoint{
 				{
 					ID:     "vpc",
-					URL:    "https://vpchost:8080",
+					URL:    testVPCHost,
 					Region: "eu-gb",
 				},
 			},
@@ -55,36 +63,36 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			name:        "single region, single powervs service",
-			flagToParse: "lon:powervs=https://pvshost:8080",
+			flagToParse: testRegionLon + ":powervs=https://pvshost:8080",
 			expectedOutput: []ServiceEndpoint{
 				{
-					ID:     "powervs",
+					ID:     testPowerVSID,
 					URL:    "https://pvshost:8080",
-					Region: "lon",
+					Region: testRegionLon,
 				},
 			},
 			expectedError: nil,
 		},
 		{
 			name:        "single region, multiple services",
-			flagToParse: "lon:powervs=https://pvshost:8080,rc=https://rchost:8080",
+			flagToParse: testRegionLon + ":powervs=https://pvshost:8080,rc=" + testRCHost,
 			expectedOutput: []ServiceEndpoint{
 				{
-					ID:     "powervs",
+					ID:     testPowerVSID,
 					URL:    "https://pvshost:8080",
-					Region: "lon",
+					Region: testRegionLon,
 				},
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "lon",
+					URL:    testRCHost,
+					Region: testRegionLon,
 				},
 			},
 			expectedError: nil,
 		},
 		{
 			name:           "single region, duplicate service",
-			flagToParse:    "eu-gb:vpc=https://localhost:8080,vpc=https://vpchost:8080",
+			flagToParse:    "eu-gb:vpc=https://localhost:8080,vpc=" + testVPCHost,
 			expectedOutput: nil,
 			expectedError:  errServiceEndpointDuplicateID,
 		},
@@ -96,49 +104,49 @@ func TestParseFlags(t *testing.T) {
 		},
 		{
 			name:        "multiples regions",
-			flagToParse: "eu-gb:vpc=https://vpchost:8080;lon:powervs=https://pvshost:8080,rc=https://rchost:8080",
+			flagToParse: "eu-gb:vpc=" + testVPCHost + ";" + testRegionLon + ":powervs=https://pvshost:8080,rc=" + testRCHost,
 			expectedOutput: []ServiceEndpoint{
 				{
 					ID:     "vpc",
-					URL:    "https://vpchost:8080",
+					URL:    testVPCHost,
 					Region: "eu-gb",
 				},
 				{
-					ID:     "powervs",
+					ID:     testPowerVSID,
 					URL:    "https://pvshost:8080",
-					Region: "lon",
+					Region: testRegionLon,
 				},
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "lon",
+					URL:    testRCHost,
+					Region: testRegionLon,
 				},
 			},
 			expectedError: nil,
 		},
 		{
 			name:        "multiples regions, multiple services",
-			flagToParse: "eu-gb:vpc=https://vpchost:8080;lon:powervs=https://pvshost:8080,rc=https://rchost:8080;us-south:powervs=https://pvshost-us:8080",
+			flagToParse: "eu-gb:vpc=" + testVPCHost + ";" + testRegionLon + ":powervs=https://pvshost:8080,rc=" + testRCHost + ";" + testRegionUS + ":powervs=https://pvshost-us:8080",
 			expectedOutput: []ServiceEndpoint{
 				{
 					ID:     "vpc",
-					URL:    "https://vpchost:8080",
+					URL:    testVPCHost,
 					Region: "eu-gb",
 				},
 				{
-					ID:     "powervs",
+					ID:     testPowerVSID,
 					URL:    "https://pvshost:8080",
-					Region: "lon",
+					Region: testRegionLon,
 				},
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "lon",
+					URL:    testRCHost,
+					Region: testRegionLon,
 				},
 				{
-					ID:     "powervs",
+					ID:     testPowerVSID,
 					URL:    "https://pvshost-us:8080",
-					Region: "us-south",
+					Region: testRegionUS,
 				},
 			},
 			expectedError: nil,
@@ -169,21 +177,21 @@ func TestFetchVPCEndpoint(t *testing.T) {
 	}{
 		{
 			name:            "Return constructed endpoint",
-			region:          "us-south",
+			region:          testRegionUS,
 			serviceEndpoint: []ServiceEndpoint{},
 			expectedOutput:  "https://us-south.iaas.cloud.ibm.com/v1",
 		},
 		{
 			name:   "Return fetched endpoint",
-			region: "us-south",
+			region: testRegionUS,
 			serviceEndpoint: []ServiceEndpoint{
 				{
 					ID:     "vpc",
-					URL:    "https://vpchost:8080",
-					Region: "us-south",
+					URL:    testVPCHost,
+					Region: testRegionUS,
 				},
 			},
-			expectedOutput: "https://vpchost:8080",
+			expectedOutput: testVPCHost,
 		},
 	}
 
@@ -204,18 +212,18 @@ func TestFetchPVSEndpoint(t *testing.T) {
 	}{
 		{
 			name:            "Return empty endpoint",
-			region:          "us-south",
+			region:          testRegionUS,
 			serviceEndpoint: []ServiceEndpoint{},
 			expectedOutput:  "",
 		},
 		{
 			name:   "Return fetched endpoint",
-			region: "us-south",
+			region: testRegionUS,
 			serviceEndpoint: []ServiceEndpoint{
 				{
-					ID:     "powervs",
+					ID:     testPowerVSID,
 					URL:    "https://powervshost:8080",
-					Region: "us-south",
+					Region: testRegionUS,
 				},
 			},
 			expectedOutput: "https://powervshost:8080",
@@ -246,11 +254,11 @@ func TestFetchRCEndpoint(t *testing.T) {
 			serviceEndpoint: []ServiceEndpoint{
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "us-south",
+					URL:    testRCHost,
+					Region: testRegionUS,
 				},
 			},
-			expectedOutput: "https://rchost:8080",
+			expectedOutput: testRCHost,
 		},
 	}
 
@@ -280,20 +288,20 @@ func TestFetchEndpoints(t *testing.T) {
 			serviceEndpoint: []ServiceEndpoint{
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "us-south",
+					URL:    testRCHost,
+					Region: testRegionUS,
 				},
 			},
 			expectedOutput: "",
 		},
 		{
 			name:      "With service id not preset in service endpoints",
-			serviceID: "powervs",
+			serviceID: testPowerVSID,
 			serviceEndpoint: []ServiceEndpoint{
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "us-south",
+					URL:    testRCHost,
+					Region: testRegionUS,
 				},
 			},
 			expectedOutput: "",
@@ -304,15 +312,15 @@ func TestFetchEndpoints(t *testing.T) {
 			serviceEndpoint: []ServiceEndpoint{
 				{
 					ID:     "rc",
-					URL:    "https://rchost:8080",
-					Region: "us-south",
+					URL:    testRCHost,
+					Region: testRegionUS,
 				},
 				{
-					ID:  "powervs",
+					ID:  testPowerVSID,
 					URL: "https://powervs:8081",
 				},
 			},
-			expectedOutput: "https://rchost:8080",
+			expectedOutput: testRCHost,
 		},
 	}
 

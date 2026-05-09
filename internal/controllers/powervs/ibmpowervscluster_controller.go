@@ -55,6 +55,13 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
+const (
+	deprecatedConditionsField = "conditions"
+	deprecatedStatus          = "deprecated"
+	statusField               = "status"
+	v1beta2Version            = "v1beta2"
+)
+
 // IBMPowerVSClusterReconciler reconciles a IBMPowerVSCluster object.
 type IBMPowerVSClusterReconciler struct {
 	client.Client
@@ -815,7 +822,7 @@ func patchIBMPowerVSCluster(ctx context.Context, patchHelper *patch.Helper, ibmP
 			infrav1.VPCSecurityGroupReadyCondition,
 			infrav1.TransitGatewayReadyCondition,
 			infrav1.COSInstanceReadyCondition,
-		}}, patch.Clusterv1ConditionsFieldPath{"status", "deprecated", "v1beta2", "conditions"},
+		}}, patch.Clusterv1ConditionsFieldPath{statusField, deprecatedStatus, v1beta2Version, deprecatedConditionsField},
 	)
 }
 
@@ -828,7 +835,7 @@ func (r *IBMPowerVSClusterReconciler) SetupWithManager(ctx context.Context, mgr 
 		WithEventFilter(predicates.ResourceIsNotExternallyManaged(r.Scheme, predicateLog)).
 		Watches(
 			&clusterv1.Cluster{},
-			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind("IBMPowerVSCluster"), mgr.GetClient(), &infrav1.IBMPowerVSCluster{})),
+			handler.EnqueueRequestsFromMapFunc(util.ClusterToInfrastructureMapFunc(ctx, infrav1.GroupVersion.WithKind(ibmPowerVSClusterKind), mgr.GetClient(), &infrav1.IBMPowerVSCluster{})),
 			builder.WithPredicates(predicates.All(r.Scheme, predicateLog,
 				predicates.ResourceIsChanged(r.Scheme, predicateLog),
 				predicates.ClusterPausedTransitions(r.Scheme, predicateLog),

@@ -55,7 +55,7 @@ import (
 )
 
 const (
-	region = "us-south"
+	testListenerSelector = "listener-selector"
 )
 
 func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1.IBMPowerVSMachine {
@@ -76,7 +76,7 @@ func newPowerVSMachine(clusterName, machineName string, imageRef *string, networ
 				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		},
 		Spec: infrav1.IBMPowerVSMachineSpec{
 			MemoryGiB:  8,
@@ -1228,7 +1228,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 						},
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: defaultNamespace,
 					},
 				},
 			}
@@ -1265,7 +1265,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 						},
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: defaultNamespace,
 					},
 				},
 			}
@@ -1314,7 +1314,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 						},
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace: "default",
+						Namespace: defaultNamespace,
 					},
 				},
 			}
@@ -1451,7 +1451,7 @@ func TestCreateMachinePVS(t *testing.T) {
 						clusterv1.ClusterNameLabel: clusterName,
 					},
 					Name:      machineName,
-					Namespace: "default",
+					Namespace: defaultNamespace,
 				},
 				Data: map[string][]byte{
 					"val": []byte("user data"),
@@ -1603,7 +1603,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"listener-selector": "port-22",
+						testListenerSelector: "port-22",
 					},
 				},
 			},
@@ -1618,7 +1618,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 									Port: 23,
 									Selector: metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+											testListenerSelector: "port-23",
 										},
 									},
 								},
@@ -1687,7 +1687,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"listener-selector": "port-22",
+						testListenerSelector: "port-22",
 					},
 				},
 			},
@@ -1702,7 +1702,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 									Port: 22,
 									Selector: metav1.LabelSelector{
 										MatchLabels: map[string]string{
-											"listener-selector": "port-22",
+											testListenerSelector: "port-22",
 										},
 									},
 								},
@@ -1774,7 +1774,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"listener-selector": "port-6443",
+						testListenerSelector: "port-6443",
 					},
 				},
 			},

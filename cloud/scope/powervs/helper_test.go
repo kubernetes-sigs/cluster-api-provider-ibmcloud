@@ -28,17 +28,18 @@ import (
 )
 
 const (
-	clusterName = "foo-cluster"
-	machineName = "foo-machine"
-	pvsImage    = "foo-image"
-	pvsNetwork  = "foo-network"
+	clusterName      = "foo-cluster"
+	machineName      = "foo-machine"
+	pvsImage         = "foo-image"
+	pvsNetwork       = "foo-network"
+	defaultNamespace = "default"
 )
 
 func newCluster(name string) *clusterv1.Cluster {
 	return &clusterv1.Cluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		},
 		Spec: clusterv1.ClusterSpec{},
 	}
@@ -48,7 +49,7 @@ func newPowerVSCluster(name string) *infrav1.IBMPowerVSCluster {
 	return &infrav1.IBMPowerVSCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		},
 	}
 }
@@ -57,7 +58,7 @@ func newMachine(machineName string) *clusterv1.Machine {
 	return &clusterv1.Machine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      machineName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		},
 		Spec: clusterv1.MachineSpec{
 			Bootstrap: clusterv1.Bootstrap{
@@ -74,7 +75,7 @@ func newBootstrapSecret(clusterName, machineName string) *corev1.Secret {
 				clusterv1.ClusterNameLabel: clusterName,
 			},
 			Name:      machineName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		},
 		Data: map[string][]byte{
 			"value": []byte("user data"),

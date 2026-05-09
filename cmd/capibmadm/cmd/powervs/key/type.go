@@ -24,6 +24,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	columnTypeString = "string"
+)
+
 // SSHKeySpec defines an SSH Key.
 type SSHKeySpec struct {
 	Name         string          `json:"name"`
@@ -46,15 +50,15 @@ func (keyList *IList) ToTable() *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
 				Name: "Name",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "Creation Date",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "Key",
-				Type: "string",
+				Type: columnTypeString,
 			},
 		},
 	}

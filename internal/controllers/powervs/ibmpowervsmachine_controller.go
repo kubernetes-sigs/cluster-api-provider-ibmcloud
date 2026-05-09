@@ -141,7 +141,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("failed to get IBMPowerVSCluster: %w", err)
 	}
 
-	log = log.WithValues("IBMPowerVSCluster", klog.KObj(ibmPowerVSCluster))
+	log = log.WithValues(ibmPowerVSClusterKind, klog.KObj(ibmPowerVSCluster))
 	ctx = ctrl.LoggerInto(ctx, log)
 
 	// Fetch the IBMPowerVSImage.
@@ -572,5 +572,5 @@ func patchIBMPowerVSMachine(ctx context.Context, patchHelper *patch.Helper, ibmP
 		infrav1.IBMPowerVSMachineReadyCondition,
 		infrav1.InstanceReadyCondition,
 		clusterv1.PausedCondition,
-	}}, patch.Clusterv1ConditionsFieldPath{"status", "deprecated", "v1beta2", "conditions"})
+	}}, patch.Clusterv1ConditionsFieldPath{statusField, deprecatedStatus, v1beta2Version, deprecatedConditionsField})
 }

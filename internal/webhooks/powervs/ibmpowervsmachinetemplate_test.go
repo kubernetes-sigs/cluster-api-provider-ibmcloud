@@ -49,7 +49,7 @@ func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
 		},
 	}
 	g.Expect((&IBMPowerVSMachineTemplate{}).Default(context.Background(), powervsMachineTemplate)).ToNot(HaveOccurred())
-	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo("s922"))
+	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo(defaultSystemType))
 	g.Expect(powervsMachineTemplate.Spec.Template.Spec.ProcessorType).To(BeEquivalentTo(infrav1.PowerVSProcessorTypeShared))
 }
 
@@ -85,7 +85,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							Network: infrav1.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
@@ -103,7 +103,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							Network: infrav1.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
@@ -125,7 +125,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							Network: infrav1.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
@@ -147,7 +147,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							Network: infrav1.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
@@ -170,7 +170,7 @@ func TestIBMPowerVSMachineTemplate_create(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							Network: infrav1.IBMPowerVSResourceReference{
 								Name: ptr.To("capi-net"),
@@ -217,7 +217,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -259,7 +259,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -278,7 +278,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -302,7 +302,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -321,7 +321,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -345,7 +345,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -364,7 +364,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       int32(-8),
 							Processors:      intstr.FromString("0.25"),
@@ -387,7 +387,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -406,7 +406,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("two"),
@@ -429,7 +429,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       4,
 							Processors:      intstr.FromString("0.25"),
@@ -448,7 +448,7 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 					Template: infrav1.IBMPowerVSMachineTemplateResource{
 						Spec: infrav1.IBMPowerVSMachineSpec{
 							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("capi-si-id")},
-							SystemType:      "s922",
+							SystemType:      defaultSystemType,
 							ProcessorType:   infrav1.PowerVSProcessorTypeShared,
 							MemoryGiB:       8,
 							Processors:      intstr.FromInt(2),
