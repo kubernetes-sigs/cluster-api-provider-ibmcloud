@@ -7,7 +7,7 @@
 * **Target Version:** v1beta3
 
 ## Summary
-This proposal outlines a structural modernization of the `IBMPowerVSCluster`, `IBMPowerVSMachine`, and `IBMPowerVSImage` Custom Resource Definitions (CRDs) for the `v1beta3` API version. It aims to eliminate Kubernetes API anti-patterns—such as Status-driven lifecycle management, complex map types, ambiguous boolean pointers, and excessive nil-pointer checks—by aligning the API strictly with upstream Kubernetes API conventions and the Kube API Linter (KAL).
+This proposal outlines a structural modernization of the `IBMPowerVSCluster`, `IBMPowerVSMachine`, and `IBMPowerVSImage` Custom Resource Definitions (CRDs) for the `v1beta3` API version. It aims to eliminate Kubernetes API anti-patterns—such as annotation-driven logic, Status-driven lifecycle management, complex map types, ambiguous boolean pointers, and excessive nil-pointer checks—by aligning the API strictly with upstream Kubernetes API conventions and the Kube API Linter (KAL).
 
 ## Motivation
 As the CAPIBM provider has evolved, the API has accumulated several patterns that make the controller brittle, difficult to maintain, and incompatible with modern Kubernetes features like Server-Side Apply (SSA). 
@@ -17,6 +17,7 @@ Currently, our APIs suffer from the following architectural drawbacks:
 2. **The Map Anti-Pattern:** The `IBMPowerVSClusterStatus` uses native Go maps (e.g., `map[string]ResourceReference`) for complex objects like Subnets and Security Groups. Kubernetes explicitly warns against this, as it breaks Server-Side Apply (SSA) merging logic.
 3. **The Pointer and Boolean Traps:** We heavily utilize `*bool` and `*string` to distinguish between "unset" and "zero" values. This leads to code littered with `nil` checks. Furthermore, using boolean toggles (like `Public *bool`) is an API design anti-pattern that severely limits future extensibility.
 4. **Weak Validation:** User intent is often validated deep inside the Reconciler rather than at the API boundary using CEL (Common Expression Language) and explicit Union Types.
+5. Annotation-Driven Logic: We currently rely on an annotation (powervs.cluster.x-k8s.io/create-infra=true) to implicitly dictate cluster architecture and required fields (like Zone). This is an API anti-pattern.
 
 ## Goals
 * Shift infrastructure ownership intent from `Status.ControllerCreated` to explicit declarative definitions in the `Spec`.
@@ -24,6 +25,7 @@ Currently, our APIs suffer from the following architectural drawbacks:
 * Remove unnecessary pointers from the API using Go 1.24 `omitzero`.
 * Replace restrictive `*bool` toggles with extensible string Enums.
 * Enforce KAL-compliant docstrings and strict CEL validations.
+* Eliminate Annotation-Based APIs: Shift core architectural decisions from annotations to explicit, discoverable fields in the Spec.
 
 ## Non-Goals
 * Introducing new infrastructure features (e.g., adding support for new IBM Cloud services).
@@ -104,11 +106,34 @@ if cluster.Status.VPC.ID != "" {
 
 **Solution:** We clarify the documentation and Reconciler behavior to explicitly implement CAPI inheritance. If `Network` or `ServiceInstance` is omitted on a Machine/Image, it directly inherits the ID from the parent `IBMPowerVSCluster.Status`.
 
+
+### 6. Explicit Cluster Topology (Eliminating Annotations)
+
+**Current Drawback:** We use the create-infra annotation to toggle controller behavior. Upstream API best practices strictly prohibit using annotations to extend an API or drive core state-machine logic for several reasons:
+
+
+*Lack of Discoverability*: There is no pre-existing OpenAPI schema that can be published; users cannot use kubectl explain to discover the configuration.
+
+*Validation Disconnect*: Validation does not come with the definition. Native validators (like CEL) cannot be effectively applied to annotations, forcing reliance on heavy webhooks.
+
+*Hard to Extend*: An annotation value is just a string and cannot be extended with additional fields under a parent.
+
+*Versioning & Squatting*: Annotation keys omit versioning, and users can "squat" on unvalidated annotation values.
+
+*Migration Lock-in*: Moving from an annotation to a formal schema later usually requires breaking changes in customer deployments.
+
+**Solution**: We are removing the annotation and "implicit mode switching." We introduce a top-level Topology enum in the Spec to explicitly define the external access architecture. We pair this with CEL cross-field validation to strictly enforce IBM Cloud service boundaries.
+Go
+```go
+// +kubebuilder:validation:Enum=VIP;LoadBalancer
+// Topology defines the architectural mode for external cluster access.
+Topology ClusterTopology `json:"topology"`
+```
 ---
 
-## 6. User Experience (UX) / YAML Examples
+## 7. User Experience (UX) / YAML Examples
 
-### 6.1. Spec: Creating a New VPC vs. Using Existing
+### 7.1. Spec: Creating a New VPC vs. Using Existing
 **Before (v1beta2):**
 ```yaml
 spec:
@@ -125,7 +150,7 @@ spec:
       name: "my-vpc" # Intent is clear: Create this.
 ```
 
-### 6.2. Status: SSA-Compliant Subnets
+### 7.2. Status: SSA-Compliant Subnets
 **Before (v1beta2):**
 ```yaml
 status:
