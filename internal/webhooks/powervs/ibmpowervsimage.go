@@ -19,21 +19,23 @@ package powervs
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+)
+
+// Ensure IBMPowerVSImage implements the typed webhook interfaces.
+var (
+	_ admission.Validator[*infrav1.IBMPowerVSImage] = &IBMPowerVSImage{}
+	_ admission.Defaulter[*infrav1.IBMPowerVSImage] = &IBMPowerVSImage{}
 )
 
 //+kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsimage,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages,versions=v1beta3,name=mibmpowervsimage.kb.io,sideEffects=None,admissionReviewVersions=v1
 //+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsimage,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages,versions=v1beta3,name=vibmpowervsimage.kb.io,sideEffects=None,admissionReviewVersions=v1
 
 func (r *IBMPowerVSImage) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.IBMPowerVSImage{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.IBMPowerVSImage{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -42,25 +44,22 @@ func (r *IBMPowerVSImage) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // IBMPowerVSImage implements a validation and defaulting webhook for IBMPowerVSImage.
 type IBMPowerVSImage struct{}
 
-var _ webhook.CustomDefaulter = &IBMPowerVSImage{}
-var _ webhook.CustomValidator = &IBMPowerVSImage{}
-
-// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
-func (r *IBMPowerVSImage) Default(_ context.Context, _ runtime.Object) error {
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
+func (r *IBMPowerVSImage) Default(_ context.Context, _ *infrav1.IBMPowerVSImage) error {
 	return nil
 }
 
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSImage) ValidateCreate(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSImage) ValidateCreate(_ context.Context, _ *infrav1.IBMPowerVSImage) (admission.Warnings, error) {
 	return nil, nil
 }
 
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSImage) ValidateUpdate(_ context.Context, _, _ runtime.Object) (warnings admission.Warnings, err error) {
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSImage) ValidateUpdate(_ context.Context, _, _ *infrav1.IBMPowerVSImage) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 
-// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSImage) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSImage) ValidateDelete(_ context.Context, _ *infrav1.IBMPowerVSImage) (admission.Warnings, error) {
 	return nil, nil
 }

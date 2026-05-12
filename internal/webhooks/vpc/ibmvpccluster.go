@@ -18,26 +18,28 @@ package vpc
 
 import (
 	"context"
-	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
+)
+
+// Ensure IBMVPCCluster implements the typed webhook interfaces.
+var (
+	_ admission.Validator[*infrav1.IBMVPCCluster] = &IBMVPCCluster{}
+	_ admission.Defaulter[*infrav1.IBMVPCCluster] = &IBMVPCCluster{}
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,verbs=create;update,versions=v1beta2,name=mibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 //+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpccluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcclusters,versions=v1beta2,name=vibmvpccluster.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 func (r *IBMVPCCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.IBMVPCCluster{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.IBMVPCCluster{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -46,34 +48,23 @@ func (r *IBMVPCCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // IBMVPCCluster implements a validation and defaulting webhook for IBMVPCCluster.
 type IBMVPCCluster struct{}
 
-var _ webhook.CustomDefaulter = &IBMVPCCluster{}
-var _ webhook.CustomValidator = &IBMVPCCluster{}
-
-// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
-func (r *IBMVPCCluster) Default(_ context.Context, _ runtime.Object) error {
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
+func (r *IBMVPCCluster) Default(_ context.Context, _ *infrav1.IBMVPCCluster) error {
 	return nil
 }
 
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMVPCCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1.IBMVPCCluster)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", obj))
-	}
-	return validateIBMVPCCluster(objValue)
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMVPCCluster) ValidateCreate(_ context.Context, obj *infrav1.IBMVPCCluster) (admission.Warnings, error) {
+	return validateIBMVPCCluster(obj)
 }
 
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMVPCCluster) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*infrav1.IBMVPCCluster)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCCluster but got a %T", objValue))
-	}
-	return validateIBMVPCCluster(objValue)
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMVPCCluster) ValidateUpdate(_ context.Context, _, newObj *infrav1.IBMVPCCluster) (warnings admission.Warnings, err error) {
+	return validateIBMVPCCluster(newObj)
 }
 
-// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMVPCCluster) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMVPCCluster) ValidateDelete(_ context.Context, _ *infrav1.IBMVPCCluster) (admission.Warnings, error) {
 	return nil, nil
 }
 
