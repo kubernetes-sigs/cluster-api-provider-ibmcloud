@@ -22,6 +22,8 @@ title: Onboard new machine images for Kubernetes version v<>
   - [ ] Upload the built image to the public COS bucket `power-oss-bucket`
   - [ ] Update [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/powervs#powervs-images) with the latest image details
   - [ ] Update the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/topics/powervs/creating-a-cluster) with latest image details and Kubernetes version in the cluster deployment instructions.
+  - [ ] Delete the unsupported versions from the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/powervs#powervs-images)
+  - [ ] Delete the unsupported image from IBM Cloud CI account
 
 ### PowerVS image with DHCP support for cluster deployment with infrastruction creation 
   - [ ] Build images using automation in [image-builder](https://github.com/kubernetes-sigs/image-builder) repository
@@ -29,6 +31,8 @@ title: Onboard new machine images for Kubernetes version v<>
   - [ ] Upload the built image to the public COS bucket `power-oss-bucket`
   - [ ] Update [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/powervs#powervs-images-with-dhcp-based-network) with the latest image details
   - [ ] Update the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/topics/powervs/creating-a-cluster) with latest image details and Kubernetes version in the cluster deployment instructions.
+  - [ ] Delete the unsupported versions from the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/powervs#powervs-images-with-dhcp-based-network)
+  - [ ] Delete the unsupported image from IBM Cloud CI account
 
 ### VPC image
   - [ ] Build images using automation in [image-builder](https://github.com/kubernetes-sigs/image-builder) repository
@@ -42,6 +46,8 @@ title: Onboard new machine images for Kubernetes version v<>
   - [ ] Upload the built image to the public COS bucket `power-oss-bucket`
   - [ ] Update [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/vpc/) with the latest image details
   - [ ] Update the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/topics/vpc/creating-a-cluster) with latest image details and Kubernetes version in the cluster deployment instructions.
+  - [ ] Delete the unsupported versions from the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/vpc/)
+  - [ ] Delete the unsupported image from IBM Cloud CI account
 
 **Notes**:
 * The format of the new image name should be as follows:
