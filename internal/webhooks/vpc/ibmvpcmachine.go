@@ -18,25 +18,26 @@ package vpc
 
 import (
 	"context"
-	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
+)
+
+// Ensure IBMVPCMachine implements the typed webhook interfaces.
+var (
+	_ admission.Validator[*infrav1.IBMVPCMachine] = &IBMVPCMachine{}
+	_ admission.Defaulter[*infrav1.IBMVPCMachine] = &IBMVPCMachine{}
 )
 
 //+kubebuilder:webhook:path=/mutate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpcmachine,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=create;update,versions=v1beta2,name=mibmvpcmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 //+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta2-ibmvpcmachine,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,versions=v1beta2,name=vibmvpcmachine.kb.io,sideEffects=None,admissionReviewVersions=v1;v1beta1
 
 func (r *IBMVPCMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.IBMVPCMachine{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.IBMVPCMachine{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -45,38 +46,25 @@ func (r *IBMVPCMachine) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // IBMVPCMachine implements a validation and defaulting webhook for IBMVPCMachine.
 type IBMVPCMachine struct{}
 
-var (
-	_ webhook.CustomDefaulter = &IBMVPCMachine{}
-	_ webhook.CustomValidator = &IBMVPCMachine{}
-)
-
-// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
-func (r *IBMVPCMachine) Default(_ context.Context, obj runtime.Object) error {
-	objValue, ok := obj.(*infrav1.IBMVPCMachine)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
-	}
-	defaultIBMVPCMachineSpec(&objValue.Spec)
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
+func (r *IBMVPCMachine) Default(_ context.Context, obj *infrav1.IBMVPCMachine) error {
+	defaultIBMVPCMachineSpec(&obj.Spec)
 	return nil
 }
 
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMVPCMachine) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1.IBMVPCMachine)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMVPCMachine but got a %T", obj))
-	}
-	allErrs := validateIBMVPCMachineVolume(objValue.Spec)
-	return nil, aggregateObjErrors(objValue.GroupVersionKind().GroupKind(), objValue.Name, allErrs)
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMVPCMachine) ValidateCreate(_ context.Context, obj *infrav1.IBMVPCMachine) (admission.Warnings, error) {
+	allErrs := validateIBMVPCMachineVolume(obj.Spec)
+	return nil, aggregateObjErrors(obj.GroupVersionKind().GroupKind(), obj.Name, allErrs)
 }
 
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMVPCMachine) ValidateUpdate(_ context.Context, _, _ runtime.Object) (warnings admission.Warnings, err error) {
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMVPCMachine) ValidateUpdate(_ context.Context, _, _ *infrav1.IBMVPCMachine) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 
-// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMVPCMachine) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMVPCMachine) ValidateDelete(_ context.Context, _ *infrav1.IBMVPCMachine) (admission.Warnings, error) {
 	return nil, nil
 }
 

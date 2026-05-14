@@ -26,24 +26,27 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/genutil"
 )
 
+// Ensure IBMPowerVSCluster implements the typed webhook interfaces.
+var (
+	_ admission.Validator[*infrav1.IBMPowerVSCluster] = &IBMPowerVSCluster{}
+	_ admission.Defaulter[*infrav1.IBMPowerVSCluster] = &IBMPowerVSCluster{}
+)
+
 //+kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,versions=v1beta3,name=mibmpowervscluster.kb.io,sideEffects=None,admissionReviewVersions=v1
 //+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,versions=v1beta3,name=vibmpowervscluster.kb.io,sideEffects=None,admissionReviewVersions=v1
 
 func (r *IBMPowerVSCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.IBMPowerVSCluster{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.IBMPowerVSCluster{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -52,38 +55,23 @@ func (r *IBMPowerVSCluster) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // IBMPowerVSCluster implements a validation and defaulting webhook for IBMPowerVSCluster.
 type IBMPowerVSCluster struct{}
 
-var _ webhook.CustomDefaulter = &IBMPowerVSCluster{}
-var _ webhook.CustomValidator = &IBMPowerVSCluster{}
-
-// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
-func (r *IBMPowerVSCluster) Default(_ context.Context, _ runtime.Object) error {
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
+func (r *IBMPowerVSCluster) Default(_ context.Context, _ *infrav1.IBMPowerVSCluster) error {
 	return nil
 }
 
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSCluster) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1.IBMPowerVSCluster)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", obj))
-	}
-	return validateIBMPowerVSCluster(nil, objValue)
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSCluster) ValidateCreate(_ context.Context, obj *infrav1.IBMPowerVSCluster) (admission.Warnings, error) {
+	return validateIBMPowerVSCluster(nil, obj)
 }
 
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSCluster) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	oldObjValue, ok := oldObj.(*infrav1.IBMPowerVSCluster)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", oldObj))
-	}
-	newObjValue, ok := newObj.(*infrav1.IBMPowerVSCluster)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSCluster but got a %T", newObj))
-	}
-	return validateIBMPowerVSCluster(oldObjValue, newObjValue)
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSCluster) ValidateUpdate(_ context.Context, oldObj, newObj *infrav1.IBMPowerVSCluster) (warnings admission.Warnings, err error) {
+	return validateIBMPowerVSCluster(oldObj, newObj)
 }
 
-// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSCluster) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSCluster) ValidateDelete(_ context.Context, _ *infrav1.IBMPowerVSCluster) (admission.Warnings, error) {
 	return nil, nil
 }
 

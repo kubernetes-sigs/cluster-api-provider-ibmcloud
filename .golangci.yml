@@ -212,6 +212,14 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: .* is deprecated: This package is deprecated and is going to be removed when support for v1beta2 will be dropped.'
+      # v1beta1 condition types are deprecated but still needed for backward compatibility
+      - linters:
+          - staticcheck
+        text: 'SA1019: clusterv1\.(Condition|Conditions|ConditionType|ConditionSeverity) is deprecated: This type is deprecated and is going to be removed when support for v1beta1 will be dropped\.'
+      # GetEventRecorderFor is deprecated but GetEventRecorder returns incompatible interface type
+      - linters:
+          - staticcheck
+        text: 'SA1019: mgr\.GetEventRecorderFor is deprecated: this uses the old events API and will be removed in a future release\. Please use GetEventRecorder instead\.'
     paths:
       - zz_generated.*\.go$
       - third_party$

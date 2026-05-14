@@ -18,26 +18,28 @@ package powervs
 
 import (
 	"context"
-	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+)
+
+// Ensure IBMPowerVSMachineTemplate implements the typed webhook interfaces.
+var (
+	_ admission.Validator[*infrav1.IBMPowerVSMachineTemplate] = &IBMPowerVSMachineTemplate{}
+	_ admission.Defaulter[*infrav1.IBMPowerVSMachineTemplate] = &IBMPowerVSMachineTemplate{}
 )
 
 //+kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsmachinetemplate,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachinetemplates,versions=v1beta3,name=mibmpowervsmachinetemplate.kb.io,sideEffects=None,admissionReviewVersions=v1
 //+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervsmachinetemplate,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsmachinetemplates,versions=v1beta3,name=vibmpowervsmachinetemplate.kb.io,sideEffects=None,admissionReviewVersions=v1
 
 func (r *IBMPowerVSMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&infrav1.IBMPowerVSMachineTemplate{}).
+	return ctrl.NewWebhookManagedBy(mgr, &infrav1.IBMPowerVSMachineTemplate{}).
 		WithValidator(r).
 		WithDefaulter(r).
 		Complete()
@@ -46,39 +48,24 @@ func (r *IBMPowerVSMachineTemplate) SetupWebhookWithManager(mgr ctrl.Manager) er
 // IBMPowerVSMachineTemplate implements a validation and defaulting webhook for IBMPowerVSMachineTemplate.
 type IBMPowerVSMachineTemplate struct{}
 
-var _ webhook.CustomDefaulter = &IBMPowerVSMachineTemplate{}
-var _ webhook.CustomValidator = &IBMPowerVSMachineTemplate{}
-
-// Default implements webhook.CustomDefaulter so a webhook will be registered for the type.
-func (r *IBMPowerVSMachineTemplate) Default(_ context.Context, obj runtime.Object) error {
-	objValue, ok := obj.(*infrav1.IBMPowerVSMachineTemplate)
-	if !ok {
-		return apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSMachineTemplate but got a %T", obj))
-	}
-	defaultIBMPowerVSMachineSpec(&objValue.Spec.Template.Spec)
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
+func (r *IBMPowerVSMachineTemplate) Default(_ context.Context, obj *infrav1.IBMPowerVSMachineTemplate) error {
+	defaultIBMPowerVSMachineSpec(&obj.Spec.Template.Spec)
 	return nil
 }
 
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSMachineTemplate) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
-	objValue, ok := obj.(*infrav1.IBMPowerVSMachineTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSMachineTemplate but got a %T", obj))
-	}
-	return validateIBMPowerVSMachineTemplate(objValue)
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSMachineTemplate) ValidateCreate(_ context.Context, obj *infrav1.IBMPowerVSMachineTemplate) (admission.Warnings, error) {
+	return validateIBMPowerVSMachineTemplate(obj)
 }
 
-// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSMachineTemplate) ValidateUpdate(_ context.Context, _, newObj runtime.Object) (warnings admission.Warnings, err error) {
-	objValue, ok := newObj.(*infrav1.IBMPowerVSMachineTemplate)
-	if !ok {
-		return nil, apierrors.NewBadRequest(fmt.Sprintf("expected a IBMPowerVSMachineTemplate but got a %T", newObj))
-	}
-	return validateIBMPowerVSMachineTemplate(objValue)
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSMachineTemplate) ValidateUpdate(_ context.Context, _, newObj *infrav1.IBMPowerVSMachineTemplate) (warnings admission.Warnings, err error) {
+	return validateIBMPowerVSMachineTemplate(newObj)
 }
 
-// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type.
-func (r *IBMPowerVSMachineTemplate) ValidateDelete(_ context.Context, _ runtime.Object) (admission.Warnings, error) {
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (r *IBMPowerVSMachineTemplate) ValidateDelete(_ context.Context, _ *infrav1.IBMPowerVSMachineTemplate) (admission.Warnings, error) {
 	return nil, nil
 }
 

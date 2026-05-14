@@ -24,6 +24,7 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -114,12 +115,24 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	imageScope, err := powervsscope.NewPowerVSImageScope(ctx, scopeParams)
 	if err != nil {
 		if errors.Is(err, powervsscope.ErrServiceInsanceNotInActiveState) {
-			conditions.Set(imageScope.IBMPowerVSImage, metav1.Condition{
+			conditions.Set(ibmPowerVSImage, metav1.Condition{
 				Type:   infrav1.WorkspaceReadyCondition,
 				Status: metav1.ConditionFalse,
 				Reason: infrav1.WorkspaceNotReadyReason,
 			})
 		}
+		// Set the IBMPowerVSImageReady condition to Unknown when scope creation fails
+		conditions.Set(ibmPowerVSImage, metav1.Condition{
+			Type:   infrav1.IBMPowerVSImageReadyCondition,
+			Status: metav1.ConditionUnknown,
+			Reason: infrav1.IBMPowerVSImageReadyUnknownReason,
+		})
+		// Also set v1beta1 conditions for backward compatibility
+		deprecatedv1beta1conditions.Set(ibmPowerVSImage, &clusterv1.Condition{
+			Type:   infrav1.ImageReadyV1Beta2Condition,
+			Status: corev1.ConditionUnknown,
+			Reason: infrav1.ImageNotReadyV1Beta2Reason,
+		})
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
 	}
 
