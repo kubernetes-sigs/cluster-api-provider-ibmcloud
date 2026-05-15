@@ -27,13 +27,12 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSCluster
 metadata:
-  annotations:
-    powervs.cluster.x-k8s.io/create-infra: "true"
   labels:
     cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
   name: ${CLUSTER_NAME}
   namespace: default
 spec:
+  topology: LoadBalancer
   resourceGroup:
     name: ${IBM_RESOURCE_GROUP}
   zone: ${IBMPOWERVS_ZONE}

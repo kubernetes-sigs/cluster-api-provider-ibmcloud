@@ -163,12 +163,17 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 
 func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
-	// check for annotation set for cluster resource and decide on proceeding with infra creation.
-	// do not proceed further if "powervs.cluster.x-k8s.io/create-infra=true" annotation is not set.
-	if !powervsscope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
-		log.V(3).Info("IBMPowerVSCluster has no create infrastructure annotation, setting cluster status to ready")
+
+	// 1. If it's VirtualIP, do the minimal logic and return early.
+	if clusterScope.IBMPowerVSCluster.Spec.Topology == infrav1.PowerVSVirtualIPTopology {
+		log.Info("Reconciling in VirtualIP topology mode")
 		clusterScope.IBMPowerVSCluster.Status.Initialization.Provisioned = ptr.To(true)
 		return ctrl.Result{}, nil
+	}
+
+	// 2. Otherwise, assume LoadBalancer and proceed with the heavy VPC/TG logic.
+	if clusterScope.IBMPowerVSCluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
+		return ctrl.Result{}, fmt.Errorf("unknown topology: %q", clusterScope.IBMPowerVSCluster.Spec.Topology)
 	}
 
 	// validate PER availability for the PowerVS zone, proceed further only if PowerVS zone support PER.
@@ -525,9 +530,9 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		return result, err
 	}
 
-	// check for annotation set for cluster resource and decide on proceeding with infra deletion.
-	if !powervsscope.CheckCreateInfraAnnotation(*clusterScope.IBMPowerVSCluster) {
-		log.Info("IBMPowerVSCluster has no infra annotation, removing finalizer")
+	// Check the cluster topology to decide if we need to proceed with VPC/TransitGateway infra deletion.
+	if clusterScope.IBMPowerVSCluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
+		log.Info("IBMPowerVSCluster is not in LoadBalancer topology mode, skipping advanced infra deletion and removing finalizer")
 		controllerutil.RemoveFinalizer(cluster, infrav1.IBMPowerVSClusterFinalizer)
 		return ctrl.Result{}, nil
 	}
@@ -774,8 +779,9 @@ func (c *clusterDescendants) filterOwnedDescendants(cluster *infrav1.IBMPowerVSC
 
 // patchIBMPowerVSCluster updates the IBMPowerVSCluster and its status on the API server.
 func patchIBMPowerVSCluster(ctx context.Context, patchHelper *patch.Helper, ibmPowerVSCluster *infrav1.IBMPowerVSCluster) error {
-	// we don't need to set any conditions for IBMPowerVSCluster without create infra annotation.
-	if !powervsscope.CheckCreateInfraAnnotation(*ibmPowerVSCluster) {
+	// We don't need to set VPC/LoadBalancer conditions for an IBMPowerVSCluster
+	// unless it is explicitly using the LoadBalancer topology.
+	if ibmPowerVSCluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
 		if err := patchHelper.Patch(ctx, ibmPowerVSCluster); err != nil {
 			return fmt.Errorf("error patching IBMPowerVSCluster: %w", err)
 		}

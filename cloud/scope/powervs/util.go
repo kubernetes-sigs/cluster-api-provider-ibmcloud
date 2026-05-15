@@ -19,7 +19,6 @@ package powervs
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -39,23 +38,6 @@ func GetClusterByName(ctx context.Context, c client.Client, namespace, name stri
 	}
 
 	return cluster, nil
-}
-
-// CheckCreateInfraAnnotation checks for annotations set on IBMPowerVSCluster object to determine cluster creation workflow.
-func CheckCreateInfraAnnotation(cluster infrav1.IBMPowerVSCluster) bool {
-	annotations := cluster.GetAnnotations()
-	if len(annotations) == 0 {
-		return false
-	}
-	value, found := annotations[infrav1.CreateInfrastructureAnnotation]
-	if !found {
-		return false
-	}
-	createInfra, err := strconv.ParseBool(value)
-	if err != nil {
-		return false
-	}
-	return createInfra
 }
 
 func fetchBucketRegion(cos *infrav1.CosInstance, vpc *infrav1.VPCResourceReference) string {

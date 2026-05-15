@@ -192,6 +192,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "powervs-cluster"},
 				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -522,6 +523,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
+						Topology: infrav1.PowerVSVirtualIPTopology,
 						Workspace: infrav1.WorkspaceSource{
 							Type: infrav1.SourceTypeReference,
 							Reference: infrav1.ResourceIdentifier{
@@ -621,6 +623,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
+						Topology: infrav1.PowerVSVirtualIPTopology,
 						Workspace: infrav1.WorkspaceSource{
 							Type: infrav1.SourceTypeReference,
 							Reference: infrav1.ResourceIdentifier{
@@ -734,6 +737,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
+						Topology: infrav1.PowerVSVirtualIPTopology,
 						Workspace: infrav1.WorkspaceSource{
 							Type: infrav1.SourceTypeReference,
 							Reference: infrav1.ResourceIdentifier{
@@ -854,6 +858,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{

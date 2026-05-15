@@ -39,6 +39,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
 							Workspace: infrav1.WorkspaceSource{
 								Type: infrav1.SourceTypeReference,
 								Reference: infrav1.ResourceIdentifier{
@@ -53,6 +54,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
 							Workspace: infrav1.WorkspaceSource{
 								Type: infrav1.SourceTypeReference,
 								Reference: infrav1.ResourceIdentifier{
@@ -71,6 +73,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
 							Workspace: infrav1.WorkspaceSource{
 								Type: infrav1.SourceTypeReference,
 								Reference: infrav1.ResourceIdentifier{
@@ -85,6 +88,7 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSLoadBalancerTopology,
 							Workspace: infrav1.WorkspaceSource{
 								Type: infrav1.SourceTypeReference,
 								Reference: infrav1.ResourceIdentifier{

@@ -1384,6 +1384,13 @@ spec:
                             minLength: 1
                             type: string
                         type: object
+                      topology:
+                        description: Topology defines the architectural mode for external
+                          cluster access.
+                        enum:
+                        - VirtualIP
+                        - LoadBalancer
+                        type: string
                       transitGateway:
                         description: |-
                           transitGateway contains information about IBM Cloud TransitGateway
@@ -1867,6 +1874,7 @@ spec:
                         type: string
                     required:
                     - network
+                    - topology
                     type: object
                 required:
                 - spec
