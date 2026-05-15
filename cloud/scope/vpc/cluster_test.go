@@ -102,7 +102,7 @@ func TestCreateVPC(t *testing.T) {
 		Spec: infrav1.IBMVPCClusterSpec{
 			Region:        "foo-region",
 			ResourceGroup: "foo-resource-group",
-			VPC:           "foo-vpc",
+			VPC:           testVPC,
 			Zone:          "foo-zone",
 		},
 	}
@@ -112,7 +112,7 @@ func TestCreateVPC(t *testing.T) {
 			DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
 				ID: core.StringPtr("foo-security-group"),
 			},
-			Name: core.StringPtr("foo-vpc"),
+			Name: core.StringPtr(testVPC),
 		}
 
 		t.Run("Should create VPC", func(t *testing.T) {
@@ -122,7 +122,7 @@ func TestCreateVPC(t *testing.T) {
 			var securityGroupRuleIntf vpcv1.SecurityGroupRuleIntf
 			scope := setupClusterScope(clusterName, mockvpc)
 			expectedOutput := &vpcv1.VPC{
-				Name: core.StringPtr("foo-vpc"),
+				Name: core.StringPtr(testVPC),
 				DefaultSecurityGroup: &vpcv1.SecurityGroupReference{
 					ID: core.StringPtr("foo-security-group"),
 				}}
@@ -218,11 +218,11 @@ func TestDeleteVPC(t *testing.T) {
 
 	vpcCluster := infrav1.IBMVPCCluster{
 		Spec: infrav1.IBMVPCClusterSpec{
-			VPC: "foo-vpc",
+			VPC: testVPC,
 		},
 		Status: infrav1.IBMVPCClusterStatus{
 			VPC: infrav1.VPC{
-				ID: "foo-vpc",
+				ID: testVPC,
 			},
 		},
 	}
@@ -264,12 +264,12 @@ func TestCreateSubnet(t *testing.T) {
 		Spec: infrav1.IBMVPCClusterSpec{
 			Region:        "foo-region",
 			ResourceGroup: "foo-resource-group",
-			VPC:           "foo-vpc",
+			VPC:           testVPC,
 			Zone:          "foo-zone",
 		},
 		Status: infrav1.IBMVPCClusterStatus{
 			VPC: infrav1.VPC{
-				ID: *core.StringPtr("foo-vpc"),
+				ID: *core.StringPtr(testVPC),
 			},
 		},
 	}
@@ -437,7 +437,7 @@ func TestDeleteSubnet(t *testing.T) {
 
 	vpcCluster := infrav1.IBMVPCCluster{
 		Spec: infrav1.IBMVPCClusterSpec{
-			VPC: "foo-vpc",
+			VPC: testVPC,
 		},
 		Status: infrav1.IBMVPCClusterStatus{
 			Subnet: infrav1.Subnet{

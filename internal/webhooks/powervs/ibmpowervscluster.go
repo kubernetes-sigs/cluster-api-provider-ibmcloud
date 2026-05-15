@@ -42,6 +42,10 @@ var (
 	_ admission.Defaulter[*infrav1.IBMPowerVSCluster] = &IBMPowerVSCluster{}
 )
 
+const (
+	infrastructureGroup = "infrastructure.cluster.x-k8s.io"
+)
+
 //+kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,versions=v1beta3,name=mibmpowervscluster.kb.io,sideEffects=None,admissionReviewVersions=v1
 //+kubebuilder:webhook:verbs=create;update,path=/validate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster,mutating=false,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,versions=v1beta3,name=vibmpowervscluster.kb.io,sideEffects=None,admissionReviewVersions=v1
 
@@ -96,7 +100,7 @@ func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1.IBMPowerVSCluster
 	}
 
 	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSCluster"},
+		schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSCluster"},
 		newCluster.Name, allErrs)
 }
 

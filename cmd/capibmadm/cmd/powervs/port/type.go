@@ -21,6 +21,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	columnTypeString = "string"
+)
+
 // PSpec defines a port.
 type PSpec struct {
 	PortID      string `json:"id"`
@@ -46,27 +50,27 @@ func (portList *PList) ToTable() *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
 				Name: "DESCRIPTION",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "EXTERNAL IP",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "IP ADDRESS",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "MAC ADDRESS",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "PORT ID",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "STATUS",
-				Type: "string",
+				Type: columnTypeString,
 			},
 		},
 	}

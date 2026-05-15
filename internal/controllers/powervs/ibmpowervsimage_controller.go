@@ -48,6 +48,10 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
 )
 
+const (
+	ibmPowerVSClusterKind = "IBMPowerVSCluster"
+)
+
 // IBMPowerVSImageReconciler reconciles a IBMPowerVSImage object.
 type IBMPowerVSImageReconciler struct {
 	client.Client
@@ -160,7 +164,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 		log.Info("Image Controller has not yet set OwnerRef")
 		imageScope.IBMPowerVSImage.OwnerReferences = clusterv1util.EnsureOwnerRef(imageScope.IBMPowerVSImage.OwnerReferences, metav1.OwnerReference{
 			APIVersion: infrav1.GroupVersion.String(),
-			Kind:       "IBMPowerVSCluster",
+			Kind:       ibmPowerVSClusterKind,
 			Name:       cluster.Name,
 			UID:        cluster.UID,
 		})
@@ -342,7 +346,7 @@ func (r *IBMPowerVSImageReconciler) getOrCreate(ctx context.Context, scope *powe
 }
 
 func (r *IBMPowerVSImageReconciler) shouldAdopt(i infrav1.IBMPowerVSImage) bool {
-	return !clusterv1util.HasOwner(i.OwnerReferences, infrav1.GroupVersion.String(), []string{"IBMPowerVSCluster"})
+	return !clusterv1util.HasOwner(i.OwnerReferences, infrav1.GroupVersion.String(), []string{ibmPowerVSClusterKind})
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -403,5 +407,5 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *patch.Helper, ibmPow
 		infrav1.IBMPowerVSImageReadyCondition,
 		clusterv1.PausedCondition,
 		infrav1.WorkspaceReadyCondition,
-	}}, patch.Clusterv1ConditionsFieldPath{"status", "deprecated", "v1beta2", "conditions"})
+	}}, patch.Clusterv1ConditionsFieldPath{statusField, deprecatedStatus, v1beta2Version, deprecatedConditionsField})
 }

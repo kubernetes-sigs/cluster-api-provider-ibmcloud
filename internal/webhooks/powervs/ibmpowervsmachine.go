@@ -88,7 +88,7 @@ func validateIBMPowerVSMachine(machine *infrav1.IBMPowerVSMachine) (admission.Wa
 	}
 
 	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSMachine"},
+		schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSMachine"},
 		machine.Name, allErrs)
 }
 

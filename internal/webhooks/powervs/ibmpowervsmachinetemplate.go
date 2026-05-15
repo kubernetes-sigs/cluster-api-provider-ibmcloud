@@ -88,7 +88,7 @@ func validateIBMPowerVSMachineTemplate(machineTemplate *infrav1.IBMPowerVSMachin
 	}
 
 	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: "infrastructure.cluster.x-k8s.io", Kind: "IBMPowerVSMachineTemplate"},
+		schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSMachineTemplate"},
 		machineTemplate.Name, allErrs)
 }
 

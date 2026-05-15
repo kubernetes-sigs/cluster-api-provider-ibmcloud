@@ -43,7 +43,7 @@ func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
 	return &infrav1.IBMPowerVSImage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      imageName,
-			Namespace: "default",
+			Namespace: defaultNamespace,
 		},
 		Spec: infrav1.IBMPowerVSImageSpec{
 			ClusterName:     "test-cluster",

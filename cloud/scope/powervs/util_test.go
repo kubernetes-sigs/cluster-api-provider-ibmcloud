@@ -30,7 +30,7 @@ const (
 )
 
 func TestFetchBucketRegion(t *testing.T) {
-	testRegion := "us-south"
+	testRegion := region
 	vpcRegion := usEastRegion
 
 	testcases := []struct {

@@ -20,6 +20,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	columnTypeString = "string"
+)
+
 // NetSpec defines a Network.
 type NetSpec struct {
 	NetworkID   string  `json:"id"`
@@ -45,19 +49,19 @@ func (netList *IList) ToTable() *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
 				Name: "NETWORK ID",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "Name",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "Type",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "VLAN ID",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "Jumbo",

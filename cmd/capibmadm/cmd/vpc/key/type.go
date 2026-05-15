@@ -23,6 +23,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	columnTypeString = "string"
+)
+
 // Key vpc key info.
 type Key struct {
 	ID            string          `json:"id"`
@@ -47,19 +51,19 @@ func (keyList *List) ToTable() *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
 				Name: "ID",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "NAME",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "TYPE",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "CREATED AT",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "LENGTH",
@@ -67,11 +71,11 @@ func (keyList *List) ToTable() *metav1.Table {
 			},
 			{
 				Name: "FINGERPRINT",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "RESOURCE GROUP",
-				Type: "string",
+				Type: columnTypeString,
 			},
 		},
 	}

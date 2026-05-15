@@ -200,6 +200,10 @@ linters:
           - gocritic
         path: _test\.go
         text: 'deferInLoop: Possible resource leak, ''defer'' is called in the ''for'' loop'
+      # Exclude goconst for all test files - test data doesn't need constants
+      - linters:
+          - goconst
+        path: _test\.go
       - linters:
           - staticcheck
         text: 'SA1019: endpoints.(FetchRCEndpoint|FetchPVSEndpoint) is deprecated: Use FetchEndpoints instead.'

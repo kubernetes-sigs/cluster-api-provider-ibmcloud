@@ -25,6 +25,10 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
 
+const (
+	defaultSystemType = "s922"
+)
+
 func defaultIBMPowerVSMachineSpec(spec *infrav1.IBMPowerVSMachineSpec) {
 	if spec.MemoryGiB == 0 {
 		spec.MemoryGiB = 2
@@ -33,7 +37,7 @@ func defaultIBMPowerVSMachineSpec(spec *infrav1.IBMPowerVSMachineSpec) {
 		spec.Processors = intstr.FromString("0.25")
 	}
 	if spec.SystemType == "" {
-		spec.SystemType = "s922"
+		spec.SystemType = defaultSystemType
 	}
 	if spec.ProcessorType == "" {
 		spec.ProcessorType = infrav1.PowerVSProcessorTypeShared

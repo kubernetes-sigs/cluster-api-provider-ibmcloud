@@ -22,6 +22,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	columnTypeString = "string"
+)
+
 // Image vpc image info.
 type Image struct {
 	CatalogOffering        bool            `json:"catalogOffering"`
@@ -52,31 +56,31 @@ func (imageList *List) ToTable() *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
 				Name: "ID",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "NAME",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "STATUS",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "CREATED AT",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "OS NAME",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "OS VERSION",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "ARCH",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "FILE SIZE(GB)",
@@ -84,19 +88,19 @@ func (imageList *List) ToTable() *metav1.Table {
 			},
 			{
 				Name: "SOURCE VOLUME",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "VISIBILITY",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "ENCRYPTION",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "RESOURCE GROUP",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "CATALOG OFFERING",

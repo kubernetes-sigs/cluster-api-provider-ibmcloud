@@ -22,6 +22,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	columnTypeString = "string"
+)
+
 // ImgSpec defines a Image.
 type ImgSpec struct {
 	ImageID         string          `json:"id"`
@@ -56,63 +60,63 @@ func (imageList *ImgList) ToTable() *metav1.Table {
 		ColumnDefinitions: []metav1.TableColumnDefinition{
 			{
 				Name: "ID",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "NAME",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "STATE",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "DESCRIPTION",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "STORAGE POOL",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "STORAGE TYPE",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "CREATION DATE",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "LAST UPDATE DATE",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "ARCH",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "CONTAINER FORMAT",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "DISK FORMAT",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "ENDIANNESS",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "HYPERVISOR TYPE ",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "OS",
-				Type: "string",
+				Type: columnTypeString,
 			},
 			{
 				Name: "IMAGE TYPE",
-				Type: "string",
+				Type: columnTypeString,
 			},
 		},
 	}
