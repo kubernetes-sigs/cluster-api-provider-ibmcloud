@@ -73,8 +73,8 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "powervs-test-1"},
 				Spec: infrav1.IBMPowerVSMachineSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-					Image:           &infrav1.IBMPowerVSResourceReference{}}},
+					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
+					Image:     &infrav1.IBMPowerVSResourceReference{}}},
 			expectError: false,
 		},
 		{
@@ -93,8 +93,8 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					Finalizers: []string{infrav1.IBMPowerVSMachineFinalizer},
 				},
 				Spec: infrav1.IBMPowerVSMachineSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-					Image:           &infrav1.IBMPowerVSResourceReference{}},
+					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
+					Image:     &infrav1.IBMPowerVSResourceReference{}},
 			},
 			expectError: true,
 		},
@@ -112,8 +112,8 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 						},
 					},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-					Image:           &infrav1.IBMPowerVSResourceReference{}},
+					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
+					Image:     &infrav1.IBMPowerVSResourceReference{}},
 			},
 			ownerMachine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{Name: "capi-test-machine"}},
@@ -142,8 +142,8 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 						},
 					},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-					Image:           &infrav1.IBMPowerVSResourceReference{}},
+					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
+					Image:     &infrav1.IBMPowerVSResourceReference{}},
 			},
 			ownerMachine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{Name: "capi-test-machine"}},
@@ -177,7 +177,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					},
 					Finalizers: []string{infrav1.IBMPowerVSMachineFinalizer},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
+					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
 					ImageRef: infrav1.ImageReference{
 						Name: "capi-image",
 					}},
@@ -192,7 +192,12 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{Name: "powervs-cluster"},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")}}},
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "service-instance-1",
+						},
+					}}},
 			expectError: false,
 		},
 	}
@@ -517,8 +522,11 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-							ID: ptr.To("serviceInstanceID"),
+						Workspace: infrav1.WorkspaceSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "serviceInstanceID",
+							},
 						},
 						VPC: &infrav1.VPCResourceReference{
 							Region: ptr.To("us-south"),
@@ -613,8 +621,11 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 						},
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-							ID: ptr.To("serviceInstanceID"),
+						Workspace: infrav1.WorkspaceSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "serviceInstanceID",
+							},
 						},
 						VPC: &infrav1.VPCResourceReference{
 							Region: ptr.To("us-south"),
@@ -723,8 +734,11 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-							ID: ptr.To("serviceInstanceID"),
+						Workspace: infrav1.WorkspaceSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "serviceInstanceID",
+							},
 						},
 					},
 				},
@@ -840,8 +854,11 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("serviceInstanceID"),
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "serviceInstanceID",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -951,7 +968,7 @@ func newIBMPowerVSMachine() *infrav1.IBMPowerVSMachine {
 			Network: infrav1.IBMPowerVSResourceReference{
 				ID: ptr.To("capi-net-id"),
 			},
-			ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
+			Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
 		},
 	}
 }

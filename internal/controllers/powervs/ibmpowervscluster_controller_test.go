@@ -69,7 +69,14 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: "powervs-test-",
 			},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Workspace: infrav1.WorkspaceSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "foo",
+					},
+				},
+			},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -111,7 +118,14 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Workspace: infrav1.WorkspaceSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "foo",
+					},
+				},
+			},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -141,7 +155,14 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				GenerateName: "powervs-test-",
 				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 			},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Workspace: infrav1.WorkspaceSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "foo",
+					},
+				},
+			},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -196,7 +217,14 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1.IBMPowerVSClusterSpec{ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("foo")}},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Workspace: infrav1.WorkspaceSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "foo",
+					},
+				},
+			},
 		}
 
 		createCluster(g, powerVSCluster, ns.Name)
@@ -439,8 +467,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1.ResourceReference{
-								ID: ptr.To("serviceInstanceID"),
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
 							},
 						},
 					},
@@ -453,7 +481,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)),
+					State: ptr.To(string(infrav1.WorkspaceStateProvisioning)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -481,8 +509,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1.ResourceReference{
-								ID: ptr.To("serviceInstanceID"),
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
 							},
 							VPC: &infrav1.ResourceReference{
 								ID: ptr.To("vpcID"),
@@ -498,7 +526,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)),
+					State: ptr.To(string(infrav1.WorkspaceStateProvisioning)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -526,8 +554,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1.ResourceReference{
-								ID: ptr.To("serviceInstanceID"),
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
 							},
 						},
 					},
@@ -548,7 +576,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			},
 			expectedError: kerrors.NewAggregate([]error{
 				fmt.Errorf("failed to reconcile VPC: %w", fmt.Errorf("failed to check if VPC exists: %w", fmt.Errorf("failed to get VPC: error fetching VPC details with name: %w", errors.New("vpc not found")))),
-				fmt.Errorf("failed to reconcile PowerVS service instance: %w", fmt.Errorf("failed to fetch service instance details: %w", errors.New("error getting resource instance"))),
+				fmt.Errorf("failed to reconcile PowerVS workspace: %w", fmt.Errorf("failed to fetch workspace (id: serviceInstanceID) details: %w", errors.New("error getting resource instance"))),
 			}),
 		},
 		{
@@ -563,7 +591,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
+					State: ptr.To(string(infrav1.WorkspaceStateActive)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -587,7 +615,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			conditions: clusterv1.Conditions{
 				getVPCLBReadyCondition(),
 				getNetworkReadyCondition(),
-				getServiceInstanceReadyCondition(),
+				getWorkspaceReadyCondition(),
 				clusterv1.Condition{
 					Type:               infrav1.TransitGatewayReadyCondition,
 					Status:             "False",
@@ -614,7 +642,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
 					Name:  ptr.To("serviceInstanceName"),
 					ID:    ptr.To("serviceInstanceID"),
-					State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
+					State: ptr.To(string(infrav1.WorkspaceStateActive)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
@@ -669,7 +697,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				},
 				getVPCLBReadyCondition(),
 				getNetworkReadyCondition(),
-				getServiceInstanceReadyCondition(),
+				getWorkspaceReadyCondition(),
 				getTGReadyCondition(),
 				getVPCReadyCondition(),
 				getVPCSGReadyCondition(),
@@ -820,8 +848,8 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					ServiceInstance: &infrav1.ResourceReference{
-						ID: ptr.To("serviceInstanceID"),
+					Workspace: infrav1.ResourceReferenceV1Beta3{
+						ID: "serviceInstanceID",
 					},
 				},
 			},
@@ -842,7 +870,12 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 						Name: "capi-powervs-cluster",
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
+						Workspace: infrav1.WorkspaceSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "service-instance-1",
+							},
+						},
 					},
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
@@ -864,7 +897,12 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 						Name: "capi-powervs-cluster",
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
+						Workspace: infrav1.WorkspaceSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "service-instance-1",
+							},
+						},
 					},
 				},
 				Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects().Build(),
@@ -1174,9 +1212,8 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1.ResourceReference{
-				ID:                ptr.To("serviceInstanceID"),
-				ControllerCreated: ptr.To(false),
+			Workspace: infrav1.ResourceReferenceV1Beta3{
+				ID: "serviceInstanceID",
 			},
 			DHCPServer: &infrav1.ResourceReference{
 				ID:                ptr.To("DHCPServerID"),
@@ -1201,13 +1238,13 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g.Expect(result.RequeueAfter).To(BeZero())
 	})
 
-	t.Run("When delete ServiceInstance returns error", func(t *testing.T) {
+	t.Run("When delete Workspace returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Workspace.Type = infrav1.SourceTypeProvision
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1.ResourceReference{
-				ID:                ptr.To("serviceInstanceID"),
-				ControllerCreated: ptr.To(true),
+			Workspace: infrav1.ResourceReferenceV1Beta3{
+				ID: "serviceInstanceID",
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
@@ -1231,13 +1268,13 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g.Expect(result.RequeueAfter).To(BeZero())
 	})
 
-	t.Run("When delete ServiceInstance returns requeue as true", func(t *testing.T) {
+	t.Run("When delete Workspace returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Workspace.Type = infrav1.SourceTypeProvision
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1.ResourceReference{
-				ID:                ptr.To("serviceInstanceID"),
-				ControllerCreated: ptr.To(true),
+			Workspace: infrav1.ResourceReferenceV1Beta3{
+				ID: "serviceInstanceID",
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
@@ -1268,8 +1305,13 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			ControllerCreated: ptr.To(true),
 		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
-			ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-			Ignition:        &infrav1.Ignition{Version: "3.4"},
+			Workspace: infrav1.WorkspaceSource{
+				Type: infrav1.SourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{
+					ID: "service-instance-1",
+				},
+			},
+			Ignition: &infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1295,13 +1337,18 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1.ResourceReference{
-				ID: ptr.To("serviceInstanceID"),
+			Workspace: infrav1.ResourceReferenceV1Beta3{
+				ID: "serviceInstanceID",
 			},
 		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
-			ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-			Ignition:        &infrav1.Ignition{Version: "3.4"},
+			Workspace: infrav1.WorkspaceSource{
+				Type: infrav1.SourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{
+					ID: "service-instance-1",
+				},
+			},
+			Ignition: &infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1642,8 +1689,8 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1.ResourceReference{
-								ID: ptr.To("serviceInstanceID"),
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
 							},
 						},
 					},
@@ -1659,12 +1706,12 @@ func TestReconcilePowerVSResources(t *testing.T) {
 
 			conditions: clusterv1.Conditions{
 				clusterv1.Condition{
-					Type:               infrav1.ServiceInstanceReadyCondition,
+					Type:               infrav1.ServiceInstanceReadyV1Beta2Condition,
 					Status:             "False",
 					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
-					Reason:             infrav1.ServiceInstanceReconciliationFailedReason,
-					Message:            "failed to fetch service instance details: error getting resource instance",
+					Reason:             infrav1.ServiceInstanceReconciliationFailedV1Beta2Reason,
+					Message:            "failed to fetch workspace (id: serviceInstanceID) details: error getting resource instance",
 				},
 			},
 		},
@@ -1674,14 +1721,14 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
-							ServiceInstance: &infrav1.ResourceReference{
-								ID: ptr.To("serviceInstanceID"),
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
 							},
 						},
 					},
 				}
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
-				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.WorkspaceStateProvisioning)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
 				return clusterScope
 			},
@@ -1697,11 +1744,18 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("serviceInstanceID")},
+							Workspace: infrav1.WorkspaceSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "serviceInstanceID",
+								},
+							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Network:         &infrav1.ResourceReference{ID: ptr.To("NetworkID")},
-							ServiceInstance: &infrav1.ResourceReference{ID: ptr.To("serviceInstanceID")},
+							Network: &infrav1.ResourceReference{ID: ptr.To("NetworkID")},
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
+							},
 						},
 					},
 				}
@@ -1709,7 +1763,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(nil, errors.New("error getting network"))
 				mockPowerVS.EXPECT().WithClients(gomock.Any())
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
-				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.WorkspaceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
 				clusterScope.IBMPowerVSClient = mockPowerVS
 				return clusterScope
@@ -1726,7 +1780,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 					Reason:             infrav1.NetworkReconciliationFailedReason,
 					Message:            "failed to fetch network by ID: error getting network",
 				},
-				getServiceInstanceReadyCondition(),
+				getWorkspaceReadyCondition(),
 			},
 		},
 		{
@@ -1735,11 +1789,18 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("serviceInstanceID")},
+							Workspace: infrav1.WorkspaceSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "serviceInstanceID",
+								},
+							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Network:         &infrav1.ResourceReference{ID: ptr.To("netID")},
-							ServiceInstance: &infrav1.ResourceReference{ID: ptr.To("serviceInstanceID")},
+							Network: &infrav1.ResourceReference{ID: ptr.To("netID")},
+							Workspace: infrav1.ResourceReferenceV1Beta3{
+								ID: "serviceInstanceID",
+							},
 						},
 					},
 				}
@@ -1747,14 +1808,14 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(&models.Network{NetworkID: ptr.To("netID")}, nil)
 				mockPowerVS.EXPECT().WithClients(gomock.Any())
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
-				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.ServiceInstanceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
+				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.WorkspaceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
 				clusterScope.IBMPowerVSClient = mockPowerVS
 				return clusterScope
 			},
 			conditions: clusterv1.Conditions{
 				getNetworkReadyCondition(),
-				getServiceInstanceReadyCondition(),
+				getWorkspaceReadyCondition(),
 			},
 		},
 	}
@@ -1851,8 +1912,8 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 			},
 		},
 		Status: infrav1.IBMPowerVSClusterStatus{
-			ServiceInstance: &infrav1.ResourceReference{
-				ID: ptr.To("serviceInstanceID"),
+			Workspace: infrav1.ResourceReferenceV1Beta3{
+				ID: "serviceInstanceID",
 			},
 			Network: &infrav1.ResourceReference{
 				ID: ptr.To("NetworkID"),
@@ -1957,9 +2018,9 @@ func cleanupCluster(g *WithT, powervsCluster *infrav1.IBMPowerVSCluster, namespa
 	}
 }
 
-func getServiceInstanceReadyCondition() clusterv1.Condition {
+func getWorkspaceReadyCondition() clusterv1.Condition {
 	return clusterv1.Condition{
-		Type:   infrav1.ServiceInstanceReadyCondition,
+		Type:   infrav1.ServiceInstanceReadyV1Beta2Condition,
 		Status: "True",
 	}
 }

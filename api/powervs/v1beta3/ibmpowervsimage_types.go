@@ -38,15 +38,10 @@ type IBMPowerVSImageSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	ClusterName string `json:"clusterName"`
 
-	// serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
-	// Power VS workspace is a container for all Power VS instances at a specific geographic region.
-	// serviceInstance can be created via IBM Cloud catalog or CLI.
-	// supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-	// More detail about Power VS service instance.
-	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
-	// when omitted system will dynamically create the service instance
+	// workspace identifies the PowerVS workspace into which the image will be imported.
+	// If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
 	// +optional
-	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
+	Workspace ResourceIdentifier `json:"workspace,omitempty,omitzero"`
 
 	// bucket is the Cloud Object Storage bucket name; bucket-name[/optional/folder]
 	Bucket *string `json:"bucket"`

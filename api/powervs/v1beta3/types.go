@@ -69,21 +69,21 @@ var (
 	PowerVSImageStateCompleted = PowerVSImageState("completed")
 )
 
-// ServiceInstanceState describes the state of a service instance.
-type ServiceInstanceState string
+// WorkspaceState describes the state of a PowerVS workspace.
+type WorkspaceState string
 
 var (
-	// ServiceInstanceStateActive is the string representing a service instance in an active state.
-	ServiceInstanceStateActive = ServiceInstanceState("active")
+	// WorkspaceStateActive is the string representing a workspace in an active state.
+	WorkspaceStateActive = WorkspaceState("active")
 
-	// ServiceInstanceStateProvisioning is the string representing a service instance in a provisioning state.
-	ServiceInstanceStateProvisioning = ServiceInstanceState("provisioning")
+	// WorkspaceStateProvisioning is the string representing a workspace in a provisioning state.
+	WorkspaceStateProvisioning = WorkspaceState("provisioning")
 
-	// ServiceInstanceStateFailed is the string representing a service instance in a failed state.
-	ServiceInstanceStateFailed = ServiceInstanceState("failed")
+	// WorkspaceStateFailed is the string representing a workspace in a failed state.
+	WorkspaceStateFailed = WorkspaceState("failed")
 
-	// ServiceInstanceStateRemoved is the string representing a service instance in a removed state.
-	ServiceInstanceStateRemoved = ServiceInstanceState("removed")
+	// WorkspaceStateRemoved is the string representing a workspace in a removed state.
+	WorkspaceStateRemoved = WorkspaceState("removed")
 )
 
 // TransitGatewayState describes the state of an IBM Transit Gateway.
@@ -250,8 +250,6 @@ var (
 type ResourceType string
 
 var (
-	// ResourceTypeServiceInstance is Power VS service instance resource.
-	ResourceTypeServiceInstance = ResourceType("serviceInstance")
 	// ResourceTypeNetwork is Power VS network resource.
 	ResourceTypeNetwork = ResourceType("network")
 	// ResourceTypeDHCPServer is Power VS DHCP server.

@@ -379,68 +379,78 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 			name:                      "Returns service instance ID set in IBMPowerVSCluster.Status.ServiceInstance.ID",
 			expectedServiceInstanceID: "service-instance-0",
 			machineScope: MachineScope{
+				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
+					Spec: infrav1.IBMPowerVSMachineSpec{},
+				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						ServiceInstance: &infrav1.ResourceReference{
-							ID: ptr.To("service-instance-0"),
+						Workspace: infrav1.ResourceReferenceV1Beta3{
+							ID: "service-instance-0",
 						},
 					},
 				},
 			},
 		}, {
-			name:                      "get service instance ID from powervsClusterSpec",
+			name:                      "get service instance ID from powervsClusterStatus when machine spec is empty",
 			expectedServiceInstanceID: "service-instance-1",
 			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-1")},
-					},
+				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
+					Spec: infrav1.IBMPowerVSMachineSpec{},
 				},
-			},
-		}, {
-			name:                      "get service instance ID from powervsClusterSpec's serviceInstance",
-			expectedServiceInstanceID: "service-instance-2",
-			machineScope: MachineScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-							ID: ptr.To("service-instance-2"),
+					Status: infrav1.IBMPowerVSClusterStatus{
+						Workspace: infrav1.ResourceReferenceV1Beta3{
+							ID: "service-instance-1",
 						},
 					},
 				},
 			},
 		}, {
 			name:                      "get service instance ID with serviceInstanceID present in both IBMPowerVSCluster Status and Spec ",
-			expectedServiceInstanceID: "service-instance-in-status",
+			expectedServiceInstanceID: "service-instance-0",
 			machineScope: MachineScope{
+				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
+					Spec: infrav1.IBMPowerVSMachineSpec{},
+				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						ServiceInstance: &infrav1.ResourceReference{
-							ID: ptr.To("service-instance-in-status"),
+						Workspace: infrav1.ResourceReferenceV1Beta3{
+							ID: "service-instance-0",
 						},
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("service-instance-in-spec")},
+						Workspace: infrav1.WorkspaceSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "service-instance-in-spec",
+							},
+						},
 					},
 				},
 			},
 		}, {
 			name: "Failed to find service instance id",
 			machineScope: MachineScope{
+				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
+					Spec: infrav1.IBMPowerVSMachineSpec{},
+				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ServiceInstance: &infrav1.IBMPowerVSResourceReference{},
+						Workspace: infrav1.WorkspaceSource{
+							Type:      infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{},
+						},
 					},
 				},
 			},
-			expectedError: fmt.Errorf("failed to find service instance id as both name and id are not set"),
+			expectedError: fmt.Errorf("failed to find workspace ID: not specified in Machine spec and not yet populated in Cluster status"),
 		},
 	}
 
 	for _, tc := range testcases {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
-			serviceInstanceID, err := tc.machineScope.GetServiceInstanceID()
+			serviceInstanceID, err := tc.machineScope.GetWorkspaceID()
 			g.Expect(serviceInstanceID).To(Equal(tc.expectedServiceInstanceID))
 			if tc.expectedError != nil {
 				g.Expect(err).To(Equal(tc.expectedError))
@@ -469,20 +479,20 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 		scope := MachineScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-						Name: ptr.To("foo-cluster"),
-					},
+					Zone: ptr.To("us-south-1"),
 				},
 			},
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-				Status: infrav1.IBMPowerVSMachineStatus{
-					Zone: ptr.To("us-south-1"),
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					Workspace: infrav1.ResourceIdentifier{
+						Name: "foo-cluster",
+					},
 				},
 			},
 		}
 		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(&resourcecontrollerv2.ResourceInstance{GUID: ptr.To("foo-id")}, nil)
 		scope.ResourceClient = mockResourceController
-		serviceInstanceID, err := scope.GetServiceInstanceID()
+		serviceInstanceID, err := scope.GetWorkspaceID()
 		g.Expect(serviceInstanceID).To(Equal("foo-id"))
 		g.Expect(err).To(BeNil())
 	})
@@ -494,20 +504,20 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 		scope := MachineScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{
-						Name: ptr.To("foo-cluster"),
-					},
+					Zone: ptr.To("us-south-1"),
 				},
 			},
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-				Status: infrav1.IBMPowerVSMachineStatus{
-					Zone: ptr.To("us-south-1"),
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					Workspace: infrav1.ResourceIdentifier{
+						Name: "foo-cluster",
+					},
 				},
 			},
 		}
 		mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{Name: "foo-cluster"})).Return(nil, fmt.Errorf("failed to list instance id"))
 		scope.ResourceClient = mockResourceController
-		serviceInstanceID, err := scope.GetServiceInstanceID()
+		serviceInstanceID, err := scope.GetWorkspaceID()
 		g.Expect(serviceInstanceID).To(Equal(""))
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -979,12 +989,18 @@ func TestSetProviderID(t *testing.T) {
 	t.Run("failed to get service instance ID", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
+			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
+				Spec: infrav1.IBMPowerVSMachineSpec{},
+			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Status: infrav1.IBMPowerVSClusterStatus{
-					ServiceInstance: &infrav1.ResourceReference{},
+					Workspace: infrav1.ResourceReferenceV1Beta3{},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{},
+					Workspace: infrav1.WorkspaceSource{
+						Type:      infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{},
+					},
 				},
 			},
 		}
@@ -997,8 +1013,8 @@ func TestSetProviderID(t *testing.T) {
 		scope := MachineScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Status: infrav1.IBMPowerVSClusterStatus{
-					ServiceInstance: &infrav1.ResourceReference{
-						ID: ptr.To("foo-service-instance-id"),
+					Workspace: infrav1.ResourceReferenceV1Beta3{
+						ID: "foo-service-instance-id",
 					},
 				},
 			},
@@ -1062,12 +1078,12 @@ func TestCreateCOSClient(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			serviceInstance := &resourcecontrollerv2.ResourceInstance{
-				State: ptr.To(string(infrav1.ServiceInstanceStateProvisioning)),
+				State: ptr.To(string(infrav1.WorkspaceStateProvisioning)),
 			}
 			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
 			scope.ResourceClient = mockResourceController
 			result, err := scope.createCOSClient(ctx)
-			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1.ServiceInstanceStateProvisioning)
+			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1.WorkspaceStateProvisioning)
 			g.Expect(result).To(BeNil())
 			g.Expect(err.Error()).To(ContainSubstring(expectedError))
 		})
@@ -1078,7 +1094,7 @@ func TestCreateCOSClient(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			serviceInstance := &resourcecontrollerv2.ResourceInstance{
-				State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
+				State: ptr.To(string(infrav1.WorkspaceStateActive)),
 			}
 			scope.SetRegion(region)
 			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
@@ -1094,7 +1110,7 @@ func TestCreateCOSClient(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			serviceInstance := &resourcecontrollerv2.ResourceInstance{
-				State: ptr.To(string(infrav1.ServiceInstanceStateActive)),
+				State: ptr.To(string(infrav1.WorkspaceStateActive)),
 				GUID:  ptr.To("foo-guid"),
 			}
 			scope.SetRegion(region)
@@ -1282,7 +1298,7 @@ func TestDeleteMachineIgnition(t *testing.T) {
 			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
 			mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
 			serviceInstance := new(resourcecontrollerv2.ResourceInstance)
-			state := string(infrav1.ServiceInstanceStateActive)
+			state := string(infrav1.WorkspaceStateActive)
 			serviceInstance.State = &state
 			guid := "foo-guid"
 			serviceInstance.GUID = &guid

@@ -317,31 +317,6 @@ spec:
               region:
                 description: region is the Cloud Object Storage region.
                 type: string
-              serviceInstance:
-                description: |-
-                  serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
-                  Power VS workspace is a container for all Power VS instances at a specific geographic region.
-                  serviceInstance can be created via IBM Cloud catalog or CLI.
-                  supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-                  More detail about Power VS service instance.
-                  https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
-                  when omitted system will dynamically create the service instance
-                properties:
-                  id:
-                    description: id of resource
-                    minLength: 1
-                    type: string
-                  name:
-                    description: name of resource
-                    minLength: 1
-                    type: string
-                  regex:
-                    description: |-
-                      regex is the regular expression to match resource,
-                      In case of multiple resources matches the provided regular expression the first matched resource will be selected
-                    minLength: 1
-                    type: string
-                type: object
               storageType:
                 default: tier1
                 description: storageType is the type of storage, storage pool with
@@ -351,6 +326,23 @@ spec:
                 - tier1
                 - tier3
                 type: string
+              workspace:
+                description: |-
+                  workspace identifies the PowerVS workspace into which the image will be imported.
+                  If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
+                properties:
+                  id:
+                    description: ID of the resource.
+                    minLength: 1
+                    type: string
+                  name:
+                    description: Name of the resource.
+                    minLength: 1
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: exactly one of id or name must be specified
+                  rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) == 1'
             required:
             - bucket
             - clusterName

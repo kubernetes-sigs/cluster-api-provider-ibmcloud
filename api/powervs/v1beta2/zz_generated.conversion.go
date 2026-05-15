@@ -674,7 +674,7 @@ func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(
 	if err := Convert_v1beta1_APIEndpoint_To_v1beta3_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
-	out.ServiceInstance = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
+	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
 	out.ResourceGroup = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ResourceGroup))
 	out.VPC = (*v1beta3.VPCResourceReference)(unsafe.Pointer(in.VPC))
@@ -691,11 +691,11 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 	if err := Convert_v1beta3_APIEndpoint_To_v1beta1_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
+	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta3_IBMPowerVSResourceReference_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
 	out.DHCPServer = (*DHCPServer)(unsafe.Pointer(in.DHCPServer))
-	out.ServiceInstance = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
 	out.ResourceGroup = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ResourceGroup))
 	out.VPC = (*VPCResourceReference)(unsafe.Pointer(in.VPC))
@@ -711,7 +711,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, out *v1beta3.IBMPowerVSClusterStatus, s conversion.Scope) error {
 	// WARNING: in.Ready requires manual conversion: does not exist in peer-type
 	out.ResourceGroup = (*v1beta3.ResourceReference)(unsafe.Pointer(in.ResourceGroup))
-	out.ServiceInstance = (*v1beta3.ResourceReference)(unsafe.Pointer(in.ServiceInstance))
+	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	out.Network = (*v1beta3.ResourceReference)(unsafe.Pointer(in.Network))
 	out.DHCPServer = (*v1beta3.ResourceReference)(unsafe.Pointer(in.DHCPServer))
 	out.VPC = (*v1beta3.ResourceReference)(unsafe.Pointer(in.VPC))
@@ -748,8 +748,8 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 		out.Conditions = nil
 	}
 	// WARNING: in.Initialization requires manual conversion: does not exist in peer-type
+	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	out.ResourceGroup = (*ResourceReference)(unsafe.Pointer(in.ResourceGroup))
-	out.ServiceInstance = (*ResourceReference)(unsafe.Pointer(in.ServiceInstance))
 	out.Network = (*ResourceReference)(unsafe.Pointer(in.Network))
 	out.DHCPServer = (*ResourceReference)(unsafe.Pointer(in.DHCPServer))
 	out.VPC = (*ResourceReference)(unsafe.Pointer(in.VPC))
@@ -961,7 +961,7 @@ func Convert_v1beta3_IBMPowerVSImageList_To_v1beta2_IBMPowerVSImageList(in *v1be
 func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *IBMPowerVSImageSpec, out *v1beta3.IBMPowerVSImageSpec, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
 	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
-	out.ServiceInstance = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
+	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	out.Bucket = (*string)(unsafe.Pointer(in.Bucket))
 	out.Object = (*string)(unsafe.Pointer(in.Object))
 	out.Region = (*string)(unsafe.Pointer(in.Region))
@@ -972,7 +972,7 @@ func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *
 
 func autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *v1beta3.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
-	out.ServiceInstance = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
+	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	out.Bucket = (*string)(unsafe.Pointer(in.Bucket))
 	out.Object = (*string)(unsafe.Pointer(in.Object))
 	out.Region = (*string)(unsafe.Pointer(in.Region))
@@ -1097,7 +1097,7 @@ func Convert_v1beta3_IBMPowerVSMachineList_To_v1beta2_IBMPowerVSMachineList(in *
 
 func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, out *v1beta3.IBMPowerVSMachineSpec, s conversion.Scope) error {
 	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
-	out.ServiceInstance = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
+	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	out.SSHKey = in.SSHKey
 	out.Image = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
 	// WARNING: in.ImageRef requires manual conversion: inconvertible types (*k8s.io/api/core/v1.LocalObjectReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ImageReference)
@@ -1115,7 +1115,7 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(
 }
 
 func autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *v1beta3.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s conversion.Scope) error {
-	out.ServiceInstance = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ServiceInstance))
+	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	out.SSHKey = in.SSHKey
 	out.Image = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
 	// WARNING: in.ImageRef requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ImageReference vs *k8s.io/api/core/v1.LocalObjectReference)

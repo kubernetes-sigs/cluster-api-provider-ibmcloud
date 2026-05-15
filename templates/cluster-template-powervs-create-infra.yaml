@@ -37,8 +37,10 @@ spec:
   resourceGroup:
     name: ${IBM_RESOURCE_GROUP}
   zone: ${IBMPOWERVS_ZONE}
-  serviceInstance:
-    name: ${CLUSTER_NAME}-serviceInstance
+  workspace:
+    type: Provision
+    provision:
+      name: ${CLUSTER_NAME}-workspace
   vpc:
     name: ${CLUSTER_NAME}-vpc
     region: ${IBMVPC_REGION}
@@ -111,8 +113,8 @@ spec:
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
-      serviceInstance:
-        name: ${CLUSTER_NAME}-serviceInstance
+      workspace:
+        name: ${CLUSTER_NAME}-workspace
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
@@ -151,8 +153,8 @@ spec:
       processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
-      serviceInstance:
-        name: ${CLUSTER_NAME}-serviceInstance
+      workspace:
+        name: ${CLUSTER_NAME}-workspace
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
@@ -184,7 +186,6 @@ spec:
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSImage
 metadata:
-  creationTimestamp: null
   name: ${CLUSTER_NAME}-image
 spec:
   bucket: ${COS_BUCKET_NAME}
@@ -192,10 +193,8 @@ spec:
   deletePolicy: delete
   object: ${COS_OBJECT_NAME}
   region: ${COS_BUCKET_REGION}
-  serviceInstance:
-    name: ${CLUSTER_NAME}-serviceInstance
-status:
-  ready: false
+  workspace:
+    name: ${CLUSTER_NAME}-workspace
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta2
 kind: ClusterResourceSet
@@ -241,7 +240,7 @@ data:
         region =  ${IBMVPC_REGION:=""}
         powerVSRegion = ${IBMPOWERVS_REGION}
         powerVSZone = ${IBMPOWERVS_ZONE}
-        powerVSCloudInstanceName = ${CLUSTER_NAME}-serviceInstance
+        powerVSCloudInstanceName = ${CLUSTER_NAME}-workspace
 kind: ConfigMap
 metadata:
   name: ibmpowervs-cfg

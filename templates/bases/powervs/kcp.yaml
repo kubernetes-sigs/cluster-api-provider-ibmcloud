@@ -178,8 +178,8 @@ metadata:
 spec:
   template:
     spec:
-      serviceInstance:
-        id: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      workspace:
+        id: "${IBMPOWERVS_WORKSPACE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
         name: "${IBMPOWERVS_IMAGE_NAME}"
