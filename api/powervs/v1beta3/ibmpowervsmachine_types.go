@@ -53,6 +53,10 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	Workspace ResourceIdentifier `json:"workspace,omitempty,omitzero"`
 
+	// network is the reference to the Network to use for this instance.
+	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+	Network ResourceIdentifier `json:"network,omitempty,omitzero"`
+
 	// sshKey is the name of the SSH key pair provided to the vsi for authenticating users.
 	SSHKey string `json:"sshKey,omitempty"`
 
@@ -108,10 +112,6 @@ type IBMPowerVSMachineSpec struct {
 	// default, which is subject to change over time. The current default is 2.
 	// +optional
 	MemoryGiB int32 `json:"memoryGiB,omitempty"`
-
-	// network is the reference to the Network to use for this instance.
-	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-	Network IBMPowerVSResourceReference `json:"network"`
 
 	// providerID is the unique identifier as specified by the cloud provider.
 	// +optional

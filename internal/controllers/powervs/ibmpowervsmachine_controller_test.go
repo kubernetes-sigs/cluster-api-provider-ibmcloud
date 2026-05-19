@@ -198,6 +198,12 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 						Reference: infrav1.ResourceIdentifier{
 							ID: "service-instance-1",
 						},
+					},
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "network-id",
+						},
 					}}},
 			expectError: false,
 		},
@@ -970,8 +976,8 @@ func newIBMPowerVSMachine() *infrav1.IBMPowerVSMachine {
 			Image: &infrav1.IBMPowerVSResourceReference{
 				ID: ptr.To("capi-image-id"),
 			},
-			Network: infrav1.IBMPowerVSResourceReference{
-				ID: ptr.To("capi-net-id"),
+			Network: infrav1.ResourceIdentifier{
+				ID: "capi-net-id",
 			},
 			Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
 		},

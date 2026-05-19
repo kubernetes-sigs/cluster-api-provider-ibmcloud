@@ -385,24 +385,12 @@ func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.Resou
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting status", "resourceType", resourceType, "resource", resource)
 	switch resourceType {
-	case infrav1.ResourceTypeNetwork:
-		if s.IBMPowerVSCluster.Status.Network == nil {
-			s.IBMPowerVSCluster.Status.Network = &resource
-			return
-		}
-		s.IBMPowerVSCluster.Status.Network.Set(resource)
 	case infrav1.ResourceTypeVPC:
 		if s.IBMPowerVSCluster.Status.VPC == nil {
 			s.IBMPowerVSCluster.Status.VPC = &resource
 			return
 		}
 		s.IBMPowerVSCluster.Status.VPC.Set(resource)
-	case infrav1.ResourceTypeDHCPServer:
-		if s.IBMPowerVSCluster.Status.DHCPServer == nil {
-			s.IBMPowerVSCluster.Status.DHCPServer = &resource
-			return
-		}
-		s.IBMPowerVSCluster.Status.DHCPServer.Set(resource)
 	case infrav1.ResourceTypeCOSInstance:
 		if s.IBMPowerVSCluster.Status.COSInstance == nil {
 			s.IBMPowerVSCluster.Status.COSInstance = &resource
@@ -416,32 +404,6 @@ func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.Resou
 		}
 		s.IBMPowerVSCluster.Status.ResourceGroup.Set(resource)
 	}
-}
-
-// GetNetworkID returns the Network id from status of IBMPowerVSCluster object. If it doesn't exist, returns nil.
-func (s *ClusterScope) GetNetworkID() *string {
-	if s.IBMPowerVSCluster.Status.Network != nil {
-		return s.IBMPowerVSCluster.Status.Network.ID
-	}
-	return nil
-}
-
-// Network returns the cluster Network.
-func (s *ClusterScope) Network() *infrav1.IBMPowerVSResourceReference {
-	return &s.IBMPowerVSCluster.Spec.Network
-}
-
-// GetDHCPServerID returns the DHCP id from status of IBMPowerVSCluster object. If it doesn't exist, returns nil.
-func (s *ClusterScope) GetDHCPServerID() *string {
-	if s.IBMPowerVSCluster.Status.DHCPServer != nil {
-		return s.IBMPowerVSCluster.Status.DHCPServer.ID
-	}
-	return nil
-}
-
-// DHCPServer returns the DHCP server details.
-func (s *ClusterScope) DHCPServer() *infrav1.DHCPServer {
-	return s.IBMPowerVSCluster.Spec.DHCPServer
 }
 
 // VPC returns the cluster VPC information.
@@ -857,217 +819,230 @@ func (s *ClusterScope) createWorkspace(ctx context.Context, workspaceName string
 	return workspace, nil
 }
 
-// ReconcileNetwork reconciles network
-// If only IBMPowerVSCluster.Spec.Network is set, network would be validated and if exists already will get used as cluster’s network or DHCP network would be validated with this name if not exits then a new network will be created via DHCP service.
-// If only IBMPowerVSCluster.Spec.DHCPServer is set, DHCP server would be validated and if exists already, will use DHCP server’s network as cluster network. If not a new DHCP service will be created and it’s network will be used.
-// Cannot set both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer since it will cause collision during network creation if both are provided.
-// If both IBMPowerVSCluster.Spec.Network & IBMPowerVSCluster.Spec.DHCPServer is not set, by default DHCP service will be created with the cluster name to setup cluster's network.
-// Note: DHCP network name would be in `DHCPSERVER<Network.name or DHCPServer.name>_Private` this format.
+// ReconcileNetwork reconciles network.
 func (s *ClusterScope) ReconcileNetwork(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if s.GetNetworkID() != nil {
-		// Check the network exists
-		if _, err := s.IBMPowerVSClient.GetNetworkByID(*s.GetNetworkID()); err != nil {
+
+	cluster := s.IBMPowerVSCluster
+
+	// 1. Idempotency & State Check: If we already resolved the Network ID, just verify its state.
+	networkID := cluster.Status.Network.ID
+	if networkID != "" {
+		log.V(3).Info("PowerVS network ID is set in status, verifying existence", "networkID", networkID)
+		if _, err := s.IBMPowerVSClient.GetNetworkByID(networkID); err != nil {
 			return false, fmt.Errorf("failed to fetch network by ID: %w", err)
 		}
 
-		if s.GetDHCPServerID() == nil {
-			// If only network is set, return once network is validated to be ok
-			return true, nil
+		// If we provisioned this network via DHCP, ensure the DHCP server is fully active
+		if cluster.Spec.Network.Type == infrav1.SourceTypeProvision {
+			dhcpServerID := cluster.Status.Network.DHCPServer.ID
+			if dhcpServerID == "" {
+				log.Info("Recovering state: Network ID is present but DHCP Server ID is missing in status. Requeuing to resolve", "networkID", networkID)
+				return true, nil
+			}
+
+			log.V(3).Info("Verifying provisioned DHCP server state", "dhcpServerID", dhcpServerID)
+			active, err := s.isDHCPServerActive(ctx)
+			if err != nil {
+				return false, fmt.Errorf("failed to check if DHCP server is active: %w", err)
+			}
+
+			if !active {
+				log.V(3).Info("DHCP server is still building")
+				return true, nil // requeue and wait
+			}
 		}
 
-		log.V(3).Info("DHCP server ID is set, fetching details", "dhcpServerID", s.GetDHCPServerID())
-		active, err := s.isDHCPServerActive(ctx)
-		if err != nil {
-			return false, fmt.Errorf("failed to check if DHCP server is active: %w", err)
-		}
-		// DHCP server still not active, skip checking network for now
-		if !active {
-			log.V(3).Info("DHCP server is not active")
-			return false, nil
-		}
-		return true, nil
-	}
-	// check network exist in cloud
-	networkID, err := s.checkNetwork(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to check if network exists: %w", err)
-	}
-	if networkID != nil {
-		log.V(3).Info("Found PowerVS network in cloud", "networkID", networkID)
-		s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: networkID, ControllerCreated: ptr.To(false)})
-	}
-	dhcpServerID, err := s.checkDHCPServer(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to check if DHCP server exists: %w", err)
-	}
-	if dhcpServerID != nil {
-		log.V(3).Info("Found DHCP server in cloud", "dhcpServerID", dhcpServerID)
-		s.SetStatus(ctx, infrav1.ResourceTypeDHCPServer, infrav1.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(false)})
-	}
-	if s.GetNetworkID() != nil {
-		return true, nil
+		// Network is resolved and ready!
+		return false, nil
 	}
 
-	dhcpServerID, err = s.createDHCPServer(ctx)
-	if err != nil {
-		return false, fmt.Errorf("error creating DHCPserver: %w", err)
-	}
+	// 2. We don't have a Network ID yet. Route logic based strictly on the user's explicit intent.
+	log.Info("Resolving PowerVS network", "type", cluster.Spec.Network.Type)
 
-	log.Info("Created DHCP Server", "dhcpServerID", *dhcpServerID)
-	s.SetStatus(ctx, infrav1.ResourceTypeDHCPServer, infrav1.ResourceReference{ID: dhcpServerID, ControllerCreated: ptr.To(true)})
-	return false, nil
+	switch cluster.Spec.Network.Type {
+	case infrav1.SourceTypeReference:
+		return s.reconcileNetworkReference(ctx)
+
+	case infrav1.SourceTypeProvision:
+		return s.reconcileNetworkProvision(ctx)
+
+	default:
+		return false, fmt.Errorf("unknown network source type: %q", cluster.Spec.Network.Type)
+	}
 }
 
-// checkDHCPServer checks if DHCP server exists in cloud with given DHCPServer's ID or name mentioned in spec.
-// If exists and s.IBMPowerVSCluster.Status.Network is not populated will set DHCP server's network as cluster's network.
-// If exists and s.IBMPowerVSCluster.Status.Network is populated already will validate the DHCP server's network and cluster networks are matching, if not will throw an error.
-func (s *ClusterScope) checkDHCPServer(ctx context.Context) (*string, error) {
+// reconcileNetworkReference handles the logic when a user brings their own existing network.
+func (s *ClusterScope) reconcileNetworkReference(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if s.DHCPServer() != nil && s.DHCPServer().ID != nil {
-		dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(*s.DHCPServer().ID)
+
+	ref := s.IBMPowerVSCluster.Spec.Network.Reference
+
+	log.Info("Verifying existing network", "reference", ref)
+
+	var networkID, networkName string
+
+	if ref.ID != "" {
+		network, err := s.IBMPowerVSClient.GetNetworkByID(ref.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch DHCP server: %w", err)
+			return false, fmt.Errorf("failed to fetch network by ID %q: %w", ref.ID, err)
 		}
-		if s.GetNetworkID() == nil {
-			if dhcpServer.Network != nil && dhcpServer.Network.ID != nil {
-				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
-					return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
-				}
-				s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
-			} else {
-				return nil, fmt.Errorf("found DHCP server with ID `%s`, but network is nil", *s.DHCPServer().ID)
-			}
-		} else if dhcpServer.Network != nil && dhcpServer.Network.ID != nil && *dhcpServer.Network.ID != *s.GetNetworkID() {
-			return nil, fmt.Errorf("network details set via spec and DHCP server's network are not matching")
+		if network == nil || network.NetworkID == nil || network.Name == nil {
+			return false, fmt.Errorf("invalid network payload received from IBM cloud for ID %q: network object, ID, or Name is nil", ref.ID)
 		}
-		return dhcpServer.ID, nil
+		networkID = *network.NetworkID
+		networkName = *network.Name
+	} else if ref.Name != "" {
+		network, err := s.IBMPowerVSClient.GetNetworkByName(ref.Name)
+		if err != nil {
+			return false, fmt.Errorf("failed to fetch network by name %q: %w", ref.Name, err)
+		}
+		if network == nil || network.NetworkID == nil || network.Name == nil {
+			return false, fmt.Errorf("invalid network payload received from IBM cloud for name %q: network object, ID, or Name is nil", ref.Name)
+		}
+		networkID = *network.NetworkID
+		networkName = *network.Name
+	} else {
+		return false, fmt.Errorf("network reference must contain either an ID or a Name")
 	}
 
-	// if user provides DHCP server name then we can use network name to match the existing DHCP server
-	networkName := dhcpNetworkName(*s.GetServiceName(infrav1.ResourceTypeDHCPServer))
+	log.Info("Successfully verified existing network", "networkID", networkID, "networkName", networkName)
 
-	log.V(3).Info("Checking DHCP server's network list by network name", "name", networkName)
+	s.IBMPowerVSCluster.Status.Network.ID = networkID
+	s.IBMPowerVSCluster.Status.Network.Name = networkName
+
+	return true, nil // requeue so the fast-path verifies it
+}
+
+// reconcileNetworkProvision handles the logic when the controller must create a new DHCP server and Network.
+func (s *ClusterScope) reconcileNetworkProvision(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	dhcpSpec := s.IBMPowerVSCluster.Spec.Network.Provision.DHCPServer
+
+	// 1. Determine the exact name to use for the DHCP server
+	dhcpName := dhcpSpec.Name
+	if dhcpName == "" {
+		dhcpName = s.IBMPowerVSCluster.Name
+	}
+
+	// 2. Idempotency check: Did we already create this DHCP server, but crash before saving to Status?
 	dhcpServers, err := s.IBMPowerVSClient.GetAllDHCPServers()
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch all DHCP servers: %w", err)
-	}
-	for _, dhcpServer := range dhcpServers {
-		if dhcpServer.Network != nil && dhcpServer.Network.Name != nil && *dhcpServer.Network.Name == networkName {
-			if s.GetNetworkID() == nil {
-				if _, err := s.IBMPowerVSClient.GetNetworkByID(*dhcpServer.Network.ID); err != nil {
-					return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
-				}
-				s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(false)})
-			} else if *dhcpServer.Network.ID != *s.GetNetworkID() {
-				return nil, fmt.Errorf("error network set via spec and DHCP server's networkID are not matching")
-			}
-			return dhcpServer.ID, nil
-		}
+		return false, fmt.Errorf("failed to fetch existing DHCP servers for idempotency check: %w", err)
 	}
 
-	return nil, nil
-}
-
-// checkNetwork checks if network exists in cloud with given network's ID or name mentioned in spec.
-func (s *ClusterScope) checkNetwork(ctx context.Context) (*string, error) {
-	log := ctrl.LoggerFrom(ctx)
-	if s.Network().ID != nil {
-		log.V(3).Info("Checking if PowerVS network exists in cloud with ID", "networkID", *s.Network().ID)
-		network, err := s.IBMPowerVSClient.GetNetworkByID(*s.Network().ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch network by ID: %w", err)
+	expectedNetworkName := dhcpNetworkName(dhcpName)
+	for _, server := range dhcpServers {
+		// Identify by looking at the network name IBM Cloud generated for it
+		if server.Network == nil || server.Network.Name == nil || *server.Network.Name != expectedNetworkName {
+			continue
 		}
-		return network.NetworkID, nil
+		if server.ID == nil || server.Network.ID == nil {
+			log.V(4).Info("Skipping malformed DHCP server record from IBM Cloud (missing ID or Network)")
+			continue
+		}
+		log.Info("Recovered previously provisioned DHCP server", "dhcpServerID", *server.ID, "networkID", *server.Network.ID)
+
+		// Save recovered IDs directly to Status
+		s.IBMPowerVSCluster.Status.Network.ID = *server.Network.ID
+		s.IBMPowerVSCluster.Status.Network.Name = *server.Network.Name
+		s.IBMPowerVSCluster.Status.Network.DHCPServer.ID = *server.ID
+
+		return true, nil // requeue
 	}
 
-	if s.Network().Name != nil {
-		log.V(3).Info("Checking if PowerVS network exists in IBM Cloud with network name", "name", s.Network().Name)
-		network, err := s.IBMPowerVSClient.GetNetworkByName(*s.Network().Name)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch network by name: %w", err)
-		}
-		if network == nil || network.NetworkID == nil {
-			log.V(3).Info("Unable to find PowerVS network in cloud", "network", s.IBMPowerVSCluster.Spec.Network)
-			return nil, nil
-		}
-		return network.NetworkID, nil
+	// 3. Create the new DHCP Server and Network
+	log.Info("Provisioning new DHCP Server and Network", "name", dhcpName)
+
+	dhcpServerID, networkID, err := s.createDHCPServer(ctx, dhcpName)
+	if err != nil {
+		return false, fmt.Errorf("failed to provision DHCP server: %w", err)
 	}
-	return nil, nil
+
+	log.Info("Successfully triggered DHCP Server provision", "dhcpServerID", dhcpServerID, "networkID", networkID)
+
+	// 4. Save directly to the new v1beta3 Status value types
+	s.IBMPowerVSCluster.Status.Network.ID = networkID
+	s.IBMPowerVSCluster.Status.Network.Name = expectedNetworkName
+	s.IBMPowerVSCluster.Status.Network.DHCPServer.ID = dhcpServerID
+
+	return true, nil // Requeue to wait for it to become ACTIVE
 }
 
 // isDHCPServerActive checks if the DHCP server status is active.
 func (s *ClusterScope) isDHCPServerActive(ctx context.Context) (bool, error) {
-	dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(*s.GetDHCPServerID())
+	dhcpID := s.IBMPowerVSCluster.Status.Network.DHCPServer.ID
+
+	dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(dhcpID)
 	if err != nil {
 		return false, err
 	}
 
 	if dhcpServer == nil {
-		return false, fmt.Errorf("dhcp server details is nil for dhcpServerID: %s", *s.GetDHCPServerID())
+		return false, fmt.Errorf("DHCP server details are nil for ID: %s", dhcpID)
 	}
 
-	active, err := s.checkDHCPServerStatus(ctx, *dhcpServer)
-	if err != nil {
-		return false, err
-	}
-	return active, nil
+	return s.checkDHCPServerStatus(ctx, *dhcpServer)
 }
 
 // checkDHCPServerStatus checks the state of a DHCP server.
-// If state is active, true is returned.
-// In all other cases, it returns false.
 func (s *ClusterScope) checkDHCPServerStatus(ctx context.Context, dhcpServer models.DHCPServerDetail) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Checking the status of DHCP server", "dhcpServerID", *dhcpServer.ID)
+
+	if dhcpServer.Status == nil {
+		return false, fmt.Errorf("DHCP server status is nil")
+	}
+	log.V(3).Info("Checking the status of DHCP server", "state", *dhcpServer.Status)
+
 	switch *dhcpServer.Status {
 	case string(infrav1.DHCPServerStateActive):
-		log.V(3).Info("DHCP server is in active state")
 		return true, nil
 	case string(infrav1.DHCPServerStateBuild):
-		log.V(3).Info("DHCP server is in build state")
 		return false, nil
 	case string(infrav1.DHCPServerStateError):
 		return false, fmt.Errorf("DHCP server creation failed and is in error state")
+	default:
+		return false, fmt.Errorf("DHCP server is in an unknown state: %s", *dhcpServer.Status)
 	}
-	return false, nil
 }
 
-// createDHCPServer creates the DHCP server.
-func (s *ClusterScope) createDHCPServer(ctx context.Context) (*string, error) {
+// createDHCPServer creates the DHCP server and returns its ID and its associated Network ID.
+func (s *ClusterScope) createDHCPServer(ctx context.Context, dhcpName string) (string, string, error) {
 	log := ctrl.LoggerFrom(ctx)
-	var dhcpServerCreateParams models.DHCPServerCreate
-	dhcpServerDetails := s.DHCPServer()
-	if dhcpServerDetails == nil {
-		dhcpServerDetails = &infrav1.DHCPServer{}
+
+	dhcpSpec := s.IBMPowerVSCluster.Spec.Network.Provision.DHCPServer
+
+	params := models.DHCPServerCreate{
+		Name: &dhcpName,
 	}
 
-	dhcpServerCreateParams.Name = s.GetServiceName(infrav1.ResourceTypeDHCPServer)
-	log.V(3).Info("Creating a new DHCP server with name", "name", dhcpServerCreateParams.Name)
-	if dhcpServerDetails.DNSServer != nil {
-		dhcpServerCreateParams.DNSServer = dhcpServerDetails.DNSServer
+	if dhcpSpec.CIDR != "" {
+		params.Cidr = &dhcpSpec.CIDR
 	}
-	if dhcpServerDetails.Cidr != nil {
-		dhcpServerCreateParams.Cidr = dhcpServerDetails.Cidr
-	}
-	if dhcpServerDetails.Snat != nil {
-		dhcpServerCreateParams.SnatEnabled = dhcpServerDetails.Snat
+	if dhcpSpec.DNSServer != "" {
+		params.DNSServer = &dhcpSpec.DNSServer
 	}
 
-	dhcpServer, err := s.IBMPowerVSClient.CreateDHCPServer(&dhcpServerCreateParams)
+	snatEnabled := true // default
+	if dhcpSpec.Snat == infrav1.DHCPSnatPolicyDisabled {
+		snatEnabled = false
+	}
+	params.SnatEnabled = &snatEnabled
+
+	dhcpServer, err := s.IBMPowerVSClient.CreateDHCPServer(&params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a new DHCP server: %w", err)
+		return "", "", err
 	}
-	if dhcpServer == nil {
-		return nil, fmt.Errorf("created DHCP server is nil")
+	if dhcpServer == nil || dhcpServer.ID == nil {
+		return "", "", fmt.Errorf("created DHCP server or its ID is nil")
 	}
-	if dhcpServer.Network == nil {
-		return nil, fmt.Errorf("created DHCP server network is nil")
+	if dhcpServer.Network == nil || dhcpServer.Network.ID == nil {
+		return "", "", fmt.Errorf("created DHCP server network or its ID is nil")
 	}
 
-	log.Info("DHCP Server network details", "details", *dhcpServer.Network)
-	s.SetStatus(ctx, infrav1.ResourceTypeNetwork, infrav1.ResourceReference{ID: dhcpServer.Network.ID, ControllerCreated: ptr.To(true)})
-	return dhcpServer.ID, nil
+	log.V(3).Info("DHCP Server network details", "details", *dhcpServer.Network)
+
+	return *dhcpServer.ID, *dhcpServer.Network.ID, nil
 }
 
 // ReconcileVPC reconciles VPC.
@@ -2475,14 +2450,6 @@ func (s *ClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) {
 // GetServiceName returns name of given service type from spec or generate a name for it.
 func (s *ClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string {
 	switch resourceType {
-	case infrav1.ResourceTypeDHCPServer:
-		if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
-			return s.DHCPServer().Name
-		}
-		if s.Network() != nil && s.Network().Name != nil {
-			return s.Network().Name
-		}
-		return ptr.To(s.InfraCluster())
 	case infrav1.ResourceTypeVPC:
 		if s.VPC() == nil || s.VPC().Name == nil {
 			return ptr.To(fmt.Sprintf("%s-vpc", s.InfraCluster()))
@@ -2764,34 +2731,47 @@ func (s *ClusterScope) deleteTransitGatewayConnections(ctx context.Context, tg *
 	return false, nil
 }
 
-// DeleteDHCPServer deletes DHCP server.
+// DeleteDHCPServer deletes the DHCP server if it was provisioned by the controller.
 func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1.ResourceTypeDHCPServer) {
-		log.Info("Skipping DHCP server deletion as resource is not created by controller")
+
+	// 1. Check if we provisioned this network
+	if s.IBMPowerVSCluster.Spec.Network.Type != infrav1.SourceTypeProvision {
+		log.Info("Skipping DHCP server deletion as network is in Reference mode")
 		return nil
 	}
+
+	// 2. If the controller owns the workspace, deleting the workspace cascades
+	// and destroys the DHCP server internally
 	if s.IBMPowerVSCluster.Spec.Workspace.Type == infrav1.SourceTypeProvision {
-		log.Info("Skipping DHCP server deletion as PowerVS workspace is created by controller, will directly delete the PowerVS workspace since it will delete the DHCP server internally")
+		log.Info("Skipping separate DHCP server deletion as PowerVS workspace is being deleted by the controller (cascading delete)")
 		return nil
 	}
 
-	if s.IBMPowerVSCluster.Status.DHCPServer.ID == nil {
+	// 3. Get DHCP server ID saved in status
+	dhcpID := s.IBMPowerVSCluster.Status.Network.DHCPServer.ID
+	if dhcpID == "" {
+		log.Info("DHCP server ID not found in status, nothing to delete")
 		return nil
 	}
 
-	server, err := s.IBMPowerVSClient.GetDHCPServer(*s.IBMPowerVSCluster.Status.DHCPServer.ID)
+	// 4. Fetch the server to verify it exists
+	server, err := s.IBMPowerVSClient.GetDHCPServer(dhcpID)
 	if err != nil {
+		// If it's a 404, we're already done!
 		if strings.Contains(err.Error(), string(DHCPServerNotFound)) {
-			log.Info("DHCP server successfully deleted")
+			log.Info("DHCP server no longer exists in IBM Cloud")
 			return nil
 		}
 		return fmt.Errorf("failed to fetch DHCP server: %w", err)
 	}
 
+	// 5. Issue the delete command
+	log.Info("Deleting provisioned DHCP server", "dhcpServerID", *server.ID)
 	if err = s.IBMPowerVSClient.DeleteDHCPServer(*server.ID); err != nil {
 		return fmt.Errorf("failed to delete DHCP server: %w", err)
 	}
+
 	return nil
 }
 
@@ -2889,12 +2869,6 @@ func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.Resour
 	case infrav1.ResourceTypeTransitGateway:
 		transitGateway := s.IBMPowerVSCluster.Status.TransitGateway
 		if transitGateway == nil || transitGateway.ControllerCreated == nil || !*transitGateway.ControllerCreated {
-			return false
-		}
-		return true
-	case infrav1.ResourceTypeDHCPServer:
-		dhcpServer := s.IBMPowerVSCluster.Status.DHCPServer
-		if dhcpServer == nil || dhcpServer.ControllerCreated == nil || !*dhcpServer.ControllerCreated {
 			return false
 		}
 		return true

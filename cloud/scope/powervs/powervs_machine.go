@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"net/url"
 	"path"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -302,19 +301,27 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 		}
 		log.V(3).Info("Retrieved image id", "imageID", *imageID)
 	}
+
 	network := machineSpec.Network
-	if network.ID == nil && network.Name == nil && network.RegEx == nil {
-		// if the network is nil, Fetch from cluster.
-		if m.IBMPowerVSCluster.Status.Network != nil && m.IBMPowerVSCluster.Status.Network.ID != nil {
-			network.ID = m.IBMPowerVSCluster.Status.Network.ID
+
+	// If the user didn't explicitly define a network on the Machine Spec,
+	// we fall back to the Network resolved by the Cluster controller.
+	if network.ID == "" && network.Name == "" {
+		networkID := m.IBMPowerVSCluster.Status.Network.ID
+
+		if networkID != "" {
+			network.ID = networkID
+		} else {
+			return nil, fmt.Errorf("network ID is not yet resolved in cluster status")
 		}
 	}
 
-	networkID, err := getNetworkID(network, m)
+	networkID, err := m.getNetworkID(network)
 	if err != nil {
 		record.Warnf(m.IBMPowerVSMachine, "FailedRetrieveNetwork", "Failed network retrieval - %v", err)
-		return nil, fmt.Errorf("error getting network ID: %v", err)
+		return nil, fmt.Errorf("error getting network ID: %w", err)
 	}
+
 	log.V(3).Info("Retrieved network id", "networkID", *networkID)
 
 	procType := strings.ToLower(string(machineSpec.ProcessorType))
@@ -670,38 +677,23 @@ func (m *MachineScope) GetImages() (*models.Images, error) {
 	return m.IBMPowerVSClient.GetAllImage()
 }
 
-func getNetworkID(network infrav1.IBMPowerVSResourceReference, m *MachineScope) (*string, error) {
-	if network.ID != nil {
-		return network.ID, nil
-	} else if network.Name != nil {
-		networks, err := m.GetNetworks()
-		if err != nil {
-			return nil, err
-		}
-		for _, nw := range networks.Networks {
-			if *network.Name == *nw.Name {
-				return nw.NetworkID, nil
-			}
-		}
-		return nil, fmt.Errorf("failed to find a network ID with name %s", *network.Name)
-	} else if network.RegEx != nil {
-		networks, err := m.GetNetworks()
-		if err != nil {
-			return nil, err
-		}
-		re, err := regexp.Compile(*network.RegEx)
-		if err != nil {
-			return nil, err
-		}
-		// In case of multiple network names matches the provided regular expression the first matched network will be selected.
-		for _, nw := range networks.Networks {
-			if match := re.Match([]byte(*nw.Name)); match {
-				return nw.NetworkID, nil
-			}
-		}
-		return nil, fmt.Errorf("failed to find a network ID with RegEx %s", *network.RegEx)
+func (m *MachineScope) getNetworkID(network infrav1.ResourceIdentifier) (*string, error) {
+	if network.ID != "" {
+		return ptr.To(network.ID), nil
 	}
-	return nil, fmt.Errorf("ID, Name and RegEx can't be nil")
+
+	if network.Name != "" {
+		net, err := m.IBMPowerVSClient.GetNetworkByName(network.Name)
+		if err != nil {
+			return nil, err
+		}
+		if net == nil || net.NetworkID == nil {
+			return nil, fmt.Errorf("network with name %q not found", network.Name)
+		}
+		return net.NetworkID, nil
+	}
+
+	return nil, fmt.Errorf("network identifier is empty")
 }
 
 // GetNetworks will get list of networks for the powervs service instance.
@@ -804,13 +796,11 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 	}
 	// Fetch the VM network ID
 	network := m.IBMPowerVSMachine.Spec.Network
-	if network.ID == nil && network.Name == nil && network.RegEx == nil {
-		// if the network is nil, Fetch from cluster.
-		if m.IBMPowerVSCluster.Status.Network != nil && m.IBMPowerVSCluster.Status.Network.ID != nil {
-			network.ID = m.IBMPowerVSCluster.Status.Network.ID
-		}
+	if network.ID == "" && network.Name == "" {
+		// if the network is empty, Fetch from cluster, By this time the network ID should be present in cluster status.
+		network.ID = m.IBMPowerVSCluster.Status.Network.ID
 	}
-	networkID, err := getNetworkID(network, m)
+	networkID, err := m.getNetworkID(network)
 	if err != nil {
 		log.Error(err, "failed to fetch network id from network resource")
 		return

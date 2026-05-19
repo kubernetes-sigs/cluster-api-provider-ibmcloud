@@ -105,14 +105,26 @@ func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1.IBMPowerVSCluster
 }
 
 func validateIBMPowerVSClusterNetwork(cluster *infrav1.IBMPowerVSCluster) *field.Error {
-	if res, err := validateIBMPowerVSNetworkReference(cluster.Spec.Network); !res {
-		return err
-	}
-	if (cluster.Spec.Network.Name != nil || cluster.Spec.Network.ID != nil) && (cluster.Spec.DHCPServer != nil && cluster.Spec.DHCPServer.Name != nil) {
-		return field.Invalid(field.NewPath("spec.dhcpServer.name"), cluster.Spec.DHCPServer.Name, "either one of network or dhcpServer details can be provided")
-	}
-	if (cluster.Spec.Network.Name != nil || cluster.Spec.Network.ID != nil) && (cluster.Spec.DHCPServer != nil && cluster.Spec.DHCPServer.ID != nil) {
-		return field.Invalid(field.NewPath("spec.dhcpServer.id"), cluster.Spec.DHCPServer.ID, "either one of network or dhcpServer details can be provided")
+	// Validate NetworkSource based on Type
+	switch cluster.Spec.Network.Type {
+	case infrav1.SourceTypeReference:
+		// Validate that Reference has either ID or Name
+		if cluster.Spec.Network.Reference.ID == "" && cluster.Spec.Network.Reference.Name == "" {
+			return field.Invalid(field.NewPath("spec.network.reference"), cluster.Spec.Network.Reference, "either ID or Name must be provided when type is Reference")
+		}
+		// Ensure Provision is not set when Type is Reference
+		if cluster.Spec.Network.Provision.DHCPServer.Name != "" || cluster.Spec.Network.Provision.DHCPServer.CIDR != "" {
+			return field.Invalid(field.NewPath("spec.network.provision"), cluster.Spec.Network.Provision, "provision must not be set when type is Reference")
+		}
+	case infrav1.SourceTypeProvision:
+		// Ensure Reference is not set when Type is Provision
+		if cluster.Spec.Network.Reference.ID != "" || cluster.Spec.Network.Reference.Name != "" {
+			return field.Invalid(field.NewPath("spec.network.reference"), cluster.Spec.Network.Reference, "reference must not be set when type is Provision")
+		}
+	default:
+		// Catch empty strings or invalid enum values and explicitly list what is allowed
+		validTypes := []string{string(infrav1.SourceTypeReference), string(infrav1.SourceTypeProvision)}
+		return field.NotSupported(field.NewPath("spec.network.type"), cluster.Spec.Network.Type, validTypes)
 	}
 	return nil
 }

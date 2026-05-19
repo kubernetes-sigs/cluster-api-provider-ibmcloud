@@ -250,10 +250,6 @@ var (
 type ResourceType string
 
 var (
-	// ResourceTypeNetwork is Power VS network resource.
-	ResourceTypeNetwork = ResourceType("network")
-	// ResourceTypeDHCPServer is Power VS DHCP server.
-	ResourceTypeDHCPServer = ResourceType("dhcpServer")
 	// ResourceTypeLoadBalancer VPC loadBalancer resource.
 	ResourceTypeLoadBalancer = ResourceType("loadBalancer")
 	// ResourceTypeLoadBalancerPool is a Load Balancer Pool resource.

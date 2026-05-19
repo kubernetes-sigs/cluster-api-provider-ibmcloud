@@ -44,6 +44,16 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 		out.Workspace.ID = *in.ServiceInstance.ID
 	}
 
+	// Convert Network status
+	if in.Network != nil && in.Network.ID != nil {
+		out.Network.ID = *in.Network.ID
+	}
+
+	// Convert DHCPServer status
+	if in.DHCPServer != nil && in.DHCPServer.ID != nil {
+		out.Network.DHCPServer.ID = *in.DHCPServer.ID
+	}
+
 	out.Conditions = nil
 	if in.V1Beta2 != nil {
 		out.Conditions = in.V1Beta2.Conditions
@@ -74,6 +84,22 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 		}
 	} else {
 		out.ServiceInstance = nil
+	}
+
+	// Convert Network status
+	if in.Network.ID != "" || in.Network.Name != "" {
+		out.Network = &ResourceReference{}
+		if in.Network.ID != "" {
+			out.Network.ID = ptr.To(in.Network.ID)
+		}
+	}
+
+	// Convert DHCPServer status
+	if in.Network.DHCPServer.ID != "" || in.Network.DHCPServer.Name != "" {
+		out.DHCPServer = &ResourceReference{}
+		if in.Network.DHCPServer.ID != "" {
+			out.DHCPServer.ID = ptr.To(in.Network.DHCPServer.ID)
+		}
 	}
 
 	out.Conditions = nil
@@ -175,7 +201,21 @@ func Convert_v1beta1_Condition_To_v1_Condition(in *clusterv1beta1.Condition, out
 }
 
 func Convert_v1beta3_IBMPowerVSMachineTemplateResource_To_v1beta2_IBMPowerVSMachineTemplateResource(in *infrav1.IBMPowerVSMachineTemplateResource, out *IBMPowerVSMachineTemplateResource, s apimachineryconversion.Scope) error {
-	return autoConvert_v1beta3_IBMPowerVSMachineTemplateResource_To_v1beta2_IBMPowerVSMachineTemplateResource(in, out, s)
+	if err := autoConvert_v1beta3_IBMPowerVSMachineTemplateResource_To_v1beta2_IBMPowerVSMachineTemplateResource(in, out, s); err != nil {
+		return err
+	}
+	// Network.RegEx is not preserved during round-trip conversion
+	// because v1beta3 ResourceIdentifier doesn't support RegEx.
+	out.Spec.Network.RegEx = nil
+
+	// Ensure empty string pointers are converted to nil
+	if out.Spec.Network.ID != nil && *out.Spec.Network.ID == "" {
+		out.Spec.Network.ID = nil
+	}
+	if out.Spec.Network.Name != nil && *out.Spec.Network.Name == "" {
+		out.Spec.Network.Name = nil
+	}
+	return nil
 }
 
 func Convert_v1beta1_APIEndpoint_To_v1beta3_APIEndpoint(in *clusterv1beta1.APIEndpoint, out *infrav1.APIEndpoint, _ apimachineryconversion.Scope) error {
@@ -355,6 +395,10 @@ func (dst *IBMPowerVSMachineTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	if len(dst.Annotations) == 0 {
 		dst.Annotations = nil
 	}
+	// Network.RegEx is not preserved during round-trip conversion
+	// because v1beta3 ResourceIdentifier doesn't support RegEx.
+	// Clear it after MarshalData to ensure it's not restored.
+	dst.Spec.Template.Spec.Network.RegEx = nil
 	return nil
 }
 
@@ -412,6 +456,24 @@ func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *
 		out.Workspace.Type = infrav1.SourceTypeProvision
 	}
 
+	// Convert Network field
+	// If Network has ID or Name set, it's a reference
+	if (in.Network.ID != nil && *in.Network.ID != "") || (in.Network.Name != nil && *in.Network.Name != "") {
+		out.Network.Type = infrav1.SourceTypeReference
+		if in.Network.ID != nil && *in.Network.ID != "" {
+			out.Network.Reference.ID = *in.Network.ID
+		}
+		if in.Network.Name != nil && *in.Network.Name != "" {
+			out.Network.Reference.Name = *in.Network.Name
+		}
+	} else if in.DHCPServer != nil {
+		// If no network reference but DHCPServer is set, it's a provision
+		out.Network.Type = infrav1.SourceTypeProvision
+		if err := Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in.DHCPServer, &out.Network.Provision.DHCPServer, nil); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -433,6 +495,36 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 		out.ServiceInstance = nil
 		out.ServiceInstanceID = ""
 	}
+
+	// Convert Network field
+	switch in.Network.Type {
+	case infrav1.SourceTypeReference:
+		// Convert reference
+		if in.Network.Reference.ID != "" {
+			out.Network.ID = ptr.To(in.Network.Reference.ID)
+		}
+		if in.Network.Reference.Name != "" {
+			out.Network.Name = ptr.To(in.Network.Reference.Name)
+		}
+		out.DHCPServer = nil
+	case infrav1.SourceTypeProvision:
+		// Convert provision to DHCPServer
+		dhcp := &DHCPServer{}
+		if err := Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(&in.Network.Provision.DHCPServer, dhcp, nil); err != nil {
+			return err
+		}
+		out.DHCPServer = dhcp
+		// Clear network reference when provisioning
+		out.Network.ID = nil
+		out.Network.Name = nil
+	default:
+		// Empty NetworkSource - clear both fields
+		out.Network.ID = nil
+		out.Network.Name = nil
+		out.DHCPServer = nil
+	}
+	// Note: v1beta2 Network.RegEx field is dropped in v1beta3, cannot be restored
+	out.Network.RegEx = nil
 
 	return nil
 }
@@ -486,6 +578,11 @@ func Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 		out.ServiceInstanceID = ""
 	}
 
+	// Network.RegEx is not preserved during round-trip conversion
+	// because v1beta3 ResourceIdentifier doesn't support RegEx.
+	// Set RegEx to nil to ensure clean conversion.
+	out.Network.RegEx = nil
+
 	return nil
 }
 
@@ -528,5 +625,106 @@ func Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *infr
 		out.ServiceInstanceID = ""
 	}
 
+	return nil
+}
+
+// Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer handles the conversion from v1beta2 to v1beta3 DHCPServer.
+func Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in *DHCPServer, out *infrav1.DHCPServer, _ apimachineryconversion.Scope) error {
+	// Convert Cidr (pointer) to CIDR (string)
+	if in.Cidr != nil {
+		out.CIDR = *in.Cidr
+	}
+
+	// Convert DNSServer (pointer) to DNSServer (string)
+	if in.DNSServer != nil {
+		out.DNSServer = *in.DNSServer
+	}
+
+	// Convert Name (pointer) to Name (string)
+	if in.Name != nil {
+		out.Name = *in.Name
+	}
+
+	// Convert Snat (bool pointer) to Snat (DHCPSnatPolicy enum)
+	if in.Snat != nil {
+		if *in.Snat {
+			out.Snat = infrav1.DHCPSnatPolicyEnabled
+		} else {
+			out.Snat = infrav1.DHCPSnatPolicyDisabled
+		}
+	}
+
+	// Note: v1beta2.ID field is dropped in v1beta3 as it's not part of the spec
+	return nil
+}
+
+// Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer handles the conversion from v1beta3 to v1beta2 DHCPServer.
+func Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(in *infrav1.DHCPServer, out *DHCPServer, _ apimachineryconversion.Scope) error {
+	// Convert CIDR (string) to Cidr (pointer)
+	if in.CIDR != "" {
+		out.Cidr = ptr.To(in.CIDR)
+	}
+
+	// Convert DNSServer (string) to DNSServer (pointer)
+	if in.DNSServer != "" {
+		out.DNSServer = ptr.To(in.DNSServer)
+	}
+
+	// Convert Name (string) to Name (pointer)
+	if in.Name != "" {
+		out.Name = ptr.To(in.Name)
+	}
+
+	// Convert Snat (DHCPSnatPolicy enum) to Snat (bool pointer)
+	if in.Snat != "" {
+		out.Snat = ptr.To(in.Snat == infrav1.DHCPSnatPolicyEnabled)
+	}
+
+	// Note: v1beta2.ID field cannot be populated from v1beta3 as it doesn't exist there
+	return nil
+}
+
+// Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_NetworkSource is a stub conversion function.
+// The actual conversion is handled in Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec
+// because Network and DHCPServer fields need to be converted together.
+func Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_NetworkSource(_ *IBMPowerVSResourceReference, _ *infrav1.NetworkSource, _ apimachineryconversion.Scope) error {
+	// Conversion handled in Spec conversion
+	return nil
+}
+
+// Convert_v1beta3_NetworkSource_To_v1beta2_IBMPowerVSResourceReference is a stub conversion function.
+// The actual conversion is handled in Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec
+// because Network and DHCPServer fields need to be converted together.
+func Convert_v1beta3_NetworkSource_To_v1beta2_IBMPowerVSResourceReference(_ *infrav1.NetworkSource, _ *IBMPowerVSResourceReference, _ apimachineryconversion.Scope) error {
+	// Conversion handled in Spec conversion
+	return nil
+}
+
+// Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_ResourceIdentifier converts v1beta2 IBMPowerVSResourceReference to v1beta3 ResourceIdentifier.
+func Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_ResourceIdentifier(in *IBMPowerVSResourceReference, out *infrav1.ResourceIdentifier, _ apimachineryconversion.Scope) error {
+	if in.ID != nil && *in.ID != "" {
+		out.ID = *in.ID
+	}
+	if in.Name != nil && *in.Name != "" {
+		out.Name = *in.Name
+	}
+	// Note: RegEx field is dropped in v1beta3
+	return nil
+}
+
+// Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference converts v1beta3 ResourceIdentifier to v1beta2 IBMPowerVSResourceReference.
+func Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(in *infrav1.ResourceIdentifier, out *IBMPowerVSResourceReference, _ apimachineryconversion.Scope) error {
+	if in.ID != "" {
+		out.ID = ptr.To(in.ID)
+	} else {
+		out.ID = nil
+	}
+	if in.Name != "" {
+		out.Name = ptr.To(in.Name)
+	} else {
+		out.Name = nil
+	}
+	// RegEx field cannot be restored from v1beta3
+	out.RegEx = nil
 	return nil
 }
