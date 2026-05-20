@@ -63,7 +63,7 @@ If you have questions or want to get the latest project news, you can connect wi
 - Chat with us on the Kubernetes [Slack](http://slack.k8s.io/) in the [#cluster-api-ibmcloud][slack] channel
 - Subscribe to the [SIG Cluster Lifecycle](https://groups.google.com/a/kubernetes.io/g/sig-cluster-lifecycle) Google Group for access to documents and calendars
 - Join our Bi-Weekly meeting sessions where we share the latest project news, demos, answer questions, and triage issues
-    - Biweekly on Tuesday @ 10:00 IST on [Zoom][zoomMeeting]. ([Convert to your timezone][convert-time-zone])
+    - Biweekly on Thursday @ 14:00 IST on [Zoom][zoomMeeting]. ([Convert to your timezone][convert-time-zone])
     - Previous meetings: \[ [notes][notes] \]
 
 Pull Requests and feedback on issues are very welcome!
@@ -80,7 +80,7 @@ See also our [contributor guide](CONTRIBUTING.md) and the Kubernetes [community 
 [Help wanted]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues?utf8=%E2%9C%93&q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22+
 [community page]: https://kubernetes.io/community
 [cluster-api-supported-v]: https://cluster-api.sigs.k8s.io/reference/versions.html
-[convert-time-zone]: http://www.thetimezoneconverter.com/?t=10%3A00&tz=IST
+[convert-time-zone]: http://www.thetimezoneconverter.com/?t=14%3A00&tz=IST
 
 ### Code of conduct
 
