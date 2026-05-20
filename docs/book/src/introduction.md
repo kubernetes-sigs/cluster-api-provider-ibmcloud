@@ -78,7 +78,7 @@ This repository uses the Kubernetes bots.  See a full list of the commands [here
 
 ### Join us
 
-The community holds bi-weekly meetings on Tuesday at 10:00 IST ([Convert to your timezone](http://www.thetimezoneconverter.com/?t=10%3A00&tz=IST)) on [Zoom](https://zoom.us/j/508079177).
+The community holds bi-weekly meetings on Thursday at 14:00 IST ([Convert to your timezone](http://www.thetimezoneconverter.com/?t=14%3A00&tz=IST)) on [Zoom](https://zoom.us/j/508079177).
 
 Previous meeting [notes](https://cluster-api-ibmcloud.sigs.k8s.io/agenda), Subscribe to the [SIG Cluster Lifecycle](https://groups.google.com/g/kubernetes-sig-cluster-lifecycle) Google Group for access to documents and calendars.
 
