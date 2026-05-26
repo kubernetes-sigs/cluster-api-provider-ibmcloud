@@ -38,10 +38,16 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 		return err
 	}
 
-	// Manual conversion for Status: ServiceInstance -> Workspace
+	// Manual conversion for Status: ServiceInstance -> Workspace.
 	// v1beta2 ResourceReference only has an ID, no Name.
 	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil {
 		out.Workspace.ID = *in.ServiceInstance.ID
+	}
+
+	// Manual conversion for Status: ResourceGroup.
+	// v1beta2 ResourceReference only has an ID, no Name.
+	if in.ResourceGroup != nil && in.ResourceGroup.ID != nil {
+		out.ResourceGroup.ID = *in.ResourceGroup.ID
 	}
 
 	// Convert Network status
@@ -77,13 +83,22 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 		return err
 	}
 
-	// Manual conversion for Status: Workspace -> ServiceInstance
+	// Manual conversion for Status: Workspace -> ServiceInstance.
 	if in.Workspace.ID != "" {
-		out.ServiceInstance = &ResourceReference{ // v1beta2 type
+		out.ServiceInstance = &ResourceReference{
 			ID: ptr.To(in.Workspace.ID),
 		}
 	} else {
 		out.ServiceInstance = nil
+	}
+
+	// Manual conversion for Status: ResourceGroup.
+	if in.ResourceGroup.ID != "" {
+		out.ResourceGroup = &ResourceReference{
+			ID: ptr.To(in.ResourceGroup.ID),
+		}
+	} else {
+		out.ResourceGroup = nil
 	}
 
 	// Convert Network status
@@ -327,6 +342,12 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	if len(dst.Annotations) == 0 {
 		dst.Annotations = nil
 	}
+	if dst.Spec.Template.Spec.ResourceGroup != nil &&
+		dst.Spec.Template.Spec.ResourceGroup.ID == nil &&
+		dst.Spec.Template.Spec.ResourceGroup.Name == nil &&
+		dst.Spec.Template.Spec.ResourceGroup.RegEx == nil {
+		dst.Spec.Template.Spec.ResourceGroup = nil
+	}
 	return nil
 }
 
@@ -438,26 +459,51 @@ func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *
 		return err
 	}
 
-	// Cluster uses WorkspaceSource (Type: Reference | Provision)
-	if in.ServiceInstance != nil || in.ServiceInstanceID != "" {
-		out.Workspace.Type = infrav1.SourceTypeReference
-		if in.ServiceInstance != nil {
-			if in.ServiceInstance.ID != nil {
-				out.Workspace.Reference.ID = *in.ServiceInstance.ID
-			}
-			if in.ServiceInstance.Name != nil {
-				out.Workspace.Reference.Name = *in.ServiceInstance.Name
-			}
-		}
-		if in.ServiceInstanceID != "" {
-			out.Workspace.Reference.ID = in.ServiceInstanceID
-		}
-	} else {
-		out.Workspace.Type = infrav1.SourceTypeProvision
+	convertV1beta2WorkspaceToV1beta3(in, out)
+	convertV1beta2ResourceGroupToV1beta3(in, out)
+
+	if err := convertV1beta2NetworkToV1beta3(in, out); err != nil {
+		return err
 	}
 
-	// Convert Network field
-	// If Network has ID or Name set, it's a reference
+	return nil
+}
+
+func convertV1beta2WorkspaceToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMPowerVSClusterSpec) {
+	if in.ServiceInstance == nil && in.ServiceInstanceID == "" {
+		out.Workspace.Type = infrav1.SourceTypeProvision
+		return
+	}
+
+	out.Workspace.Type = infrav1.SourceTypeReference
+	if in.ServiceInstance != nil {
+		if in.ServiceInstance.ID != nil {
+			out.Workspace.Reference.ID = *in.ServiceInstance.ID
+		}
+		if in.ServiceInstance.Name != nil {
+			out.Workspace.Reference.Name = *in.ServiceInstance.Name
+		}
+	}
+	if in.ServiceInstanceID != "" {
+		out.Workspace.Reference.ID = in.ServiceInstanceID
+	}
+}
+
+func convertV1beta2ResourceGroupToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMPowerVSClusterSpec) {
+	if in.ResourceGroup == nil {
+		return
+	}
+
+	out.ResourceGroup.Type = infrav1.SourceTypeReference
+	if in.ResourceGroup.ID != nil {
+		out.ResourceGroup.Reference.ID = *in.ResourceGroup.ID
+	}
+	if in.ResourceGroup.Name != nil {
+		out.ResourceGroup.Reference.Name = *in.ResourceGroup.Name
+	}
+}
+
+func convertV1beta2NetworkToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMPowerVSClusterSpec) error {
 	if (in.Network.ID != nil && *in.Network.ID != "") || (in.Network.Name != nil && *in.Network.Name != "") {
 		out.Network.Type = infrav1.SourceTypeReference
 		if in.Network.ID != nil && *in.Network.ID != "" {
@@ -466,20 +512,24 @@ func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *
 		if in.Network.Name != nil && *in.Network.Name != "" {
 			out.Network.Reference.Name = *in.Network.Name
 		}
-	} else if in.DHCPServer != nil {
-		// If no network reference but DHCPServer is set, it's a provision
-		out.Network.Type = infrav1.SourceTypeProvision
-		if err := Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in.DHCPServer, &out.Network.Provision.DHCPServer, nil); err != nil {
-			return err
-		}
+		return nil
 	}
 
-	return nil
+	if in.DHCPServer == nil {
+		return nil
+	}
+
+	out.Network.Type = infrav1.SourceTypeProvision
+	return Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in.DHCPServer, &out.Network.Provision.DHCPServer, nil)
 }
 
 func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s apimachineryconversion.Scope) error {
 	if err := autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in, out, s); err != nil {
 		return err
+	}
+
+	if in.Zone == "" {
+		out.Zone = nil
 	}
 
 	if in.Workspace.Type == infrav1.SourceTypeReference || in.Workspace.Reference.ID != "" || in.Workspace.Reference.Name != "" {
@@ -494,6 +544,18 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 	} else {
 		out.ServiceInstance = nil
 		out.ServiceInstanceID = ""
+	}
+
+	if in.ResourceGroup.Type == infrav1.SourceTypeReference || in.ResourceGroup.Reference.ID != "" || in.ResourceGroup.Reference.Name != "" {
+		out.ResourceGroup = &IBMPowerVSResourceReference{}
+		if in.ResourceGroup.Reference.ID != "" {
+			out.ResourceGroup.ID = ptr.To(in.ResourceGroup.Reference.ID)
+		}
+		if in.ResourceGroup.Reference.Name != "" {
+			out.ResourceGroup.Name = ptr.To(in.ResourceGroup.Reference.Name)
+		}
+	} else {
+		out.ResourceGroup = nil
 	}
 
 	// Convert Network field

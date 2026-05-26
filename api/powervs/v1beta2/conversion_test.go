@@ -94,12 +94,20 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 	// Network.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Network.Name = ""
 
+	// ResourceGroup.Name is not preserved in v1beta2 status (only ID is), so clear it for round-trip.
+	in.ResourceGroup.Name = ""
+
 	// DHCPServer.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Network.DHCPServer.Name = ""
 }
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
+
+	// v1beta2 represented Zone as *string. Normalize empty string to preserve nil semantics on round-trip.
+	if in.Zone == "" {
+		in.Zone = ""
+	}
 
 	// Enforce safe Enum values for Topology so round-trips match
 	if in.Topology != infrav1.PowerVSLoadBalancerTopology {
@@ -124,6 +132,19 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 		if in.Workspace.Reference.ID == "" && in.Workspace.Reference.Name == "" {
 			in.Workspace.Reference.ID = "fuzzed-workspace-id"
 		}
+	}
+
+	// Enforce the SourceType union constraints for v1beta3 ResourceGroup so round-trip tests pass.
+	switch in.ResourceGroup.Type {
+	case infrav1.SourceTypeReference:
+		if in.ResourceGroup.Reference.ID == "" && in.ResourceGroup.Reference.Name == "" {
+			in.ResourceGroup.Reference.ID = "fuzzed-resource-group-id"
+		}
+	case "":
+		in.ResourceGroup.Reference = infrav1.ResourceIdentifier{}
+	default:
+		in.ResourceGroup.Type = ""
+		in.ResourceGroup.Reference = infrav1.ResourceIdentifier{}
 	}
 
 	// Enforce the SourceType union constraints for v1beta3 Network so round-trip tests pass
@@ -181,6 +202,9 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 	if in.COSInstance != nil {
 		in.COSInstance.ControllerCreated = nil
 	}
+	if in.ResourceGroup != nil && (in.ResourceGroup.ID == nil || *in.ResourceGroup.ID == "") {
+		in.ResourceGroup = nil
+	}
 
 	// Network and DHCPServer with empty ID should be nil
 	if in.Network != nil && (in.Network.ID == nil || *in.Network.ID == "") {
@@ -193,6 +217,10 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 
 func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
+
+	if in.Zone != nil && *in.Zone == "" {
+		in.Zone = nil
+	}
 
 	if in.ServiceInstance != nil {
 		in.ServiceInstance.RegEx = nil // Tell fuzzer we intentionally drop RegEx in v1beta3
@@ -224,6 +252,19 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 	} else {
 		// If ServiceInstanceID is empty, ServiceInstance should be nil
 		in.ServiceInstance = nil
+	}
+
+	if in.ResourceGroup != nil {
+		in.ResourceGroup.RegEx = nil // Tell fuzzer we intentionally drop RegEx in v1beta3.
+		if in.ResourceGroup.Name != nil && *in.ResourceGroup.Name == "" {
+			in.ResourceGroup.Name = nil
+		}
+		if in.ResourceGroup.ID != nil && *in.ResourceGroup.ID == "" {
+			in.ResourceGroup.ID = nil
+		}
+		if in.ResourceGroup.ID == nil && in.ResourceGroup.Name == nil {
+			in.ResourceGroup = nil
+		}
 	}
 
 	// Network.RegEx is not preserved in v1beta3, so clear it for round-trip

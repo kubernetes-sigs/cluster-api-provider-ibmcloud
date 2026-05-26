@@ -178,8 +178,8 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 
 	// validate PER availability for the PowerVS zone, proceed further only if PowerVS zone support PER.
 	// more information about PER can be found here: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-per
-	if err := clusterScope.IsPowerVSZoneSupportsPER(); err != nil {
-		return reconcile.Result{}, fmt.Errorf("error checking PER capability for PowerVS zone: %w", err)
+	if err := clusterScope.ValidateZoneSupportsPER(); err != nil {
+		return reconcile.Result{}, fmt.Errorf("failed to validate PER capability for PowerVS zone: %w", err)
 	}
 
 	// reconcile resource group

@@ -30,6 +30,7 @@ import (
 	"github.com/IBM/go-sdk-core/v5/core"
 	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
+	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
@@ -52,6 +53,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	powervsmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	resourceclientmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
+	resourcemanagermock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager/mock"
 	tgmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway/mock"
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
@@ -289,7 +291,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 					}}},
 			Spec: infrav1.IBMPowerVSClusterSpec{
 				Topology: infrav1.PowerVSVirtualIPTopology,
-				Zone:     ptr.To("zone"),
+				Zone:     "zone",
 				Network: infrav1.NetworkSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -362,7 +364,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 					}}},
 			Spec: infrav1.IBMPowerVSClusterSpec{
 				Topology: infrav1.PowerVSVirtualIPTopology,
-				Zone:     ptr.To("zone"),
+				Zone:     "zone",
 				Network: infrav1.NetworkSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -472,7 +474,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							Topology: infrav1.PowerVSLoadBalancerTopology,
-							Zone:     ptr.To("dal10"),
+							Zone:     "dal10",
 						},
 					},
 				}
@@ -494,7 +496,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
 							Topology: infrav1.PowerVSLoadBalancerTopology,
-							Zone:     ptr.To("dal10"),
+							Zone:     "dal10",
 						},
 					},
 				}
@@ -515,11 +517,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Topology: infrav1.PowerVSLoadBalancerTopology,
-							Zone:     ptr.To("dal10"),
-							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-								ID: ptr.To("rg-id"),
-							},
+							Topology:      infrav1.PowerVSLoadBalancerTopology,
+							Zone:          "dal10",
+							ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "rg-id"}},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
 							Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -540,6 +540,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
+
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, errors.New("vpc not found"))
 				clusterScope.IBMVPCClient = mockVPC
@@ -558,11 +560,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Topology: infrav1.PowerVSLoadBalancerTopology,
-							Zone:     ptr.To("dal10"),
-							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-								ID: ptr.To("rg-id"),
-							},
+							Topology:      infrav1.PowerVSLoadBalancerTopology,
+							Zone:          "dal10",
+							ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "rg-id"}},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
 							Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -586,6 +586,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
+
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("pending")}, nil, nil)
 				clusterScope.IBMVPCClient = mockVPC
@@ -604,11 +606,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Topology: infrav1.PowerVSLoadBalancerTopology,
-							Zone:     ptr.To("dal10"),
-							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-								ID: ptr.To("rg-id"),
-							},
+							Topology:      infrav1.PowerVSLoadBalancerTopology,
+							Zone:          "dal10",
+							ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "rg-id"}},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
 							Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -624,6 +624,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient := resourceclientmock.NewMockResourceController(gomock.NewController(t))
 				mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(nil, nil, errors.New("error getting resource instance"))
 				clusterScope.ResourceClient = mockResourceClient
+
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, errors.New("vpc not found"))
@@ -651,6 +653,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					State: ptr.To(string(infrav1.WorkspaceStateActive)),
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
+
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To(string(infrav1.VPCLoadBalancerStateActive))}, nil, nil)
@@ -702,6 +706,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}, nil, nil)
 				clusterScope.ResourceClient = mockResourceClient
 
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
+
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
 				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active")}, nil, nil)
 				mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
@@ -736,6 +742,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockResourceClient := getMockResourceController(t)
 				mockResourceClient.EXPECT().GetResourceInstanceByFilter(gomock.Any()).Return(nil, errors.New("error getting instance by name"))
 				clusterScope.ResourceClient = mockResourceClient
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 				clusterScope.IBMVPCClient = getMockVPC(t)
 				clusterScope.TransitGatewayClient = getMockTransitGateway(t)
 
@@ -772,6 +779,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				clusterScope.IBMPowerVSClient = mockPowerVS
 
 				clusterScope.ResourceClient = getMockResourceController(t)
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 				clusterScope.IBMVPCClient = getMockVPC(t)
 				clusterScope.TransitGatewayClient = getMockTransitGateway(t)
 
@@ -796,6 +804,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
 				clusterScope.ResourceClient = getMockResourceController(t)
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 				clusterScope.TransitGatewayClient = getMockTransitGateway(t)
 
 				mockVPC := getMockVPC(t)
@@ -829,6 +838,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
 				clusterScope.ResourceClient = getMockResourceController(t)
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 				clusterScope.IBMVPCClient = getMockVPC(t)
 				clusterScope.TransitGatewayClient = getMockTransitGateway(t)
 
@@ -859,6 +869,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
 				clusterScope.ResourceClient = getMockResourceController(t)
+				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 				clusterScope.TransitGatewayClient = getMockTransitGateway(t)
 
 				mockVPC := getMockVPC(t)
@@ -1594,10 +1605,8 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Topology: infrav1.PowerVSLoadBalancerTopology,
-							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-								ID: ptr.To("rg-id"),
-							},
+							Topology:      infrav1.PowerVSLoadBalancerTopology,
+							ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "rg-id"}},
 							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
@@ -2043,11 +2052,9 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 			Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 		},
 		Spec: infrav1.IBMPowerVSClusterSpec{
-			Topology: infrav1.PowerVSLoadBalancerTopology,
-			Zone:     ptr.To("dal10"),
-			ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-				ID: ptr.To("rg-id"),
-			},
+			Topology:      infrav1.PowerVSLoadBalancerTopology,
+			Zone:          "dal10",
+			ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "rg-id"}},
 			VPC: &infrav1.VPCResourceReference{
 				Region: ptr.To("us-south"),
 			},
@@ -2144,6 +2151,16 @@ func getMockTransitGateway(t *testing.T) *tgmock.MockTransitGateway {
 		},
 	}, nil, nil)
 	return mockTransitGateway
+}
+
+func getMockResourceManager(t *testing.T) *resourcemanagermock.MockResourceManager {
+	t.Helper()
+	mockResourceManager := resourcemanagermock.NewMockResourceManager(gomock.NewController(t))
+	mockResourceManager.EXPECT().GetResourceGroup(gomock.Any()).Return(&resourcemanagerv2.ResourceGroup{
+		ID:   ptr.To("rg-id"),
+		Name: ptr.To("resource-group-name"),
+	}, nil, nil).AnyTimes()
+	return mockResourceManager
 }
 
 func createCluster(g *WithT, powervsCluster *infrav1.IBMPowerVSCluster, namespace string) {

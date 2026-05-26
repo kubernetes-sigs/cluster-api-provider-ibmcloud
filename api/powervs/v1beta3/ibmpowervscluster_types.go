@@ -66,6 +66,8 @@ func init() {
 }
 
 // IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster.
+//
+// +kubebuilder:validation:XValidation:rule="self.topology != 'LoadBalancer' || (has(self.zone) && size(self.zone) > 0)",message="zone is required when topology is set to LoadBalancer"
 type IBMPowerVSClusterSpec struct {
 	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
@@ -74,7 +76,7 @@ type IBMPowerVSClusterSpec struct {
 	// Topology defines the architectural mode for external cluster access.
 	// +required
 	// +kubebuilder:validation:Enum=VirtualIP;LoadBalancer
-	Topology ClusterTopology `json:"topology"`
+	Topology ClusterTopology `json:"topology,omitempty"`
 
 	// workspace specifies how the PowerVS workspace is sourced.
 	// A PowerVS workspace is a container for PowerVS resources in a specific zone.
@@ -86,20 +88,16 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	Network NetworkSource `json:"network,omitempty,omitzero"`
 
-	// zone is the name of Power VS zone where the cluster will be created
+	// zone is the name of PowerVS zone where the cluster will be created
 	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
-	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
-	// 1. it is expected to set the zone, not setting will result in webhook error.
-	// 2. the zone should have PER capabilities, or else system will give error.
 	// +optional
-	Zone *string `json:"zone,omitempty"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="zone is immutable"
+	// +kubebuilder:validation:MinLength=1
+	Zone string `json:"zone,omitempty"`
 
-	// resourceGroup name under which the resources will be created.
-	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
-	// 1. it is expected to set the ResourceGroup.Name, not setting will result in webhook error.
-	// ResourceGroup.ID and ResourceGroup.Regex is not yet supported and system will ignore the value.
+	// ResourceGroup defines the IBM Cloud Resource Group for the cluster.
 	// +optional
-	ResourceGroup *IBMPowerVSResourceReference `json:"resourceGroup,omitempty"`
+	ResourceGroup ResourceGroupSource `json:"resourceGroup,omitempty,omitzero"`
 
 	// vpc contains information about IBM Cloud VPC resources.
 	// when omitted system will dynamically create the VPC with name CLUSTER_NAME-vpc.
@@ -180,8 +178,9 @@ type IBMPowerVSClusterStatus struct {
 	// +optional
 	Network NetworkStatus `json:"network,omitempty,omitzero"`
 
-	// resourceGroupID is the reference to the Power VS resource group under which the resources will be created.
-	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
+	// ResourceGroup is the reference to the IBM Cloud Resource Group where the cluster resources are provisioned.
+	// +optional
+	ResourceGroup ResourceReferenceV1Beta3 `json:"resourceGroup,omitempty,omitzero"`
 
 	// vpc is reference to IBM Cloud VPC resources.
 	VPC *ResourceReference `json:"vpc,omitempty"`
@@ -536,4 +535,17 @@ type NetworkStatus struct {
 	// dhcpServer tracks the provisioned DHCP server identity, if one was created.
 	// +optional
 	DHCPServer ResourceReferenceV1Beta3 `json:"dhcpServer,omitempty,omitzero"`
+}
+
+// ResourceGroupSource represents the source of an IBM Cloud Resource Group.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : true",message="reference configuration is required when type is Reference"
+// +kubebuilder:validation:XValidation:rule="self.type != 'Provision'",message="Provisioning a Resource Group is not yet supported in this API version"
+type ResourceGroupSource struct {
+	// Type defines the intended action for the Resource Group.
+	// Currently, only "Reference" is supported.
+	Type SourceType `json:"type"`
+
+	// Reference specifies the existing Resource Group to use by Name or ID.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 }

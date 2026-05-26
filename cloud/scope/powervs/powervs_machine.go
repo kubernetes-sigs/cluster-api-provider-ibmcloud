@@ -172,7 +172,7 @@ func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error)
 	resourceInstance := resourcecontroller.InstanceFilter{
 		ID:             workspaceID,
 		Name:           workspaceName,
-		Zone:           params.IBMPowerVSCluster.Spec.Zone,
+		Zone:           &params.IBMPowerVSCluster.Spec.Zone,
 		ResourceID:     resourcecontroller.PowerVSResourceID,
 		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 	}
@@ -656,20 +656,24 @@ func (m *MachineScope) GetRawBootstrapData() ([]byte, error) {
 func getImageID(image *infrav1.IBMPowerVSResourceReference, m *MachineScope) (*string, error) {
 	if image.ID != nil {
 		return image.ID, nil
-	} else if image.Name != nil {
+	}
+
+	if image.Name != nil {
 		images, err := m.GetImages()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get images from IBM Cloud: %w", err)
 		}
+
 		for _, img := range images.Images {
 			if *image.Name == *img.Name {
 				return img.ImageID, nil
 			}
 		}
-	} else {
-		return nil, fmt.Errorf("both image ID and image Name can't be nil")
+
+		return nil, fmt.Errorf("image with name %q not found", *image.Name)
 	}
-	return nil, fmt.Errorf("failed to find an image ID")
+
+	return nil, fmt.Errorf("image reference must contain either an ID or a Name")
 }
 
 // GetImages will get list of images for the powervs service instance.
@@ -685,15 +689,14 @@ func (m *MachineScope) getNetworkID(network infrav1.ResourceIdentifier) (*string
 	if network.Name != "" {
 		net, err := m.IBMPowerVSClient.GetNetworkByName(network.Name)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get network by name %q: %w", network.Name, err)
 		}
 		if net == nil || net.NetworkID == nil {
 			return nil, fmt.Errorf("network with name %q not found", network.Name)
 		}
 		return net.NetworkID, nil
 	}
-
-	return nil, fmt.Errorf("network identifier is empty")
+	return nil, fmt.Errorf("network identifier must contain either an ID or a Name")
 }
 
 // GetNetworks will get list of networks for the powervs service instance.
@@ -930,7 +933,7 @@ func (m *MachineScope) GetWorkspaceID() (string, error) {
 
 		resourceInstance := resourcecontroller.InstanceFilter{
 			Name:           workspaceName,
-			Zone:           m.IBMPowerVSCluster.Spec.Zone,
+			Zone:           &m.IBMPowerVSCluster.Spec.Zone,
 			ResourceID:     resourcecontroller.PowerVSResourceID,
 			ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 		}
