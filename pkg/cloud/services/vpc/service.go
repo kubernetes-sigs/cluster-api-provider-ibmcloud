@@ -541,6 +541,11 @@ func (s *Service) AttachVolumeToInstance(options *vpcv1.CreateInstanceVolumeAtta
 	return s.vpcService.CreateInstanceVolumeAttachment(options)
 }
 
+// DeleteVolume deletes a volume.
+func (s *Service) DeleteVolume(options *vpcv1.DeleteVolumeOptions) (*core.DetailedResponse, error) {
+	return s.vpcService.DeleteVolume(options)
+}
+
 // GetVolume fetches the given volume's status.
 func (s *Service) GetVolume(options *vpcv1.GetVolumeOptions) (result *vpcv1.Volume, response *core.DetailedResponse, err error) {
 	return s.vpcService.GetVolume(options)
