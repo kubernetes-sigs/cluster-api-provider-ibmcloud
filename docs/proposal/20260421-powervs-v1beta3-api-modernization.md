@@ -125,7 +125,7 @@ if cluster.Status.VPC.ID != "" {
 **Solution**: We are removing the annotation and "implicit mode switching." We introduce a top-level Topology enum in the Spec to explicitly define the external access architecture. We pair this with CEL cross-field validation to strictly enforce IBM Cloud service boundaries.
 Go
 ```go
-// +kubebuilder:validation:Enum=VIP;LoadBalancer
+// +kubebuilder:validation:Enum=VirtualIP;LoadBalancer
 // Topology defines the architectural mode for external cluster access.
 Topology ClusterTopology `json:"topology"`
 ```

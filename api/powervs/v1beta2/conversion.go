@@ -213,6 +213,22 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 	if !reflect.DeepEqual(initialization, infrav1.IBMPowerVSClusterInitializationStatus{}) {
 		dst.Status.Initialization = initialization
 	}
+
+	// If the old v1beta2 annotation is true, map it to LoadBalancer. Otherwise, VirtualIP.
+	if val, exists := src.Annotations["powervs.cluster.x-k8s.io/create-infra"]; exists && val == "true" {
+		dst.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
+	} else {
+		dst.Spec.Topology = infrav1.PowerVSVirtualIPTopology
+	}
+
+	// Clean up the annotation in v1beta3 so we don't have duplicated sources of truth
+	if dst.Annotations != nil {
+		delete(dst.Annotations, "powervs.cluster.x-k8s.io/create-infra")
+		if len(dst.Annotations) == 0 {
+			dst.Annotations = nil
+		}
+	}
+
 	return nil
 }
 
@@ -221,6 +237,18 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta3_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(src, dst, nil); err != nil {
 		return err
 	}
+
+	// Map the v1beta3 Topology explicit enum back to the v1beta2 annotation
+	if src.Spec.Topology == infrav1.PowerVSLoadBalancerTopology {
+		if dst.Annotations == nil {
+			dst.Annotations = make(map[string]string)
+		}
+		dst.Annotations["powervs.cluster.x-k8s.io/create-infra"] = "true"
+	} else if dst.Annotations != nil {
+		// For VirtualIP, we ensure the annotation is removed
+		delete(dst.Annotations, "powervs.cluster.x-k8s.io/create-infra")
+	}
+
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}

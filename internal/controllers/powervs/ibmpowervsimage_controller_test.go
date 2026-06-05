@@ -180,6 +180,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					UID:  "1",
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -421,6 +422,9 @@ func TestIBMPowerVSImageReconciler_Reconcile_Conditions(t *testing.T) {
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "capi-powervs-cluster"},
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
+				},
 			},
 			powervsImage: &infrav1.IBMPowerVSImage{
 				ObjectMeta: metav1.ObjectMeta{

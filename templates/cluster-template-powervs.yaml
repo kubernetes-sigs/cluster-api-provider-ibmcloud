@@ -35,6 +35,7 @@ spec:
     port: ${API_SERVER_PORT:=6443}
   network:
     name: ${IBMPOWERVS_NETWORK_NAME}
+  topology: VirtualIP
   workspace:
     reference:
       id: ${IBMPOWERVS_WORKSPACE_ID}

@@ -691,6 +691,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 	if err := Convert_v1beta3_APIEndpoint_To_v1beta1_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
+	// WARNING: in.Topology requires manual conversion: does not exist in peer-type
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta3_IBMPowerVSResourceReference_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err

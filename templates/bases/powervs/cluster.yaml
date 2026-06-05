@@ -29,12 +29,13 @@ metadata:
     cluster.x-k8s.io/cluster-name: "${CLUSTER_NAME}"
   name: "${CLUSTER_NAME}"
 spec:
-  workspace:
-    type: Reference
-    reference:
-      id: "${IBMPOWERVS_WORKSPACE_ID}"
-  network:
-    name: "${IBMPOWERVS_NETWORK_NAME}"
   controlPlaneEndpoint:
     host: "${IBMPOWERVS_VIP_EXTERNAL}"
     port: ${API_SERVER_PORT:=6443}
+  network:
+    name: "${IBMPOWERVS_NETWORK_NAME}"
+  topology: VirtualIP
+  workspace:
+    reference:
+      id: "${IBMPOWERVS_WORKSPACE_ID}"
+    type: Reference

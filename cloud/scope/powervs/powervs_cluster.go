@@ -156,8 +156,8 @@ func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		return nil, err
 	}
 
-	// if powervs.cluster.x-k8s.io/create-infra=true annotation is not set, create only powerVSClient.
-	if !CheckCreateInfraAnnotation(*params.IBMPowerVSCluster) {
+	// If the topology is not explicitly set to LoadBalancer, we only need the PowerVS client
+	if params.IBMPowerVSCluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
 		return &ClusterScope{
 			Client:            params.Client,
 			patchHelper:       helper,

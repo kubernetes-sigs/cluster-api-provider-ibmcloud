@@ -22,6 +22,17 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
+// ClusterTopology defines the external access architecture of the cluster.
+type ClusterTopology string
+
+const (
+	// PowerVSVirtualIPTopology uses a pure PowerVS network and Virtual IP for access.
+	PowerVSVirtualIPTopology ClusterTopology = "VirtualIP"
+
+	// PowerVSLoadBalancerTopology integrates the PowerVS workspace with an IBM Cloud VPC and LoadBalancer.
+	PowerVSLoadBalancerTopology ClusterTopology = "LoadBalancer"
+)
+
 const (
 	// IBMPowerVSClusterFinalizer allows IBMPowerVSClusterReconciler to clean up resources associated with IBMPowerVSCluster before
 	// removing it from the apiserver.
@@ -48,6 +59,11 @@ type IBMPowerVSClusterSpec struct {
 	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
+
+	// Topology defines the architectural mode for external cluster access.
+	// +required
+	// +kubebuilder:validation:Enum=VirtualIP;LoadBalancer
+	Topology ClusterTopology `json:"topology"`
 
 	// workspace specifies how the PowerVS workspace is sourced.
 	// A PowerVS workspace is a container for PowerVS resources in a specific zone.

@@ -94,6 +94,12 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
+
+	// Enforce safe Enum values for Topology so round-trips match
+	if in.Topology != infrav1.PowerVSLoadBalancerTopology {
+		in.Topology = infrav1.PowerVSVirtualIPTopology
+	}
+
 	// Enforce the SourceType union constraints for v1beta3 Workspace so round-trip tests pass
 	switch in.Workspace.Type {
 	case infrav1.SourceTypeReference:

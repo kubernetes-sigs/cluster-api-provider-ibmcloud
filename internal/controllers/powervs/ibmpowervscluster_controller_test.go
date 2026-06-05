@@ -70,6 +70,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				GenerateName: "powervs-test-",
 			},
 			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
 				Workspace: infrav1.WorkspaceSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -119,6 +120,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						UID:        "1",
 					}}},
 			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
 				Workspace: infrav1.WorkspaceSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -156,6 +158,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
 			},
 			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
 				Workspace: infrav1.WorkspaceSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -218,6 +221,7 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						UID:        "1",
 					}}},
 			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
 				Workspace: infrav1.WorkspaceSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -259,7 +263,10 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
+				Zone:     ptr.To("zone"),
+			},
 		}
 
 		ownerCluster := &clusterv1.Cluster{
@@ -323,7 +330,10 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						Name:       "capi-test",
 						UID:        "1",
 					}}},
-			Spec: infrav1.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
+				Zone:     ptr.To("zone"),
+			},
 		}
 
 		ownerCluster := &clusterv1.Cluster{
@@ -391,6 +401,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
 						},
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
+						},
 					},
 				}
 			},
@@ -403,6 +416,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						ObjectMeta: metav1.ObjectMeta{
 							Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
+						},
+						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
 						},
 					},
 				}
@@ -419,7 +435,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Zone: ptr.To("dal10"),
+							Topology: infrav1.PowerVSLoadBalancerTopology,
+							Zone:     ptr.To("dal10"),
 						},
 					},
 				}
@@ -440,7 +457,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Zone: ptr.To("dal10"),
+							Topology: infrav1.PowerVSLoadBalancerTopology,
+							Zone:     ptr.To("dal10"),
 						},
 					},
 				}
@@ -461,7 +479,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Zone: ptr.To("dal10"),
+							Topology: infrav1.PowerVSLoadBalancerTopology,
+							Zone:     ptr.To("dal10"),
 							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
@@ -503,7 +522,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Zone: ptr.To("dal10"),
+							Topology: infrav1.PowerVSLoadBalancerTopology,
+							Zone:     ptr.To("dal10"),
 							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
@@ -548,7 +568,8 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 						},
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							Zone: ptr.To("dal10"),
+							Topology: infrav1.PowerVSLoadBalancerTopology,
+							Zone:     ptr.To("dal10"),
 							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
@@ -846,7 +867,9 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 							UID:        "1",
 						}},
 				},
-				Spec: infrav1.IBMPowerVSClusterSpec{},
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
+				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
 						ID: "serviceInstanceID",
@@ -870,6 +893,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 						Name: "capi-powervs-cluster",
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
+						Topology: infrav1.PowerVSVirtualIPTopology,
 						Workspace: infrav1.WorkspaceSource{
 							Type: infrav1.SourceTypeReference,
 							Reference: infrav1.ResourceIdentifier{
@@ -897,6 +921,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 						Name: "capi-powervs-cluster",
 					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
+						Topology: infrav1.PowerVSVirtualIPTopology,
 						Workspace: infrav1.WorkspaceSource{
 							Type: infrav1.SourceTypeReference,
 							Reference: infrav1.ResourceIdentifier{
@@ -964,6 +989,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete TransitGateway returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
 			ID:                ptr.To("transitgatewayID"),
 			ControllerCreated: ptr.To(true),
@@ -1000,6 +1026,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete TransitGateway returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
 			ID:                ptr.To("transitgatewayID"),
 			ControllerCreated: ptr.To(true),
@@ -1034,6 +1061,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete LoadBalancer returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1.VPCLoadBalancerStatus{
 			"lb": {
 				ID:                ptr.To("lb-id"),
@@ -1063,6 +1091,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete LoadBalancer returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.LoadBalancers = map[string]infrav1.VPCLoadBalancerStatus{
 			"lb": {
 				ID:                ptr.To("lb-id"),
@@ -1091,6 +1120,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC security group returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1.VPCSecurityGroupStatus{
 			"sc": {
 				ID:                ptr.To("sc-id"),
@@ -1119,6 +1149,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC subnet returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1.ResourceReference{
 			"subent1": {
 				ID:                ptr.To("subent1"),
@@ -1144,6 +1175,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC subnet returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.VPCSubnet = map[string]infrav1.ResourceReference{
 			"subent1": {
 				ID:                ptr.To("subent1"),
@@ -1167,6 +1199,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1.ResourceReference{
 			ID:                ptr.To("vpcid"),
 			ControllerCreated: ptr.To(true),
@@ -1190,6 +1223,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete VPC returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.VPC = &infrav1.ResourceReference{
 			ID:                ptr.To("vpcid"),
 			ControllerCreated: ptr.To(true),
@@ -1211,6 +1245,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete DHCP returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
 			Workspace: infrav1.ResourceReferenceV1Beta3{
 				ID: "serviceInstanceID",
@@ -1241,6 +1276,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete Workspace returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Spec.Workspace.Type = infrav1.SourceTypeProvision
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
 			Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -1271,6 +1307,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete Workspace returns requeue as true", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Spec.Workspace.Type = infrav1.SourceTypeProvision
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
 			Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -1300,11 +1337,13 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete COSInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status.COSInstance = &infrav1.ResourceReference{
 			ID:                ptr.To("CosInstanceID"),
 			ControllerCreated: ptr.To(true),
 		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
+			Topology: infrav1.PowerVSLoadBalancerTopology,
 			Workspace: infrav1.WorkspaceSource{
 				Type: infrav1.SourceTypeReference,
 				Reference: infrav1.ResourceIdentifier{
@@ -1336,12 +1375,14 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When reconcile delete is successful", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
+		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
 			Workspace: infrav1.ResourceReferenceV1Beta3{
 				ID: "serviceInstanceID",
 			},
 		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
+			Topology: infrav1.PowerVSLoadBalancerTopology,
 			Workspace: infrav1.WorkspaceSource{
 				Type: infrav1.SourceTypeReference,
 				Reference: infrav1.ResourceIdentifier{
@@ -1426,6 +1467,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSLoadBalancerTopology,
 							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
@@ -1465,6 +1507,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSLoadBalancerTopology,
 							ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 								ID: ptr.To("rg-id"),
 							},
@@ -1502,6 +1545,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSLoadBalancerTopology,
 							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
@@ -1553,6 +1597,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSLoadBalancerTopology,
 							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
@@ -1605,6 +1650,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSLoadBalancerTopology,
 							VPC: &infrav1.VPCResourceReference{
 								Region: ptr.To("us-south"),
 							},
@@ -1744,6 +1790,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
 							Workspace: infrav1.WorkspaceSource{
 								Type: infrav1.SourceTypeReference,
 								Reference: infrav1.ResourceIdentifier{
@@ -1789,6 +1836,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Spec: infrav1.IBMPowerVSClusterSpec{
+							Topology: infrav1.PowerVSVirtualIPTopology,
 							Workspace: infrav1.WorkspaceSource{
 								Type: infrav1.SourceTypeReference,
 								Reference: infrav1.ResourceIdentifier{
@@ -1892,7 +1940,8 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 			Annotations: map[string]string{infrav1.CreateInfrastructureAnnotation: "true"},
 		},
 		Spec: infrav1.IBMPowerVSClusterSpec{
-			Zone: ptr.To("dal10"),
+			Topology: infrav1.PowerVSLoadBalancerTopology,
+			Zone:     ptr.To("dal10"),
 			ResourceGroup: &infrav1.IBMPowerVSResourceReference{
 				ID: ptr.To("rg-id"),
 			},
