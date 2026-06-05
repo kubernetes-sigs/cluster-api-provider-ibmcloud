@@ -54,11 +54,11 @@ type ImageScopeParams struct {
 
 // ImageScope defines a scope defined around a Power VS Cluster.
 type ImageScope struct {
-	Client            client.Client
-	IBMPowerVSClient  powervs.PowerVS
-	IBMPowerVSImage   *infrav1.IBMPowerVSImage
-	ServiceEndpoint   []endpoints.ServiceEndpoint
-	serviceInstanceID string
+	Client           client.Client
+	IBMPowerVSClient powervs.PowerVS
+	IBMPowerVSImage  *infrav1.IBMPowerVSImage
+	ServiceEndpoint  []endpoints.ServiceEndpoint
+	workspaceID      string
 }
 
 // NewPowerVSImageScope creates a new ImageScope from the supplied parameters.
@@ -92,38 +92,46 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (scope *
 		return nil, err
 	}
 
-	var serviceInstanceID string
-	if params.IBMPowerVSImage.Spec.ServiceInstance != nil && params.IBMPowerVSImage.Spec.ServiceInstance.ID != nil {
-		serviceInstanceID = *params.IBMPowerVSImage.Spec.ServiceInstance.ID
+	var workspaceID, workspaceName string
+
+	// 1. Fast Path: The user provided the exact ID in the Image Spec.
+	if params.IBMPowerVSImage.Spec.Workspace.ID != "" {
+		workspaceID = params.IBMPowerVSImage.Spec.Workspace.ID
 	} else {
-		name := fmt.Sprintf("%s-%s", params.IBMPowerVSImage.Spec.ClusterName, "serviceInstance")
-		if params.IBMPowerVSImage.Spec.ServiceInstance != nil && params.IBMPowerVSImage.Spec.ServiceInstance.Name != nil {
-			name = *params.IBMPowerVSImage.Spec.ServiceInstance.Name
+		// 2. Lookup Path: We need to find the ID using a Name.
+		if params.IBMPowerVSImage.Spec.Workspace.Name != "" {
+			workspaceName = params.IBMPowerVSImage.Spec.Workspace.Name
+		} else {
+			// The user provided nothing. Infer the default name using the ClusterName.
+			workspaceName = fmt.Sprintf("%s-workspace", params.IBMPowerVSImage.Spec.ClusterName)
 		}
+
 		resourceInstance := resourcecontroller.InstanceFilter{
-			Name:           name,
+			Name:           workspaceName,
 			Zone:           params.Zone,
 			ResourceID:     resourcecontroller.PowerVSResourceID,
 			ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 		}
 
-		serviceInstance, err := rc.GetResourceInstanceByFilter(resourceInstance)
+		workspace, err := rc.GetResourceInstanceByFilter(resourceInstance)
 		if err != nil {
-			log.Error(err, "error failed to get service instance id from name", "name", name)
-			return nil, err
+			return nil, fmt.Errorf("failed to look up workspace name %q: %w", workspaceName, err)
 		}
-		if serviceInstance == nil {
-			return nil, fmt.Errorf("service instance %s is not yet created", name)
+
+		if workspace == nil || workspace.GUID == nil {
+			return nil, fmt.Errorf("PowerVS workspace %q is not yet created or GUID is nil", workspaceName)
 		}
-		if *serviceInstance.State != string(infrav1.ServiceInstanceStateActive) {
-			return scope, ErrServiceInsanceNotInActiveState
+
+		if workspace.State == nil || *workspace.State != string(infrav1.WorkspaceStateActive) {
+			return scope, fmt.Errorf("PowerVS workspace (name: %q) is not in active state", workspaceName)
 		}
-		serviceInstanceID = *serviceInstance.GUID
+
+		workspaceID = *workspace.GUID
 	}
 
 	res, _, err := rc.GetResourceInstance(
 		&resourcecontrollerv2.GetResourceInstanceOptions{
-			ID: &serviceInstanceID,
+			ID: &workspaceID,
 		})
 	if err != nil {
 		err = fmt.Errorf("failed to get resource instance: %w", err)
@@ -149,10 +157,10 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (scope *
 		return nil, err
 	}
 
-	options.CloudInstanceID = serviceInstanceID
+	options.CloudInstanceID = workspaceID
 	c.WithClients(options)
 	scope.IBMPowerVSClient = c
-	scope.serviceInstanceID = serviceInstanceID
+	scope.workspaceID = workspaceID
 	return scope, nil
 }
 
@@ -223,7 +231,7 @@ func (i *ImageScope) DeleteImage() error {
 
 // GetImportJob will get the image import job.
 func (i *ImageScope) GetImportJob() (*models.Job, error) {
-	return i.IBMPowerVSClient.GetCosImages(i.serviceInstanceID)
+	return i.IBMPowerVSClient.GetCosImages(i.workspaceID)
 }
 
 // DeleteImportJob will delete the image import job.

@@ -48,7 +48,7 @@ following the steps below.
     IBMPOWERVS_VIP_EXTERNAL="163.68.65.6" \
     IBMPOWERVS_VIP_CIDR="29" \
     IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams10-1-34-7" \
-    IBMPOWERVS_SERVICE_INSTANCE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
+    IBMPOWERVS_WORKSPACE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
     IBMPOWERVS_NETWORK_NAME="capi-test" \
     IBMACCOUNT_ID="ibm-accountid" \
     IBMPOWERVS_REGION="osa" \
@@ -137,8 +137,8 @@ following the steps below.
 
 ### Deploy a PowerVS cluster with infrastructure creation
 
-#### Prerequisites: 
-- Already existing infrasturcture resources can be used for cluster creation by setting either the ID or name in spec. If neither are specified, the cluster name will be used for constructing the resource name. For example, if cluster name is `capi-powervs`, PowerVS workspace will be created with name `capi-powervs-serviceInstance`.
+#### Prerequisites:
+- Already existing infrasturcture resources can be used for cluster creation by setting either the ID or name in spec. If neither are specified, the cluster name will be used for constructing the resource name. For example, if cluster name is `capi-powervs`, PowerVS workspace will be created with name `capi-powervs-workspace`.
 
 **Note:** While working with unreleased versions like from main branch, instead of `--flavor=powervs-create-infra` use `--from=./templates/cluster-template-powervs-create-infra.yaml`.
 
@@ -175,7 +175,7 @@ following the steps below.
   IBMPOWERVS_VIP_EXTERNAL="163.68.65.6" \
   IBMPOWERVS_VIP_CIDR="29" \
   IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams10-1-34-7" \
-  IBMPOWERVS_SERVICE_INSTANCE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
+  IBMPOWERVS_WORKSPACE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
   IBMPOWERVS_NETWORK_NAME="capi-test" \
   IBMACCOUNT_ID="ibm-accountid" \
   IBMPOWERVS_REGION="osa" \
@@ -193,7 +193,7 @@ following the steps below.
 - IBMPOWERVS_SSHKEY_NAME : Name of the SSH Key. Refer [here](../../topics/capibmadm/powervs/key.md#3-capibmadm-powervs-key-list) how to get the keys.
 - IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](../../topics/capibmadm/powervs/port.md#3-capibmadm-powervs-port-list)
 - IBMPOWERVS_IMAGE_NAME : Name of the custom image. Refer [here](../../topics/capibmadm/powervs/image.md#2-capibmadm-powervs-image-list) to get image details.
-- IBMPOWERVS_SERVICE_INSTANCE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
+- IBMPOWERVS_WORKSPACE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
 - IBMACCOUNT_ID : Go to the Account settings page in the IBM Cloud console to view your account ID and type. The account ID is a 32 character, unique account identifier.Refer [here](https://cloud.ibm.com/account/settings)
 - IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](../../topics/capibmadm/powervs/network.md#3-capibmadm-powervs-network-list) how to get the network details.
 - [IBMPOWERVS_REGION](../../reference/regions-zones-mapping.md)

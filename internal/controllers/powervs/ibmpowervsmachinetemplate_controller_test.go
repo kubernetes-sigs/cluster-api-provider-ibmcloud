@@ -190,7 +190,7 @@ func stubPowerVSMachineTemplate(processor intstr.IntOrString, memory int32) *inf
 		Spec: infrav1.IBMPowerVSMachineTemplateSpec{
 			Template: infrav1.IBMPowerVSMachineTemplateResource{
 				Spec: infrav1.IBMPowerVSMachineSpec{
-					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test_service_instance_id_27")},
+					Workspace: infrav1.ResourceIdentifier{ID: "test_service_instance_id_27"},
 					Image: &infrav1.IBMPowerVSResourceReference{
 						ID: ptr.To("capi-image"),
 					},

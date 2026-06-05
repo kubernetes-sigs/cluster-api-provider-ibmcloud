@@ -19,8 +19,6 @@ package powervs
 import (
 	"testing"
 
-	"k8s.io/utils/ptr"
-
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 
 	. "github.com/onsi/gomega"
@@ -41,7 +39,12 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance1")},
+							Workspace: infrav1.WorkspaceSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "test-instance1",
+								},
+							},
 						},
 					},
 				},
@@ -50,7 +53,12 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance1")},
+							Workspace: infrav1.WorkspaceSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "test-instance1",
+								},
+							},
 						},
 					},
 				},
@@ -63,7 +71,12 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance1")},
+							Workspace: infrav1.WorkspaceSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "test-instance1",
+								},
+							},
 						},
 					},
 				},
@@ -72,7 +85,12 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterTemplateSpec{
 					Template: infrav1.IBMPowerVSClusterTemplateResource{
 						Spec: infrav1.IBMPowerVSClusterSpec{
-							ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("test-instance2")},
+							Workspace: infrav1.WorkspaceSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "test-instance2",
+								},
+							},
 						},
 					},
 				},

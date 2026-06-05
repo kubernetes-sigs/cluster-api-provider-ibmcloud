@@ -29,8 +29,7 @@ const (
 	clusterName      = "foo-cluster"
 	machineName      = "foo-machine"
 	defaultNamespace = "default"
-	testVPC = "foo-vpc"
-
+	testVPC          = "foo-vpc"
 )
 
 func newCluster(name string) *clusterv1.Cluster {

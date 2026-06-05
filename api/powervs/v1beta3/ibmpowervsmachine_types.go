@@ -46,15 +46,12 @@ func init() {
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
 type IBMPowerVSMachineSpec struct {
-	// serviceInstance is the reference to the Power VS workspace on which the server instance(VM) will be created.
-	// Power VS workspace is a container for all Power VS instances at a specific geographic region.
-	// serviceInstance can be created via IBM Cloud catalog or CLI.
-	// supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-	// More detail about Power VS service instance.
-	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
-	// when omitted system will dynamically create the service instance
+	// workspace identifies the PowerVS workspace where the instance will be created.
+	// If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
+	// Supported identifiers are name and id.
+	// More details: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
 	// +optional
-	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
+	Workspace ResourceIdentifier `json:"workspace,omitempty,omitzero"`
 
 	// sshKey is the name of the SSH key pair provided to the vsi for authenticating users.
 	SSHKey string `json:"sshKey,omitempty"`

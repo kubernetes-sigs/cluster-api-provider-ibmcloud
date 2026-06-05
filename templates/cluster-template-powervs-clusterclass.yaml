@@ -72,8 +72,10 @@ spec:
         port: ${API_SERVER_PORT:=6443}
       network:
         name: ${IBMPOWERVS_NETWORK_NAME}
-      serviceInstance:
-        id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+      workspace:
+        reference:
+          id: ${IBMPOWERVS_WORKSPACE_ID}
+        type: Reference
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate
@@ -287,10 +289,10 @@ spec:
         name: ${IBMPOWERVS_NETWORK_NAME}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      serviceInstance:
-        id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      workspace:
+        id: ${IBMPOWERVS_WORKSPACE_ID}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSMachineTemplate
@@ -306,10 +308,10 @@ spec:
         name: ${IBMPOWERVS_NETWORK_NAME}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      serviceInstance:
-        id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
       systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      workspace:
+        id: ${IBMPOWERVS_WORKSPACE_ID}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta2
 kind: ClusterResourceSet
@@ -352,7 +354,7 @@ data:
         g2VpcSubnetNames = ${IBMVPC_SUBNET_NAMES:=""}
         g2VpcName = ${IBMVPC_NAME:=""}
         region =  ${IBMVPC_REGION:=""}
-        powerVSCloudInstanceID = ${IBMPOWERVS_SERVICE_INSTANCE_ID}
+        powerVSCloudInstanceID = ${IBMPOWERVS_WORKSPACE_ID}
         powerVSRegion = ${IBMPOWERVS_REGION}
         powerVSZone = ${IBMPOWERVS_ZONE}
 kind: ConfigMap

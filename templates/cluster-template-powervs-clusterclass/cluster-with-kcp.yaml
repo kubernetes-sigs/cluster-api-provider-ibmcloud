@@ -72,8 +72,10 @@ spec:
         port: ${API_SERVER_PORT:=6443}
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
-      serviceInstance:
-        id: "${IBMPOWERVS_SERVICE_INSTANCE_ID}"
+      workspace:
+        type: Reference
+        reference:
+          id: "${IBMPOWERVS_WORKSPACE_ID}"
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlaneTemplate

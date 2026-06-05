@@ -356,19 +356,6 @@ func (s *ClusterScope) APIServerPort() int32 {
 	return infrav1.DefaultAPIServerPort
 }
 
-// ServiceInstance returns the cluster ServiceInstance.
-func (s *ClusterScope) ServiceInstance() *infrav1.IBMPowerVSResourceReference {
-	return s.IBMPowerVSCluster.Spec.ServiceInstance
-}
-
-// GetServiceInstanceID returns service instance id set in status field of IBMPowerVSCluster object. If it doesn't exist, returns empty string.
-func (s *ClusterScope) GetServiceInstanceID() string {
-	if s.IBMPowerVSCluster.Status.ServiceInstance != nil && s.IBMPowerVSCluster.Status.ServiceInstance.ID != nil {
-		return *s.IBMPowerVSCluster.Status.ServiceInstance.ID
-	}
-	return ""
-}
-
 // SetTransitGatewayConnectionStatus sets the connection status of Transit gateway.
 func (s *ClusterScope) SetTransitGatewayConnectionStatus(networkType networkConnectionType, resource *infrav1.ResourceReference) {
 	if s.IBMPowerVSCluster.Status.TransitGateway == nil || resource == nil {
@@ -398,12 +385,6 @@ func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.Resou
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting status", "resourceType", resourceType, "resource", resource)
 	switch resourceType {
-	case infrav1.ResourceTypeServiceInstance:
-		if s.IBMPowerVSCluster.Status.ServiceInstance == nil {
-			s.IBMPowerVSCluster.Status.ServiceInstance = &resource
-			return
-		}
-		s.IBMPowerVSCluster.Status.ServiceInstance.Set(resource)
 	case infrav1.ResourceTypeNetwork:
 		if s.IBMPowerVSCluster.Status.Network == nil {
 			s.IBMPowerVSCluster.Status.Network = &resource
@@ -693,156 +674,187 @@ func (s *ClusterScope) ReconcileResourceGroup(ctx context.Context) error {
 	return nil
 }
 
-// ReconcilePowerVSServiceInstance reconciles Power VS service instance.
-func (s *ClusterScope) ReconcilePowerVSServiceInstance(ctx context.Context) (bool, error) {
+// ReconcileWorkspace reconciles PowerVS workspace.
+func (s *ClusterScope) ReconcileWorkspace(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
+	cluster := s.IBMPowerVSCluster
 
-	// Verify if service instance id is set in status field of IBMPowerVSCluster object.
-	serviceInstanceID := s.GetServiceInstanceID()
-	if serviceInstanceID != "" {
-		log.V(3).Info("PowerVS service instance ID is set, fetching details", "serviceInstanceID", serviceInstanceID)
-		// if serviceInstanceID is set, verify that it exist and in active state.
-		serviceInstance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
-			ID: &serviceInstanceID,
+	// 1. Idempotency & State Check: If we already resolved the Workspace ID, just verify its state.
+	workspaceID := cluster.Status.Workspace.ID
+	if workspaceID != "" {
+		log.V(3).Info("PowerVS workspace ID is set, fetching details", "workspaceID", workspaceID)
+
+		workspace, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+			ID: &workspaceID,
 		})
 		if err != nil {
-			return false, fmt.Errorf("failed to fetch service instance details: %w", err)
-		}
-		if serviceInstance == nil {
-			return false, fmt.Errorf("failed to get PowerVS service instance with ID %s", serviceInstanceID)
+			return false, fmt.Errorf("failed to fetch workspace (id: %s) details: %w", workspaceID, err)
 		}
 
-		requeue, err := s.checkServiceInstanceState(ctx, *serviceInstance)
+		if workspace == nil {
+			return false, fmt.Errorf("workspace not found with ID: %s", workspaceID)
+		}
+
+		requeue, err := s.checkWorkspaceState(ctx, *workspace)
 		if err != nil {
-			return false, fmt.Errorf("failed to check service instance state: %w", err)
+			return false, fmt.Errorf("failed to check workspace state: %w", err)
 		}
 		return requeue, nil
 	}
 
-	// check PowerVS service instance exist in cloud, if it does not exist proceed with creating the instance.
-	serviceInstanceID, requeue, err := s.isServiceInstanceExists(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to check if service instance exists: %w", err)
-	}
-	// Set the status of IBMPowerVSCluster object with serviceInstanceID and ControllerCreated to false as PowerVS service instance is already exist in cloud.
-	if serviceInstanceID != "" {
-		log.V(3).Info("Found PowerVS service instance in cloud", "serviceInstanceID", serviceInstanceID)
-		s.SetStatus(ctx, infrav1.ResourceTypeServiceInstance, infrav1.ResourceReference{ID: &serviceInstanceID, ControllerCreated: ptr.To(false)})
-		return requeue, nil
-	}
+	// 2. We don't have an ID yet. Route logic based strictly on the user's explicit intent.
+	log.Info("Resolving PowerVS workspace", "type", cluster.Spec.Workspace.Type)
 
-	// create PowerVS Service Instance
-	serviceInstance, err := s.createServiceInstance(ctx)
-	if err != nil {
-		return false, fmt.Errorf("failed to create PowerVS service instance: %w", err)
-	}
-	if serviceInstance == nil {
-		return false, fmt.Errorf("created PowerVS service instance is nil")
-	}
+	switch cluster.Spec.Workspace.Type {
+	case infrav1.SourceTypeReference:
+		return s.reconcileWorkspaceReference(ctx)
 
-	log.Info("Created PowerVS service instance", "serviceInstanceID", serviceInstance.GUID)
-	// Set the status of IBMPowerVSCluster object with serviceInstanceID and ControllerCreated to true as new PowerVS service instance is created.
-	s.SetStatus(ctx, infrav1.ResourceTypeServiceInstance, infrav1.ResourceReference{ID: serviceInstance.GUID, ControllerCreated: ptr.To(true)})
-	return true, nil
+	case infrav1.SourceTypeProvision:
+		return s.reconcileWorkspaceProvision(ctx)
+
+	default:
+		return false, fmt.Errorf("unknown workspace source type: %s", cluster.Spec.Workspace.Type)
+	}
 }
 
-// checkServiceInstanceState checks the state of a PowerVS service instance.
-// If state is provisioning, true is returned indicating a requeue for reconciliation.
-// In all other cases, it returns false.
-func (s *ClusterScope) checkServiceInstanceState(ctx context.Context, instance resourcecontrollerv2.ResourceInstance) (bool, error) {
+// reconcileWorkspaceReference handles the logic when a user brings their own existing workspace.
+func (s *ClusterScope) reconcileWorkspaceReference(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Checking the state of PowerVS service instance", "name", *instance.Name)
-	switch *instance.State {
-	case string(infrav1.ServiceInstanceStateActive):
-		log.V(3).Info("PowerVS service instance is in active state")
-		return false, nil
-	case string(infrav1.ServiceInstanceStateProvisioning):
-		log.V(3).Info("PowerVS service instance is in provisioning state")
-		return true, nil
-	case string(infrav1.ServiceInstanceStateFailed):
-		return false, fmt.Errorf("PowerVS service instance is in failed state")
-	}
-	return false, fmt.Errorf("PowerVS service instance is in %s state", *instance.State)
-}
+	ref := s.IBMPowerVSCluster.Spec.Workspace.Reference
 
-// checkServiceInstance checks PowerVS service instance exist in cloud by ID or name.
-func (s *ClusterScope) isServiceInstanceExists(ctx context.Context) (string, bool, error) {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Checking for PowerVS service instance in cloud")
-	var (
-		id              string
-		err             error
-		serviceInstance *resourcecontrollerv2.ResourceInstance
-	)
+	log.Info("Verifying existing workspace", "reference", ref)
 
-	if s.IBMPowerVSCluster.Spec.ServiceInstance != nil && s.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
-		id = *s.IBMPowerVSCluster.Spec.ServiceInstance.ID
-	}
-
-	if id != "" {
-		// Fetches service instance by ID.
-		serviceInstance, _, err = s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
-			ID: &id,
-		})
-	} else {
-		// Fetches service instance by name.
-		serviceInstance, err = s.getServiceInstance()
-	}
-
-	if err != nil {
-		return "", false, fmt.Errorf("failed to fetch PowerVS service instance details: %w", err)
-	}
-
-	if serviceInstance == nil {
-		log.V(3).Info("PowerVS service instance with given ID or name does not exist in cloud")
-		return "", false, nil
-	}
-
-	requeue, err := s.checkServiceInstanceState(ctx, *serviceInstance)
-	if err != nil {
-		return "", false, fmt.Errorf("failed to check service instance state: %w", err)
-	}
-
-	return *serviceInstance.GUID, requeue, nil
-}
-
-// getServiceInstance return resource instance by name.
-func (s *ClusterScope) getServiceInstance() (*resourcecontrollerv2.ResourceInstance, error) {
 	resourceInstance := resourcecontroller.InstanceFilter{
-		Name:           *s.GetServiceName(infrav1.ResourceTypeServiceInstance),
+		ID:             ref.ID,
+		Name:           ref.Name,
 		Zone:           s.IBMPowerVSCluster.Spec.Zone,
 		ResourceID:     resourcecontroller.PowerVSResourceID,
 		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 	}
-	//TODO: Support regular expression
-	return s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
+
+	workspace, err := s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
+	if err != nil {
+		return false, fmt.Errorf("failed to fetch workspace by ref %q: %w", ref, err)
+	}
+
+	if workspace == nil {
+		return false, fmt.Errorf("workspace with reference %q not found in IBM Cloud", ref)
+	}
+
+	if workspace.GUID == nil || workspace.Name == nil {
+		return false, fmt.Errorf("workspace %q has missing GUID or name", ref)
+	}
+
+	log.Info("Successfully verified existing workspace", "workspaceID", *workspace.GUID, "name", workspace.Name)
+
+	s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReferenceV1Beta3{ID: *workspace.GUID, Name: *workspace.Name}
+
+	return true, nil // requeue so that the state of worksapce will be checked in the next reconcile
+}
+
+// reconcileWorkspaceProvision handles the logic when the controller must create a new workspace.
+func (s *ClusterScope) reconcileWorkspaceProvision(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	provision := s.IBMPowerVSCluster.Spec.Workspace.Provision
+
+	// 1. Determine the name to use
+	workspaceName := provision.Name
+	if workspaceName == "" {
+		workspaceName = fmt.Sprintf("%s-workspace", s.IBMPowerVSCluster.Name)
+	}
+
+	// 2. Idempotency check: Did we already create this, but crash before saving to Status?
+	resourceInstance := resourcecontroller.InstanceFilter{
+		Name:           workspaceName,
+		Zone:           s.IBMPowerVSCluster.Spec.Zone,
+		ResourceID:     resourcecontroller.PowerVSResourceID,
+		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
+	}
+
+	workspace, err := s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
+	if err != nil {
+		return false, fmt.Errorf("failed to check for existing workspace: %w", err)
+	}
+
+	if workspace != nil && workspace.GUID != nil {
+		log.Info("Recovered previously provisioned workspace", "workspaceID", workspace.GUID)
+		s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReferenceV1Beta3{
+			ID:   *workspace.GUID,
+			Name: workspaceName,
+		}
+		return true, nil // requeue so that the state of worksapce will be checked in the next reconcile
+	}
+
+	// 3. Create the new Workspace
+	log.Info("Provisioning new workspace", "name", workspaceName)
+
+	workspace, err = s.createWorkspace(ctx, workspaceName)
+	if err != nil {
+		return false, fmt.Errorf("failed to provision workspace: %w", err)
+	}
+	if workspace == nil || workspace.GUID == nil {
+		return false, errors.New("provisioned workspace or GUID is nil")
+	}
+
+	log.Info("Successfully provisioned workspace", "workspaceID", *workspace.GUID)
+
+	// 4. Save to Status.
+	s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReferenceV1Beta3{
+		ID:   *workspace.GUID,
+		Name: workspaceName,
+	}
+
+	return true, nil // Requeue to wait for it to become ACTIVE
+}
+
+// checkWorkspaceState checks the state of a PowerVS workspace.
+// If state is provisioning, true is returned indicating a requeue for reconciliation.
+// In all other cases, it returns false.
+func (s *ClusterScope) checkWorkspaceState(ctx context.Context, workspace resourcecontrollerv2.ResourceInstance) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.V(3).Info("Checking the state of PowerVS workspace", "name", *workspace.Name)
+
+	switch *workspace.State {
+	case string(infrav1.WorkspaceStateActive):
+		log.V(3).Info("PowerVS workspace is in active state")
+		return false, nil
+	case string(infrav1.WorkspaceStateProvisioning):
+		log.V(3).Info("PowerVS workspace is in provisioning state")
+		return true, nil
+	case string(infrav1.WorkspaceStateFailed):
+		return false, fmt.Errorf("PowerVS workspace is in failed state")
+	}
+	return false, fmt.Errorf("PowerVS workspacee is in %s state", *workspace.State)
 }
 
 // createServiceInstance creates the service instance.
-func (s *ClusterScope) createServiceInstance(ctx context.Context) (*resourcecontrollerv2.ResourceInstance, error) {
+func (s *ClusterScope) createWorkspace(ctx context.Context, workspaceName string) (*resourcecontrollerv2.ResourceInstance, error) {
 	log := ctrl.LoggerFrom(ctx)
+
 	// fetch resource group id.
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
 		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
 	}
 
-	// create service instance.
-	log.V(3).Info("Creating new PowerVS service instance", "serviceInstanceName", s.GetServiceName(infrav1.ResourceTypeServiceInstance))
 	zone := s.Zone()
 	if zone == nil {
 		return nil, fmt.Errorf("PowerVS zone is not set")
 	}
-	serviceInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
-		Name:           s.GetServiceName(infrav1.ResourceTypeServiceInstance),
+
+	// create worksapce.
+	log.V(3).Info("Creating new worksapce", "worksapceName", workspaceName, "zone", zone)
+
+	workspace, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
+		Name:           &workspaceName,
 		Target:         zone,
 		ResourceGroup:  &resourceGroupID,
 		ResourcePlanID: ptr.To(resourcecontroller.PowerVSResourcePlanID),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create PowerVS service instance: %w", err)
+		return nil, fmt.Errorf("failed to create worksapce: %w", err)
 	}
-	return serviceInstance, nil
+	return workspace, nil
 }
 
 // ReconcileNetwork reconciles network
@@ -1967,8 +1979,8 @@ func (s *ClusterScope) createTransitGateway(ctx context.Context) error {
 		return fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
 	}
 
-	if s.IBMPowerVSCluster.Status.ServiceInstance == nil || s.IBMPowerVSCluster.Status.VPC == nil {
-		return fmt.Errorf("failed to proeceed with transit gateway creation as either one of VPC or PowerVS service instance reconciliation is not successful")
+	if s.IBMPowerVSCluster.Status.Workspace.ID == "" || s.IBMPowerVSCluster.Status.VPC == nil {
+		return fmt.Errorf("failed to proceed with transit gateway creation: PowerVS workspace or VPC reconciliation is not yet complete")
 	}
 
 	location, globalRouting, err := genutil.GetTransitGatewayLocationAndRouting(s.Zone(), s.VPC().Region)
@@ -2366,7 +2378,7 @@ func (s *ClusterScope) checkCOSServiceInstance(ctx context.Context) (*resourceco
 		log.V(3).Info("COS service instance is not found", "cosInstanceName", *s.GetServiceName(infrav1.ResourceTypeCOSInstance))
 		return nil, nil
 	}
-	if *serviceInstance.State != string(infrav1.ServiceInstanceStateActive) {
+	if *serviceInstance.State != string(infrav1.WorkspaceStateActive) {
 		return nil, fmt.Errorf("COS service instance is not in active state, current state: %s", *serviceInstance.State)
 	}
 	return serviceInstance, nil
@@ -2445,31 +2457,24 @@ func (s *ClusterScope) fetchVPCCRN() (*string, error) {
 
 // fetchPowerVSServiceInstanceCRN returns Power VS service instance CRN.
 func (s *ClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) {
-	serviceInstanceID := s.GetServiceInstanceID()
-	if serviceInstanceID == "" {
-		if s.IBMPowerVSCluster.Spec.ServiceInstance != nil && s.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
-			serviceInstanceID = *s.IBMPowerVSCluster.Spec.ServiceInstance.ID
-		}
-	}
-	pvsDetails, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
-		ID: &serviceInstanceID,
+	workspaceID := s.IBMPowerVSCluster.Status.Workspace.ID
+	workspace, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+		ID: &workspaceID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return pvsDetails.CRN, nil
+	if workspace.CRN == nil {
+		return nil, fmt.Errorf("workspace CRN is empty %s", workspaceID)
+	}
+	return workspace.CRN, nil
 }
 
 // TODO(karthik-k-n): Decide on proper naming format for services.
 
 // GetServiceName returns name of given service type from spec or generate a name for it.
-func (s *ClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string { //nolint:gocyclo
+func (s *ClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string {
 	switch resourceType {
-	case infrav1.ResourceTypeServiceInstance:
-		if s.ServiceInstance() == nil || s.ServiceInstance().Name == nil {
-			return ptr.To(fmt.Sprintf("%s-serviceInstance", s.InfraCluster()))
-		}
-		return s.ServiceInstance().Name
 	case infrav1.ResourceTypeDHCPServer:
 		if s.DHCPServer() != nil && s.DHCPServer().Name != nil {
 			return s.DHCPServer().Name
@@ -2766,8 +2771,8 @@ func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
 		log.Info("Skipping DHCP server deletion as resource is not created by controller")
 		return nil
 	}
-	if s.isResourceCreatedByController(infrav1.ResourceTypeServiceInstance) {
-		log.Info("Skipping DHCP server deletion as PowerVS service instance is created by controller, will directly delete the PowerVS service instance since it will delete the DHCP server internally")
+	if s.IBMPowerVSCluster.Spec.Workspace.Type == infrav1.SourceTypeProvision {
+		log.Info("Skipping DHCP server deletion as PowerVS workspace is created by controller, will directly delete the PowerVS workspace since it will delete the DHCP server internally")
 		return nil
 	}
 
@@ -2790,36 +2795,47 @@ func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
 	return nil
 }
 
-// DeleteServiceInstance deletes service instance.
-func (s *ClusterScope) DeleteServiceInstance(ctx context.Context) (bool, error) {
+// DeleteWorkspace deletes the PowerVS workspace if it was provisioned by the controller.
+func (s *ClusterScope) DeleteWorkspace(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1.ResourceTypeServiceInstance) {
-		log.Info("Skipping PowerVS service instance deletion as resource is not created by controller")
+	cluster := s.IBMPowerVSCluster
+
+	// 1. Declarative Safety Check: Only delete if the user asked us to provision it.
+	if cluster.Spec.Workspace.Type != infrav1.SourceTypeProvision {
+		log.Info("Skipping PowerVS workspace deletion as it was not provisioned by the controller")
 		return false, nil
 	}
 
-	if s.IBMPowerVSCluster.Status.ServiceInstance.ID == nil {
+	// 2. Check if there is actually an ID to delete.
+	workspaceID := cluster.Status.Workspace.ID
+	if workspaceID == "" {
+		log.Info("PowerVS workspace ID is empty, nothing to delete")
 		return false, nil
 	}
 
-	serviceInstance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
-		ID: s.IBMPowerVSCluster.Status.ServiceInstance.ID,
+	// 3. Fetch the current state of the workspace from IBM Cloud.
+	workspace, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+		ID: &workspaceID,
 	})
 	if err != nil {
-		return false, fmt.Errorf("failed to fetch PowerVS service instance: %w", err)
+		return false, fmt.Errorf("failed to fetch PowerVS workspace: %w", err)
 	}
 
-	if serviceInstance != nil && *serviceInstance.State == string(infrav1.ServiceInstanceStateRemoved) {
-		log.Info("PowerVS service instance has been removed")
+	// 4. Check if it is already removed.
+	if workspace != nil && workspace.State != nil && *workspace.State == string(infrav1.WorkspaceStateRemoved) {
+		log.Info("PowerVS workspace has been removed")
 		return false, nil
 	}
 
+	// 5. Trigger the deletion.
+	log.Info("Deleting PowerVS workspace", "workspaceID", workspaceID)
 	if _, err = s.ResourceClient.DeleteResourceInstance(&resourcecontrollerv2.DeleteResourceInstanceOptions{
-		ID: serviceInstance.ID,
+		ID: &workspaceID,
 	}); err != nil {
-		return false, fmt.Errorf("failed to delete PowerVS service instance: %w", err)
+		return false, fmt.Errorf("failed to delete PowerVS workspace: %w", err)
 	}
 
+	// Return true to requeue so the controller can verify the deletion completed in the next loop.
 	return true, nil
 }
 
@@ -2845,7 +2861,7 @@ func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 		return fmt.Errorf("failed to fetch COS service instance: %w", err)
 	}
 
-	if cosInstance != nil && (*cosInstance.State == "pending_reclamation" || *cosInstance.State == string(infrav1.ServiceInstanceStateRemoved)) {
+	if cosInstance != nil && (*cosInstance.State == "pending_reclamation" || *cosInstance.State == string(infrav1.WorkspaceStateRemoved)) {
 		log.Info("COS service instance has been removed")
 		return nil
 	}
@@ -2862,17 +2878,11 @@ func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 }
 
 // resourceCreatedByController helps to identify resource created by controller or not.
-func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.ResourceType) bool { //nolint:gocyclo
+func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.ResourceType) bool {
 	switch resourceType {
 	case infrav1.ResourceTypeVPC:
 		vpcStatus := s.IBMPowerVSCluster.Status.VPC
 		if vpcStatus == nil || vpcStatus.ControllerCreated == nil || !*vpcStatus.ControllerCreated {
-			return false
-		}
-		return true
-	case infrav1.ResourceTypeServiceInstance:
-		serviceInstance := s.IBMPowerVSCluster.Status.ServiceInstance
-		if serviceInstance == nil || serviceInstance.ControllerCreated == nil || !*serviceInstance.ControllerCreated {
 			return false
 		}
 		return true

@@ -154,38 +154,53 @@ func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error)
 	}
 	scope.ResourceClient = rc
 
-	var serviceInstanceID, serviceInstanceName string
-	if params.IBMPowerVSMachine.Spec.ServiceInstance != nil && params.IBMPowerVSMachine.Spec.ServiceInstance.ID != nil {
-		serviceInstanceID = *params.IBMPowerVSMachine.Spec.ServiceInstance.ID
+	var workspaceID, workspaceName string
+
+	// 1. Check if the Machine explicitly overrides the Workspace
+	if params.IBMPowerVSMachine.Spec.Workspace.ID != "" {
+		workspaceID = params.IBMPowerVSMachine.Spec.Workspace.ID
+	} else if params.IBMPowerVSMachine.Spec.Workspace.Name != "" {
+		workspaceName = params.IBMPowerVSMachine.Spec.Workspace.Name
 	} else {
-		serviceInstanceName = fmt.Sprintf("%s-%s", params.IBMPowerVSCluster.GetName(), "serviceInstance")
-		if params.IBMPowerVSCluster.Spec.ServiceInstance != nil && params.IBMPowerVSCluster.Spec.ServiceInstance.Name != nil {
-			serviceInstanceName = *params.IBMPowerVSCluster.Spec.ServiceInstance.Name
+		// 2. Inherit from the Cluster
+		if params.IBMPowerVSCluster.Status.Workspace.ID != "" {
+			workspaceID = params.IBMPowerVSCluster.Status.Workspace.ID
+		} else {
+			return nil, errors.New("PowerVS workspace ID is not yet populated in the cluster status")
 		}
 	}
-	serviceInstance, err := rc.GetServiceInstance(serviceInstanceID, serviceInstanceName, params.IBMPowerVSCluster.Spec.Zone)
-	if err != nil {
-		params.Logger.Error(err, "failed to get PowerVS service instance details", "serviceInstanceName", serviceInstanceName, "serviceInstanceID", serviceInstanceID)
-		return nil, err
-	}
-	if serviceInstance == nil {
-		return nil, fmt.Errorf("PowerVS service instance %s is not yet created", serviceInstanceName)
-	}
-	if *serviceInstance.State != string(infrav1.ServiceInstanceStateActive) {
-		return nil, fmt.Errorf("PowerVS service instance name: %s id: %s is not in active state", serviceInstanceName, serviceInstanceID)
-	}
-	serviceInstanceID = *serviceInstance.GUID
 
-	region := endpoints.ConstructRegionFromZone(*serviceInstance.RegionID)
+	resourceInstance := resourcecontroller.InstanceFilter{
+		ID:             workspaceID,
+		Name:           workspaceName,
+		Zone:           params.IBMPowerVSCluster.Spec.Zone,
+		ResourceID:     resourcecontroller.PowerVSResourceID,
+		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
+	}
+
+	workspace, err := rc.GetResourceInstanceByFilter(resourceInstance)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get PowerVS workspace details (workspaceName: %q, workspaceID: %q): %w", workspaceName, workspaceID, err)
+	}
+
+	if workspace == nil || workspace.GUID == nil || workspace.RegionID == nil {
+		return nil, fmt.Errorf("PowerVS workspace or GUID or RegionID is nil (name: %q, id: %q)", workspaceName, workspaceID)
+	}
+	if workspace.State == nil || *workspace.State != string(infrav1.WorkspaceStateActive) {
+		return nil, fmt.Errorf("PowerVS workspace name: %s id: %s is not in active state", workspaceName, workspaceID)
+	}
+	workspaceID = *workspace.GUID
+
+	region := endpoints.ConstructRegionFromZone(*workspace.RegionID)
 	scope.SetRegion(region)
-	scope.SetZone(*serviceInstance.RegionID)
+	scope.SetZone(*workspace.RegionID)
 
 	serviceOptions := powervs.ServiceOptions{
 		IBMPIOptions: &ibmpisession.IBMPIOptions{
 			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
-			Zone:  *serviceInstance.RegionID,
+			Zone:  *workspace.RegionID,
 		},
-		CloudInstanceID: serviceInstanceID,
+		CloudInstanceID: workspaceID,
 	}
 
 	// Fetch the service endpoint.
@@ -569,7 +584,7 @@ func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 		log.V(3).Info("COS service instance is nil")
 		return nil, errors.New("COS service instance is nil")
 	}
-	if *serviceInstance.State != string(infrav1.ServiceInstanceStateActive) {
+	if *serviceInstance.State != string(infrav1.WorkspaceStateActive) {
 		return nil, fmt.Errorf("COS service instance is not in active state, current state: %s", *serviceInstance.State)
 	}
 
@@ -909,33 +924,45 @@ func (m *MachineScope) GetZone() string {
 	return *m.IBMPowerVSMachine.Status.Zone
 }
 
-// GetServiceInstanceID returns the service instance id.
-func (m *MachineScope) GetServiceInstanceID() (string, error) {
-	if m.IBMPowerVSCluster.Status.ServiceInstance != nil && m.IBMPowerVSCluster.Status.ServiceInstance.ID != nil {
-		return *m.IBMPowerVSCluster.Status.ServiceInstance.ID, nil
-	}
-	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.ID != nil {
-		return *m.IBMPowerVSCluster.Spec.ServiceInstance.ID, nil
-	}
-
-	// If we are not able to find service instance id, derive it from name if defined.
-	if m.IBMPowerVSCluster.Spec.ServiceInstance != nil && m.IBMPowerVSCluster.Spec.ServiceInstance.Name == nil {
-		return "", fmt.Errorf("failed to find service instance id as both name and id are not set")
+// GetWorkspaceID returns the PowerVS workspace ID, evaluating in the following order of precedence:
+// 1. Machine Spec explicitly sets Workspace ID
+// 2. Machine Spec explicitly sets Workspace Name (requires IBM Cloud lookup)
+// 3. Inherit resolved Workspace ID from the Cluster Status.
+func (m *MachineScope) GetWorkspaceID() (string, error) {
+	// 1. Precedence 1: Machine Spec Workspace ID
+	if m.IBMPowerVSMachine.Spec.Workspace.ID != "" {
+		return m.IBMPowerVSMachine.Spec.Workspace.ID, nil
 	}
 
-	resourceInstance := resourcecontroller.InstanceFilter{
-		Name:           *m.IBMPowerVSCluster.Spec.ServiceInstance.Name,
-		ResourceID:     resourcecontroller.PowerVSResourceID,
-		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
-		Zone:           ptr.To(m.GetZone()),
+	// 2. Precedence 2: Machine Spec Workspace Name (requires lookup)
+	if m.IBMPowerVSMachine.Spec.Workspace.Name != "" {
+		workspaceName := m.IBMPowerVSMachine.Spec.Workspace.Name
+
+		resourceInstance := resourcecontroller.InstanceFilter{
+			Name:           workspaceName,
+			Zone:           m.IBMPowerVSCluster.Spec.Zone,
+			ResourceID:     resourcecontroller.PowerVSResourceID,
+			ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
+		}
+
+		workspace, err := m.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
+		if err != nil {
+			return "", fmt.Errorf("failed to lookup PowerVS workspace by name %q: %w", workspaceName, err)
+		}
+		if workspace == nil || workspace.GUID == nil {
+			return "", fmt.Errorf("PowerVS workspace %q not found or GUID is nil in IBM Cloud", workspaceName)
+		}
+
+		return *workspace.GUID, nil
 	}
 
-	serviceInstance, err := m.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
-	if err != nil {
-		return "", err
+	// 3. Precedence 3: Inherit from Cluster Status
+	// In v1beta3, the Cluster controller guarantees this is populated during the cluster's reconciliation loop.
+	if m.IBMPowerVSCluster.Status.Workspace.ID != "" {
+		return m.IBMPowerVSCluster.Status.Workspace.ID, nil
 	}
-	// It's safe to directly dereference GUID as its already done in NewMachineScope
-	return *serviceInstance.GUID, nil
+
+	return "", errors.New("failed to find workspace ID: not specified in Machine spec and not yet populated in Cluster status")
 }
 
 // SetProviderID will set the provider id for the machine.
@@ -944,11 +971,11 @@ func (m *MachineScope) SetProviderID(instanceID string) error {
 		return fmt.Errorf("invalid value for ProviderIDFormat")
 	}
 
-	serviceInstanceID, err := m.GetServiceInstanceID()
+	workspaceID, err := m.GetWorkspaceID()
 	if err != nil {
 		return err
 	}
-	m.IBMPowerVSMachine.Spec.ProviderID = fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), serviceInstanceID, instanceID)
+	m.IBMPowerVSMachine.Spec.ProviderID = fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), workspaceID, instanceID)
 	return nil
 }
 

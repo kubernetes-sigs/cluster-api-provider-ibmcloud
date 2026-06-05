@@ -28,6 +28,17 @@ const (
 	IBMPowerVSClusterFinalizer = "ibmpowervscluster.infrastructure.cluster.x-k8s.io"
 )
 
+// SourceType defines the provisioning strategy for a resource.
+type SourceType string
+
+const (
+	// SourceTypeReference indicates the controller should use an existing resource.
+	SourceTypeReference SourceType = "Reference"
+
+	// SourceTypeProvision indicates the controller should create a new resource.
+	SourceTypeProvision SourceType = "Provision"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
@@ -37,6 +48,12 @@ type IBMPowerVSClusterSpec struct {
 	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
+
+	// workspace specifies how the PowerVS workspace is sourced.
+	// A PowerVS workspace is a container for PowerVS resources in a specific zone.
+	// More details: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+	// +optional
+	Workspace WorkspaceSource `json:"workspace,omitempty,omitzero"`
 
 	// network is the reference to the Network to use for this cluster.
 	// when the field is omitted, A DHCP service will be created in the Power VS workspace and its private network will be used.
@@ -53,20 +70,6 @@ type IBMPowerVSClusterSpec struct {
 	// it will automatically create network with name DHCPSERVER<DHCPServer.Name>_Private in PowerVS workspace.
 	// +optional
 	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
-
-	// serviceInstance is the reference to the Power VS server workspace on which the server instance(VM) will be created.
-	// Power VS server workspace is a container for all Power VS instances at a specific geographic region.
-	// serviceInstance can be created via IBM Cloud catalog or CLI.
-	// supported serviceInstance identifier in PowerVSResource are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-	// More detail about Power VS service instance.
-	// https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
-	// when omitted system will dynamically create the service instance with name CLUSTER_NAME-serviceInstance.
-	// when ServiceInstance.ID is set, its expected that there exist a service instance in PowerVS workspace with id or else system will give error.
-	// when ServiceInstance.Name is set, system will first check for service instance with Name in PowerVS workspace, if not exist system will create new instance.
-	// if there are more than one service instance exist with the ServiceInstance.Name in given Zone, installation fails with an error. Use ServiceInstance.ID in those situations to use the specific service instance.
-	// ServiceInstance.Regex is not yet supported not yet supported and system will ignore the value.
-	// +optional
-	ServiceInstance *IBMPowerVSResourceReference `json:"serviceInstance,omitempty"`
 
 	// zone is the name of Power VS zone where the cluster will be created
 	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
@@ -154,11 +157,12 @@ type IBMPowerVSClusterStatus struct {
 	// +optional
 	Initialization IBMPowerVSClusterInitializationStatus `json:"initialization,omitempty,omitzero"`
 
+	// workspace is the reference to the PowerVS workspace.
+	// +optional
+	Workspace ResourceReferenceV1Beta3 `json:"workspace,omitempty,omitzero"`
+
 	// resourceGroupID is the reference to the Power VS resource group under which the resources will be created.
 	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
-
-	// serviceInstance is the reference to the Power VS service on which the server instance(VM) will be created.
-	ServiceInstance *ResourceReference `json:"serviceInstance,omitempty"`
 
 	// network is the reference to the Power VS network to use for this cluster.
 	Network *ResourceReference `json:"network,omitempty"`
@@ -413,4 +417,64 @@ func (rf *ResourceReference) Set(resource ResourceReference) {
 	if !*rf.ControllerCreated {
 		rf.ControllerCreated = resource.ControllerCreated
 	}
+}
+
+// All the new v1beta3 types are defined here.
+
+// ResourceReferenceV1Beta3 identifies a resource with id and name.
+// TODO: Rename it to ResourceReference when we migrate all the types.
+type ResourceReferenceV1Beta3 struct {
+	// id represents the id of the resource.
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// name is the name of the resource.
+	// When used in a list, this field acts as the unique correlation key (listMapKey)
+	// to map the Status object back to its corresponding Spec definition.
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// WorkspaceSource defines how the PowerVS workspace is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+type WorkspaceSource struct {
+	// type defines how the workspace is sourced.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="workspace type is immutable once set"
+	Type SourceType `json:"type"`
+
+	// reference tells the controller to use an existing PowerVS workspace.
+	// Supported identifiers are name and id.
+	// If more than one workspace has the same name, use id.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// provision defines the configuration for creating a new PowerVS workspace.
+	// +optional
+	Provision WorkspaceProvisionConfig `json:"provision,omitempty,omitzero"`
+}
+
+// WorkspaceProvisionConfig defines the parameters for creating a new workspace.
+type WorkspaceProvisionConfig struct {
+	// name is the explicit name of the workspace to be created.
+	// If omitted, the system will dynamically create the workspace with the name <CLUSTER_NAME>-workspace.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name,omitempty"`
+}
+
+// ResourceIdentifier defines the identification of a specific PowerVS resource by ID or Name.
+// +kubebuilder:validation:XValidation:rule="(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) == 1",message="exactly one of id or name must be specified"
+type ResourceIdentifier struct {
+	// ID of the resource.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	ID string `json:"id,omitempty"`
+
+	// Name of the resource.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name,omitempty"`
 }

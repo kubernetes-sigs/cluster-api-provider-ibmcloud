@@ -308,9 +308,9 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 	log.Info("Reconciling PowerVS resources")
 	defer log.Info("Finished Reconciling PowerVS resources")
 
-	// reconcile PowerVS service instance
-	log.Info("Reconciling PowerVS service instance")
-	if requeue, err := clusterScope.ReconcilePowerVSServiceInstance(ctx); err != nil {
+	// reconcile PowerVS Workspace.
+	log.Info("Reconciling PowerVS workspace")
+	if requeue, err := clusterScope.ReconcileWorkspace(ctx); err != nil {
 		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
 			Status:   corev1.ConditionFalse,
 			Type:     infrav1.ServiceInstanceReadyV1Beta2Condition,
@@ -324,10 +324,10 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 			Reason:  infrav1.WorkspaceNotReadyReason,
 			Message: err.Error(),
 		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile PowerVS service instance: %w", err)}
+		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile PowerVS workspace: %w", err)}
 		return
 	} else if requeue {
-		log.Info("PowerVS service instance creation is pending, requeuing")
+		log.Info("PowerVS workspace creation is pending, requeuing")
 		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
 		return
 	}
@@ -341,7 +341,7 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 		Reason: infrav1.WorkspaceReadyReason,
 	})
 
-	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.GetServiceInstanceID()})
+	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.IBMPowerVSCluster.Status.Workspace.ID})
 
 	// reconcile network
 	log.Info("Reconciling network")
@@ -533,7 +533,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	}
 
 	var allErrs []error
-	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.GetServiceInstanceID()})
+	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.IBMPowerVSCluster.Status.Workspace.ID})
 
 	log.Info("Deleting transit gateway")
 	conditions.Set(clusterScope.IBMPowerVSCluster, metav1.Condition{
@@ -613,10 +613,10 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		Status: metav1.ConditionFalse,
 		Reason: infrav1.WorkspaceDeletingReason,
 	})
-	if requeue, err := clusterScope.DeleteServiceInstance(ctx); err != nil {
-		allErrs = append(allErrs, fmt.Errorf("failed to delete PowerVS service instance: %w", err))
+	if requeue, err := clusterScope.DeleteWorkspace(ctx); err != nil {
+		allErrs = append(allErrs, fmt.Errorf("failed to delete PowerVS workspace: %w", err))
 	} else if requeue {
-		log.Info("PowerVS service instance deletion is pending, requeuing")
+		log.Info("PowerVS workspace deletion is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
