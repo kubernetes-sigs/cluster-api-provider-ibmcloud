@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
@@ -42,8 +41,11 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -60,9 +62,12 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID:   ptr.To("capi-net-id"),
-						Name: ptr.To("capi-net"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID:   "capi-net-id",
+							Name: "capi-net",
+						},
 					},
 				},
 			},
@@ -79,17 +84,19 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID:    ptr.To("capi-net-id"),
-						Name:  ptr.To("capi-net"),
-						RegEx: ptr.To("^capi$"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID:   "capi-net-id",
+							Name: "capi-net",
+						},
 					},
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Should error if both Network name and DHCP name are set",
+			name: "Should allow Network with Provision type and DHCP server",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -99,18 +106,20 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						Name: ptr.To("capi-net"),
-					},
-					DHCPServer: &infrav1.DHCPServer{
-						Name: ptr.To("capi-dhcp"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeProvision,
+						Provision: infrav1.NetworkProvisionConfig{
+							DHCPServer: infrav1.DHCPServer{
+								Name: "capi-dhcp",
+							},
+						},
 					},
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "Should error if both Network id and DHCP name are set",
+			name: "Should error if Reference is set when Type is Provision",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -120,18 +129,23 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
-					},
-					DHCPServer: &infrav1.DHCPServer{
-						Name: ptr.To("capi-dhcp"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeProvision,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
+						Provision: infrav1.NetworkProvisionConfig{
+							DHCPServer: infrav1.DHCPServer{
+								Name: "capi-dhcp",
+							},
+						},
 					},
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Should error if both Network name and DHCP id are set",
+			name: "Should error if Provision is set when Type is Reference",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -141,18 +155,23 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						Name: ptr.To("capi-net"),
-					},
-					DHCPServer: &infrav1.DHCPServer{
-						ID: ptr.To("capi-dhcp-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
+						Provision: infrav1.NetworkProvisionConfig{
+							DHCPServer: infrav1.DHCPServer{
+								Name: "capi-dhcp",
+							},
+						},
 					},
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Should error if both Network id and DHCP id are set",
+			name: "Should error if neither Reference nor Provision ID/Name is set for Reference type",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -162,11 +181,9 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
-					},
-					DHCPServer: &infrav1.DHCPServer{
-						ID: ptr.To("capi-dhcp-id"),
+					Network: infrav1.NetworkSource{
+						Type:      infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{},
 					},
 				},
 			},
@@ -207,8 +224,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -221,8 +241,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -239,8 +262,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -253,9 +279,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID:   ptr.To("capi-net-id"),
-						Name: ptr.To("capi-net-name"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID:   "capi-net-id",
+							Name: "capi-net-name",
+						},
 					},
 				},
 			},
@@ -272,8 +301,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						RegEx: ptr.To("^capi-net-id$"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							Name: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -286,8 +318,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						RegEx: ptr.To("^capi-net-id$"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							Name: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -304,8 +339,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 				},
 			},
@@ -318,10 +356,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID:    ptr.To("capi-net-id"),
-						Name:  ptr.To("capi-net-name"),
-						RegEx: ptr.To("^capi-net-id$"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID:   "capi-net-id",
+							Name: "capi-net-name",
+						},
 					},
 				},
 			},
@@ -338,8 +378,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -368,8 +411,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -402,8 +448,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -432,8 +481,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -475,8 +527,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -505,8 +560,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -539,8 +597,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -569,8 +630,11 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-si-id",
 						},
 					},
-					Network: infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-net-id"),
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{

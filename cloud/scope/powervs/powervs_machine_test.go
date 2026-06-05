@@ -60,14 +60,18 @@ const (
 
 func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1.IBMPowerVSMachine {
 	image := &infrav1.IBMPowerVSResourceReference{}
-	network := infrav1.IBMPowerVSResourceReference{}
+	network := infrav1.ResourceIdentifier{}
 
 	if !isID {
 		image.Name = imageRef
-		network.Name = networkRef
+		if networkRef != nil {
+			network.Name = *networkRef
+		}
 	} else {
 		image.ID = imageRef
-		network.ID = networkRef
+		if networkRef != nil {
+			network.ID = *networkRef
+		}
 	}
 
 	return &infrav1.IBMPowerVSMachine{
@@ -803,10 +807,10 @@ func TestGetNetworkID(t *testing.T) {
 			g := NewWithT(t)
 			scope := MachineScope{}
 			expectedNetworkID := networkID
-			networkResource := infrav1.IBMPowerVSResourceReference{
-				ID: ptr.To(expectedNetworkID),
+			networkResource := infrav1.ResourceIdentifier{
+				ID: expectedNetworkID,
 			}
-			networkID, err := getNetworkID(networkResource, &scope)
+			networkID, err := scope.getNetworkID(networkResource)
 			g.Expect(*networkID).To(Equal(expectedNetworkID))
 			g.Expect(err).To(BeNil())
 		})
@@ -816,23 +820,18 @@ func TestGetNetworkID(t *testing.T) {
 			t.Cleanup(teardown)
 			networkName := "foo-network-name"
 			expectedNetworkID := networkID
-			networks := &models.Networks{
-				Networks: []*models.NetworkReference{
-					{
-						Name:      ptr.To(networkName),
-						NetworkID: ptr.To(expectedNetworkID),
-					},
-				},
-			}
-			networkResource := infrav1.IBMPowerVSResourceReference{
-				Name: ptr.To(networkName),
+			networkResource := infrav1.ResourceIdentifier{
+				Name: networkName,
 			}
 
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
+			mockpowervs.EXPECT().GetNetworkByName(networkName).Return(&models.NetworkReference{
+				NetworkID: ptr.To(expectedNetworkID),
+				Name:      ptr.To(networkName),
+			}, nil)
 			scope := MachineScope{
 				IBMPowerVSClient: mockpowervs,
 			}
-			networkID, err := getNetworkID(networkResource, &scope)
+			networkID, err := scope.getNetworkID(networkResource)
 			g.Expect(*networkID).To(Equal(expectedNetworkID))
 			g.Expect(err).To(BeNil())
 		})
@@ -842,88 +841,27 @@ func TestGetNetworkID(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			expectedNetworkIName := "foo-network"
-			differentNetworkName := "diff-network-name"
 
-			networks := &models.Networks{
-				Networks: []*models.NetworkReference{
-					{
-						Name: ptr.To(differentNetworkName),
-					},
-				},
-			}
-			networkResource := infrav1.IBMPowerVSResourceReference{
-				Name: ptr.To(expectedNetworkIName),
+			networkResource := infrav1.ResourceIdentifier{
+				Name: expectedNetworkIName,
 			}
 
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
+			mockpowervs.EXPECT().GetNetworkByName(expectedNetworkIName).Return(nil, nil)
 			scope := MachineScope{
 				IBMPowerVSClient: mockpowervs,
 			}
-			networkID, err := getNetworkID(networkResource, &scope)
+			networkID, err := scope.getNetworkID(networkResource)
 			g.Expect(networkID).To(BeNil())
-			g.Expect(err.Error()).To(Equal(fmt.Sprintf("failed to find a network ID with name %s", expectedNetworkIName)))
+			g.Expect(err.Error()).To(Equal(fmt.Sprintf("network with name %q not found", expectedNetworkIName)))
 		})
 
-		t.Run("Fetch network ID with matching regex", func(t *testing.T) {
+		t.Run("When ID and name are both empty", func(t *testing.T) {
 			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			networkName := "550e8400-e29b-41d4-a716-446655440000"
-			expectedNetworkID := "foo-id"
-			networks := &models.Networks{
-				Networks: []*models.NetworkReference{
-					{
-						Name:      ptr.To(networkName),
-						NetworkID: ptr.To(expectedNetworkID),
-					},
-				},
-			}
-			networkResource := infrav1.IBMPowerVSResourceReference{
-				RegEx: ptr.To("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"),
-			}
-
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
-			scope := MachineScope{
-				IBMPowerVSClient: mockpowervs,
-			}
-			networkID, err := getNetworkID(networkResource, &scope)
-			g.Expect(*networkID).To(Equal(expectedNetworkID))
-			g.Expect(err).To(BeNil())
-		})
-
-		t.Run("Failed to fetch network ID with matching regex", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			expectedNetworkID := "foo-netID"
-			regex := "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-			networks := &models.Networks{
-				Networks: []*models.NetworkReference{
-					{
-						Name: ptr.To(expectedNetworkID),
-					},
-				},
-			}
-			networkResource := infrav1.IBMPowerVSResourceReference{
-				RegEx: ptr.To(regex),
-			}
-
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
-			scope := MachineScope{
-				IBMPowerVSClient: mockpowervs,
-			}
-			networkID, err := getNetworkID(networkResource, &scope)
-			g.Expect(networkID).To(BeNil())
-			g.Expect(err.Error()).To(Equal(fmt.Sprintf("failed to find a network ID with RegEx %s", regex)))
-		})
-
-		t.Run("When ID, name and regex are all nil", func(t *testing.T) {
-			g := NewWithT(t)
-			networkResource := infrav1.IBMPowerVSResourceReference{}
+			networkResource := infrav1.ResourceIdentifier{}
 			scope := MachineScope{}
-			networkID, err := getNetworkID(networkResource, &scope)
+			networkID, err := scope.getNetworkID(networkResource)
 			g.Expect(networkID).To(BeNil())
-			g.Expect(err.Error()).To(Equal("ID, Name and RegEx can't be nil"))
+			g.Expect(err.Error()).To(Equal("network identifier is empty"))
 		})
 	})
 }
@@ -1357,6 +1295,7 @@ func TestCreateMachinePVS(t *testing.T) {
 	}
 
 	t.Run("Create Machine", func(t *testing.T) {
+		const idSuffix = "-id"
 		pvmInstances := &models.PVMInstances{
 			PvmInstances: []*models.PVMInstanceReference{
 				{
@@ -1369,14 +1308,6 @@ func TestCreateMachinePVS(t *testing.T) {
 				{
 					Name:    ptr.To(pvsImage),
 					ImageID: ptr.To(pvsImage + idSuffix),
-				},
-			},
-		}
-		networks := &models.Networks{
-			Networks: []*models.NetworkReference{
-				{
-					Name:      ptr.To(pvsNetwork),
-					NetworkID: ptr.To(pvsNetwork + idSuffix),
 				},
 			},
 		}
@@ -1512,7 +1443,10 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), false, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
+			mockpowervs.EXPECT().GetNetworkByName(pvsNetwork).Return(&models.NetworkReference{
+				NetworkID: ptr.To(pvsNetwork + "-id"),
+				Name:      ptr.To(pvsNetwork),
+			}, nil)
 			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
@@ -1546,7 +1480,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork+"-temp"), false, mockpowervs)
 			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetAllNetwork().Return(networks, nil)
+			mockpowervs.EXPECT().GetNetworkByName(pvsNetwork+"-temp").Return(nil, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -2350,7 +2284,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "error while getting network id",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllNetwork().Return(nil, fmt.Errorf("intentional error"))
+				mockPowerVSClient.EXPECT().GetNetworkByName("test-net-ID").Return(nil, fmt.Errorf("intentional error"))
 				return mockPowerVSClient
 			},
 			pvmInstance: &models.PVMInstance{
@@ -2363,15 +2297,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "no network id associated with network name",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				networks := &models.Networks{
-					Networks: []*models.NetworkReference{
-						{
-							NetworkID: ptr.To("test-ID"),
-							Name:      ptr.To("test-name"),
-						},
-					},
-				}
-				mockPowerVSClient.EXPECT().GetAllNetwork().Return(networks, nil)
+				mockPowerVSClient.EXPECT().GetNetworkByName("test-net-ID").Return(nil, nil)
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),

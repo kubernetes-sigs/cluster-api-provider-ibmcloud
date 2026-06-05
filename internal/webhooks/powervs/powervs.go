@@ -51,9 +51,16 @@ func validateIBMPowerVSResourceReference(res infrav1.IBMPowerVSResourceReference
 	return true, nil
 }
 
-func validateIBMPowerVSNetworkReference(res infrav1.IBMPowerVSResourceReference) (bool, *field.Error) {
-	if (res.ID != nil && res.Name != nil) || (res.ID != nil && res.RegEx != nil) || (res.Name != nil && res.RegEx != nil) {
-		return false, field.Invalid(field.NewPath("spec", "Network"), res, "Only one of Network - ID, Name or RegEx can be specified")
+func validateIBMPowerVSNetworkReference(res infrav1.ResourceIdentifier) (bool, *field.Error) {
+	count := 0
+	if res.ID != "" {
+		count++
+	}
+	if res.Name != "" {
+		count++
+	}
+	if count > 1 {
+		return false, field.Invalid(field.NewPath("spec", "Network"), res, "Only one of Network - ID or Name can be specified")
 	}
 	return true, nil
 }

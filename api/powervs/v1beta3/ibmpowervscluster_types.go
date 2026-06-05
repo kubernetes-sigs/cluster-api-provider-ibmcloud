@@ -50,6 +50,17 @@ const (
 	SourceTypeProvision SourceType = "Provision"
 )
 
+// DHCPSnatPolicy defines the SNAT policy for the DHCP service.
+type DHCPSnatPolicy string
+
+const (
+	// DHCPSnatPolicyEnabled indicates that SNAT is enabled for the DHCP service.
+	DHCPSnatPolicyEnabled DHCPSnatPolicy = "Enabled"
+
+	// DHCPSnatPolicyDisabled indicates that SNAT is disabled for the DHCP service.
+	DHCPSnatPolicyDisabled DHCPSnatPolicy = "Disabled"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
@@ -71,21 +82,9 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	Workspace WorkspaceSource `json:"workspace,omitempty,omitzero"`
 
-	// network is the reference to the Network to use for this cluster.
-	// when the field is omitted, A DHCP service will be created in the Power VS workspace and its private network will be used.
-	// the DHCP service created network will have the following name format
-	// 1. in the case of DHCPServer.Name is not set the name will be DHCPSERVER<CLUSTER_NAME>_Private.
-	// 2. if DHCPServer.Name is set the name will be DHCPSERVER<DHCPServer.Name>_Private.
-	// when Network.ID is set, its expected that there exist a network in PowerVS workspace with id or else system will give error.
-	// when Network.Name is set, system will first check for network with Name in PowerVS workspace, if not exist system will check DHCP network with given Network.name, if that also not exist, it will create a new DHCP service and name will be DHCPSERVER<Network.Name>_Private.
-	// Network.RegEx is not yet supported and system will ignore the value.
-	Network IBMPowerVSResourceReference `json:"network"`
-
-	// dhcpServer is contains the configuration to be used while creating a new DHCP server in PowerVS workspace.
-	// when the field is omitted, CLUSTER_NAME will be used as DHCPServer.Name and DHCP server will be created.
-	// it will automatically create network with name DHCPSERVER<DHCPServer.Name>_Private in PowerVS workspace.
+	// network specifies how the PowerVS network should be sourced.
 	// +optional
-	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
+	Network NetworkSource `json:"network,omitempty,omitzero"`
 
 	// zone is the name of Power VS zone where the cluster will be created
 	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
@@ -177,14 +176,12 @@ type IBMPowerVSClusterStatus struct {
 	// +optional
 	Workspace ResourceReferenceV1Beta3 `json:"workspace,omitempty,omitzero"`
 
+	// network tracks the status of the PowerVS network and its associated resources.
+	// +optional
+	Network NetworkStatus `json:"network,omitempty,omitzero"`
+
 	// resourceGroupID is the reference to the Power VS resource group under which the resources will be created.
 	ResourceGroup *ResourceReference `json:"resourceGroupID,omitempty"`
-
-	// network is the reference to the Power VS network to use for this cluster.
-	Network *ResourceReference `json:"network,omitempty"`
-
-	// dhcpServer is the reference to the Power VS DHCP server.
-	DHCPServer *ResourceReference `json:"dhcpServer,omitempty"`
 
 	// vpc is reference to IBM Cloud VPC resources.
 	VPC *ResourceReference `json:"vpc,omitempty"`
@@ -267,26 +264,6 @@ type IBMPowerVSClusterInitializationStatus struct {
 	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
 	// +optional
 	Provisioned *bool `json:"provisioned,omitempty"`
-}
-
-// DHCPServer contains the DHCP server configurations.
-type DHCPServer struct {
-	// cidr for DHCP private network
-	Cidr *string `json:"cidr,omitempty"`
-
-	// dnsServer for DHCP service
-	// +kubebuilder:default="1.1.1.1"
-	DNSServer *string `json:"dnsServer,omitempty"`
-
-	// name of DHCP Service. Only alphanumeric characters and dashes are allowed.
-	Name *string `json:"name,omitempty"`
-
-	// id of the existing DHCPServer
-	ID *string `json:"id,omitempty"`
-
-	// snat indicates if SNAT will be enabled for DHCP service
-	// +kubebuilder:default=true
-	Snat *bool `json:"snat,omitempty"`
 }
 
 // VPCResourceReference is a reference to a specific VPC resource by ID or Name
@@ -493,4 +470,70 @@ type ResourceIdentifier struct {
 	// +optional
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name,omitempty"`
+}
+
+// NetworkSource defines how to source the PowerVS network.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+type NetworkSource struct {
+	// type defines how the Network is sourced.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Network type is immutable once set"
+	Type SourceType `json:"type,omitempty"`
+
+	// reference tells the controller to look up an EXISTING PowerVS network.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// provision provides the configuration for the controller to CREATE a new Network and DHCP Server.
+	// +optional
+	Provision NetworkProvisionConfig `json:"provision,omitempty,omitzero"`
+}
+
+// NetworkProvisionConfig defines the parameters for creating a new PowerVS Network.
+type NetworkProvisionConfig struct {
+	// dhcpServer contains the configuration for the DHCP server that will be created.
+	// +optional
+	DHCPServer DHCPServer `json:"dhcpServer,omitempty,omitzero"`
+}
+
+// DHCPServer contains the configuration for a NEW DHCP server.
+type DHCPServer struct {
+	// name is the name of the DHCP Service to be created. Only alphanumeric characters and dashes are allowed.
+	// If omitted, the name will default to DHCPSERVER<CLUSTER_NAME>_Private.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name,omitempty"`
+
+	// CIDR is the CIDR for the DHCP private network.
+	// +optional
+	// +kubebuilder:validation:Pattern=`^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$`
+	CIDR string `json:"cidr,omitempty"`
+
+	// DNSServer is the DNS Server for the DHCP service.
+	// +optional
+	DNSServer string `json:"dnsServer,omitempty"`
+
+	// snat indicates the SNAT policy for the DHCP service.
+	// Allowed values are "Enabled" and "Disabled".
+	// If omitted, the system will choose a Enabled policy by default.
+	// +optional
+	// +kubebuilder:validation:Enum=Enabled;Disabled
+	Snat DHCPSnatPolicy `json:"snat,omitempty"`
+}
+
+// NetworkStatus defines the observed state of the PowerVS network and its associated components.
+type NetworkStatus struct {
+	// id is the unique identifier of the network.
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// name is the name of the network.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// dhcpServer tracks the provisioned DHCP server identity, if one was created.
+	// +optional
+	DHCPServer ResourceReferenceV1Beta3 `json:"dhcpServer,omitempty,omitzero"`
 }

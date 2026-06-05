@@ -77,6 +77,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						ID: "foo",
 					},
 				},
+				Network: infrav1.NetworkSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "network-id",
+					},
+				},
 			},
 		}
 
@@ -127,6 +133,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						ID: "foo",
 					},
 				},
+				Network: infrav1.NetworkSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "network-id",
+					},
+				},
 			},
 		}
 
@@ -163,6 +175,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
 						ID: "foo",
+					},
+				},
+				Network: infrav1.NetworkSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "network-id",
 					},
 				},
 			},
@@ -228,6 +246,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 						ID: "foo",
 					},
 				},
+				Network: infrav1.NetworkSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "network-id",
+					},
+				},
 			},
 		}
 
@@ -266,6 +290,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			Spec: infrav1.IBMPowerVSClusterSpec{
 				Topology: infrav1.PowerVSVirtualIPTopology,
 				Zone:     ptr.To("zone"),
+				Network: infrav1.NetworkSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "network-id",
+					},
+				},
 			},
 		}
 
@@ -333,6 +363,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			Spec: infrav1.IBMPowerVSClusterSpec{
 				Topology: infrav1.PowerVSVirtualIPTopology,
 				Zone:     ptr.To("zone"),
+				Network: infrav1.NetworkSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "network-id",
+					},
+				},
 			},
 		}
 
@@ -635,7 +671,6 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			expectedError: errors.New("error getting transit gateway"),
 			conditions: clusterv1.Conditions{
 				getVPCLBReadyCondition(),
-				getNetworkReadyCondition(),
 				getWorkspaceReadyCondition(),
 				clusterv1.Condition{
 					Type:               infrav1.TransitGatewayReadyCondition,
@@ -717,7 +752,6 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					Message:            "failed to check if COS instance in cloud: failed to get COS service instance: error getting instance by name",
 				},
 				getVPCLBReadyCondition(),
-				getNetworkReadyCondition(),
 				getWorkspaceReadyCondition(),
 				getTGReadyCondition(),
 				getVPCReadyCondition(),
@@ -748,8 +782,17 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		{
 			name: "When getting loadbalancer hostname returns error",
 			powervsClusterScope: func() *powervsscope.ClusterScope {
+				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
+				// Set NetworkReadyCondition so controller proceeds past network check
+				powerVSCluster.Status.Conditions = []metav1.Condition{
+					{
+						Type:   infrav1.NetworkReadyCondition,
+						Status: metav1.ConditionTrue,
+						Reason: infrav1.NetworkReadyReason,
+					},
+				}
 				clusterScope := &powervsscope.ClusterScope{
-					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
+					IBMPowerVSCluster: powerVSCluster,
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
 				clusterScope.ResourceClient = getMockResourceController(t)
@@ -768,6 +811,19 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			powervsClusterScope: func() *powervsscope.ClusterScope {
 				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
 				powerVSCluster.Spec.LoadBalancers[0].Name = "lb-name"
+				// Set NetworkReadyCondition and LoadBalancerReadyCondition so controller proceeds
+				powerVSCluster.Status.Conditions = []metav1.Condition{
+					{
+						Type:   infrav1.NetworkReadyCondition,
+						Status: metav1.ConditionTrue,
+						Reason: infrav1.NetworkReadyReason,
+					},
+					{
+						Type:   infrav1.LoadBalancerReadyCondition,
+						Status: metav1.ConditionTrue,
+						Reason: infrav1.VPCLoadBalancerReadyReason,
+					},
+				}
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: powerVSCluster,
 				}
@@ -783,9 +839,23 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 		{
 			name: "When reconcile is successful",
 			powervsClusterScope: func() *powervsscope.ClusterScope {
+				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
+				// Set NetworkReadyCondition and LoadBalancerReadyCondition so controller proceeds
+				powerVSCluster.Status.Conditions = []metav1.Condition{
+					{
+						Type:   infrav1.NetworkReadyCondition,
+						Status: metav1.ConditionTrue,
+						Reason: infrav1.NetworkReadyReason,
+					},
+					{
+						Type:   infrav1.LoadBalancerReadyCondition,
+						Status: metav1.ConditionTrue,
+						Reason: infrav1.VPCLoadBalancerReadyReason,
+					},
+				}
 				clusterScope := &powervsscope.ClusterScope{
 					Cluster:           &clusterv1.Cluster{},
-					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
+					IBMPowerVSCluster: powerVSCluster,
 				}
 				clusterScope.IBMPowerVSClient = getMockPowerVS(t)
 				clusterScope.ResourceClient = getMockResourceController(t)
@@ -1246,13 +1316,30 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
+		// Set Network.Type to Provision so DHCP deletion is attempted
+		clusterScope.IBMPowerVSCluster.Spec.Network = infrav1.NetworkSource{
+			Type: infrav1.SourceTypeProvision,
+			Provision: infrav1.NetworkProvisionConfig{
+				DHCPServer: infrav1.DHCPServer{
+					Name: "dhcp-server",
+				},
+			},
+		}
+		// Set Workspace.Type to Reference so workspace deletion doesn't cascade
+		clusterScope.IBMPowerVSCluster.Spec.Workspace = infrav1.WorkspaceSource{
+			Type: infrav1.SourceTypeReference,
+			Reference: infrav1.ResourceIdentifier{
+				ID: "serviceInstanceID",
+			},
+		}
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
 			Workspace: infrav1.ResourceReferenceV1Beta3{
 				ID: "serviceInstanceID",
 			},
-			DHCPServer: &infrav1.ResourceReference{
-				ID:                ptr.To("DHCPServerID"),
-				ControllerCreated: ptr.To(true),
+			Network: infrav1.NetworkStatus{
+				DHCPServer: infrav1.ResourceReferenceV1Beta3{
+					ID: "DHCPServerID",
+				},
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
@@ -1799,7 +1886,9 @@ func TestReconcilePowerVSResources(t *testing.T) {
 							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Network: &infrav1.ResourceReference{ID: ptr.To("NetworkID")},
+							Network: infrav1.NetworkStatus{
+								ID: "NetworkID",
+							},
 							Workspace: infrav1.ResourceReferenceV1Beta3{
 								ID: "serviceInstanceID",
 							},
@@ -1843,9 +1932,17 @@ func TestReconcilePowerVSResources(t *testing.T) {
 									ID: "serviceInstanceID",
 								},
 							},
+							Network: infrav1.NetworkSource{
+								Type: infrav1.SourceTypeReference,
+								Reference: infrav1.ResourceIdentifier{
+									ID: "netID",
+								},
+							},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Network: &infrav1.ResourceReference{ID: ptr.To("netID")},
+							Network: infrav1.NetworkStatus{
+								ID: "netID",
+							},
 							Workspace: infrav1.ResourceReferenceV1Beta3{
 								ID: "serviceInstanceID",
 							},
@@ -1862,7 +1959,6 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				return clusterScope
 			},
 			conditions: clusterv1.Conditions{
-				getNetworkReadyCondition(),
 				getWorkspaceReadyCondition(),
 			},
 		},
@@ -1895,6 +1991,13 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			})
 			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
+	}
+}
+
+func getWorkspaceReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
+		Type:   infrav1.ServiceInstanceReadyCondition,
+		Status: "True",
 	}
 }
 
@@ -1964,8 +2067,8 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 			Workspace: infrav1.ResourceReferenceV1Beta3{
 				ID: "serviceInstanceID",
 			},
-			Network: &infrav1.ResourceReference{
-				ID: ptr.To("NetworkID"),
+			Network: infrav1.NetworkStatus{
+				ID: "NetworkID",
 			},
 			VPC: &infrav1.ResourceReference{
 				ID: ptr.To("vpcID"),
@@ -2064,18 +2167,5 @@ func cleanupCluster(g *WithT, powervsCluster *infrav1.IBMPowerVSCluster, namespa
 		func(do ...client.Object) {
 			g.Expect(testEnv.Cleanup(ctx, do...)).To(Succeed())
 		}(powervsCluster, namespace)
-	}
-}
-
-func getWorkspaceReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1.ServiceInstanceReadyV1Beta2Condition,
-		Status: "True",
-	}
-}
-func getNetworkReadyCondition() clusterv1.Condition {
-	return clusterv1.Condition{
-		Type:   infrav1.NetworkReadyCondition,
-		Status: "True",
 	}
 }

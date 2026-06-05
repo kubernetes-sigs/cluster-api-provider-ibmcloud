@@ -424,6 +424,12 @@ func TestIBMPowerVSImageReconciler_Reconcile_Conditions(t *testing.T) {
 					Name: "capi-powervs-cluster"},
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "network-id",
+						},
+					},
 				},
 			},
 			powervsImage: &infrav1.IBMPowerVSImage{

@@ -526,7 +526,9 @@ spec:
     host: ${IBMPOWERVS_VIP_EXTERNAL}
     port: ${API_SERVER_PORT:=6443}
   network:
-    name: ${IBMPOWERVS_NETWORK_NAME}
+    reference:
+      name: ${IBMPOWERVS_NETWORK_NAME}
+    type: Reference
   topology: VirtualIP
   workspace:
     reference:

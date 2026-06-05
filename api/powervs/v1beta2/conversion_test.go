@@ -90,6 +90,12 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 
 	// Workspace.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Workspace.Name = ""
+
+	// Network.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
+	in.Network.Name = ""
+
+	// DHCPServer.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
+	in.Network.DHCPServer.Name = ""
 }
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
@@ -119,6 +125,22 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 			in.Workspace.Reference.ID = "fuzzed-workspace-id"
 		}
 	}
+
+	// Enforce the SourceType union constraints for v1beta3 Network so round-trip tests pass
+	switch in.Network.Type {
+	case infrav1.SourceTypeReference:
+		in.Network.Provision = infrav1.NetworkProvisionConfig{}
+	case infrav1.SourceTypeProvision:
+		in.Network.Reference = infrav1.ResourceIdentifier{}
+	default:
+		// If Type is not set or invalid, clear both Reference and Provision
+		in.Network.Type = ""
+		in.Network.Reference = infrav1.ResourceIdentifier{}
+		in.Network.Provision = infrav1.NetworkProvisionConfig{}
+	}
+
+	// Network.DHCPServer.Name is not preserved in v1beta2, so clear it for round-trip
+	in.Network.Provision.DHCPServer.Name = ""
 }
 
 func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Continue) {
@@ -159,6 +181,14 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 	if in.COSInstance != nil {
 		in.COSInstance.ControllerCreated = nil
 	}
+
+	// Network and DHCPServer with empty ID should be nil
+	if in.Network != nil && (in.Network.ID == nil || *in.Network.ID == "") {
+		in.Network = nil
+	}
+	if in.DHCPServer != nil && (in.DHCPServer.ID == nil || *in.DHCPServer.ID == "") {
+		in.DHCPServer = nil
+	}
 }
 
 func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) {
@@ -194,6 +224,38 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 	} else {
 		// If ServiceInstanceID is empty, ServiceInstance should be nil
 		in.ServiceInstance = nil
+	}
+
+	// Network.RegEx is not preserved in v1beta3, so clear it for round-trip
+	in.Network.RegEx = nil
+
+	// Empty string ID should be nil in Network
+	if in.Network.ID != nil && *in.Network.ID == "" {
+		in.Network.ID = nil
+	}
+	// Empty string Name should be nil in Network
+	if in.Network.Name != nil && *in.Network.Name == "" {
+		in.Network.Name = nil
+	}
+
+	// If Network has ID or Name (reference), DHCPServer should be nil
+	if (in.Network.ID != nil && *in.Network.ID != "") || (in.Network.Name != nil && *in.Network.Name != "") {
+		in.DHCPServer = nil
+	}
+
+	// DHCPServer.ID is not preserved in v1beta3 (it's a spec field in v1beta2 but not in v1beta3), so clear it
+	if in.DHCPServer != nil {
+		in.DHCPServer.ID = nil
+		// Empty string fields should be nil
+		if in.DHCPServer.Name != nil && *in.DHCPServer.Name == "" {
+			in.DHCPServer.Name = nil
+		}
+		if in.DHCPServer.Cidr != nil && *in.DHCPServer.Cidr == "" {
+			in.DHCPServer.Cidr = nil
+		}
+		if in.DHCPServer.DNSServer != nil && *in.DHCPServer.DNSServer == "" {
+			in.DHCPServer.DNSServer = nil
+		}
 	}
 }
 
@@ -282,6 +344,18 @@ func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) 
 	} else {
 		// If ServiceInstanceID is empty, ServiceInstance should be nil
 		in.ServiceInstance = nil
+	}
+
+	// Network.RegEx is not preserved in v1beta3, so clear it for round-trip
+	in.Network.RegEx = nil
+
+	// Empty string ID should be nil in Network
+	if in.Network.ID != nil && *in.Network.ID == "" {
+		in.Network.ID = nil
+	}
+	// Empty string Name should be nil in Network
+	if in.Network.Name != nil && *in.Network.Name == "" {
+		in.Network.Name = nil
 	}
 }
 

@@ -338,20 +338,18 @@ spec:
                           supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
                         properties:
                           id:
-                            description: id of resource
+                            description: ID of the resource.
                             minLength: 1
                             type: string
                           name:
-                            description: name of resource
-                            minLength: 1
-                            type: string
-                          regex:
-                            description: |-
-                              regex is the regular expression to match resource,
-                              In case of multiple resources matches the provided regular expression the first matched resource will be selected
+                            description: Name of the resource.
                             minLength: 1
                             type: string
                         type: object
+                        x-kubernetes-validations:
+                        - message: exactly one of id or name must be specified
+                          rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0)
+                            == 1'
                       processorType:
                         description: |-
                           processorType is the VM instance processor type.
@@ -429,8 +427,6 @@ spec:
                         - message: exactly one of id or name must be specified
                           rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0)
                             == 1'
-                    required:
-                    - network
                     type: object
                 required:
                 - spec

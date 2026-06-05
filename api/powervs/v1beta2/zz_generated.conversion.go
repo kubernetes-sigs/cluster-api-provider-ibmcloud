@@ -60,16 +60,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*DHCPServer)(nil), (*v1beta3.DHCPServer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(a.(*DHCPServer), b.(*v1beta3.DHCPServer), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.DHCPServer)(nil), (*DHCPServer)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(a.(*v1beta3.DHCPServer), b.(*DHCPServer), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*IBMPowerVSCluster)(nil), (*v1beta3.IBMPowerVSCluster)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(a.(*IBMPowerVSCluster), b.(*v1beta3.IBMPowerVSCluster), scope)
 	}); err != nil {
@@ -435,6 +425,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*DHCPServer)(nil), (*v1beta3.DHCPServer)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(a.(*DHCPServer), b.(*v1beta3.DHCPServer), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*IBMPowerVSClusterSpec)(nil), (*v1beta3.IBMPowerVSClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(a.(*IBMPowerVSClusterSpec), b.(*v1beta3.IBMPowerVSClusterSpec), scope)
 	}); err != nil {
@@ -465,6 +460,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*IBMPowerVSResourceReference)(nil), (*v1beta3.NetworkSource)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_NetworkSource(a.(*IBMPowerVSResourceReference), b.(*v1beta3.NetworkSource), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*IBMPowerVSResourceReference)(nil), (*v1beta3.ResourceIdentifier)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_ResourceIdentifier(a.(*IBMPowerVSResourceReference), b.(*v1beta3.ResourceIdentifier), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*corev1beta2.ObjectMeta)(nil), (*v1beta1.ObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_ObjectMeta_To_v1beta1_ObjectMeta(a.(*corev1beta2.ObjectMeta), b.(*v1beta1.ObjectMeta), scope)
 	}); err != nil {
@@ -472,6 +477,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta3.APIEndpoint)(nil), (*v1beta1.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_APIEndpoint_To_v1beta1_APIEndpoint(a.(*v1beta3.APIEndpoint), b.(*v1beta1.APIEndpoint), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.DHCPServer)(nil), (*DHCPServer)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(a.(*v1beta3.DHCPServer), b.(*DHCPServer), scope)
 	}); err != nil {
 		return err
 	}
@@ -507,6 +517,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta3.IBMPowerVSMachineTemplateResource)(nil), (*IBMPowerVSMachineTemplateResource)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_IBMPowerVSMachineTemplateResource_To_v1beta2_IBMPowerVSMachineTemplateResource(a.(*v1beta3.IBMPowerVSMachineTemplateResource), b.(*IBMPowerVSMachineTemplateResource), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.NetworkSource)(nil), (*IBMPowerVSResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_NetworkSource_To_v1beta2_IBMPowerVSResourceReference(a.(*v1beta3.NetworkSource), b.(*IBMPowerVSResourceReference), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.ResourceIdentifier)(nil), (*IBMPowerVSResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(a.(*v1beta3.ResourceIdentifier), b.(*IBMPowerVSResourceReference), scope)
 	}); err != nil {
 		return err
 	}
@@ -564,31 +584,28 @@ func Convert_v1beta3_CosInstance_To_v1beta2_CosInstance(in *v1beta3.CosInstance,
 }
 
 func autoConvert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in *DHCPServer, out *v1beta3.DHCPServer, s conversion.Scope) error {
-	out.Cidr = (*string)(unsafe.Pointer(in.Cidr))
-	out.DNSServer = (*string)(unsafe.Pointer(in.DNSServer))
-	out.Name = (*string)(unsafe.Pointer(in.Name))
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.Snat = (*bool)(unsafe.Pointer(in.Snat))
+	// WARNING: in.Cidr requires manual conversion: does not exist in peer-type
+	if err := v1.Convert_Pointer_string_To_string(&in.DNSServer, &out.DNSServer, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_string_To_string(&in.Name, &out.Name, s); err != nil {
+		return err
+	}
+	// WARNING: in.ID requires manual conversion: does not exist in peer-type
+	// WARNING: in.Snat requires manual conversion: inconvertible types (*bool vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.DHCPSnatPolicy)
 	return nil
-}
-
-// Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer is an autogenerated conversion function.
-func Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in *DHCPServer, out *v1beta3.DHCPServer, s conversion.Scope) error {
-	return autoConvert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in, out, s)
 }
 
 func autoConvert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(in *v1beta3.DHCPServer, out *DHCPServer, s conversion.Scope) error {
-	out.Cidr = (*string)(unsafe.Pointer(in.Cidr))
-	out.DNSServer = (*string)(unsafe.Pointer(in.DNSServer))
-	out.Name = (*string)(unsafe.Pointer(in.Name))
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.Snat = (*bool)(unsafe.Pointer(in.Snat))
+	if err := v1.Convert_string_To_Pointer_string(&in.Name, &out.Name, s); err != nil {
+		return err
+	}
+	// WARNING: in.CIDR requires manual conversion: does not exist in peer-type
+	if err := v1.Convert_string_To_Pointer_string(&in.DNSServer, &out.DNSServer, s); err != nil {
+		return err
+	}
+	// WARNING: in.Snat requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.DHCPSnatPolicy vs *bool)
 	return nil
-}
-
-// Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer is an autogenerated conversion function.
-func Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(in *v1beta3.DHCPServer, out *DHCPServer, s conversion.Scope) error {
-	return autoConvert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(in, out, s)
 }
 
 func autoConvert_v1beta2_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(in *IBMPowerVSCluster, out *v1beta3.IBMPowerVSCluster, s conversion.Scope) error {
@@ -667,10 +684,10 @@ func Convert_v1beta3_IBMPowerVSClusterList_To_v1beta2_IBMPowerVSClusterList(in *
 
 func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, out *v1beta3.IBMPowerVSClusterSpec, s conversion.Scope) error {
 	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
-	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
+	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_NetworkSource(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
-	out.DHCPServer = (*v1beta3.DHCPServer)(unsafe.Pointer(in.DHCPServer))
+	// WARNING: in.DHCPServer requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta1_APIEndpoint_To_v1beta3_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}
@@ -693,10 +710,9 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 	}
 	// WARNING: in.Topology requires manual conversion: does not exist in peer-type
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
-	if err := Convert_v1beta3_IBMPowerVSResourceReference_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
+	if err := Convert_v1beta3_NetworkSource_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
-	out.DHCPServer = (*DHCPServer)(unsafe.Pointer(in.DHCPServer))
 	out.Zone = (*string)(unsafe.Pointer(in.Zone))
 	out.ResourceGroup = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ResourceGroup))
 	out.VPC = (*VPCResourceReference)(unsafe.Pointer(in.VPC))
@@ -713,8 +729,8 @@ func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterSta
 	// WARNING: in.Ready requires manual conversion: does not exist in peer-type
 	out.ResourceGroup = (*v1beta3.ResourceReference)(unsafe.Pointer(in.ResourceGroup))
 	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
-	out.Network = (*v1beta3.ResourceReference)(unsafe.Pointer(in.Network))
-	out.DHCPServer = (*v1beta3.ResourceReference)(unsafe.Pointer(in.DHCPServer))
+	// WARNING: in.Network requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus)
+	// WARNING: in.DHCPServer requires manual conversion: does not exist in peer-type
 	out.VPC = (*v1beta3.ResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnet = *(*map[string]v1beta3.ResourceReference)(unsafe.Pointer(&in.VPCSubnet))
 	out.VPCSecurityGroups = *(*map[string]v1beta3.VPCSecurityGroupStatus)(unsafe.Pointer(&in.VPCSecurityGroups))
@@ -750,9 +766,8 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 	}
 	// WARNING: in.Initialization requires manual conversion: does not exist in peer-type
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
+	// WARNING: in.Network requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	out.ResourceGroup = (*ResourceReference)(unsafe.Pointer(in.ResourceGroup))
-	out.Network = (*ResourceReference)(unsafe.Pointer(in.Network))
-	out.DHCPServer = (*ResourceReference)(unsafe.Pointer(in.DHCPServer))
 	out.VPC = (*ResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnet = *(*map[string]ResourceReference)(unsafe.Pointer(&in.VPCSubnet))
 	out.VPCSecurityGroups = *(*map[string]VPCSecurityGroupStatus)(unsafe.Pointer(&in.VPCSecurityGroups))
@@ -1106,7 +1121,7 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(
 	out.ProcessorType = v1beta3.PowerVSProcessorType(in.ProcessorType)
 	out.Processors = in.Processors
 	out.MemoryGiB = in.MemoryGiB
-	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
+	if err := Convert_v1beta2_IBMPowerVSResourceReference_To_v1beta3_ResourceIdentifier(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
 	if err := v1.Convert_Pointer_string_To_string(&in.ProviderID, &out.ProviderID, s); err != nil {
@@ -1117,6 +1132,9 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(
 
 func autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *v1beta3.IBMPowerVSMachineSpec, out *IBMPowerVSMachineSpec, s conversion.Scope) error {
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
+	if err := Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
+		return err
+	}
 	out.SSHKey = in.SSHKey
 	out.Image = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
 	// WARNING: in.ImageRef requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ImageReference vs *k8s.io/api/core/v1.LocalObjectReference)
@@ -1124,9 +1142,6 @@ func autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(
 	out.ProcessorType = PowerVSProcessorType(in.ProcessorType)
 	out.Processors = in.Processors
 	out.MemoryGiB = in.MemoryGiB
-	if err := Convert_v1beta3_IBMPowerVSResourceReference_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
-		return err
-	}
 	if err := v1.Convert_string_To_Pointer_string(&in.ProviderID, &out.ProviderID, s); err != nil {
 		return err
 	}

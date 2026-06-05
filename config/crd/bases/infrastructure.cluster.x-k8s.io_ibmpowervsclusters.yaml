@@ -1288,31 +1288,6 @@ spec:
                     pattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
                     type: string
                 type: object
-              dhcpServer:
-                description: |-
-                  dhcpServer is contains the configuration to be used while creating a new DHCP server in PowerVS workspace.
-                  when the field is omitted, CLUSTER_NAME will be used as DHCPServer.Name and DHCP server will be created.
-                  it will automatically create network with name DHCPSERVER<DHCPServer.Name>_Private in PowerVS workspace.
-                properties:
-                  cidr:
-                    description: cidr for DHCP private network
-                    type: string
-                  dnsServer:
-                    default: 1.1.1.1
-                    description: dnsServer for DHCP service
-                    type: string
-                  id:
-                    description: id of the existing DHCPServer
-                    type: string
-                  name:
-                    description: name of DHCP Service. Only alphanumeric characters
-                      and dashes are allowed.
-                    type: string
-                  snat:
-                    default: true
-                    description: snat indicates if SNAT will be enabled for DHCP service
-                    type: boolean
-                type: object
               ignition:
                 description: ignition defined options related to the bootstrapping
                   systems where Ignition is used.
@@ -1578,31 +1553,77 @@ spec:
                   type: object
                 type: array
               network:
-                description: |-
-                  network is the reference to the Network to use for this cluster.
-                  when the field is omitted, A DHCP service will be created in the Power VS workspace and its private network will be used.
-                  the DHCP service created network will have the following name format
-                  1. in the case of DHCPServer.Name is not set the name will be DHCPSERVER<CLUSTER_NAME>_Private.
-                  2. if DHCPServer.Name is set the name will be DHCPSERVER<DHCPServer.Name>_Private.
-                  when Network.ID is set, its expected that there exist a network in PowerVS workspace with id or else system will give error.
-                  when Network.Name is set, system will first check for network with Name in PowerVS workspace, if not exist system will check DHCP network with given Network.name, if that also not exist, it will create a new DHCP service and name will be DHCPSERVER<Network.Name>_Private.
-                  Network.RegEx is not yet supported and system will ignore the value.
+                description: network specifies how the PowerVS network should be sourced.
                 properties:
-                  id:
-                    description: id of resource
-                    minLength: 1
+                  provision:
+                    description: provision provides the configuration for the controller
+                      to CREATE a new Network and DHCP Server.
+                    properties:
+                      dhcpServer:
+                        description: dhcpServer contains the configuration for the
+                          DHCP server that will be created.
+                        properties:
+                          cidr:
+                            description: CIDR is the CIDR for the DHCP private network.
+                            pattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$
+                            type: string
+                          dnsServer:
+                            description: DNSServer is the DNS Server for the DHCP
+                              service.
+                            type: string
+                          name:
+                            description: |-
+                              name is the name of the DHCP Service to be created. Only alphanumeric characters and dashes are allowed.
+                              If omitted, the name will default to DHCPSERVER<CLUSTER_NAME>_Private.
+                            minLength: 1
+                            type: string
+                          snat:
+                            description: |-
+                              snat indicates the SNAT policy for the DHCP service.
+                              Allowed values are "Enabled" and "Disabled".
+                              If omitted, the system will choose a Enabled policy by default.
+                            enum:
+                            - Enabled
+                            - Disabled
+                            type: string
+                        type: object
+                    type: object
+                  reference:
+                    description: reference tells the controller to look up an EXISTING
+                      PowerVS network.
+                    properties:
+                      id:
+                        description: ID of the resource.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the resource.
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of id or name must be specified
+                      rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) ==
+                        1'
+                  type:
+                    description: type defines how the Network is sourced.
+                    enum:
+                    - Reference
+                    - Provision
                     type: string
-                  name:
-                    description: name of resource
-                    minLength: 1
-                    type: string
-                  regex:
-                    description: |-
-                      regex is the regular expression to match resource,
-                      In case of multiple resources matches the provided regular expression the first matched resource will be selected
-                    minLength: 1
-                    type: string
+                    x-kubernetes-validations:
+                    - message: Network type is immutable once set
+                      rule: self == oldSelf
+                required:
+                - type
                 type: object
+                x-kubernetes-validations:
+                - message: reference configuration is required when type is Reference,
+                    and forbidden otherwise
+                  rule: 'self.type == ''Reference'' ? has(self.reference) : !has(self.reference)'
+                - message: provision configuration is required when type is Provision,
+                    and forbidden otherwise
+                  rule: 'self.type == ''Provision'' ? has(self.provision) : !has(self.provision)'
               resourceGroup:
                 description: |-
                   resourceGroup name under which the resources will be created.
@@ -2105,7 +2126,6 @@ spec:
                   2. the zone should have PER capabilities, or else system will give error.
                 type: string
             required:
-            - network
             - topology
             type: object
           status:
@@ -2253,18 +2273,6 @@ spec:
                         type: array
                     type: object
                 type: object
-              dhcpServer:
-                description: dhcpServer is the reference to the Power VS DHCP server.
-                properties:
-                  controllerCreated:
-                    default: false
-                    description: controllerCreated indicates whether the resource
-                      is created by the controller.
-                    type: boolean
-                  id:
-                    description: id represents the id of the resource.
-                    type: string
-                type: object
               initialization:
                 description: |-
                   initialization provides observations of the IBMPowerVSCluster initialization process.
@@ -2299,16 +2307,28 @@ spec:
                 description: loadBalancers reference to IBM Cloud VPC Loadbalancer.
                 type: object
               network:
-                description: network is the reference to the Power VS network to use
-                  for this cluster.
+                description: network tracks the status of the PowerVS network and
+                  its associated resources.
                 properties:
-                  controllerCreated:
-                    default: false
-                    description: controllerCreated indicates whether the resource
-                      is created by the controller.
-                    type: boolean
+                  dhcpServer:
+                    description: dhcpServer tracks the provisioned DHCP server identity,
+                      if one was created.
+                    properties:
+                      id:
+                        description: id represents the id of the resource.
+                        type: string
+                      name:
+                        description: |-
+                          name is the name of the resource.
+                          When used in a list, this field acts as the unique correlation key (listMapKey)
+                          to map the Status object back to its corresponding Spec definition.
+                        type: string
+                    type: object
                   id:
-                    description: id represents the id of the resource.
+                    description: id is the unique identifier of the network.
+                    type: string
+                  name:
+                    description: name is the name of the network.
                     type: string
                 type: object
               resourceGroupID:

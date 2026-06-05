@@ -40,6 +40,11 @@ spec:
     type: Provision
     provision:
       name: ${CLUSTER_NAME}-workspace
+  network:
+    type: Provision
+    provision:
+      dhcpServer:
+        name: ${CLUSTER_NAME}
   vpc:
     name: ${CLUSTER_NAME}-vpc
     region: ${IBMVPC_REGION}
