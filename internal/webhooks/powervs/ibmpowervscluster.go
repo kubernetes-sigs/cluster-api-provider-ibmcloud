@@ -181,13 +181,13 @@ func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1.IBMPowerVSCluster)
 }
 
 func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster) *field.Error {
-	if cluster.Spec.Zone == nil && cluster.Spec.VPC == nil {
+	if cluster.Spec.Zone == "" || cluster.Spec.VPC == nil || cluster.Spec.VPC.Region == nil {
 		return nil
 	}
 	if cluster.Spec.TransitGateway == nil {
 		return nil
 	}
-	if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.GlobalRouting != nil && !*cluster.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
+	if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.GlobalRouting != nil && !*cluster.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
 		return field.Invalid(field.NewPath("spec.transitGateway.globalRouting"), cluster.Spec.TransitGateway.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
 	}
 	return nil
@@ -213,12 +213,12 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSClust
 		return nil
 	}
 
-	if cluster.Spec.Zone == nil {
+	if cluster.Spec.Zone == "" {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, "value of zone is empty"))
 	}
 
-	if cluster.Spec.Zone != nil && !regionUtil.ValidateZone(*cluster.Spec.Zone) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", *cluster.Spec.Zone)))
+	if cluster.Spec.Zone != "" && !regionUtil.ValidateZone(cluster.Spec.Zone) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", cluster.Spec.Zone)))
 	}
 
 	if cluster.Spec.VPC == nil {
@@ -233,7 +233,7 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSClust
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", *cluster.Spec.VPC.Region)))
 	}
 
-	if cluster.Spec.ResourceGroup == nil {
+	if cluster.Spec.ResourceGroup.Type == "" {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.resourceGroup"), cluster.Spec.ResourceGroup, "value of resource group is empty"))
 	}
 	if err := validateIBMPowerVSClusterVPCSubnetNames(cluster); err != nil {

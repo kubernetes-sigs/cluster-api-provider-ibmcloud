@@ -99,7 +99,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		scopeParams.Zone = cluster.Spec.Zone
+		scopeParams.Zone = &cluster.Spec.Zone
 	}
 
 	// Initialize the patch helper

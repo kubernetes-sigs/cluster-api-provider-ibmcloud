@@ -372,6 +372,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -405,6 +406,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -442,6 +444,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -475,6 +478,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -521,6 +525,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -554,6 +559,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -591,6 +597,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -624,6 +631,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			newPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{

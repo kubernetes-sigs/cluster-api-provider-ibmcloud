@@ -175,7 +175,7 @@ func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 	}
 
 	// Use Spec.Zone for the PowerVS zone.
-	piOptions.Zone = *params.IBMPowerVSCluster.Spec.Zone
+	piOptions.Zone = params.IBMPowerVSCluster.Spec.Zone
 
 	// Get the authenticator.
 	auth, err := params.getAuthenticator()
@@ -334,13 +334,27 @@ func (s *ClusterScope) Name() string {
 }
 
 // Zone returns the cluster zone.
-func (s *ClusterScope) Zone() *string {
+func (s *ClusterScope) Zone() string {
 	return s.IBMPowerVSCluster.Spec.Zone
 }
 
-// ResourceGroup returns the cluster resource group.
-func (s *ClusterScope) ResourceGroup() *infrav1.IBMPowerVSResourceReference {
-	return s.IBMPowerVSCluster.Spec.ResourceGroup
+// GetResourceGroupID returns the resource group ID.
+// It first checks the Spec (user-provided), then falls back to Status (resolved).
+func (s *ClusterScope) GetResourceGroupID() string {
+	// Spec takes precedence over Status
+	if s.IBMPowerVSCluster.Spec.ResourceGroup.Reference.ID != "" {
+		return s.IBMPowerVSCluster.Spec.ResourceGroup.Reference.ID
+	}
+	return s.IBMPowerVSCluster.Status.ResourceGroup.ID
+}
+
+// ResourceGroupName returns the resource group name.
+// It first checks the Status (resolved), then falls back to Spec (user-provided).
+func (s *ClusterScope) ResourceGroupName() string {
+	if s.IBMPowerVSCluster.Status.ResourceGroup.Name != "" {
+		return s.IBMPowerVSCluster.Status.ResourceGroup.Name
+	}
+	return s.IBMPowerVSCluster.Spec.ResourceGroup.Reference.Name
 }
 
 // InfraCluster returns the IBMPowerVS infrastructure cluster object name.
@@ -397,12 +411,6 @@ func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.Resou
 			return
 		}
 		s.IBMPowerVSCluster.Status.COSInstance.Set(resource)
-	case infrav1.ResourceTypeResourceGroup:
-		if s.IBMPowerVSCluster.Status.ResourceGroup == nil {
-			s.IBMPowerVSCluster.Status.ResourceGroup = &resource
-			return
-		}
-		s.IBMPowerVSCluster.Status.ResourceGroup.Set(resource)
 	}
 }
 
@@ -584,36 +592,26 @@ func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 	return nil, nil
 }
 
-// GetResourceGroupID returns the resource group id if it present under spec or status filed of IBMPowerVSCluster object
-// or returns empty string.
-func (s *ClusterScope) GetResourceGroupID() string {
-	if s.IBMPowerVSCluster.Spec.ResourceGroup != nil && s.IBMPowerVSCluster.Spec.ResourceGroup.ID != nil {
-		return *s.IBMPowerVSCluster.Spec.ResourceGroup.ID
-	}
-	if s.IBMPowerVSCluster.Status.ResourceGroup != nil && s.IBMPowerVSCluster.Status.ResourceGroup.ID != nil {
-		return *s.IBMPowerVSCluster.Status.ResourceGroup.ID
-	}
-	return ""
-}
+// ValidateZoneSupportsPER checks whether PowerVS zone supports PER capabilities.
+func (s *ClusterScope) ValidateZoneSupportsPER() error {
+	zone := s.IBMPowerVSCluster.Spec.Zone
 
-// IsPowerVSZoneSupportsPER checks whether PowerVS zone supports PER capabilities.
-func (s *ClusterScope) IsPowerVSZoneSupportsPER() error {
-	zone := s.Zone()
-	if zone == nil {
-		return fmt.Errorf("PowerVS zone is not set")
+	if zone == "" {
+		return fmt.Errorf("PowerVS zone is required but not set in the spec")
 	}
+
 	// fetch the datacenter capabilities for zone.
-	datacenterCapabilities, err := s.IBMPowerVSClient.GetDatacenterCapabilities(*zone)
+	datacenterCapabilities, err := s.IBMPowerVSClient.GetDatacenterCapabilities(zone)
 	if err != nil {
-		return fmt.Errorf("failed to get datacenter capabilities: %w", err)
+		return fmt.Errorf("failed to get datacenter capabilities for zone %q: %w", zone, err)
 	}
 	// check for the PER support in datacenter capabilities.
 	perAvailable, ok := datacenterCapabilities[powerEdgeRouter]
 	if !ok {
-		return fmt.Errorf("%s capability unknown for zone: %s", powerEdgeRouter, *zone)
+		return fmt.Errorf("%s capability unknown for zone %q", powerEdgeRouter, zone)
 	}
 	if !perAvailable {
-		return fmt.Errorf("%s is not available for zone: %s", powerEdgeRouter, *zone)
+		return fmt.Errorf("%s is not available for zone %q", powerEdgeRouter, zone)
 	}
 	return nil
 }
@@ -621,19 +619,86 @@ func (s *ClusterScope) IsPowerVSZoneSupportsPER() error {
 // ReconcileResourceGroup reconciles resource group to fetch resource group id.
 func (s *ClusterScope) ReconcileResourceGroup(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	// Verify if resource group id is set in spec or status field of IBMPowerVSCluster object.
-	if resourceGroupID := s.GetResourceGroupID(); resourceGroupID != "" {
+
+	// 1. Find the ID: Check Status first (already resolved), then fallback to Spec (user provided).
+	resourceGroupID := s.IBMPowerVSCluster.Status.ResourceGroup.ID
+	if resourceGroupID == "" {
+		resourceGroupID = s.IBMPowerVSCluster.Spec.ResourceGroup.Reference.ID
+	}
+
+	// 2. ID exists: Verify it in IBM Cloud and hydrate the Status.
+	if resourceGroupID != "" {
+		log.V(3).Info("Resource group ID is set in status, fetching details", "resourceGroupID", resourceGroupID)
+
+		resourceGroup, _, err := s.ResourceManagerClient.GetResourceGroup(&resourcemanagerv2.GetResourceGroupOptions{
+			ID: &resourceGroupID,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to fetch resource group (id: %s) details: %w", resourceGroupID, err)
+		}
+
+		if resourceGroup == nil {
+			return fmt.Errorf("resource group not found with ID: %s", resourceGroupID)
+		}
+
+		s.IBMPowerVSCluster.Status.ResourceGroup.ID = resourceGroupID
+		if resourceGroup.Name != nil {
+			s.IBMPowerVSCluster.Status.ResourceGroup.Name = *resourceGroup.Name
+		}
+
 		return nil
 	}
-	// Try to fetch resource group ID from cloud associated with resource group name.
-	resourceGroupID, err := s.fetchResourceGroupID()
+
+	// 3. No ID exists anywhere: The user must have provided only a Name in the Spec.
+	fetchedID, err := s.resolveResourceGroupIDByName()
 	if err != nil {
-		return fmt.Errorf("failed to get resource group ID: %w", err)
+		return fmt.Errorf("failed to resolve resource group ID by name: %w", err)
 	}
-	log.Info("Fetched resource group ID", "resourceGroupID", resourceGroupID)
-	// Set the status of IBMPowerVSCluster object with resource group id.
-	s.SetStatus(ctx, infrav1.ResourceTypeResourceGroup, infrav1.ResourceReference{ID: &resourceGroupID, ControllerCreated: ptr.To(false)})
+
+	log.Info("Successfully fetched resource group ID from cloud", "resourceGroupID", fetchedID)
+
+	// 4. Save to Status.
+	s.IBMPowerVSCluster.Status.ResourceGroup.ID = fetchedID
+	s.IBMPowerVSCluster.Status.ResourceGroup.Name = s.IBMPowerVSCluster.Spec.ResourceGroup.Reference.Name
+
 	return nil
+}
+
+// resolveResourceGroupIDByName retrieves the ID of the resource group from IBM Cloud using its name.
+func (s *ClusterScope) resolveResourceGroupIDByName() (string, error) {
+	resourceGroupName := s.IBMPowerVSCluster.Spec.ResourceGroup.Reference.Name
+	if resourceGroupName == "" {
+		return "", fmt.Errorf("resource group name is not set in the spec")
+	}
+
+	auth, err := authenticator.GetAuthenticator()
+	if err != nil {
+		return "", fmt.Errorf("failed to get authenticator: %w", err)
+	}
+
+	account, err := accounts.GetAccount(auth)
+	if err != nil {
+		return "", fmt.Errorf("failed to get account: %w", err)
+	}
+
+	rmv2ListResourceGroupOpt := resourcemanagerv2.ListResourceGroupsOptions{
+		Name:      &resourceGroupName,
+		AccountID: &account,
+	}
+
+	resourceGroupListResult, _, err := s.ResourceManagerClient.ListResourceGroups(&rmv2ListResourceGroupOpt)
+	if err != nil {
+		return "", fmt.Errorf("failed to list resource groups: %w", err)
+	}
+
+	if resourceGroupListResult != nil && len(resourceGroupListResult.Resources) > 0 {
+		rg := resourceGroupListResult.Resources[0]
+		if rg.ID != nil {
+			return *rg.ID, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not retrieve resource group ID for %q", resourceGroupName)
 }
 
 // ReconcileWorkspace reconciles PowerVS workspace.
@@ -689,7 +754,7 @@ func (s *ClusterScope) reconcileWorkspaceReference(ctx context.Context) (bool, e
 	resourceInstance := resourcecontroller.InstanceFilter{
 		ID:             ref.ID,
 		Name:           ref.Name,
-		Zone:           s.IBMPowerVSCluster.Spec.Zone,
+		Zone:           &s.IBMPowerVSCluster.Spec.Zone,
 		ResourceID:     resourcecontroller.PowerVSResourceID,
 		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 	}
@@ -728,7 +793,7 @@ func (s *ClusterScope) reconcileWorkspaceProvision(ctx context.Context) (bool, e
 	// 2. Idempotency check: Did we already create this, but crash before saving to Status?
 	resourceInstance := resourcecontroller.InstanceFilter{
 		Name:           workspaceName,
-		Zone:           s.IBMPowerVSCluster.Spec.Zone,
+		Zone:           &s.IBMPowerVSCluster.Spec.Zone,
 		ResourceID:     resourcecontroller.PowerVSResourceID,
 		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 	}
@@ -796,11 +861,11 @@ func (s *ClusterScope) createWorkspace(ctx context.Context, workspaceName string
 	// fetch resource group id.
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 
 	zone := s.Zone()
-	if zone == nil {
+	if zone == "" {
 		return nil, fmt.Errorf("PowerVS zone is not set")
 	}
 
@@ -809,7 +874,7 @@ func (s *ClusterScope) createWorkspace(ctx context.Context, workspaceName string
 
 	workspace, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
 		Name:           &workspaceName,
-		Target:         zone,
+		Target:         &zone,
 		ResourceGroup:  &resourceGroupID,
 		ResourcePlanID: ptr.To(resourcecontroller.PowerVSResourcePlanID),
 	})
@@ -1132,7 +1197,7 @@ func (s *ClusterScope) getVPCByName() (*vpcv1.VPC, error) {
 func (s *ClusterScope) createVPC() (*string, error) {
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 	addressPrefixManagement := "auto"
 	vpcOption := &vpcv1.CreateVPCOptions{
@@ -1265,7 +1330,7 @@ func (s *ClusterScope) createVPCSubnet(subnet infrav1.Subnet) (*string, error) {
 	// fetch resource group id
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 
 	// create subnet
@@ -1951,14 +2016,14 @@ func (s *ClusterScope) createTransitGateway(ctx context.Context) error {
 	// fetch resource group id
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 
 	if s.IBMPowerVSCluster.Status.Workspace.ID == "" || s.IBMPowerVSCluster.Status.VPC == nil {
 		return fmt.Errorf("failed to proceed with transit gateway creation: PowerVS workspace or VPC reconciliation is not yet complete")
 	}
 
-	location, globalRouting, err := genutil.GetTransitGatewayLocationAndRouting(s.Zone(), s.VPC().Region)
+	location, globalRouting, err := genutil.GetTransitGatewayLocationAndRouting(ptr.To(s.Zone()), s.VPC().Region)
 	if err != nil {
 		return fmt.Errorf("failed to get transit gateway location and routing: %w", err)
 	}
@@ -2136,7 +2201,7 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lb infrav1.VPCLoa
 	// fetch resource group id
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 
 	var isPublic bool
@@ -2363,7 +2428,7 @@ func (s *ClusterScope) createCOSServiceInstance() (*resourcecontrollerv2.Resourc
 	// fetch resource group id.
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroup())
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 
 	target := "Global"
@@ -2378,39 +2443,6 @@ func (s *ClusterScope) createCOSServiceInstance() (*resourcecontrollerv2.Resourc
 		return nil, err
 	}
 	return serviceInstance, nil
-}
-
-// fetchResourceGroupID retrieving id of resource group.
-func (s *ClusterScope) fetchResourceGroupID() (string, error) {
-	if s.ResourceGroup() == nil || s.ResourceGroup().Name == nil {
-		return "", fmt.Errorf("resource group name is not set")
-	}
-
-	auth, err := authenticator.GetAuthenticator()
-	if err != nil {
-		return "", err
-	}
-
-	account, err := accounts.GetAccount(auth)
-	if err != nil {
-		return "", err
-	}
-
-	resourceGroup := s.ResourceGroup().Name
-	rmv2ListResourceGroupOpt := resourcemanagerv2.ListResourceGroupsOptions{Name: resourceGroup, AccountID: &account}
-	resourceGroupListResult, _, err := s.ResourceManagerClient.ListResourceGroups(&rmv2ListResourceGroupOpt)
-	if err != nil {
-		return "", err
-	}
-
-	if resourceGroupListResult != nil && len(resourceGroupListResult.Resources) > 0 {
-		rg := resourceGroupListResult.Resources[0]
-		resourceGroupID := *rg.ID
-		return resourceGroupID, nil
-	}
-
-	err = fmt.Errorf("could not retrieve resource group ID for %s", *resourceGroup)
-	return "", err
 }
 
 // fetchVPCCRN returns VPC CRN.

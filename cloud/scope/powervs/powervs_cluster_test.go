@@ -110,7 +110,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 								Name:       "capi-test",
 								UID:        "1",
 							}}},
-					Spec: infrav1.IBMPowerVSClusterSpec{Zone: ptr.To("zone")},
+					Spec: infrav1.IBMPowerVSClusterSpec{Zone: "zone"},
 				},
 				ClientFactory: ClientFactory{
 					AuthenticatorFactory: func() (core.Authenticator, error) {
@@ -140,7 +140,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 								UID:        "1",
 							}}},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						Zone: ptr.To("zone"),
+						Zone: "zone",
 						VPC:  &infrav1.VPCResourceReference{Region: ptr.To("eu-gb")},
 					},
 				},
@@ -1096,7 +1096,12 @@ func TestGetResourceGroupID(t *testing.T) {
 			clusterScope: ClusterScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("rgID")},
+						ResourceGroup: infrav1.ResourceGroupSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "rgID",
+							},
+						},
 					},
 				},
 			},
@@ -1107,8 +1112,8 @@ func TestGetResourceGroupID(t *testing.T) {
 			clusterScope: ClusterScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						ResourceGroup: &infrav1.ResourceReference{
-							ID: ptr.To("rgID"),
+						ResourceGroup: infrav1.ResourceReferenceV1Beta3{
+							ID: "rgID",
 						},
 					},
 				},
@@ -1120,11 +1125,16 @@ func TestGetResourceGroupID(t *testing.T) {
 			clusterScope: ClusterScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("rgID")},
+						ResourceGroup: infrav1.ResourceGroupSource{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID: "rgID",
+							},
+						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						ResourceGroup: &infrav1.ResourceReference{
-							ID: ptr.To("rgID1"),
+						ResourceGroup: infrav1.ResourceReferenceV1Beta3{
+							ID: "rgID1",
 						},
 					},
 				},
@@ -1423,8 +1433,11 @@ func TestReconcileLoadBalancers(t *testing.T) {
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-gid"),
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-resource-gid",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -1474,8 +1487,11 @@ func TestReconcileLoadBalancers(t *testing.T) {
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-gid"),
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-resource-gid",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -1584,8 +1600,11 @@ func TestCreateLoadbalancer(t *testing.T) {
 			IBMVPCClient: mockVpc,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-gid"),
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-resource-gid",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -1622,8 +1641,11 @@ func TestCreateLoadbalancer(t *testing.T) {
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-gid"),
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-resource-gid",
+						},
 					},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
@@ -1681,9 +1703,7 @@ func TestCreateLoadbalancer(t *testing.T) {
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-gid"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-gid"}},
 					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
 						{
 							Name: testLBName,
@@ -1984,7 +2004,12 @@ func TestReconcileVPC(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			Cluster:      &clusterv1.Cluster{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
-				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+				ResourceGroup: infrav1.ResourceGroupSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "resourceGroupID",
+					},
+				}}},
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, nil)
@@ -2004,7 +2029,12 @@ func TestReconcileVPC(t *testing.T) {
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
-				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+				ResourceGroup: infrav1.ResourceGroupSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "resourceGroupID",
+					},
+				}}},
 		}
 		mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, nil)
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(nil, nil, fmt.Errorf("CreateVPC returns error"))
@@ -2141,7 +2171,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			Cluster:      &clusterv1.Cluster{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
-				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+				ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}}}},
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
@@ -2161,7 +2191,7 @@ func TestPowerVSScopeCreateVPC(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			Cluster:      &clusterv1.Cluster{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Spec: infrav1.IBMPowerVSClusterSpec{
-				ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+				ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}}}},
 		}
 		vpcOutput := &vpcv1.VPC{Name: ptr.To("VPCName"), ID: ptr.To("vpcID"), DefaultSecurityGroup: &vpcv1.SecurityGroupReference{ID: ptr.To("DefaultSecurityGroupID")}}
 		mockVPC.EXPECT().CreateVPC(gomock.Any()).Return(vpcOutput, nil, nil)
@@ -2555,8 +2585,13 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "resourceGroupID",
+						},
+					},
+					VPC: &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets: []infrav1.Subnet{
 						{Name: ptr.To("subnet1Name"), Zone: ptr.To("eu-de-2")},
 						{Name: ptr.To("subnet2Name")},
@@ -2588,7 +2623,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					Name: subnetZone,
 				},
 				ResourceGroup: &vpcv1.ResourceGroupIdentity{
-					ID: clusterScope.IBMPowerVSCluster.Spec.ResourceGroup.ID,
+					ID: ptr.To(clusterScope.IBMPowerVSCluster.Spec.ResourceGroup.Reference.ID),
 				},
 			})
 			subnetDetails := &vpcv1.Subnet{ID: ptr.To(fmt.Sprintf("subnet%dID", i+1)), Name: ptr.To(fmt.Sprintf("subnet%dName", i+1))}
@@ -2616,8 +2651,13 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "resourceGroupID",
+						},
+					},
+					VPC: &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets: []infrav1.Subnet{
 						{Name: ptr.To("subnet1Name"), Zone: ptr.To("eu-de-1")},
 						{Name: ptr.To("subnet2Name"), Zone: ptr.To("eu-de-2")},
@@ -2640,7 +2680,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					Name: clusterScope.IBMPowerVSCluster.Spec.VPCSubnets[i].Zone,
 				},
 				ResourceGroup: &vpcv1.ResourceGroupIdentity{
-					ID: clusterScope.IBMPowerVSCluster.Spec.ResourceGroup.ID,
+					ID: ptr.To(clusterScope.IBMPowerVSCluster.Spec.ResourceGroup.Reference.ID),
 				},
 			})
 			subnetDetails := &vpcv1.Subnet{ID: ptr.To(fmt.Sprintf("subnet%dID", i+1)), Name: ptr.To(fmt.Sprintf("subnet%dName", i+1))}
@@ -2667,7 +2707,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")}},
 			},
 		}
@@ -2695,7 +2735,7 @@ func TestReconcileVPCSubnets(t *testing.T) {
 					VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
 					VPCSubnets:    []infrav1.Subnet{{Name: ptr.To("subnet1Name")}}},
 			},
@@ -2985,7 +3025,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")}},
 			},
@@ -3007,7 +3047,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("eu-de")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")}},
@@ -3045,7 +3085,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}}},
+				Spec: infrav1.IBMPowerVSClusterSpec{ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}}}},
 		}
 		subnet := infrav1.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
 		subnetID, err := clusterScope.createVPCSubnet(subnet)
@@ -3061,7 +3101,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Spec:   infrav1.IBMPowerVSClusterSpec{ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}},
+				Spec:   infrav1.IBMPowerVSClusterSpec{ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}}},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")}}},
 		}
 		subnet := infrav1.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
@@ -3078,7 +3118,7 @@ func TestCreateVPCSubnet(t *testing.T) {
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Spec:   infrav1.IBMPowerVSClusterSpec{ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")}},
+				Spec:   infrav1.IBMPowerVSClusterSpec{ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}}},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: &infrav1.ResourceReference{ID: ptr.To("vpcID")}}},
 		}
 		subnet := infrav1.Subnet{Name: ptr.To("ClusterName-vpcsubnet-eu-de-1"), Zone: ptr.To("eu-de-1")}
@@ -4613,10 +4653,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 					CosInstance: &infrav1.CosInstance{
 						BucketRegion: testRegion,
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
-					Zone: ptr.To("test-zone"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
+					Zone:          "test-zone",
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -4653,10 +4691,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 					CosInstance: &infrav1.CosInstance{
 						BucketRegion: testRegion,
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
-					Zone: ptr.To("test-zone"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
+					Zone:          "test-zone",
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -4694,10 +4730,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 					CosInstance: &infrav1.CosInstance{
 						BucketRegion: testRegion,
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
-					Zone: ptr.To("test-zone"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
+					Zone:          "test-zone",
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -4760,10 +4794,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					CosInstance: &infrav1.CosInstance{},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
+					CosInstance:   &infrav1.CosInstance{},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -4802,9 +4834,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 					CosInstance: &infrav1.CosInstance{
 						BucketRegion: "test-bucket-region",
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -4848,9 +4878,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 					CosInstance: &infrav1.CosInstance{
 						BucketRegion: "test-bucket-region",
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -4896,9 +4924,7 @@ func TestReconcileCOSInstance(t *testing.T) {
 					CosInstance: &infrav1.CosInstance{
 						BucketRegion: "test-bucket-region",
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resource-group-id"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resource-group-id"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -5301,9 +5327,7 @@ func TestCreateCOSServiceInstance(t *testing.T) {
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resourcegroup-id"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resourcegroup-id"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -5329,9 +5353,7 @@ func TestCreateCOSServiceInstance(t *testing.T) {
 			ResourceClient: mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("test-resourcegroup-id"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "test-resourcegroup-id"}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -5546,8 +5568,8 @@ func TestReconcileTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -5857,8 +5879,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 			},
@@ -5880,8 +5902,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("zone-ID"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "zone-ID",
 					VPC:           &infrav1.VPCResourceReference{},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -5911,8 +5933,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -5943,8 +5965,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -5977,8 +5999,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -6012,8 +6034,8 @@ func TestCreateTransitGateway(t *testing.T) {
 			ResourceClient:       mockResourceController,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -6054,8 +6076,8 @@ func TestCreateTransitGateway(t *testing.T) {
 					TransitGateway: &infrav1.TransitGateway{
 						GlobalRouting: ptr.To(false),
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("us-east-1"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "us-east-1",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -6088,8 +6110,8 @@ func TestCreateTransitGateway(t *testing.T) {
 					TransitGateway: &infrav1.TransitGateway{
 						GlobalRouting: ptr.To(true),
 					},
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("resourceGroupID")},
-					Zone:          ptr.To("zone-ID"),
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
+					Zone:          "zone-ID",
 					VPC:           &infrav1.VPCResourceReference{Region: ptr.To("region")},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
@@ -8377,9 +8399,7 @@ func TestCreateVPCSecurityGroupRulesAndSetStatus(t *testing.T) {
 					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
 						Name: ptr.To("securityGroupName"),
 					}),
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("resourceGroupID"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 			},
 		}
@@ -8413,9 +8433,7 @@ func TestCreateVPCSecurityGroupRulesAndSetStatus(t *testing.T) {
 					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
 						Name: ptr.To("securityGroupName"),
 					}),
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("resourceGroupID"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 			},
 		}
@@ -8450,9 +8468,7 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
 						Name: ptr.To("securityGroupName"),
 					}),
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("resourceGroupID"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 			},
 		}
@@ -8473,9 +8489,7 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
 						Name: ptr.To("securityGroupName"),
 					}),
-					ResourceGroup: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("resourceGroupID"),
-					},
+					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 			},
 		}

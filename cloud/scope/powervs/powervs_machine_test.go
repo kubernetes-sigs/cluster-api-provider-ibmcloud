@@ -483,7 +483,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 		scope := MachineScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					Zone: ptr.To("us-south-1"),
+					Zone: "us-south-1",
 				},
 			},
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
@@ -508,7 +508,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 		scope := MachineScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					Zone: ptr.To("us-south-1"),
+					Zone: "us-south-1",
 				},
 			},
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
@@ -861,7 +861,7 @@ func TestGetNetworkID(t *testing.T) {
 			scope := MachineScope{}
 			networkID, err := scope.getNetworkID(networkResource)
 			g.Expect(networkID).To(BeNil())
-			g.Expect(err.Error()).To(Equal("network identifier is empty"))
+			g.Expect(err.Error()).To(Equal("network identifier must contain either an ID or a Name"))
 		})
 	})
 }

@@ -270,8 +270,6 @@ var (
 	ResourceTypeCOSInstance = ResourceType("cosInstance")
 	// ResourceTypeCOSBucket is IBM COS bucket resource.
 	ResourceTypeCOSBucket = ResourceType("cosBucket")
-	// ResourceTypeResourceGroup is IBM Resource Group.
-	ResourceTypeResourceGroup = ResourceType("resourceGroup")
 	// ResourceTypePublicGateway is a VPC Public Gatway.
 	ResourceTypePublicGateway = ResourceType("publicGateway")
 	// ResourceTypeCustomImage is a VPC Custom Image.

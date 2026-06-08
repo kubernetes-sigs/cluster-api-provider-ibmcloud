@@ -692,8 +692,10 @@ func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(
 		return err
 	}
 	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
-	out.Zone = (*string)(unsafe.Pointer(in.Zone))
-	out.ResourceGroup = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.ResourceGroup))
+	if err := v1.Convert_Pointer_string_To_string(&in.Zone, &out.Zone, s); err != nil {
+		return err
+	}
+	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.IBMPowerVSResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceGroupSource)
 	out.VPC = (*v1beta3.VPCResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnets = *(*[]v1beta3.Subnet)(unsafe.Pointer(&in.VPCSubnets))
 	out.VPCSecurityGroups = *(*[]v1beta3.VPCSecurityGroup)(unsafe.Pointer(&in.VPCSecurityGroups))
@@ -713,8 +715,10 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 	if err := Convert_v1beta3_NetworkSource_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
-	out.Zone = (*string)(unsafe.Pointer(in.Zone))
-	out.ResourceGroup = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.ResourceGroup))
+	if err := v1.Convert_string_To_Pointer_string(&in.Zone, &out.Zone, s); err != nil {
+		return err
+	}
+	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceGroupSource vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.IBMPowerVSResourceReference)
 	out.VPC = (*VPCResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnets = *(*[]Subnet)(unsafe.Pointer(&in.VPCSubnets))
 	out.VPCSecurityGroups = *(*[]VPCSecurityGroup)(unsafe.Pointer(&in.VPCSecurityGroups))
@@ -727,7 +731,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 
 func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, out *v1beta3.IBMPowerVSClusterStatus, s conversion.Scope) error {
 	// WARNING: in.Ready requires manual conversion: does not exist in peer-type
-	out.ResourceGroup = (*v1beta3.ResourceReference)(unsafe.Pointer(in.ResourceGroup))
+	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReferenceV1Beta3)
 	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	// WARNING: in.Network requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus)
 	// WARNING: in.DHCPServer requires manual conversion: does not exist in peer-type
@@ -767,7 +771,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 	// WARNING: in.Initialization requires manual conversion: does not exist in peer-type
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	// WARNING: in.Network requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
-	out.ResourceGroup = (*ResourceReference)(unsafe.Pointer(in.ResourceGroup))
+	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReferenceV1Beta3 vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	out.VPC = (*ResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnet = *(*map[string]ResourceReference)(unsafe.Pointer(&in.VPCSubnet))
 	out.VPCSecurityGroups = *(*map[string]VPCSecurityGroupStatus)(unsafe.Pointer(&in.VPCSecurityGroups))

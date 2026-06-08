@@ -1625,27 +1625,40 @@ spec:
                     and forbidden otherwise
                   rule: 'self.type == ''Provision'' ? has(self.provision) : !has(self.provision)'
               resourceGroup:
-                description: |-
-                  resourceGroup name under which the resources will be created.
-                  when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
-                  1. it is expected to set the ResourceGroup.Name, not setting will result in webhook error.
-                  ResourceGroup.ID and ResourceGroup.Regex is not yet supported and system will ignore the value.
+                description: ResourceGroup defines the IBM Cloud Resource Group for
+                  the cluster.
                 properties:
-                  id:
-                    description: id of resource
-                    minLength: 1
-                    type: string
-                  name:
-                    description: name of resource
-                    minLength: 1
-                    type: string
-                  regex:
+                  reference:
+                    description: Reference specifies the existing Resource Group to
+                      use by Name or ID.
+                    properties:
+                      id:
+                        description: ID of the resource.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the resource.
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of id or name must be specified
+                      rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) ==
+                        1'
+                  type:
                     description: |-
-                      regex is the regular expression to match resource,
-                      In case of multiple resources matches the provided regular expression the first matched resource will be selected
-                    minLength: 1
+                      Type defines the intended action for the Resource Group.
+                      Currently, only "Reference" is supported.
                     type: string
+                required:
+                - type
                 type: object
+                x-kubernetes-validations:
+                - message: reference configuration is required when type is Reference
+                  rule: 'self.type == ''Reference'' ? has(self.reference) : true'
+                - message: Provisioning a Resource Group is not yet supported in this
+                    API version
+                  rule: self.type != 'Provision'
               topology:
                 description: Topology defines the architectural mode for external
                   cluster access.
@@ -2119,15 +2132,20 @@ spec:
                   rule: 'self.type == ''Provision'' ? has(self.provision) : !has(self.provision)'
               zone:
                 description: |-
-                  zone is the name of Power VS zone where the cluster will be created
+                  zone is the name of PowerVS zone where the cluster will be created
                   possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
-                  when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
-                  1. it is expected to set the zone, not setting will result in webhook error.
-                  2. the zone should have PER capabilities, or else system will give error.
+                minLength: 1
                 type: string
+                x-kubernetes-validations:
+                - message: zone is immutable
+                  rule: self == oldSelf
             required:
             - topology
             type: object
+            x-kubernetes-validations:
+            - message: zone is required when topology is set to LoadBalancer
+              rule: self.topology != 'LoadBalancer' || (has(self.zone) && size(self.zone)
+                > 0)
           status:
             description: status defines the observed state of IBMPowerVSCluster
             properties:
@@ -2331,17 +2349,18 @@ spec:
                     description: name is the name of the network.
                     type: string
                 type: object
-              resourceGroupID:
-                description: resourceGroupID is the reference to the Power VS resource
-                  group under which the resources will be created.
+              resourceGroup:
+                description: ResourceGroup is the reference to the IBM Cloud Resource
+                  Group where the cluster resources are provisioned.
                 properties:
-                  controllerCreated:
-                    default: false
-                    description: controllerCreated indicates whether the resource
-                      is created by the controller.
-                    type: boolean
                   id:
                     description: id represents the id of the resource.
+                    type: string
+                  name:
+                    description: |-
+                      name is the name of the resource.
+                      When used in a list, this field acts as the unique correlation key (listMapKey)
+                      to map the Status object back to its corresponding Spec definition.
                     type: string
                 type: object
               transitGateway:

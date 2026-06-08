@@ -34,7 +34,9 @@ metadata:
 spec:
   topology: LoadBalancer
   resourceGroup:
-    name: ${IBM_RESOURCE_GROUP}
+    type: Reference
+    reference:
+      name: ${IBM_RESOURCE_GROUP}
   zone: ${IBMPOWERVS_ZONE}
   workspace:
     type: Provision
