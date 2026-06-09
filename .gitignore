@@ -44,3 +44,6 @@ out/
 
 #ide settings
 .vscode/
+
+#claude settings
+.claude/
