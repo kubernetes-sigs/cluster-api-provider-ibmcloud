@@ -92,11 +92,11 @@ create_powervs_network_instance(){
 
     # Install power-iaas command-line plug-in and target the required service instance
     ibmcloud plugin install power-iaas -f -v ${POWER_PLUGIN_VERSION}
-    CRN=$(ibmcloud resource service-instance ${IBMPOWERVS_SERVICE_INSTANCE_ID} --output json | jq -r '.[].crn')
+    CRN=$(ibmcloud resource service-instance ${IBMPOWERVS_WORKSPACE_ID} --output json | jq -r '.[].crn')
     ibmcloud pi workspace target ${CRN}
 
     # Create the network instance
-    ${capibmadm} powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --dns-servers 1.1.1.1,8.8.8.8,9.9.9.9 --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${IBMPOWERVS_ZONE}
+    ${capibmadm} powervs network create --name ${IBMPOWERVS_NETWORK_NAME} --dns-servers 1.1.1.1,8.8.8.8,9.9.9.9 --service-instance-id ${IBMPOWERVS_WORKSPACE_ID} --zone ${IBMPOWERVS_ZONE}
 
 }
 
@@ -106,11 +106,11 @@ init_network_powervs(){
 
     create_powervs_network_instance
 
-    # Creating PowerVS network port 
-    ${capibmadm} powervs port create --network ${IBMPOWERVS_NETWORK_NAME} --description "capi-e2e" --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${IBMPOWERVS_ZONE}
+    # Creating PowerVS network port
+    ${capibmadm} powervs port create --network ${IBMPOWERVS_NETWORK_NAME} --description "capi-e2e" --service-instance-id ${IBMPOWERVS_WORKSPACE_ID} --zone ${IBMPOWERVS_ZONE}
 
     # Get and assign the IPs to the required variables
-    NEW_PORT=$(${capibmadm} powervs port list --service-instance-id ${IBMPOWERVS_SERVICE_INSTANCE_ID} --zone ${IBMPOWERVS_ZONE} --network ${IBMPOWERVS_NETWORK_NAME} -o json)
+    NEW_PORT=$(${capibmadm} powervs port list --service-instance-id ${IBMPOWERVS_WORKSPACE_ID} --zone ${IBMPOWERVS_ZONE} --network ${IBMPOWERVS_NETWORK_NAME} -o json)
     no_of_ports=$(echo ${NEW_PORT} | jq '.items | length')
     if [[ ${no_of_ports} != 1 ]]; then
         echo "Failed to get the required number or ports, got - ${no_of_ports}"
@@ -125,7 +125,7 @@ prerequisites_powervs(){
     # Assigning PowerVS variables
     export IBMPOWERVS_SSHKEY_NAME=${IBMPOWERVS_SSHKEY_NAME:-"powercloud-bot-key"}
     export IBMPOWERVS_IMAGE_NAME=${IBMPOWERVS_IMAGE_NAME:-"capibm-powervs-centos-streams10-1-34-7"}
-    export IBMPOWERVS_SERVICE_INSTANCE_ID=${BOSKOS_SERVICE_INSTANCE_ID:-"d53da3bf-1f4a-42fa-9735-acf16b1a05cd"}
+    export IBMPOWERVS_WORKSPACE_ID=${BOSKOS_SERVICE_INSTANCE_ID:-"d53da3bf-1f4a-42fa-9735-acf16b1a05cd"}
     export IBMPOWERVS_NETWORK_NAME="capi-net-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head --bytes 5)"
     export IBMPOWERVS_REGION=${BOSKOS_REGION:-"osa"}
     export IBMPOWERVS_ZONE=${BOSKOS_ZONE:-"osa21"}
