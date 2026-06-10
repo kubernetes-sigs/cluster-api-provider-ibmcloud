@@ -184,11 +184,15 @@ func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster)
 	if cluster.Spec.Zone == "" || cluster.Spec.VPC == nil || cluster.Spec.VPC.Region == nil {
 		return nil
 	}
-	if cluster.Spec.TransitGateway == nil {
+	// TransitGateway is now a value type, check if Type is set to determine if it's configured
+	if cluster.Spec.TransitGateway.Type == "" {
 		return nil
 	}
-	if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.GlobalRouting != nil && !*cluster.Spec.TransitGateway.GlobalRouting && globalRouting != nil && *globalRouting {
-		return field.Invalid(field.NewPath("spec.transitGateway.globalRouting"), cluster.Spec.TransitGateway.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
+	// GlobalRouting is now in Provision field and is a string enum, not a bool pointer
+	if cluster.Spec.TransitGateway.Type == infrav1.SourceTypeProvision {
+		if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.Provision.GlobalRouting == infrav1.TransitGatewayRoutingLocal && globalRouting != nil && *globalRouting {
+			return field.Invalid(field.NewPath("spec.transitGateway.provision.globalRouting"), cluster.Spec.TransitGateway.Provision.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
+		}
 	}
 	return nil
 }

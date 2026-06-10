@@ -53,7 +53,13 @@ spec:
   vpcSubnets:
   - name: ${CLUSTER_NAME}-vpcsubnet
   transitGateway:
-    name: ${CLUSTER_NAME}-transitgateway
+    type: Provision
+    provision:
+      name: ${CLUSTER_NAME}-transitgateway
+    vpcConnection:
+      type: Provision
+    powerVSConnection:
+      type: Provision
   loadBalancers:
   - name: ${CLUSTER_NAME}-loadbalancer
 ---

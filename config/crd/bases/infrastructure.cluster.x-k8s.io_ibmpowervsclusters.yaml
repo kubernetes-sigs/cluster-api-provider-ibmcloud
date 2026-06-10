@@ -1650,8 +1650,6 @@ spec:
                       Type defines the intended action for the Resource Group.
                       Currently, only "Reference" is supported.
                     type: string
-                required:
-                - type
                 type: object
                 x-kubernetes-validations:
                 - message: reference configuration is required when type is Reference
@@ -1668,28 +1666,158 @@ spec:
                 type: string
               transitGateway:
                 description: |-
-                  transitGateway contains information about IBM Cloud TransitGateway
-                  IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud Power VS and VPC infrastructure
-                  more information about TransitGateway can be found here https://www.ibm.com/products/transit-gateway.
-                  when TransitGateway.ID is set, its expected that there exist a TransitGateway with ID or else system will give error.
-                  when TransitGateway.Name is set, system will first check for TransitGateway with Name, if not exist system will create new TransitGateway.
+                  TransitGateway contains information about the IBM Cloud TransitGateway.
+                  IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud PowerVS and VPC infrastructure.
+                  This field is rejected by the API if the Topology is set to VirtualIP.
                 properties:
-                  globalRouting:
-                    description: |-
-                      globalRouting indicates whether to set global routing true or not while creating the transit gateway.
-                      set this field to true only when PowerVS and VPC are from different regions, if they are same it's suggested to use local routing by setting the field to false.
-                      when the field is omitted,  based on PowerVS region (region associated with IBMPowerVSCluster.Spec.Zone) and VPC region(IBMPowerVSCluster.Spec.VPC.Region) system will decide whether to enable globalRouting or not.
-                    type: boolean
-                  id:
-                    description: id of resource.
+                  powerVSConnection:
+                    description: PowerVSConnection defines how the PowerVS connection
+                      to the Transit Gateway is sourced.
+                    properties:
+                      provision:
+                        description: Provision contains the configuration for provisioning
+                          a new connection.
+                        properties:
+                          name:
+                            description: |-
+                              Name of the connection to be created.
+                              If omitted, the system will dynamically create the connection with a default name.
+                            type: string
+                        type: object
+                      reference:
+                        description: Reference contains the information to identify
+                          an existing connection.
+                        properties:
+                          id:
+                            description: ID of the resource.
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name of the resource.
+                            minLength: 1
+                            type: string
+                        type: object
+                        x-kubernetes-validations:
+                        - message: exactly one of id or name must be specified
+                          rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0)
+                            == 1'
+                      type:
+                        description: Type defines whether to use an existing connection
+                          or provision a new one.
+                        enum:
+                        - Reference
+                        - Provision
+                        type: string
+                    required:
+                    - type
+                    type: object
+                    x-kubernetes-validations:
+                    - message: reference configuration is required when type is Reference,
+                        and forbidden otherwise
+                      rule: 'self.type == ''Reference'' ? has(self.reference) : !has(self.reference)'
+                    - message: provision configuration is forbidden when type is not
+                        Provision
+                      rule: 'self.type != ''Provision'' ? !has(self.provision) : true'
+                  provision:
+                    description: Provision contains the configuration for provisioning
+                      a new Transit Gateway.
+                    properties:
+                      globalRouting:
+                        description: |-
+                          GlobalRouting indicates whether to use Local or Global routing.
+                          If omitted, the system will automatically decide based on the PowerVS and VPC regions.
+                        enum:
+                        - Local
+                        - Global
+                        type: string
+                      name:
+                        description: Name of the transit gateway to be created.
+                        maxLength: 63
+                        minLength: 1
+                        pattern: ^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$
+                        type: string
+                    type: object
+                  reference:
+                    description: Reference contains the information to identify an
+                      existing Transit Gateway.
+                    properties:
+                      id:
+                        description: ID of the resource.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the resource.
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of id or name must be specified
+                      rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) ==
+                        1'
+                  type:
+                    description: Type defines whether to use an existing Transit Gateway
+                      or provision a new one.
+                    enum:
+                    - Reference
+                    - Provision
                     type: string
-                  name:
-                    description: name of resource.
-                    maxLength: 63
-                    minLength: 1
-                    pattern: ^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$
-                    type: string
+                  vpcConnection:
+                    description: VPCConnection defines how the VPC connection to the
+                      Transit Gateway is sourced.
+                    properties:
+                      provision:
+                        description: Provision contains the configuration for provisioning
+                          a new connection.
+                        properties:
+                          name:
+                            description: |-
+                              Name of the connection to be created.
+                              If omitted, the system will dynamically create the connection with a default name.
+                            type: string
+                        type: object
+                      reference:
+                        description: Reference contains the information to identify
+                          an existing connection.
+                        properties:
+                          id:
+                            description: ID of the resource.
+                            minLength: 1
+                            type: string
+                          name:
+                            description: Name of the resource.
+                            minLength: 1
+                            type: string
+                        type: object
+                        x-kubernetes-validations:
+                        - message: exactly one of id or name must be specified
+                          rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0)
+                            == 1'
+                      type:
+                        description: Type defines whether to use an existing connection
+                          or provision a new one.
+                        enum:
+                        - Reference
+                        - Provision
+                        type: string
+                    required:
+                    - type
+                    type: object
+                    x-kubernetes-validations:
+                    - message: reference configuration is required when type is Reference,
+                        and forbidden otherwise
+                      rule: 'self.type == ''Reference'' ? has(self.reference) : !has(self.reference)'
+                    - message: provision configuration is forbidden when type is not
+                        Provision
+                      rule: 'self.type != ''Provision'' ? !has(self.provision) : true'
+                required:
+                - type
                 type: object
+                x-kubernetes-validations:
+                - message: reference configuration is required when type is Reference,
+                    and forbidden otherwise
+                  rule: 'self.type == ''Reference'' ? has(self.reference) : !has(self.reference)'
+                - message: provision configuration is forbidden when type is not Provision
+                  rule: 'self.type != ''Provision'' ? !has(self.provision) : true'
               vpc:
                 description: |-
                   vpc contains information about IBM Cloud VPC resources.
@@ -2144,8 +2272,32 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: zone is required when topology is set to LoadBalancer
-              rule: self.topology != 'LoadBalancer' || (has(self.zone) && size(self.zone)
-                > 0)
+              rule: '!has(self.topology) || self.topology != ''LoadBalancer'' || (has(self.zone)
+                && size(self.zone) > 0)'
+            - message: resourceGroup is required and must include either an id or
+                name when topology is set to LoadBalancer
+              rule: '!has(self.topology) || self.topology != ''LoadBalancer'' || (has(self.resourceGroup)
+                && self.resourceGroup.type == ''Reference'' && has(self.resourceGroup.reference)
+                && ((has(self.resourceGroup.reference.id) && size(self.resourceGroup.reference.id)
+                > 0) || (has(self.resourceGroup.reference.name) && size(self.resourceGroup.reference.name)
+                > 0)))'
+            - message: When topology is VirtualIP, workspace type must be 'Reference'
+                and include either an id or name
+              rule: '!has(self.topology) || self.topology != ''VirtualIP'' || (has(self.workspace)
+                && self.workspace.type == ''Reference'' && has(self.workspace.reference)
+                && ((has(self.workspace.reference.id) && size(self.workspace.reference.id)
+                > 0) || (has(self.workspace.reference.name) && size(self.workspace.reference.name)
+                > 0)))'
+            - message: When topology is VirtualIP, network type must be 'Reference'
+                and include either an id or name
+              rule: '!has(self.topology) || self.topology != ''VirtualIP'' || (has(self.network)
+                && self.network.type == ''Reference'' && has(self.network.reference)
+                && ((has(self.network.reference.id) && size(self.network.reference.id)
+                > 0) || (has(self.network.reference.name) && size(self.network.reference.name)
+                > 0)))'
+            - message: TransitGateway must not be configured when topology is set
+                to VirtualIP
+              rule: '!has(self.topology) || self.topology != ''VirtualIP'' || !has(self.transitGateway)'
           status:
             description: status defines the observed state of IBMPowerVSCluster
             properties:
@@ -2366,38 +2518,40 @@ spec:
               transitGateway:
                 description: transitGateway is reference to IBM Cloud TransitGateway.
                 properties:
-                  controllerCreated:
-                    default: false
-                    description: controllerCreated indicates whether the resource
-                      is created by the controller.
-                    type: boolean
                   id:
-                    description: id represents the id of the resource.
+                    description: ID represents the id of the resource.
+                    type: string
+                  name:
+                    description: Name represents the name of the resource.
                     type: string
                   powerVSConnection:
-                    description: powerVSConnection defines the powervs connection
-                      status in transit gateway.
+                    description: PowerVSConnection defines the powervs connection
+                      status in the transit gateway.
                     properties:
-                      controllerCreated:
-                        default: false
-                        description: controllerCreated indicates whether the resource
-                          is created by the controller.
-                        type: boolean
                       id:
-                        description: id represents the id of the resource.
+                        description: ID represents the id of the connection resource.
+                        type: string
+                      name:
+                        description: Name represents the name of the connection resource.
+                        type: string
+                      state:
+                        description: State indicates the current state of the connection
+                          (e.g., pending, attached).
                         type: string
                     type: object
                   vpcConnection:
-                    description: vpcConnection defines the vpc connection status in
-                      transit gateway.
+                    description: VPCConnection defines the vpc connection status in
+                      the transit gateway.
                     properties:
-                      controllerCreated:
-                        default: false
-                        description: controllerCreated indicates whether the resource
-                          is created by the controller.
-                        type: boolean
                       id:
-                        description: id represents the id of the resource.
+                        description: ID represents the id of the connection resource.
+                        type: string
+                      name:
+                        description: Name represents the name of the connection resource.
+                        type: string
+                      state:
+                        description: State indicates the current state of the connection
+                          (e.g., pending, attached).
                         type: string
                     type: object
                 type: object

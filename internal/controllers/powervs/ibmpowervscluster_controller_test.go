@@ -292,6 +292,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			Spec: infrav1.IBMPowerVSClusterSpec{
 				Topology: infrav1.PowerVSVirtualIPTopology,
 				Zone:     "zone",
+				Workspace: infrav1.WorkspaceSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "workspace-id",
+					},
+				},
 				Network: infrav1.NetworkSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -365,6 +371,12 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 			Spec: infrav1.IBMPowerVSClusterSpec{
 				Topology: infrav1.PowerVSVirtualIPTopology,
 				Zone:     "zone",
+				Workspace: infrav1.WorkspaceSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "workspace-id",
+					},
+				},
 				Network: infrav1.NetworkSource{
 					Type: infrav1.SourceTypeReference,
 					Reference: infrav1.ResourceIdentifier{
@@ -672,7 +684,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 
 				return clusterScope
 			},
-			expectedError: errors.New("error getting transit gateway"),
+			expectedError: fmt.Errorf("failed to reconcile transit gateway: %w", fmt.Errorf("failed to fetch transit gateway (id: transitGatewayID) details: %w", errors.New("error getting transit gateway"))),
 			conditions: clusterv1.Conditions{
 				getVPCLBReadyCondition(),
 				getWorkspaceReadyCondition(),
@@ -682,7 +694,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1.TransitGatewayReconciliationFailedReason,
-					Message:            "failed to get transit gateway: error getting transit gateway",
+					Message:            "failed to fetch transit gateway (id: transitGatewayID) details: error getting transit gateway",
 				},
 				getVPCReadyCondition(),
 				getVPCSGReadyCondition(),
@@ -1071,16 +1083,22 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
-		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
-			ID:                ptr.To("transitgatewayID"),
-			ControllerCreated: ptr.To(true),
-			PowerVSConnection: &infrav1.ResourceReference{
-				ControllerCreated: ptr.To(true),
-				ID:                ptr.To("connectionID"),
+		clusterScope.IBMPowerVSCluster.Spec.TransitGateway = infrav1.TransitGatewaySource{
+			Type: infrav1.SourceTypeProvision,
+			PowerVSConnection: infrav1.TransitGatewayConnectionSource{
+				Type: infrav1.SourceTypeProvision,
 			},
-			VPCConnection: &infrav1.ResourceReference{
-				ControllerCreated: ptr.To(true),
-				ID:                ptr.To("connectionID"),
+			VPCConnection: infrav1.TransitGatewayConnectionSource{
+				Type: infrav1.SourceTypeProvision,
+			},
+		}
+		clusterScope.IBMPowerVSCluster.Status.TransitGateway = infrav1.TransitGatewayStatus{
+			ID: "transitgatewayID",
+			PowerVSConnection: infrav1.ResourceConnectionStatus{
+				ID: "connectionID",
+			},
+			VPCConnection: infrav1.ResourceConnectionStatus{
+				ID: "connectionID",
 			},
 		}
 		tgw := &tgapiv1.TransitGateway{
@@ -1094,7 +1112,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		clusterScope.ResourceClient = mockResourceClient
 		mockTransitGateway = tgmock.NewMockTransitGateway(gomock.NewController(t))
 		mockTransitGateway.EXPECT().GetTransitGateway(gomock.Any()).Return(tgw, nil, nil)
-		mockTransitGateway.EXPECT().GetTransitGatewayConnection(gomock.Any()).Return(nil, &core.DetailedResponse{StatusCode: 404}, nil).Times(2)
+		mockTransitGateway.EXPECT().GetTransitGatewayConnection(gomock.Any()).Return(nil, &core.DetailedResponse{StatusCode: 404}, errors.New("connection not found")).Times(2)
 		mockTransitGateway.EXPECT().DeleteTransitGateway(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("failed to delete transit gateway"))
 		clusterScope.TransitGatewayClient = mockTransitGateway
 		mockVpc = vpcmock.NewMockVpc(gomock.NewController(t))
@@ -1108,16 +1126,13 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
-		clusterScope.IBMPowerVSCluster.Status.TransitGateway = &infrav1.TransitGatewayStatus{
-			ID:                ptr.To("transitgatewayID"),
-			ControllerCreated: ptr.To(true),
-			PowerVSConnection: &infrav1.ResourceReference{
-				ControllerCreated: ptr.To(true),
-				ID:                ptr.To("connectionID"),
+		clusterScope.IBMPowerVSCluster.Status.TransitGateway = infrav1.TransitGatewayStatus{
+			ID: "transitgatewayID",
+			PowerVSConnection: infrav1.ResourceConnectionStatus{
+				ID: "connectionID",
 			},
-			VPCConnection: &infrav1.ResourceReference{
-				ControllerCreated: ptr.To(true),
-				ID:                ptr.To("connectionID"),
+			VPCConnection: infrav1.ResourceConnectionStatus{
+				ID: "connectionID",
 			},
 		}
 		tgw := &tgapiv1.TransitGateway{
@@ -2069,6 +2084,24 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 					Public: ptr.To(true),
 				},
 			},
+			TransitGateway: infrav1.TransitGatewaySource{
+				Type: infrav1.SourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{
+					ID: "transitGatewayID",
+				},
+				PowerVSConnection: infrav1.TransitGatewayConnectionSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "powervs-conn-id",
+					},
+				},
+				VPCConnection: infrav1.TransitGatewayConnectionSource{
+					Type: infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{
+						ID: "vpc-conn-id",
+					},
+				},
+			},
 		},
 		Status: infrav1.IBMPowerVSClusterStatus{
 			Workspace: infrav1.ResourceReferenceV1Beta3{
@@ -2080,8 +2113,8 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 			VPC: &infrav1.ResourceReference{
 				ID: ptr.To("vpcID"),
 			},
-			TransitGateway: &infrav1.TransitGatewayStatus{
-				ID: ptr.To("transitGatewayID"),
+			TransitGateway: infrav1.TransitGatewayStatus{
+				ID: "transitGatewayID",
 			},
 		},
 	}
@@ -2137,12 +2170,14 @@ func getMockTransitGateway(t *testing.T) *tgmock.MockTransitGateway {
 	mockTransitGateway.EXPECT().ListTransitGatewayConnections(gomock.Any()).Return(&tgapiv1.TransitGatewayConnectionCollection{
 		Connections: []tgapiv1.TransitGatewayConnectionCust{
 			{
+				ID:          ptr.To("vpc-conn-id"),
 				Name:        ptr.To("vpc_connection"),
 				NetworkID:   ptr.To("vpc_crn"),
 				NetworkType: ptr.To("vpc"),
 				Status:      ptr.To(string(infrav1.TransitGatewayConnectionStateAttached)),
 			},
 			{
+				ID:          ptr.To("powervs-conn-id"),
 				Name:        ptr.To("powervs_connection"),
 				NetworkID:   ptr.To("powervs_crn"),
 				NetworkType: ptr.To("power_virtual_server"),

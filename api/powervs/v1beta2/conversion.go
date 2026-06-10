@@ -60,6 +60,13 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 		out.Network.DHCPServer.ID = *in.DHCPServer.ID
 	}
 
+	// Convert TransitGateway status
+	if in.TransitGateway != nil {
+		if err := Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(in.TransitGateway, &out.TransitGateway, s); err != nil {
+			return err
+		}
+	}
+
 	out.Conditions = nil
 	if in.V1Beta2 != nil {
 		out.Conditions = in.V1Beta2.Conditions
@@ -115,6 +122,18 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 		if in.Network.DHCPServer.ID != "" {
 			out.DHCPServer.ID = ptr.To(in.Network.DHCPServer.ID)
 		}
+	}
+
+	// Convert TransitGateway status
+	tgStatus := &TransitGatewayStatus{}
+	if err := Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(&in.TransitGateway, tgStatus, s); err != nil {
+		return err
+	}
+	// If the converted TransitGatewayStatus is empty, set to nil
+	if tgStatus.ID == nil && tgStatus.VPCConnection == nil && tgStatus.PowerVSConnection == nil {
+		out.TransitGateway = nil
+	} else {
+		out.TransitGateway = tgStatus
 	}
 
 	out.Conditions = nil
@@ -267,6 +286,15 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 	clusterv1.Convert_bool_To_Pointer_bool(src.Status.Ready, ok, restored.Status.Initialization.Provisioned, &initialization.Provisioned)
 	if !reflect.DeepEqual(initialization, infrav1.IBMPowerVSClusterInitializationStatus{}) {
 		dst.Status.Initialization = initialization
+	}
+
+	// Restore fields with union types from annotation if available
+	// This preserves the full v1beta3 structure including Type, Reference, Provision fields
+	if ok {
+		dst.Spec.Workspace = restored.Spec.Workspace
+		dst.Spec.ResourceGroup = restored.Spec.ResourceGroup
+		dst.Spec.Network = restored.Spec.Network
+		dst.Spec.TransitGateway = restored.Spec.TransitGateway
 	}
 
 	// If the old v1beta2 annotation is true, map it to LoadBalancer. Otherwise, VirtualIP.
@@ -466,6 +494,13 @@ func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *
 		return err
 	}
 
+	// Convert TransitGateway
+	if in.TransitGateway != nil {
+		if err := Convert_v1beta2_TransitGateway_To_v1beta3_TransitGatewaySource(in.TransitGateway, &out.TransitGateway, s); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -523,6 +558,7 @@ func convertV1beta2NetworkToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMP
 	return Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in.DHCPServer, &out.Network.Provision.DHCPServer, nil)
 }
 
+//nolint:gocyclo
 func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, out *IBMPowerVSClusterSpec, s apimachineryconversion.Scope) error {
 	if err := autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in, out, s); err != nil {
 		return err
@@ -587,6 +623,18 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 	}
 	// Note: v1beta2 Network.RegEx field is dropped in v1beta3, cannot be restored
 	out.Network.RegEx = nil
+
+	// Convert TransitGateway
+	tg := &TransitGateway{}
+	if err := Convert_v1beta3_TransitGatewaySource_To_v1beta2_TransitGateway(&in.TransitGateway, tg, s); err != nil {
+		return err
+	}
+	// If the converted TransitGateway is empty, set to nil
+	if tg.ID == nil && tg.Name == nil && tg.GlobalRouting == nil {
+		out.TransitGateway = nil
+	} else {
+		out.TransitGateway = tg
+	}
 
 	return nil
 }
@@ -788,5 +836,143 @@ func Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(i
 	}
 	// RegEx field cannot be restored from v1beta3
 	out.RegEx = nil
+	return nil
+}
+
+// Convert_v1beta2_TransitGateway_To_v1beta3_TransitGatewaySource converts v1beta2 TransitGateway to v1beta3 TransitGatewaySource.
+func Convert_v1beta2_TransitGateway_To_v1beta3_TransitGatewaySource(in *TransitGateway, out *infrav1.TransitGatewaySource, _ apimachineryconversion.Scope) error {
+	// Determine if this is Reference or Provision based on the fields present
+	// Priority: ID presence indicates Reference, GlobalRouting presence indicates Provision
+
+	hasID := in.ID != nil && *in.ID != ""
+	hasName := in.Name != nil && *in.Name != ""
+	hasGlobalRouting := in.GlobalRouting != nil
+
+	// If ID is set, it's definitely a Reference
+	if hasID {
+		out.Type = infrav1.SourceTypeReference
+		out.Reference.ID = *in.ID
+		if hasName {
+			out.Reference.Name = *in.Name
+		}
+		return nil
+	}
+
+	// If GlobalRouting is set, it's Provision (GlobalRouting only exists for Provision)
+	if hasGlobalRouting {
+		out.Type = infrav1.SourceTypeProvision
+		if hasName {
+			out.Provision.Name = *in.Name
+		}
+		if *in.GlobalRouting {
+			out.Provision.GlobalRouting = infrav1.TransitGatewayRoutingGlobal
+		} else {
+			out.Provision.GlobalRouting = infrav1.TransitGatewayRoutingLocal
+		}
+		return nil
+	}
+
+	// If only Name is set (no ID, no GlobalRouting), we can't determine the type reliably
+	// This is a known limitation: v1beta2 Name field is ambiguous
+	// Default to Reference for backward compatibility
+	if hasName {
+		out.Type = infrav1.SourceTypeReference
+		out.Reference.Name = *in.Name
+		return nil
+	}
+
+	// No fields set, leave empty
+	return nil
+}
+
+// Convert_v1beta3_TransitGatewaySource_To_v1beta2_TransitGateway converts v1beta3 TransitGatewaySource to v1beta2 TransitGateway.
+func Convert_v1beta3_TransitGatewaySource_To_v1beta2_TransitGateway(in *infrav1.TransitGatewaySource, out *TransitGateway, _ apimachineryconversion.Scope) error {
+	// If Type is empty, check if there's any data in Reference or Provision
+	if in.Type == "" {
+		// If there's reference data, treat as reference
+		if in.Reference.ID != "" || in.Reference.Name != "" {
+			if in.Reference.ID != "" {
+				out.ID = ptr.To(in.Reference.ID)
+			}
+			if in.Reference.Name != "" {
+				out.Name = ptr.To(in.Reference.Name)
+			}
+			return nil
+		}
+		// If there's provision data, treat as provision
+		if in.Provision.Name != "" || in.Provision.GlobalRouting != "" {
+			if in.Provision.Name != "" {
+				out.Name = ptr.To(in.Provision.Name)
+			}
+			if in.Provision.GlobalRouting != "" {
+				out.GlobalRouting = ptr.To(in.Provision.GlobalRouting == infrav1.TransitGatewayRoutingGlobal)
+			}
+			return nil
+		}
+		// No data, return empty
+		return nil
+	}
+
+	switch in.Type {
+	case infrav1.SourceTypeReference:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+		}
+		if in.Reference.Name != "" {
+			out.Name = ptr.To(in.Reference.Name)
+		}
+	case infrav1.SourceTypeProvision:
+		// For provision, set name if specified
+		if in.Provision.Name != "" {
+			out.Name = ptr.To(in.Provision.Name)
+		}
+		// Convert GlobalRouting enum to bool
+		if in.Provision.GlobalRouting != "" {
+			out.GlobalRouting = ptr.To(in.Provision.GlobalRouting == infrav1.TransitGatewayRoutingGlobal)
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus converts v1beta2 TransitGatewayStatus to v1beta3 TransitGatewayStatus.
+func Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(in *TransitGatewayStatus, out *infrav1.TransitGatewayStatus, _ apimachineryconversion.Scope) error {
+	if in.ID != nil {
+		out.ID = *in.ID
+	}
+
+	// Convert VPC connection status
+	if in.VPCConnection != nil && in.VPCConnection.ID != nil {
+		out.VPCConnection.ID = *in.VPCConnection.ID
+	}
+
+	// Convert PowerVS connection status
+	if in.PowerVSConnection != nil && in.PowerVSConnection.ID != nil {
+		out.PowerVSConnection.ID = *in.PowerVSConnection.ID
+	}
+
+	return nil
+}
+
+// Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus converts v1beta3 TransitGatewayStatus to v1beta2 TransitGatewayStatus.
+func Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(in *infrav1.TransitGatewayStatus, out *TransitGatewayStatus, _ apimachineryconversion.Scope) error {
+	if in.ID != "" {
+		out.ID = ptr.To(in.ID)
+	}
+
+	// Convert VPC connection status
+	if in.VPCConnection.ID != "" {
+		out.VPCConnection = &ResourceReference{
+			ID: ptr.To(in.VPCConnection.ID),
+		}
+	}
+
+	// Convert PowerVS connection status
+	if in.PowerVSConnection.ID != "" {
+		out.PowerVSConnection = &ResourceReference{
+			ID: ptr.To(in.PowerVSConnection.ID),
+		}
+	}
+
 	return nil
 }
