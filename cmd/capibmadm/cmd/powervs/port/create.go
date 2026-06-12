@@ -84,27 +84,27 @@ func createPort(ctx context.Context, portCreateOption portCreateOptions) error {
 		return err
 	}
 
-	params := &models.NetworkPortCreate{
-		IPAddress:   portCreateOption.ipAddress,
-		Description: portCreateOption.description,
+	params := &models.NetworkInterfaceCreate{
+		IPAddress: portCreateOption.ipAddress,
+		Name:      portCreateOption.description,
 	}
 
-	port, err := networkClient.CreatePort(*network.NetworkID, params)
+	port, err := networkClient.CreateNetworkInterface(*network.NetworkID, params)
 	if err != nil {
 		return fmt.Errorf("failed to create a port, err: %v", err)
 	}
-	logger.Info("Successfully created a port", "portID", *port.PortID)
+	logger.Info("Successfully created a port", "portID", *port.ID)
 
 	portInfo := PList{
 		Items: []PSpec{},
 	}
 
 	portInfo.Items = append(portInfo.Items, PSpec{
-		Description: pointer.Dereference(port.Description).(string),
+		Description: pointer.Dereference(port.Name).(string),
 		ExternalIP:  port.ExternalIP,
 		IPAddress:   pointer.Dereference(port.IPAddress).(string),
 		MacAddress:  pointer.Dereference(port.MacAddress).(string),
-		PortID:      pointer.Dereference(port.PortID).(string),
+		PortID:      pointer.Dereference(port.ID).(string),
 		Status:      pointer.Dereference(port.Status).(string),
 	})
 

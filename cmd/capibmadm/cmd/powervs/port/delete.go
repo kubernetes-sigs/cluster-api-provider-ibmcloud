@@ -78,7 +78,7 @@ func deletePort(ctx context.Context, portDeleteOption portDeleteOptions) error {
 		return err
 	}
 
-	if err := networkClient.DeletePort(portDeleteOption.network, portDeleteOption.portID); err != nil {
+	if err := networkClient.DeleteNetworkInterface(portDeleteOption.network, portDeleteOption.portID); err != nil {
 		return err
 	}
 	log.Info("Successfully deleted a port", "port-id", portDeleteOption.portID)

@@ -80,7 +80,7 @@ func listPorts(ctx context.Context, network string) error {
 		return err
 	}
 
-	portListResp, err := networkClient.GetAllPorts(network)
+	portListResp, err := networkClient.GetAllNetworkInterfaces(network)
 	if err != nil {
 		return err
 	}
@@ -89,13 +89,13 @@ func listPorts(ctx context.Context, network string) error {
 		Items: []PSpec{},
 	}
 
-	for _, port := range portListResp.Ports {
+	for _, port := range portListResp.Interfaces {
 		portList.Items = append(portList.Items, PSpec{
-			Description: pointer.Dereference(port.Description).(string),
+			Description: pointer.Dereference(port.Name).(string),
 			ExternalIP:  port.ExternalIP,
 			IPAddress:   pointer.Dereference(port.IPAddress).(string),
 			MacAddress:  pointer.Dereference(port.MacAddress).(string),
-			PortID:      pointer.Dereference(port.PortID).(string),
+			PortID:      pointer.Dereference(port.ID).(string),
 			Status:      pointer.Dereference(port.Status).(string),
 		})
 	}
