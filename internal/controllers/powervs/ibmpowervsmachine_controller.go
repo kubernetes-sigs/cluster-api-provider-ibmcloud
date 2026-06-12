@@ -18,6 +18,7 @@ package powervs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -314,11 +315,22 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	machine, err := machineScope.CreateMachine(ctx)
 	if err != nil {
 		log.Error(err, "Unable to create PowerVS machine")
+
+		// Check if this is a configuration error
+		var configErr *powervsscope.ConfigurationError
+		var reason string
+		if errors.As(err, &configErr) {
+			// Use InvalidMachineConfigurationReason for configuration validation errors (v1beta3)
+			reason = infrav1.InvalidMachineConfigurationReason
+		} else {
+			reason = infrav1.InstanceProvisionFailedReason
+		}
+		// For v1beta2, still use InstanceProvisionFailedReason as it doesn't have a specific config error reason
 		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceProvisionFailedV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
 		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
 			Type:    infrav1.InstanceReadyCondition,
 			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.InstanceProvisionFailedReason,
+			Reason:  reason,
 			Message: err.Error(),
 		})
 		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVSMachine: %w", err)

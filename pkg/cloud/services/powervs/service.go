@@ -18,11 +18,9 @@ package powervs
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/IBM-Cloud/power-go-client/clients/instance"
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
-	"github.com/IBM-Cloud/power-go-client/power/client/datacenters"
 	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_images"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 
@@ -34,12 +32,13 @@ var _ PowerVS = &Service{}
 
 // Service holds the PowerVS Service specific information.
 type Service struct {
-	session        *ibmpisession.IBMPISession
-	instanceClient *instance.IBMPIInstanceClient
-	networkClient  *instance.IBMPINetworkClient
-	imageClient    *instance.IBMPIImageClient
-	jobClient      *instance.IBMPIJobClient
-	dhcpClient     *instance.IBMPIDhcpClient
+	session          *ibmpisession.IBMPISession
+	instanceClient   *instance.IBMPIInstanceClient
+	networkClient    *instance.IBMPINetworkClient
+	imageClient      *instance.IBMPIImageClient
+	jobClient        *instance.IBMPIJobClient
+	dhcpClient       *instance.IBMPIDhcpClient
+	dataCenterClient *instance.IBMPIDatacentersClient
 }
 
 // ServiceOptions holds the PowerVS Service Options specific information.
@@ -84,6 +83,7 @@ func (s *Service) WithClients(options ServiceOptions) *Service {
 	s.imageClient = instance.NewIBMPIImageClient(ctx, s.session, options.CloudInstanceID)
 	s.jobClient = instance.NewIBMPIJobClient(ctx, s.session, options.CloudInstanceID)
 	s.dhcpClient = instance.NewIBMPIDhcpClient(ctx, s.session, options.CloudInstanceID)
+	s.dataCenterClient = instance.NewIBMPIDatacenterClient(ctx, s.session, options.CloudInstanceID)
 	return s
 }
 
@@ -193,16 +193,7 @@ func (s *Service) GetNetworkByName(networkName string) (*models.NetworkReference
 	return network, nil
 }
 
-// GetDatacenterCapabilities fetches the datacenter capabilities for the given zone.
-func (s *Service) GetDatacenterCapabilities(zone string) (map[string]bool, error) {
-	// though the function name is WithDatacenterRegion it takes zone as parameter
-	params := datacenters.NewV1DatacentersGetParamsWithContext(context.TODO()).WithDatacenterRegion(zone)
-	datacenter, err := s.session.Power.Datacenters.V1DatacentersGet(params)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get datacenter details for zone: %s err:%w", zone, err)
-	}
-	if datacenter == nil || datacenter.Payload == nil || datacenter.Payload.Capabilities == nil {
-		return nil, fmt.Errorf("failed to get datacenter capabilities for zone: %s", zone)
-	}
-	return datacenter.Payload.Capabilities, nil
+// GetDatatcenterDetails fetches the datacenter capabilities for the given zone.
+func (s *Service) GetDatatcenterDetails(zone string) (*models.Datacenter, error) {
+	return s.dataCenterClient.Get(zone)
 }

@@ -489,6 +489,55 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1.InstanceReadyCondition, corev1.ConditionFalse, clusterv1.ConditionSeverityError, infrav1.InstanceProvisionFailedReason}})
 		})
 
+		t.Run("Should fail reconcile with InvalidMachineConfiguration when systemType is not supported", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			var instances = &models.PVMInstances{}
+			secret := newSecret()
+			machine := newMachine()
+			pvsMachine := newIBMPowerVSMachineWithInvalidConfiguration()
+			mockClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secret).Build()
+			machineScope = &powervsscope.MachineScope{
+				Client: mockClient,
+				Cluster: &clusterv1.Cluster{
+					Status: clusterv1.ClusterStatus{
+						Initialization: clusterv1.ClusterInitializationStatus{
+							InfrastructureProvisioned: ptr.To(true),
+						},
+					},
+				},
+				Machine:           machine,
+				IBMPowerVSMachine: pvsMachine,
+				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
+					Status: infrav1.IBMPowerVSImageStatus{
+						Ready: true,
+					},
+				},
+				IBMPowerVSClient: mockpowervs,
+			}
+			machineScope.SetZone("us-south")
+
+			// Mock GetAllInstance to return no existing instances
+			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
+
+			// Mock GetDatatcenterDetails to return valid system types (but not "Invalid")
+			mockpowervs.EXPECT().GetDatatcenterDetails("us-south").Return(&models.Datacenter{
+				CapabilitiesDetails: &models.CapabilitiesDetails{
+					SupportedSystems: &models.SupportedSystems{
+						General: []string{"e980", "s1022", "s922"},
+					},
+				},
+			}, nil)
+
+			result, err := reconciler.reconcileNormal(ctx, machineScope)
+			g.Expect(err).To(HaveOccurred())
+			g.Expect(result.RequeueAfter).To(BeZero())
+			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1.IBMPowerVSMachineFinalizer))
+			// Check v1beta3 condition for InvalidMachineConfiguration
+			expectV1Beta3Conditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1.InstanceReadyCondition, corev1.ConditionFalse, clusterv1.ConditionSeverityError, infrav1.InvalidMachineConfigurationReason}})
+		})
+
 		t.Run("Should fail reconcile if creation of the load balancer pool member is unsuccessful", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
@@ -936,6 +985,23 @@ func expectConditions(g *WithT, m *infrav1.IBMPowerVSMachine, expected []conditi
 	}
 }
 
+func expectV1Beta3Conditions(g *WithT, m *infrav1.IBMPowerVSMachine, expected []conditionAssertion) {
+	g.Expect(len(m.Status.Conditions)).To(BeNumerically(">=", len(expected)))
+	for _, c := range expected {
+		var actual *metav1.Condition
+		for i := range m.Status.Conditions {
+			if m.Status.Conditions[i].Type == string(c.conditionType) {
+				actual = &m.Status.Conditions[i]
+				break
+			}
+		}
+		g.Expect(actual).To(Not(BeNil()), "condition %s not found", c.conditionType)
+		g.Expect(actual.Type).To(Equal(string(c.conditionType)))
+		g.Expect(actual.Status).To(Equal(metav1.ConditionStatus(c.status)))
+		g.Expect(actual.Reason).To(Equal(c.reason))
+	}
+}
+
 func createObject(g *WithT, obj client.Object, namespace string) {
 	if obj.DeepCopyObject() != nil {
 		obj.SetNamespace(namespace)
@@ -980,6 +1046,26 @@ func newIBMPowerVSMachine() *infrav1.IBMPowerVSMachine {
 				ID: "capi-net-id",
 			},
 			Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
+		},
+	}
+}
+
+func newIBMPowerVSMachineWithInvalidConfiguration() *infrav1.IBMPowerVSMachine {
+	return &infrav1.IBMPowerVSMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:       *ptr.To("capi-test-machine-invalid-systype"),
+			Finalizers: []string{infrav1.IBMPowerVSMachineFinalizer},
+		},
+		Spec: infrav1.IBMPowerVSMachineSpec{
+			MemoryGiB:  8,
+			Processors: intstr.FromString("0.5"),
+			Image: &infrav1.IBMPowerVSResourceReference{
+				ID: ptr.To("capi-image-id-invalid-systype"),
+			},
+			SystemType: "Invalid",
+			Network: infrav1.ResourceIdentifier{
+				ID: "capi-net-id-invalid-systype",
+			},
 		},
 	}
 }
