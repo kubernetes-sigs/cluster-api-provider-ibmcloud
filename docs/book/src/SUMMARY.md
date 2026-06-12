@@ -32,6 +32,8 @@
   - [Modules and tools dependencies](./developer/dependencies.md)
   - [E2E testing](./developer/e2e.md)
   - [Deploy latest netlify site](./developer/netlify-site.md)
+- [Migration Guides](./migrations/migrations.md)
+  - [PowerVS v1beta2 to v1beta3](./migrations/powervs-v1beta2-to-v1beta3.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
   - [API References](./reference/api-references.md)
