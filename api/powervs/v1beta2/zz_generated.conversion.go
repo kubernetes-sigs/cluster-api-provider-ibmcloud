@@ -255,26 +255,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*TransitGateway)(nil), (*v1beta3.TransitGateway)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_TransitGateway_To_v1beta3_TransitGateway(a.(*TransitGateway), b.(*v1beta3.TransitGateway), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.TransitGateway)(nil), (*TransitGateway)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_TransitGateway_To_v1beta2_TransitGateway(a.(*v1beta3.TransitGateway), b.(*TransitGateway), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*TransitGatewayStatus)(nil), (*v1beta3.TransitGatewayStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(a.(*TransitGatewayStatus), b.(*v1beta3.TransitGatewayStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.TransitGatewayStatus)(nil), (*TransitGatewayStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(a.(*v1beta3.TransitGatewayStatus), b.(*TransitGatewayStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*VPCEndpoint)(nil), (*v1beta3.VPCEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_VPCEndpoint_To_v1beta3_VPCEndpoint(a.(*VPCEndpoint), b.(*v1beta3.VPCEndpoint), scope)
 	}); err != nil {
@@ -475,6 +455,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
+	if err := s.AddConversionFunc((*TransitGatewayStatus)(nil), (*v1beta3.TransitGatewayStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(a.(*TransitGatewayStatus), b.(*v1beta3.TransitGatewayStatus), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*TransitGateway)(nil), (*v1beta3.TransitGatewaySource)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_TransitGateway_To_v1beta3_TransitGatewaySource(a.(*TransitGateway), b.(*v1beta3.TransitGatewaySource), scope)
+	}); err != nil {
+		return err
+	}
 	if err := s.AddConversionFunc((*v1beta3.APIEndpoint)(nil), (*v1beta1.APIEndpoint)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_APIEndpoint_To_v1beta1_APIEndpoint(a.(*v1beta3.APIEndpoint), b.(*v1beta1.APIEndpoint), scope)
 	}); err != nil {
@@ -527,6 +517,16 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta3.ResourceIdentifier)(nil), (*IBMPowerVSResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(a.(*v1beta3.ResourceIdentifier), b.(*IBMPowerVSResourceReference), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.TransitGatewaySource)(nil), (*TransitGateway)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_TransitGatewaySource_To_v1beta2_TransitGateway(a.(*v1beta3.TransitGatewaySource), b.(*TransitGateway), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.TransitGatewayStatus)(nil), (*TransitGatewayStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(a.(*v1beta3.TransitGatewayStatus), b.(*TransitGatewayStatus), scope)
 	}); err != nil {
 		return err
 	}
@@ -699,7 +699,7 @@ func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(
 	out.VPC = (*v1beta3.VPCResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnets = *(*[]v1beta3.Subnet)(unsafe.Pointer(&in.VPCSubnets))
 	out.VPCSecurityGroups = *(*[]v1beta3.VPCSecurityGroup)(unsafe.Pointer(&in.VPCSecurityGroups))
-	out.TransitGateway = (*v1beta3.TransitGateway)(unsafe.Pointer(in.TransitGateway))
+	// WARNING: in.TransitGateway requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.TransitGateway vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.TransitGatewaySource)
 	out.LoadBalancers = *(*[]v1beta3.VPCLoadBalancerSpec)(unsafe.Pointer(&in.LoadBalancers))
 	out.CosInstance = (*v1beta3.CosInstance)(unsafe.Pointer(in.CosInstance))
 	out.Ignition = (*v1beta3.Ignition)(unsafe.Pointer(in.Ignition))
@@ -719,10 +719,10 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 		return err
 	}
 	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceGroupSource vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.IBMPowerVSResourceReference)
+	// WARNING: in.TransitGateway requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.TransitGatewaySource vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.TransitGateway)
 	out.VPC = (*VPCResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnets = *(*[]Subnet)(unsafe.Pointer(&in.VPCSubnets))
 	out.VPCSecurityGroups = *(*[]VPCSecurityGroup)(unsafe.Pointer(&in.VPCSecurityGroups))
-	out.TransitGateway = (*TransitGateway)(unsafe.Pointer(in.TransitGateway))
 	out.LoadBalancers = *(*[]VPCLoadBalancerSpec)(unsafe.Pointer(&in.LoadBalancers))
 	out.CosInstance = (*CosInstance)(unsafe.Pointer(in.CosInstance))
 	out.Ignition = (*Ignition)(unsafe.Pointer(in.Ignition))
@@ -738,7 +738,7 @@ func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterSta
 	out.VPC = (*v1beta3.ResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnet = *(*map[string]v1beta3.ResourceReference)(unsafe.Pointer(&in.VPCSubnet))
 	out.VPCSecurityGroups = *(*map[string]v1beta3.VPCSecurityGroupStatus)(unsafe.Pointer(&in.VPCSecurityGroups))
-	out.TransitGateway = (*v1beta3.TransitGatewayStatus)(unsafe.Pointer(in.TransitGateway))
+	// WARNING: in.TransitGateway requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.TransitGatewayStatus vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.TransitGatewayStatus)
 	out.COSInstance = (*v1beta3.ResourceReference)(unsafe.Pointer(in.COSInstance))
 	out.LoadBalancers = *(*map[string]v1beta3.VPCLoadBalancerStatus)(unsafe.Pointer(&in.LoadBalancers))
 	if in.Conditions != nil {
@@ -772,10 +772,10 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	// WARNING: in.Network requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReferenceV1Beta3 vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
+	// WARNING: in.TransitGateway requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.TransitGatewayStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.TransitGatewayStatus)
 	out.VPC = (*ResourceReference)(unsafe.Pointer(in.VPC))
 	out.VPCSubnet = *(*map[string]ResourceReference)(unsafe.Pointer(&in.VPCSubnet))
 	out.VPCSecurityGroups = *(*map[string]VPCSecurityGroupStatus)(unsafe.Pointer(&in.VPCSecurityGroups))
-	out.TransitGateway = (*TransitGatewayStatus)(unsafe.Pointer(in.TransitGateway))
 	out.COSInstance = (*ResourceReference)(unsafe.Pointer(in.COSInstance))
 	out.LoadBalancers = *(*map[string]VPCLoadBalancerStatus)(unsafe.Pointer(&in.LoadBalancers))
 	// WARNING: in.Deprecated requires manual conversion: does not exist in peer-type
@@ -1458,54 +1458,24 @@ func Convert_v1beta3_Subnet_To_v1beta2_Subnet(in *v1beta3.Subnet, out *Subnet, s
 	return autoConvert_v1beta3_Subnet_To_v1beta2_Subnet(in, out, s)
 }
 
-func autoConvert_v1beta2_TransitGateway_To_v1beta3_TransitGateway(in *TransitGateway, out *v1beta3.TransitGateway, s conversion.Scope) error {
-	out.Name = (*string)(unsafe.Pointer(in.Name))
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.GlobalRouting = (*bool)(unsafe.Pointer(in.GlobalRouting))
-	return nil
-}
-
-// Convert_v1beta2_TransitGateway_To_v1beta3_TransitGateway is an autogenerated conversion function.
-func Convert_v1beta2_TransitGateway_To_v1beta3_TransitGateway(in *TransitGateway, out *v1beta3.TransitGateway, s conversion.Scope) error {
-	return autoConvert_v1beta2_TransitGateway_To_v1beta3_TransitGateway(in, out, s)
-}
-
-func autoConvert_v1beta3_TransitGateway_To_v1beta2_TransitGateway(in *v1beta3.TransitGateway, out *TransitGateway, s conversion.Scope) error {
-	out.Name = (*string)(unsafe.Pointer(in.Name))
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.GlobalRouting = (*bool)(unsafe.Pointer(in.GlobalRouting))
-	return nil
-}
-
-// Convert_v1beta3_TransitGateway_To_v1beta2_TransitGateway is an autogenerated conversion function.
-func Convert_v1beta3_TransitGateway_To_v1beta2_TransitGateway(in *v1beta3.TransitGateway, out *TransitGateway, s conversion.Scope) error {
-	return autoConvert_v1beta3_TransitGateway_To_v1beta2_TransitGateway(in, out, s)
-}
-
 func autoConvert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(in *TransitGatewayStatus, out *v1beta3.TransitGatewayStatus, s conversion.Scope) error {
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.ControllerCreated = (*bool)(unsafe.Pointer(in.ControllerCreated))
-	out.VPCConnection = (*v1beta3.ResourceReference)(unsafe.Pointer(in.VPCConnection))
-	out.PowerVSConnection = (*v1beta3.ResourceReference)(unsafe.Pointer(in.PowerVSConnection))
+	if err := v1.Convert_Pointer_string_To_string(&in.ID, &out.ID, s); err != nil {
+		return err
+	}
+	// WARNING: in.ControllerCreated requires manual conversion: does not exist in peer-type
+	// WARNING: in.VPCConnection requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceConnectionStatus)
+	// WARNING: in.PowerVSConnection requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceConnectionStatus)
 	return nil
-}
-
-// Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus is an autogenerated conversion function.
-func Convert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(in *TransitGatewayStatus, out *v1beta3.TransitGatewayStatus, s conversion.Scope) error {
-	return autoConvert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(in, out, s)
 }
 
 func autoConvert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(in *v1beta3.TransitGatewayStatus, out *TransitGatewayStatus, s conversion.Scope) error {
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.ControllerCreated = (*bool)(unsafe.Pointer(in.ControllerCreated))
-	out.VPCConnection = (*ResourceReference)(unsafe.Pointer(in.VPCConnection))
-	out.PowerVSConnection = (*ResourceReference)(unsafe.Pointer(in.PowerVSConnection))
+	if err := v1.Convert_string_To_Pointer_string(&in.ID, &out.ID, s); err != nil {
+		return err
+	}
+	// WARNING: in.Name requires manual conversion: does not exist in peer-type
+	// WARNING: in.VPCConnection requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceConnectionStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
+	// WARNING: in.PowerVSConnection requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceConnectionStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	return nil
-}
-
-// Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus is an autogenerated conversion function.
-func Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(in *v1beta3.TransitGatewayStatus, out *TransitGatewayStatus, s conversion.Scope) error {
-	return autoConvert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(in, out, s)
 }
 
 func autoConvert_v1beta2_VPCEndpoint_To_v1beta3_VPCEndpoint(in *VPCEndpoint, out *v1beta3.VPCEndpoint, s conversion.Scope) error {

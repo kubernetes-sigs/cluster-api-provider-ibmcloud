@@ -254,8 +254,6 @@ var (
 	ResourceTypeLoadBalancer = ResourceType("loadBalancer")
 	// ResourceTypeLoadBalancerPool is a Load Balancer Pool resource.
 	ResourceTypeLoadBalancerPool = ResourceType("loadBalancerPool")
-	// ResourceTypeTransitGateway is transit gateway resource.
-	ResourceTypeTransitGateway = ResourceType("transitGateway")
 	// ResourceTypeVPC is Power VS network resource.
 	ResourceTypeVPC = ResourceType("vpc")
 	// ResourceTypeSubnet is VPC subnet resource.

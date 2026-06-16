@@ -96,7 +96,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should allow Network with Provision type and DHCP server",
+			name: "Should error if Network with Provision type when topology is VirtualIP",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -116,7 +116,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name: "Should error if Reference is set when Type is Provision",
@@ -373,6 +373,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -407,6 +413,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -445,6 +457,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -479,6 +497,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -526,6 +550,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -560,6 +590,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -598,6 +634,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
@@ -632,6 +674,12 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
 					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
 					Workspace: infrav1.WorkspaceSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{

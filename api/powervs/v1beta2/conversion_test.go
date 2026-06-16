@@ -99,6 +99,19 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 
 	// DHCPServer.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Network.DHCPServer.Name = ""
+
+	// TransitGateway status: v1beta3 has Name and connection details with Name/Status
+	// v1beta2 only has ID for TransitGateway and connections
+	if in.TransitGateway.Name != "" || in.TransitGateway.VPCConnection.Name != "" ||
+		in.TransitGateway.VPCConnection.State != "" || in.TransitGateway.PowerVSConnection.Name != "" ||
+		in.TransitGateway.PowerVSConnection.State != "" {
+		// Clear fields not preserved in v1beta2
+		in.TransitGateway.Name = ""
+		in.TransitGateway.VPCConnection.Name = ""
+		in.TransitGateway.VPCConnection.State = ""
+		in.TransitGateway.PowerVSConnection.Name = ""
+		in.TransitGateway.PowerVSConnection.State = ""
+	}
 }
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
@@ -162,6 +175,42 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 
 	// Network.DHCPServer.Name is not preserved in v1beta2, so clear it for round-trip
 	in.Network.Provision.DHCPServer.Name = ""
+
+	// TransitGateway: Enforce the SourceType union constraints for v1beta3 so round-trip tests pass
+	// v1beta3 has complex structure with Type, Reference, Provision, and Connections
+	// v1beta2 only has ID, Name, and GlobalRouting (no connection details in spec)
+
+	// Handle Type field and enforce union constraints
+	// Note: Full TransitGateway data is preserved via annotations, so we just need to
+	// enforce basic constraints for the fuzzer
+
+	switch in.TransitGateway.Type {
+	case infrav1.SourceTypeReference:
+		// Type is Reference, clear Provision
+		in.TransitGateway.Provision = infrav1.TransitGatewayProvision{}
+		// Ensure Reference has at least ID or Name
+		if in.TransitGateway.Reference.ID == "" && in.TransitGateway.Reference.Name == "" {
+			in.TransitGateway.Reference.ID = "fuzzed-tg-id"
+		}
+	case infrav1.SourceTypeProvision:
+		// Type is Provision, clear Reference
+		in.TransitGateway.Reference = infrav1.ResourceIdentifier{}
+		// Normalize GlobalRouting to valid enum values (clear invalid values)
+		if in.TransitGateway.Provision.GlobalRouting != "" &&
+			in.TransitGateway.Provision.GlobalRouting != infrav1.TransitGatewayRoutingGlobal &&
+			in.TransitGateway.Provision.GlobalRouting != infrav1.TransitGatewayRoutingLocal {
+			in.TransitGateway.Provision.GlobalRouting = ""
+		}
+	default:
+		// Type is empty or invalid - clear everything
+		in.TransitGateway.Type = ""
+		in.TransitGateway.Reference = infrav1.ResourceIdentifier{}
+		in.TransitGateway.Provision = infrav1.TransitGatewayProvision{}
+	}
+
+	// VPCConnection and PowerVSConnection are not preserved in v1beta2 spec, so clear them
+	in.TransitGateway.VPCConnection = infrav1.TransitGatewayConnectionSource{}
+	in.TransitGateway.PowerVSConnection = infrav1.TransitGatewayConnectionSource{}
 }
 
 func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Continue) {
@@ -212,6 +261,39 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 	}
 	if in.DHCPServer != nil && (in.DHCPServer.ID == nil || *in.DHCPServer.ID == "") {
 		in.DHCPServer = nil
+	}
+
+	// TransitGateway status normalization
+	if in.TransitGateway != nil {
+		// ControllerCreated is not preserved in v1beta3
+		in.TransitGateway.ControllerCreated = nil
+
+		// Normalize connection statuses
+		if in.TransitGateway.VPCConnection != nil {
+			in.TransitGateway.VPCConnection.ControllerCreated = nil
+			if in.TransitGateway.VPCConnection.ID == nil || *in.TransitGateway.VPCConnection.ID == "" {
+				in.TransitGateway.VPCConnection = nil
+			}
+		}
+
+		if in.TransitGateway.PowerVSConnection != nil {
+			in.TransitGateway.PowerVSConnection.ControllerCreated = nil
+			if in.TransitGateway.PowerVSConnection.ID == nil || *in.TransitGateway.PowerVSConnection.ID == "" {
+				in.TransitGateway.PowerVSConnection = nil
+			}
+		}
+
+		// Empty ID should be nil
+		if in.TransitGateway.ID != nil && *in.TransitGateway.ID == "" {
+			in.TransitGateway.ID = nil
+		}
+
+		// If TransitGateway has no meaningful data, set to nil
+		if (in.TransitGateway.ID == nil || *in.TransitGateway.ID == "") &&
+			in.TransitGateway.VPCConnection == nil &&
+			in.TransitGateway.PowerVSConnection == nil {
+			in.TransitGateway = nil
+		}
 	}
 }
 
@@ -296,6 +378,48 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 		}
 		if in.DHCPServer.DNSServer != nil && *in.DHCPServer.DNSServer == "" {
 			in.DHCPServer.DNSServer = nil
+		}
+	}
+
+	// TransitGateway: v1beta2 has simple structure (ID, Name, GlobalRouting)
+	// v1beta3 has complex structure with Type, Reference, Provision, Connections
+	// For round-trip, we need to normalize the v1beta2 structure
+	if in.TransitGateway != nil {
+		// Empty string ID should be nil
+		if in.TransitGateway.ID != nil && *in.TransitGateway.ID == "" {
+			in.TransitGateway.ID = nil
+		}
+		// Empty string Name should be nil
+		if in.TransitGateway.Name != nil && *in.TransitGateway.Name == "" {
+			in.TransitGateway.Name = nil
+		}
+
+		// IMPORTANT: v1beta2 Name field is ambiguous - it can be Reference.Name or Provision.Name
+		// The conversion logic uses these rules:
+		// 1. If ID is set -> Reference (Name is Reference.Name, GlobalRouting is lost)
+		// 2. If GlobalRouting is set -> Provision (Name is Provision.Name)
+		// 3. If only Name is set -> Reference (for backward compatibility, GlobalRouting is lost)
+		//
+		// To ensure round-trip works:
+		// - When ID is set, clear GlobalRouting (it's Reference, GlobalRouting doesn't apply)
+		// - When GlobalRouting is set, clear ID (it's Provision, ID doesn't apply)
+		// - When only Name is set, clear GlobalRouting (it will be treated as Reference)
+
+		hasID := in.TransitGateway.ID != nil && *in.TransitGateway.ID != ""
+		hasName := in.TransitGateway.Name != nil && *in.TransitGateway.Name != ""
+
+		if hasID {
+			// ID is set -> Reference mode, clear GlobalRouting
+			in.TransitGateway.GlobalRouting = nil
+		} else if hasName {
+			// Only Name is set -> will be treated as Reference, clear GlobalRouting
+			in.TransitGateway.GlobalRouting = nil
+		}
+		// Note: if GlobalRouting is set, it's Provision mode and ID should already be nil
+
+		// If all fields are nil/empty, set TransitGateway to nil
+		if in.TransitGateway.ID == nil && in.TransitGateway.Name == nil && in.TransitGateway.GlobalRouting == nil {
+			in.TransitGateway = nil
 		}
 	}
 }

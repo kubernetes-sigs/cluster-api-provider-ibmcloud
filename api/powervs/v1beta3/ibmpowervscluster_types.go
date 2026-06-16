@@ -61,13 +61,37 @@ const (
 	DHCPSnatPolicyDisabled DHCPSnatPolicy = "Disabled"
 )
 
+// TransitGatewayRouting defines the routing behavior for the Transit Gateway.
+type TransitGatewayRouting string
+
+const (
+	// TransitGatewayRoutingLocal forces local routing.
+	TransitGatewayRoutingLocal TransitGatewayRouting = "Local"
+
+	// TransitGatewayRoutingGlobal forces global routing.
+	TransitGatewayRoutingGlobal TransitGatewayRouting = "Global"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
 
 // IBMPowerVSClusterSpec defines the desired state of IBMPowerVSCluster.
 //
-// +kubebuilder:validation:XValidation:rule="self.topology != 'LoadBalancer' || (has(self.zone) && size(self.zone) > 0)",message="zone is required when topology is set to LoadBalancer"
+// Zone Validation:
+// +kubebuilder:validation:XValidation:rule="!has(self.topology) || self.topology != 'LoadBalancer' || (has(self.zone) && size(self.zone) > 0)",message="zone is required when topology is set to LoadBalancer"
+//
+// ResourceGroup Validation (LoadBalancer):
+// +kubebuilder:validation:XValidation:rule="!has(self.topology) || self.topology != 'LoadBalancer' || (has(self.resourceGroup) && self.resourceGroup.type == 'Reference' && has(self.resourceGroup.reference) && ((has(self.resourceGroup.reference.id) && size(self.resourceGroup.reference.id) > 0) || (has(self.resourceGroup.reference.name) && size(self.resourceGroup.reference.name) > 0)))",message="resourceGroup is required and must include either an id or name when topology is set to LoadBalancer"
+//
+// Workspace Validation (VirtualIP):
+// +kubebuilder:validation:XValidation:rule="!has(self.topology) || self.topology != 'VirtualIP' || (has(self.workspace) && self.workspace.type == 'Reference' && has(self.workspace.reference) && ((has(self.workspace.reference.id) && size(self.workspace.reference.id) > 0) || (has(self.workspace.reference.name) && size(self.workspace.reference.name) > 0)))",message="When topology is VirtualIP, workspace type must be 'Reference' and include either an id or name"
+//
+// Network Validation (VirtualIP):
+// +kubebuilder:validation:XValidation:rule="!has(self.topology) || self.topology != 'VirtualIP' || (has(self.network) && self.network.type == 'Reference' && has(self.network.reference) && ((has(self.network.reference.id) && size(self.network.reference.id) > 0) || (has(self.network.reference.name) && size(self.network.reference.name) > 0)))",message="When topology is VirtualIP, network type must be 'Reference' and include either an id or name"
+//
+// TransitGateway Validation (VirtualIP):
+// +kubebuilder:validation:XValidation:rule="!has(self.topology) || self.topology != 'VirtualIP' || !has(self.transitGateway)",message="TransitGateway must not be configured when topology is set to VirtualIP"
 type IBMPowerVSClusterSpec struct {
 	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
@@ -99,6 +123,12 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	ResourceGroup ResourceGroupSource `json:"resourceGroup,omitempty,omitzero"`
 
+	// TransitGateway contains information about the IBM Cloud TransitGateway.
+	// IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud PowerVS and VPC infrastructure.
+	// This field is rejected by the API if the Topology is set to VirtualIP.
+	// +optional
+	TransitGateway TransitGatewaySource `json:"transitGateway,omitempty,omitzero"`
+
 	// vpc contains information about IBM Cloud VPC resources.
 	// when omitted system will dynamically create the VPC with name CLUSTER_NAME-vpc.
 	// when VPC.ID is set, its expected that there exist a VPC with ID or else system will give error.
@@ -121,14 +151,6 @@ type IBMPowerVSClusterSpec struct {
 	// vpcSecurityGroups to attach it to the VPC resource
 	// +optional
 	VPCSecurityGroups []VPCSecurityGroup `json:"vpcSecurityGroups,omitempty"`
-
-	// transitGateway contains information about IBM Cloud TransitGateway
-	// IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud Power VS and VPC infrastructure
-	// more information about TransitGateway can be found here https://www.ibm.com/products/transit-gateway.
-	// when TransitGateway.ID is set, its expected that there exist a TransitGateway with ID or else system will give error.
-	// when TransitGateway.Name is set, system will first check for TransitGateway with Name, if not exist system will create new TransitGateway.
-	// +optional
-	TransitGateway *TransitGateway `json:"transitGateway,omitempty"`
 
 	// loadBalancers is optional configuration for configuring loadbalancers to control plane or data plane nodes.
 	// when omitted system will create a default public loadbalancer with name CLUSTER_NAME-loadbalancer.
@@ -182,6 +204,9 @@ type IBMPowerVSClusterStatus struct {
 	// +optional
 	ResourceGroup ResourceReferenceV1Beta3 `json:"resourceGroup,omitempty,omitzero"`
 
+	// transitGateway is reference to IBM Cloud TransitGateway.
+	TransitGateway TransitGatewayStatus `json:"transitGateway,omitempty,omitzero"`
+
 	// vpc is reference to IBM Cloud VPC resources.
 	VPC *ResourceReference `json:"vpc,omitempty"`
 
@@ -190,9 +215,6 @@ type IBMPowerVSClusterStatus struct {
 
 	// vpcSecurityGroups is reference to IBM Cloud VPC security group.
 	VPCSecurityGroups map[string]VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
-
-	// transitGateway is reference to IBM Cloud TransitGateway.
-	TransitGateway *TransitGatewayStatus `json:"transitGateway,omitempty"`
 
 	// cosInstance is reference to IBM Cloud COS Instance resource.
 	COSInstance *ResourceReference `json:"cosInstance,omitempty"`
@@ -289,22 +311,106 @@ type VPCResourceReference struct {
 	Region *string `json:"region,omitempty"`
 }
 
-// TransitGateway holds the TransitGateway information.
-type TransitGateway struct {
-	// name of resource.
+// TransitGatewaySource holds the TransitGateway information and determines how it is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
+type TransitGatewaySource struct {
+	// Type defines whether to use an existing Transit Gateway or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	Type SourceType `json:"type,omitempty"`
+
+	// Reference contains the information to identify an existing Transit Gateway.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// Provision contains the configuration for provisioning a new Transit Gateway.
+	// +optional
+	Provision TransitGatewayProvision `json:"provision,omitempty"`
+
+	// VPCConnection defines how the VPC connection to the Transit Gateway is sourced.
+	// +optional
+	VPCConnection TransitGatewayConnectionSource `json:"vpcConnection,omitempty,omitzero"`
+
+	// PowerVSConnection defines how the PowerVS connection to the Transit Gateway is sourced.
+	// +optional
+	PowerVSConnection TransitGatewayConnectionSource `json:"powerVSConnection,omitempty,omitzero"`
+}
+
+// TransitGatewayProvision holds the configuration for a new Transit Gateway.
+type TransitGatewayProvision struct {
+	// Name of the transit gateway to be created.
 	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength:=63
+	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern=`^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$`
 	// +optional
-	Name *string `json:"name,omitempty"`
-	// id of resource.
+	Name string `json:"name,omitempty"`
+
+	// GlobalRouting indicates whether to use Local or Global routing.
+	// If omitted, the system will automatically decide based on the PowerVS and VPC regions.
+	// +kubebuilder:validation:Enum=Local;Global
 	// +optional
-	ID *string `json:"id,omitempty"`
-	// globalRouting indicates whether to set global routing true or not while creating the transit gateway.
-	// set this field to true only when PowerVS and VPC are from different regions, if they are same it's suggested to use local routing by setting the field to false.
-	// when the field is omitted,  based on PowerVS region (region associated with IBMPowerVSCluster.Spec.Zone) and VPC region(IBMPowerVSCluster.Spec.VPC.Region) system will decide whether to enable globalRouting or not.
+	GlobalRouting TransitGatewayRouting `json:"globalRouting,omitempty"`
+}
+
+// TransitGatewayConnectionSource defines how a Transit Gateway connection is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
+type TransitGatewayConnectionSource struct {
+	// Type defines whether to use an existing connection or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	Type SourceType `json:"type,omitempty"`
+
+	// Reference contains the information to identify an existing connection.
 	// +optional
-	GlobalRouting *bool `json:"globalRouting,omitempty"`
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// Provision contains the configuration for provisioning a new connection.
+	// +optional
+	Provision TransitGatewayConnectionProvision `json:"provision,omitempty,omitzero"`
+}
+
+// TransitGatewayConnectionProvision holds the configuration for a new Transit Gateway connection.
+type TransitGatewayConnectionProvision struct {
+	// Name of the connection to be created.
+	// If omitted, the system will dynamically create the connection with a default name.
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// TransitGatewayStatus defines the status of the transit gateway as well as its connections.
+type TransitGatewayStatus struct {
+	// ID represents the id of the resource.
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// Name represents the name of the resource.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// VPCConnection defines the vpc connection status in the transit gateway.
+	// +optional
+	VPCConnection ResourceConnectionStatus `json:"vpcConnection,omitempty,omitzero"`
+
+	// PowerVSConnection defines the powervs connection status in the transit gateway.
+	// +optional
+	PowerVSConnection ResourceConnectionStatus `json:"powerVSConnection,omitempty,omitzero"`
+}
+
+// ResourceConnectionStatus identifies a connection resource.
+type ResourceConnectionStatus struct {
+	// ID represents the id of the connection resource.
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// Name represents the name of the connection resource.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// State indicates the current state of the connection (e.g., pending, attached).
+	// +optional
+	State string `json:"state,omitempty"`
 }
 
 // CosInstance represents IBM Cloud COS instance.
@@ -340,19 +446,6 @@ type ResourceReference struct {
 	// controllerCreated indicates whether the resource is created by the controller.
 	// +kubebuilder:default=false
 	ControllerCreated *bool `json:"controllerCreated,omitempty"`
-}
-
-// TransitGatewayStatus defines the status of transit gateway as well as it's connection's status.
-type TransitGatewayStatus struct {
-	// id represents the id of the resource.
-	ID *string `json:"id,omitempty"`
-	// controllerCreated indicates whether the resource is created by the controller.
-	// +kubebuilder:default=false
-	ControllerCreated *bool `json:"controllerCreated,omitempty"`
-	// vpcConnection defines the vpc connection status in transit gateway.
-	VPCConnection *ResourceReference `json:"vpcConnection,omitempty"`
-	// powerVSConnection defines the powervs connection status in transit gateway.
-	PowerVSConnection *ResourceReference `json:"powerVSConnection,omitempty"`
 }
 
 // IBMPowerVSClusterDeprecatedStatus groups all the status fields that are deprecated and will be removed in a future version.
@@ -435,7 +528,7 @@ type WorkspaceSource struct {
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="workspace type is immutable once set"
-	Type SourceType `json:"type"`
+	Type SourceType `json:"type,omitempty"`
 
 	// reference tells the controller to use an existing PowerVS workspace.
 	// Supported identifiers are name and id.
@@ -543,7 +636,7 @@ type NetworkStatus struct {
 type ResourceGroupSource struct {
 	// Type defines the intended action for the Resource Group.
 	// Currently, only "Reference" is supported.
-	Type SourceType `json:"type"`
+	Type SourceType `json:"type,omitempty"`
 
 	// Reference specifies the existing Resource Group to use by Name or ID.
 	// +optional
