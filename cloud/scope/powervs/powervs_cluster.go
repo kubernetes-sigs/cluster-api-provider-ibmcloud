@@ -565,13 +565,16 @@ func (s *ClusterScope) ValidateZoneSupportsPER() error {
 		return fmt.Errorf("PowerVS zone is required but not set in the spec")
 	}
 
-	// fetch the datacenter capabilities for zone.
-	datacenterCapabilities, err := s.IBMPowerVSClient.GetDatacenterCapabilities(zone)
+	// Fetch the datacenter details for the specified zone.
+	datacenterDetails, err := s.IBMPowerVSClient.GetDatatcenterDetails(zone)
 	if err != nil {
-		return fmt.Errorf("failed to get datacenter capabilities for zone %q: %w", zone, err)
+		return fmt.Errorf("failed to get datacenter details: %w", err)
+	}
+	if datacenterDetails == nil || datacenterDetails.Capabilities == nil {
+		return fmt.Errorf("failed to get datacenter details for zone: %s", zone)
 	}
 	// check for the PER support in datacenter capabilities.
-	perAvailable, ok := datacenterCapabilities[powerEdgeRouter]
+	perAvailable, ok := datacenterDetails.Capabilities[powerEdgeRouter]
 	if !ok {
 		return fmt.Errorf("%s capability unknown for zone %q", powerEdgeRouter, zone)
 	}

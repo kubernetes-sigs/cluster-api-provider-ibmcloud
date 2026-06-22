@@ -1093,7 +1093,7 @@ func TestSetInstanceID(t *testing.T) {
 }
 
 func TestSetFailureReason(t *testing.T) {
-	t.Run("Set failure reason to InvalidConfiguration", func(t *testing.T) {
+	t.Run("Set failure reason to InvalidMachineConfiguration", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
@@ -2438,6 +2438,251 @@ func TestSetAddresses(t *testing.T) {
 			scope.DHCPIPCacheStore = tc.dhcpCacheStoreFunc()
 			scope.SetAddresses(ctx, tc.pvmInstance)
 			g.Expect(scope.IBMPowerVSMachine.Status.Addresses).To(Equal(tc.expectedNodeAddress))
+		})
+	}
+}
+
+func TestValidateSystemType(t *testing.T) {
+	testCases := []struct {
+		name              string
+		systemType        string
+		zone              string
+		mockSetup         func(*mock.MockPowerVS)
+		setupCache        func()
+		expectedValid     bool
+		expectedSupported []string
+		expectError       bool
+		errorContains     string
+	}{
+		{
+			name:       "Valid system type with fresh cache",
+			systemType: "s922",
+			zone:       "us-south",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				sysCache.zonesMap["us-south"] = zoneCacheEntry{
+					supportedTypes: []string{"e980", "s1022", "s922"},
+					lastFetch:      time.Now(),
+				}
+			},
+			expectedValid:     true,
+			expectedSupported: []string{"e980", "s1022", "s922"},
+			expectError:       false,
+		},
+		{
+			name:       "Invalid system type with fresh cache",
+			systemType: "invalid-type",
+			zone:       "us-south",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				sysCache.zonesMap["us-south"] = zoneCacheEntry{
+					supportedTypes: []string{"e980", "s1022", "s922"},
+					lastFetch:      time.Now(),
+				}
+			},
+			expectedValid:     false,
+			expectedSupported: []string{"e980", "s1022", "s922"},
+			expectError:       false,
+		},
+		{
+			name:       "Empty system type",
+			systemType: "",
+			zone:       "us-south",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "us-south")
+			},
+			expectError:   true,
+			errorContains: "systemType is not set",
+		},
+		{
+			name:       "Valid system type with expired cache - fetches from API",
+			systemType: "s1022",
+			zone:       "us-east",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				// Set expired cache entry
+				sysCache.zonesMap["us-east"] = zoneCacheEntry{
+					supportedTypes: []string{"old-type"},
+					lastFetch:      time.Now().Add(-7 * time.Hour), // Expired (TTL is 6 hours)
+				}
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("us-east").Return(&models.Datacenter{
+					CapabilitiesDetails: &models.CapabilitiesDetails{
+						SupportedSystems: &models.SupportedSystems{
+							General: []string{"e1080", "s1022", "s922"},
+						},
+					},
+				}, nil)
+			},
+			expectedValid:     true,
+			expectedSupported: []string{"e1080", "s1022", "s922"},
+			expectError:       false,
+		},
+		{
+			name:       "Cache miss - fetches from API successfully",
+			systemType: "e1080",
+			zone:       "eu-de",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "eu-de")
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("eu-de").Return(&models.Datacenter{
+					CapabilitiesDetails: &models.CapabilitiesDetails{
+						SupportedSystems: &models.SupportedSystems{
+							General: []string{"e1050", "e1080", "s922"},
+						},
+					},
+				}, nil)
+			},
+			expectedValid:     true,
+			expectedSupported: []string{"e1050", "e1080", "s922"},
+			expectError:       false,
+		},
+		{
+			name:       "API returns error",
+			systemType: "s922",
+			zone:       "jp-tok",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "jp-tok")
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("jp-tok").Return(nil, errors.New("API error"))
+			},
+			expectError:   true,
+			errorContains: "failed to get datacenter details",
+		},
+		{
+			name:       "API returns nil datacenter",
+			systemType: "s922",
+			zone:       "ca-tor",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "ca-tor")
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("ca-tor").Return(nil, nil)
+			},
+			expectError:   true,
+			errorContains: "system capabilities details are missing",
+		},
+		{
+			name:       "API returns datacenter with nil capabilities",
+			systemType: "s922",
+			zone:       "br-sao",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "br-sao")
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("br-sao").Return(&models.Datacenter{
+					CapabilitiesDetails: nil,
+				}, nil)
+			},
+			expectError:   true,
+			errorContains: "system capabilities details are missing",
+		},
+		{
+			name:       "API returns empty system types list",
+			systemType: "s922",
+			zone:       "au-syd",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "au-syd")
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("au-syd").Return(&models.Datacenter{
+					CapabilitiesDetails: &models.CapabilitiesDetails{
+						SupportedSystems: &models.SupportedSystems{
+							General: []string{},
+						},
+					},
+				}, nil)
+			},
+			expectError:   true,
+			errorContains: "no general system types available",
+		},
+		{
+			name:       "System types are sorted in cache",
+			systemType: "s922",
+			zone:       "test-zone",
+			setupCache: func() {
+				sysCache.mu.Lock()
+				defer sysCache.mu.Unlock()
+				delete(sysCache.zonesMap, "test-zone")
+			},
+			mockSetup: func(m *mock.MockPowerVS) {
+				m.EXPECT().GetDatatcenterDetails("test-zone").Return(&models.Datacenter{
+					CapabilitiesDetails: &models.CapabilitiesDetails{
+						SupportedSystems: &models.SupportedSystems{
+							General: []string{"s922", "e980", "s1022", "e1050"}, // Unsorted
+						},
+					},
+				}, nil)
+			},
+			expectedValid:     true,
+			expectedSupported: []string{"e1050", "e980", "s1022", "s922"}, // Should be sorted
+			expectError:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			g := NewWithT(t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// Setup cache
+			if tc.setupCache != nil {
+				tc.setupCache()
+			}
+
+			// Setup mock
+			mockPowerVSClient := mock.NewMockPowerVS(ctrl)
+			if tc.mockSetup != nil {
+				tc.mockSetup(mockPowerVSClient)
+			}
+
+			// Create machine scope
+			scope := setupPowerVSMachineScope("test-cluster", "test-machine", ptr.To("test-image"), ptr.To("test-network"), true, mockPowerVSClient)
+			scope.IBMPowerVSMachine.Spec.SystemType = tc.systemType
+			scope.SetZone(tc.zone)
+
+			// Execute validation
+			valid, supportedTypes, err := scope.validateSystemType()
+
+			// Assertions
+			if tc.expectError {
+				g.Expect(err).To(HaveOccurred())
+				if tc.errorContains != "" {
+					g.Expect(err.Error()).To(ContainSubstring(tc.errorContains))
+				}
+			} else {
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(valid).To(Equal(tc.expectedValid))
+				g.Expect(supportedTypes).To(Equal(tc.expectedSupported))
+
+				// Verify cache was updated correctly (if not error case)
+				if !tc.expectError && tc.mockSetup != nil {
+					sysCache.mu.RLock()
+					entry, exists := sysCache.zonesMap[tc.zone]
+					sysCache.mu.RUnlock()
+					g.Expect(exists).To(BeTrue())
+					g.Expect(entry.supportedTypes).To(Equal(tc.expectedSupported))
+				}
+			}
 		})
 	}
 }

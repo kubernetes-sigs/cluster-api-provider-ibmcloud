@@ -25,8 +25,12 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/blang/semver/v4"
 	ignV3Types "github.com/coreos/ignition/v2/config/v3_4/types"
@@ -70,6 +74,20 @@ import (
 )
 
 const cosURLDomain = "cloud-object-storage.appdomain.cloud"
+
+// ConfigurationError represents an error due to invalid machine configuration.
+type ConfigurationError struct {
+	message string
+}
+
+func (e *ConfigurationError) Error() string {
+	return e.message
+}
+
+// NewConfigurationError creates a new ConfigurationError.
+func NewConfigurationError(message string) *ConfigurationError {
+	return &ConfigurationError{message: message}
+}
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
@@ -250,6 +268,8 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*models.PVMIns
 }
 
 // CreateMachine creates a PowerVS machine.
+//
+//nolint:gocyclo
 func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceReference, error) {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -269,6 +289,18 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 		if con.Type == infrav1.InstanceReadyCondition && con.Status == metav1.ConditionUnknown {
 			return nil, nil
 		}
+	}
+
+	// Validate systemType before creating the machine
+	if machineSpec.SystemType != "" {
+		valid, supportedTypes, err := m.validateSystemType()
+		if err != nil {
+			return nil, fmt.Errorf("failed to validate systemType: %w", err)
+		}
+		if !valid {
+			return nil, NewConfigurationError(fmt.Sprintf("systemType '%s' is not supported. Supported types: %v", machineSpec.SystemType, supportedTypes))
+		}
+		log.Info("SystemType validation passed", "systemType", machineSpec.SystemType, "machine", m.IBMPowerVSMachine.Name, "namespace", m.IBMPowerVSMachine.Namespace)
 	}
 
 	// TODO(karthik-k-n): Fix this
@@ -1164,4 +1196,82 @@ func (m *MachineScope) bucketName() string {
 // bucketRegion returns the region of the COS bucket for the MachineScope.
 func (m *MachineScope) bucketRegion() string {
 	return fetchBucketRegion(m.IBMPowerVSCluster.Spec.CosInstance, m.IBMPowerVSCluster.Spec.VPC)
+}
+
+// zoneCacheEntry holds the supported system types and the exact time they were fetched for a specific zone.
+type zoneCacheEntry struct {
+	supportedTypes []string
+	lastFetch      time.Time
+}
+
+// SystemTypeCache stores supported system types per datacenter to avoid frequent API calls.
+type SystemTypeCache struct {
+	mu       sync.RWMutex
+	zonesMap map[string]zoneCacheEntry
+	ttl      time.Duration
+}
+
+// Global instance of the cache (TTL set to 6 hours).
+var sysCache = &SystemTypeCache{
+	zonesMap: make(map[string]zoneCacheEntry),
+	ttl:      6 * time.Hour,
+}
+
+func (m *MachineScope) validateSystemType() (bool, []string, error) {
+	systemType := m.IBMPowerVSMachine.Spec.SystemType
+
+	if systemType == "" {
+		return false, nil, fmt.Errorf("systemType is not set")
+	}
+
+	zone := m.GetZone()
+
+	// Read from Cache
+	sysCache.mu.RLock()
+	entry, exists := sysCache.zonesMap[zone]
+	isFresh := time.Since(entry.lastFetch) < sysCache.ttl
+	sysCache.mu.RUnlock()
+
+	if exists && isFresh {
+		return slices.Contains(entry.supportedTypes, systemType), entry.supportedTypes, nil
+	}
+
+	// Cache is expired or empty. Fetch from IBM Cloud.
+	sysCache.mu.Lock()
+	defer sysCache.mu.Unlock()
+
+	// Double check inside the lock
+	entry, exists = sysCache.zonesMap[zone]
+	if exists && time.Since(entry.lastFetch) < sysCache.ttl {
+		return slices.Contains(entry.supportedTypes, systemType), entry.supportedTypes, nil
+	}
+
+	// Fetch the specific datacenter capabilities.
+	datacenter, err := m.IBMPowerVSClient.GetDatatcenterDetails(zone)
+	if err != nil {
+		return false, nil, fmt.Errorf("failed to get datacenter details for zone %s: %w", zone, err)
+	}
+
+	if datacenter == nil || datacenter.CapabilitiesDetails == nil || datacenter.CapabilitiesDetails.SupportedSystems == nil {
+		return false, nil, fmt.Errorf("system capabilities details are missing for zone %s", zone)
+	}
+
+	// Extract the General list.
+	systemTypes := datacenter.CapabilitiesDetails.SupportedSystems.General
+
+	if len(systemTypes) == 0 {
+		return false, nil, fmt.Errorf("no general system types available in zone %s", zone)
+	}
+
+	// Sort once so error messages are always in alphabetical order.
+	sort.Strings(systemTypes)
+
+	// Update the cache for the zone
+	sysCache.zonesMap[zone] = zoneCacheEntry{
+		supportedTypes: systemTypes,
+		lastFetch:      time.Now(),
+	}
+
+	// Validate against the newly refreshed data.
+	return slices.Contains(systemTypes, systemType), systemTypes, nil
 }

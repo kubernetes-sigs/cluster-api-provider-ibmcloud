@@ -3,6 +3,7 @@
 
 # binaries
 bin/
+*.test
 cmd/clusterctl/clusterctl
 cmd/manager/manager
 IBM_Cloud_CLI*
