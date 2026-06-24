@@ -585,19 +585,24 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 								ID: "serviceInstanceID",
 							},
 						},
-						VPC: &infrav1.VPCResourceReference{
-							Region: ptr.To("us-south"),
+						VPC: infrav1.VPCSource{
+							Type:   infrav1.SourceTypeReference,
+							Region: "us-south",
 						},
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: "capi-test-lb",
+								Type: infrav1.SourceTypeProvision,
+								Provision: infrav1.LoadBalancerProvision{
+									Name: "capi-test-lb",
+								},
 							},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							"capi-test-lb": {
-								ID: ptr.To("capi-test-lb-id"),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+								Name: "capi-test-lb",
+								ID:   "capi-test-lb-id",
 							},
 						},
 					},
@@ -685,19 +690,24 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 								ID: "serviceInstanceID",
 							},
 						},
-						VPC: &infrav1.VPCResourceReference{
-							Region: ptr.To("us-south"),
+						VPC: infrav1.VPCSource{
+							Type:   infrav1.SourceTypeReference,
+							Region: "us-south",
 						},
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: "capi-test-lb",
+								Type: infrav1.SourceTypeProvision,
+								Provision: infrav1.LoadBalancerProvision{
+									Name: "capi-test-lb",
+								},
 							},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							"capi-test-lb": {
-								ID: ptr.To("capi-test-lb-id"),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+								Name: "capi-test-lb",
+								ID:   "capi-test-lb-id",
 							},
 						},
 					},
@@ -920,16 +930,20 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 							ID: "serviceInstanceID",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "capi-test-lb",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "capi-test-lb",
+							},
 						},
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-						"capi-test-lb": {
-							ID: ptr.To("capi-test-lb-id"),
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{
+							Name: "capi-test-lb",
+							ID:   "capi-test-lb-id",
 						},
 					},
 				},

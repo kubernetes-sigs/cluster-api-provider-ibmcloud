@@ -237,13 +237,13 @@ func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error)
 	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
 
 	var vpcRegion string
-	if params.IBMPowerVSCluster.Spec.VPC == nil || params.IBMPowerVSCluster.Spec.VPC.Region == nil {
+	if params.IBMPowerVSCluster.Spec.VPC.Region == "" {
 		vpcRegion, err = regionUtil.VPCRegionForPowerVSRegion(scope.GetRegion())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create VPC client, error getting VPC region %v", err)
 		}
 	} else {
-		vpcRegion = *params.IBMPowerVSCluster.Spec.VPC.Region
+		vpcRegion = params.IBMPowerVSCluster.Spec.VPC.Region
 	}
 	svcEndpoint := endpoints.FetchVPCEndpoint(vpcRegion, params.ServiceEndpoint)
 	vpcClient, err := vpc.NewService(svcEndpoint)
@@ -1017,59 +1017,77 @@ func (m *MachineScope) GetMachineInternalIP() string {
 // CreateVPCLoadBalancerPoolMember creates a member in load balancer pool.
 func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vpcv1.LoadBalancerPoolMember, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
-	loadBalancers := make([]infrav1.VPCLoadBalancerSpec, 0)
+	loadBalancers := make([]infrav1.LoadBalancerSource, 0)
 	if len(m.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
-		loadBalancer := infrav1.VPCLoadBalancerSpec{
-			Name:   fmt.Sprintf("%s-loadbalancer", m.IBMPowerVSCluster.Name),
-			Public: ptr.To(true),
+		loadBalancer := infrav1.LoadBalancerSource{
+			Type: infrav1.SourceTypeProvision,
+			Provision: infrav1.LoadBalancerProvision{
+				Name: fmt.Sprintf("%s-loadbalancer", m.IBMPowerVSCluster.Name),
+				Type: infrav1.LoadBalancerTypePublic,
+			},
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
 	for index, loadBalancer := range m.IBMPowerVSCluster.Spec.LoadBalancers {
-		if loadBalancer.Name == "" {
-			loadBalancer.Name = fmt.Sprintf("%s-loadbalancer-%d", m.IBMPowerVSCluster.Name, index)
+		if loadBalancer.Type == infrav1.SourceTypeProvision && loadBalancer.Provision.Name == "" {
+			loadBalancer.Provision.Name = fmt.Sprintf("%s-loadbalancer-%d", m.IBMPowerVSCluster.Name, index)
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
 
 	for _, lb := range loadBalancers {
-		var lbID *string
-		if m.IBMPowerVSCluster.Status.LoadBalancers == nil {
+		var lbName string
+		switch lb.Type {
+		case infrav1.SourceTypeReference:
+			lbName = lb.Reference.Name
+		case infrav1.SourceTypeProvision:
+			lbName = lb.Provision.Name
+		}
+		if lbName == "" {
+			return nil, fmt.Errorf("failed to determine VPC load balancer name")
+		}
+
+		var lbID string
+		if len(m.IBMPowerVSCluster.Status.LoadBalancers) == 0 {
 			return nil, fmt.Errorf("failed to find VPC load balancer ID")
 		}
-		if val, ok := m.IBMPowerVSCluster.Status.LoadBalancers[lb.Name]; ok {
-			lbID = val.ID
-		} else {
+		found := false
+		for _, val := range m.IBMPowerVSCluster.Status.LoadBalancers {
+			if val.Name == lbName {
+				lbID = val.ID
+				found = true
+				break
+			}
+		}
+		if !found || lbID == "" {
 			return nil, fmt.Errorf("failed to find VPC load balancer ID")
 		}
+
 		loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-			ID: lbID,
+			ID: &lbID,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("failed to find VPC load balancer details: %w", err)
 		}
-		if *loadBalancer.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
-			return nil, fmt.Errorf("VPC load balancer is not in active state, current state %s", *loadBalancer.ProvisioningStatus)
+		if loadBalancer.ProvisioningStatus == nil || *loadBalancer.ProvisioningStatus != string(infrav1.LoadBalancerStateActive) {
+			return nil, fmt.Errorf("VPC load balancer is not in active state, current state %s", ptr.Deref(loadBalancer.ProvisioningStatus, ""))
 		}
 		if len(loadBalancer.Pools) == 0 {
-			return nil, fmt.Errorf("no pools exist for the VPC load balancer %s", lb.Name)
+			return nil, fmt.Errorf("no pools exist for the VPC load balancer %s", lbName)
 		}
 
 		internalIP := m.GetMachineInternalIP()
 
-		// lbAdditionalListeners is a mapping of additionalListener's port-protocol to the additionalListener as defined in the specification
-		// It will be used later to get the default pool associated with the listener
-		lbAdditionalListeners := map[string]infrav1.AdditionalListenerSpec{}
-		for _, additionalListener := range lb.AdditionalListeners {
-			if additionalListener.Protocol == nil {
-				additionalListener.Protocol = &infrav1.VPCLoadBalancerListenerProtocolTCP
+		lbAdditionalListeners := map[string]infrav1.AdditionalListener{}
+		for _, additionalListener := range lb.Provision.AdditionalListeners {
+			protocol := additionalListener.Protocol
+			if protocol == "" {
+				protocol = infrav1.LoadBalancerListenerProtocolTCP
 			}
-			lbAdditionalListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener
+			lbAdditionalListeners[fmt.Sprintf("%d-%s", additionalListener.Port, protocol)] = additionalListener
 		}
 
-		// loadBalancerListeners is a mapping of the loadBalancer listener's defaultPoolName to the additionalListener
-		// as the default pool name might be empty in spec and should be fetched from the cloud's listener
-		loadBalancerListeners := map[string]infrav1.AdditionalListenerSpec{}
+		loadBalancerListeners := map[string]infrav1.AdditionalListener{}
 		for _, listener := range loadBalancer.Listeners {
 			listenerOptions := &vpcv1.GetLoadBalancerListenerOptions{}
 			listenerOptions.SetLoadBalancerID(*loadBalancer.ID)
@@ -1082,14 +1100,11 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 				if loadBalancerListener.DefaultPool != nil {
 					loadBalancerListeners[*loadBalancerListener.DefaultPool.Name] = additionalListener
 				}
-				// loadBalancerListeners map is created only with the listeners provided in the spec,
-				// and targetPort is populated only if there is an entry in the map.
-				// Inorder for the default pool 6443 to be added to all control plane machines, creating an entry in the map for the same.
 			} else if loadBalancerListener.Port != nil && *loadBalancerListener.Port == int64(6443) {
-				protocol := infrav1.VPCLoadBalancerListenerProtocol(*loadBalancerListener.Protocol)
-				listener := infrav1.AdditionalListenerSpec{
+				protocol := infrav1.LoadBalancerListenerProtocol(*loadBalancerListener.Protocol)
+				listener := infrav1.AdditionalListener{
 					Port:     *loadBalancerListener.Port,
-					Protocol: &protocol,
+					Protocol: protocol,
 				}
 				if loadBalancerListener.DefaultPool != nil {
 					loadBalancerListeners[*loadBalancerListener.DefaultPool.Name] = listener
@@ -1151,9 +1166,9 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 				ID: loadBalancer.ID,
 			})
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch VPC load balancer details with ID: %s error: %v", *lbID, err)
+				return nil, fmt.Errorf("failed to fetch VPC load balancer details with ID: %s error: %v", lbID, err)
 			}
-			if *loadBalancer.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
+			if loadBalancer.ProvisioningStatus == nil || *loadBalancer.ProvisioningStatus != string(infrav1.LoadBalancerStateActive) {
 				log.V(3).Info("Unable to update pool for VPC load balancer as it is not in active state", "loadBalancerName", *loadBalancer.Name, "loadBalancerState", *loadBalancer.ProvisioningStatus)
 				return nil, fmt.Errorf("VPC load balancer %s not in active state to update pool member", *loadBalancer.Name)
 			}
@@ -1195,7 +1210,7 @@ func (m *MachineScope) bucketName() string {
 
 // bucketRegion returns the region of the COS bucket for the MachineScope.
 func (m *MachineScope) bucketRegion() string {
-	return fetchBucketRegion(m.IBMPowerVSCluster.Spec.CosInstance, m.IBMPowerVSCluster.Spec.VPC)
+	return fetchBucketRegion(m.IBMPowerVSCluster.Spec.CosInstance, m.IBMPowerVSCluster.Status.VPC)
 }
 
 // zoneCacheEntry holds the supported system types and the exact time they were fetched for a specific zone.

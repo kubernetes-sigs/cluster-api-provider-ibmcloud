@@ -33,6 +33,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
 
+//nolint:gocyclo // complexity is acceptable for conversion logic
 func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, out *infrav1.IBMPowerVSClusterStatus, s apimachineryconversion.Scope) error {
 	if err := autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in, out, s); err != nil {
 		return err
@@ -67,6 +68,43 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 		}
 	}
 
+	if in.VPC != nil {
+		if err := Convert_v1beta2_ResourceReference_To_v1beta3_VPCStatus(in.VPC, &out.VPC, s); err != nil {
+			return err
+		}
+	}
+	if in.VPCSubnet != nil {
+		out.VPCSubnets = make([]infrav1.VPCSubnetStatus, 0, len(in.VPCSubnet))
+		for name, subnet := range in.VPCSubnet {
+			if subnet.ID == nil || *subnet.ID == "" || name == "" {
+				continue
+			}
+			status := infrav1.VPCSubnetStatus{
+				ID:   *subnet.ID,
+				Name: name,
+			}
+			out.VPCSubnets = append(out.VPCSubnets, status)
+		}
+		if len(out.VPCSubnets) == 0 {
+			out.VPCSubnets = nil
+		}
+	}
+	if in.LoadBalancers != nil {
+		out.LoadBalancers = make([]infrav1.LoadBalancerStatus, 0, len(in.LoadBalancers))
+		for name, lb := range in.LoadBalancers {
+			status := infrav1.LoadBalancerStatus{Name: name}
+			if err := Convert_v1beta2_VPCLoadBalancerStatus_To_v1beta3_LoadBalancerStatus(&lb, &status, s); err != nil {
+				return err
+			}
+			if status.Name == "" {
+				continue
+			}
+			out.LoadBalancers = append(out.LoadBalancers, status)
+		}
+		if len(out.LoadBalancers) == 0 {
+			out.LoadBalancers = nil
+		}
+	}
 	out.Conditions = nil
 	if in.V1Beta2 != nil {
 		out.Conditions = in.V1Beta2.Conditions
@@ -85,6 +123,7 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 	return nil
 }
 
+//nolint:gocyclo // complexity is acceptable for conversion logic
 func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, out *IBMPowerVSClusterStatus, s apimachineryconversion.Scope) error {
 	if err := autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(in, out, s); err != nil {
 		return err
@@ -143,6 +182,54 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 
 	out.Ready = ptr.Deref(in.Initialization.Provisioned, false)
 
+	if in.VPC.ID != "" {
+		out.VPC = &ResourceReference{}
+		if err := Convert_v1beta3_VPCStatus_To_v1beta2_ResourceReference(&in.VPC, out.VPC, s); err != nil {
+			return err
+		}
+	}
+
+	if in.VPCSubnets != nil {
+		out.VPCSubnet = make(map[string]ResourceReference, len(in.VPCSubnets))
+		for i := range in.VPCSubnets {
+			subnet := ResourceReference{}
+			if in.VPCSubnets[i].ID != "" {
+				subnet.ID = ptr.To(in.VPCSubnets[i].ID)
+			}
+			name := in.VPCSubnets[i].Name
+			if name == "" {
+				name = ptr.Deref(subnet.ID, "")
+			}
+			if name == "" {
+				continue
+			}
+			out.VPCSubnet[name] = subnet
+		}
+		if len(out.VPCSubnet) == 0 {
+			out.VPCSubnet = nil
+		}
+	}
+
+	if in.LoadBalancers != nil {
+		out.LoadBalancers = make(map[string]VPCLoadBalancerStatus, len(in.LoadBalancers))
+		for i := range in.LoadBalancers {
+			lb := VPCLoadBalancerStatus{}
+			if err := Convert_v1beta3_LoadBalancerStatus_To_v1beta2_VPCLoadBalancerStatus(&in.LoadBalancers[i], &lb, s); err != nil {
+				return err
+			}
+			name := in.LoadBalancers[i].Name
+			if name == "" {
+				name = ptr.Deref(lb.ID, "")
+			}
+			if name == "" {
+				continue
+			}
+			out.LoadBalancers[name] = lb
+		}
+		if len(out.LoadBalancers) == 0 {
+			out.LoadBalancers = nil
+		}
+	}
 	if in.Conditions == nil {
 		return nil
 	}
@@ -295,13 +382,22 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.ResourceGroup = restored.Spec.ResourceGroup
 		dst.Spec.Network = restored.Spec.Network
 		dst.Spec.TransitGateway = restored.Spec.TransitGateway
+		dst.Spec.VPC = restored.Spec.VPC
+		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
+		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
+		dst.Status.VPC = restored.Status.VPC
+		dst.Status.VPCSubnets = restored.Status.VPCSubnets
+		dst.Status.LoadBalancers = restored.Status.LoadBalancers
+		dst.Annotations = restored.Annotations
 	}
 
-	// If the old v1beta2 annotation is true, map it to LoadBalancer. Otherwise, VirtualIP.
-	if val, exists := src.Annotations["powervs.cluster.x-k8s.io/create-infra"]; exists && val == "true" {
-		dst.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
-	} else {
-		dst.Spec.Topology = infrav1.PowerVSVirtualIPTopology
+	// Preserve empty/unknown topology when the legacy annotation is absent.
+	if val, exists := src.Annotations["powervs.cluster.x-k8s.io/create-infra"]; exists {
+		if val == "true" {
+			dst.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
+		} else {
+			dst.Spec.Topology = infrav1.PowerVSVirtualIPTopology
+		}
 	}
 
 	// Clean up the annotation in v1beta3 so we don't have duplicated sources of truth
@@ -321,20 +417,47 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 		return err
 	}
 
-	// Map the v1beta3 Topology explicit enum back to the v1beta2 annotation
-	if src.Spec.Topology == infrav1.PowerVSLoadBalancerTopology {
+	// Map the v1beta3 Topology explicit enum back to the v1beta2 annotation.
+	// Preserve empty/unknown hub topology by not forcing the legacy annotation state.
+	switch src.Spec.Topology {
+	case infrav1.PowerVSLoadBalancerTopology:
 		if dst.Annotations == nil {
 			dst.Annotations = make(map[string]string)
 		}
 		dst.Annotations["powervs.cluster.x-k8s.io/create-infra"] = "true"
-	} else if dst.Annotations != nil {
-		// For VirtualIP, we ensure the annotation is removed
-		delete(dst.Annotations, "powervs.cluster.x-k8s.io/create-infra")
+	case infrav1.PowerVSVirtualIPTopology:
+		if dst.Annotations != nil {
+			delete(dst.Annotations, "powervs.cluster.x-k8s.io/create-infra")
+		}
 	}
 
-	if err := utilconversion.MarshalData(src, dst); err != nil {
+	restored := &IBMPowerVSCluster{
+		Spec: IBMPowerVSClusterSpec{
+			VPC:           dst.Spec.VPC,
+			VPCSubnets:    dst.Spec.VPCSubnets,
+			LoadBalancers: dst.Spec.LoadBalancers,
+		},
+		Status: IBMPowerVSClusterStatus{
+			VPC:           dst.Status.VPC,
+			VPCSubnet:     dst.Status.VPCSubnet,
+			LoadBalancers: dst.Status.LoadBalancers,
+		},
+	}
+	if err := utilconversion.MarshalData(restored, dst); err != nil {
 		return err
 	}
+
+	if ok, err := utilconversion.UnmarshalData(dst, restored); err != nil {
+		return err
+	} else if ok {
+		dst.Spec.VPC = restored.Spec.VPC
+		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
+		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
+		dst.Status.VPC = restored.Status.VPC
+		dst.Status.VPCSubnet = restored.Status.VPCSubnet
+		dst.Status.LoadBalancers = restored.Status.LoadBalancers
+	}
+
 	// Fix annotation discrepancy during round-trip
 	if len(dst.Annotations) == 0 {
 		dst.Annotations = nil
@@ -356,6 +479,9 @@ func (src *IBMPowerVSClusterTemplate) ConvertTo(dstRaw conversion.Hub) error {
 		// Restore any fields that were lost in conversion
 		dst.Spec = restored.Spec
 	}
+	if dst.Annotations != nil && len(dst.Annotations) == 0 {
+		dst.Annotations = nil
+	}
 	return nil
 }
 
@@ -364,9 +490,31 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta3_IBMPowerVSClusterTemplate_To_v1beta2_IBMPowerVSClusterTemplate(src, dst, nil); err != nil {
 		return err
 	}
-	if err := utilconversion.MarshalData(src, dst); err != nil {
+	restored := &IBMPowerVSClusterTemplate{
+		Spec: IBMPowerVSClusterTemplateSpec{
+			Template: IBMPowerVSClusterTemplateResource{
+				ObjectMeta: dst.Spec.Template.ObjectMeta,
+				Spec: IBMPowerVSClusterSpec{
+					VPC:           dst.Spec.Template.Spec.VPC,
+					VPCSubnets:    dst.Spec.Template.Spec.VPCSubnets,
+					LoadBalancers: dst.Spec.Template.Spec.LoadBalancers,
+				},
+			},
+		},
+	}
+	if err := utilconversion.MarshalData(restored, dst); err != nil {
 		return err
 	}
+
+	if ok, err := utilconversion.UnmarshalData(dst, restored); err != nil {
+		return err
+	} else if ok {
+		dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
+		dst.Spec.Template.Spec.VPC = restored.Spec.Template.Spec.VPC
+		dst.Spec.Template.Spec.VPCSubnets = restored.Spec.Template.Spec.VPCSubnets
+		dst.Spec.Template.Spec.LoadBalancers = restored.Spec.Template.Spec.LoadBalancers
+	}
+
 	if len(dst.Annotations) == 0 {
 		dst.Annotations = nil
 	}
@@ -499,6 +647,14 @@ func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *
 		if err := Convert_v1beta2_TransitGateway_To_v1beta3_TransitGatewaySource(in.TransitGateway, &out.TransitGateway, s); err != nil {
 			return err
 		}
+	}
+
+	if in.VPC != nil {
+		if err := Convert_v1beta2_VPCResourceReference_To_v1beta3_VPCSource(in.VPC, &out.VPC, s); err != nil {
+			return err
+		}
+	} else {
+		out.VPC.Type = infrav1.SourceTypeProvision
 	}
 
 	return nil
@@ -634,6 +790,30 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 		out.TransitGateway = nil
 	} else {
 		out.TransitGateway = tg
+	}
+
+	if in.VPC.Type != "" || in.VPC.Reference.ID != "" || in.VPC.Reference.Name != "" || in.VPC.Provision.Name != "" || in.VPC.Region != "" {
+		out.VPC = &VPCResourceReference{}
+		if err := Convert_v1beta3_VPCSource_To_v1beta2_VPCResourceReference(&in.VPC, out.VPC, s); err != nil {
+			return err
+		}
+		if out.VPC.ID == nil && out.VPC.Name == nil && out.VPC.Region == nil {
+			if in.VPC.Reference.ID != "" {
+				out.VPC.ID = ptr.To(in.VPC.Reference.ID)
+			}
+			if in.VPC.Reference.Name != "" {
+				out.VPC.Name = ptr.To(in.VPC.Reference.Name)
+			}
+			if in.VPC.Provision.Name != "" && out.VPC.Name == nil {
+				out.VPC.Name = ptr.To(in.VPC.Provision.Name)
+			}
+			if in.VPC.Region != "" {
+				out.VPC.Region = ptr.To(in.VPC.Region)
+			}
+		}
+		if out.VPC.ID == nil && out.VPC.Name == nil && out.VPC.Region == nil {
+			out.VPC = nil
+		}
 	}
 
 	return nil
@@ -971,6 +1151,378 @@ func Convert_v1beta3_TransitGatewayStatus_To_v1beta2_TransitGatewayStatus(in *in
 	if in.PowerVSConnection.ID != "" {
 		out.PowerVSConnection = &ResourceReference{
 			ID: ptr.To(in.PowerVSConnection.ID),
+		}
+	}
+
+	return nil
+}
+
+func Convert_v1beta2_VPCResourceReference_To_v1beta3_VPCSource(in *VPCResourceReference, out *infrav1.VPCSource, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	if in.ID != nil && *in.ID != "" {
+		out.Type = infrav1.SourceTypeReference
+		out.Reference.ID = *in.ID
+		if in.Name != nil && *in.Name != "" {
+			out.Reference.Name = *in.Name
+		}
+	} else {
+		out.Type = infrav1.SourceTypeProvision
+		if in.Name != nil && *in.Name != "" {
+			out.Provision.Name = *in.Name
+		}
+	}
+
+	if in.Region != nil && *in.Region != "" {
+		out.Region = *in.Region
+	}
+
+	return nil
+}
+
+func Convert_v1beta3_VPCSource_To_v1beta2_VPCResourceReference(in *infrav1.VPCSource, out *VPCResourceReference, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	switch in.Type {
+	case infrav1.SourceTypeReference:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+		}
+		if in.Reference.Name != "" {
+			out.Name = ptr.To(in.Reference.Name)
+		}
+	default:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+		}
+		if in.Provision.Name != "" {
+			out.Name = ptr.To(in.Provision.Name)
+		}
+		if out.Name == nil && in.Reference.Name != "" {
+			out.Name = ptr.To(in.Reference.Name)
+		}
+	}
+
+	if in.Region != "" {
+		out.Region = ptr.To(in.Region)
+	}
+
+	return nil
+}
+
+func Convert_v1beta2_ResourceReference_To_v1beta3_VPCStatus(in *ResourceReference, out *infrav1.VPCStatus, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+	if in.ID != nil && *in.ID != "" {
+		out.ID = *in.ID
+	}
+	return nil
+}
+
+func Convert_v1beta3_VPCStatus_To_v1beta2_ResourceReference(in *infrav1.VPCStatus, out *ResourceReference, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+	if in.ID != "" {
+		out.ID = ptr.To(in.ID)
+	}
+	return nil
+}
+
+func Convert_v1beta2_VPCLoadBalancerStatus_To_v1beta3_LoadBalancerStatus(in *VPCLoadBalancerStatus, out *infrav1.LoadBalancerStatus, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+	if in.ID != nil && *in.ID != "" {
+		out.ID = *in.ID
+	}
+	out.State = infrav1.LoadBalancerState(in.State)
+	if in.Hostname != nil && *in.Hostname != "" {
+		out.Hostname = *in.Hostname
+	}
+	return nil
+}
+
+func Convert_v1beta3_LoadBalancerStatus_To_v1beta2_VPCLoadBalancerStatus(in *infrav1.LoadBalancerStatus, out *VPCLoadBalancerStatus, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+	if in.ID != "" {
+		out.ID = ptr.To(in.ID)
+	}
+	out.State = VPCLoadBalancerState(in.State)
+	if in.Hostname != "" {
+		out.Hostname = ptr.To(in.Hostname)
+	}
+	return nil
+}
+
+// Convert_v1beta2_Subnet_To_v1beta3_VPCSubnetSource converts v1beta2 Subnet to v1beta3 VPCSubnetSource.
+func Convert_v1beta2_Subnet_To_v1beta3_VPCSubnetSource(in *Subnet, out *infrav1.VPCSubnetSource, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	if in.ID != nil && *in.ID != "" {
+		out.Type = infrav1.SourceTypeReference
+		out.Reference.ID = *in.ID
+		if in.Name != nil && *in.Name != "" {
+			out.Reference.Name = *in.Name
+		}
+	} else if in.Name != nil && *in.Name != "" {
+		out.Type = infrav1.SourceTypeProvision
+		out.Provision.Name = *in.Name
+	} else {
+		out.Type = infrav1.SourceTypeProvision
+	}
+
+	if in.Zone != nil && *in.Zone != "" {
+		out.Zone = *in.Zone
+	}
+
+	return nil
+}
+
+// Convert_v1beta3_VPCSubnetSource_To_v1beta2_Subnet converts v1beta3 VPCSubnetSource to v1beta2 Subnet.
+func Convert_v1beta3_VPCSubnetSource_To_v1beta2_Subnet(in *infrav1.VPCSubnetSource, out *Subnet, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	if in.Zone != "" {
+		out.Zone = ptr.To(in.Zone)
+	}
+
+	switch in.Type {
+	case infrav1.SourceTypeReference:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+		}
+		if in.Reference.Name != "" {
+			out.Name = ptr.To(in.Reference.Name)
+		}
+	case infrav1.SourceTypeProvision:
+		if in.Provision.Name != "" {
+			out.Name = ptr.To(in.Provision.Name)
+		}
+	default:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+			if in.Reference.Name != "" {
+				out.Name = ptr.To(in.Reference.Name)
+			}
+		} else if in.Reference.Name != "" {
+			out.Name = ptr.To(in.Reference.Name)
+		} else if in.Provision.Name != "" {
+			out.Name = ptr.To(in.Provision.Name)
+		}
+	}
+
+	return nil
+}
+
+// Convert_v1beta2_VPCLoadBalancerSpec_To_v1beta3_LoadBalancerSource converts v1beta2 VPCLoadBalancerSpec to v1beta3 LoadBalancerSource.
+//
+//nolint:gocyclo // complexity is acceptable for conversion logic
+func Convert_v1beta2_VPCLoadBalancerSpec_To_v1beta3_LoadBalancerSource(in *VPCLoadBalancerSpec, out *infrav1.LoadBalancerSource, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	hasProvisionData := in.Public != nil || len(in.AdditionalListeners) > 0 || len(in.BackendPools) > 0 || len(in.SecurityGroups) > 0 || len(in.Subnets) > 0
+	if hasProvisionData || (in.Name != "" && (in.ID == nil || *in.ID == "")) {
+		out.Type = infrav1.SourceTypeProvision
+		out.Provision.Name = in.Name
+
+		if in.Public != nil {
+			if *in.Public {
+				out.Provision.Type = infrav1.LoadBalancerTypePublic
+			} else {
+				out.Provision.Type = infrav1.LoadBalancerTypePrivate
+			}
+		}
+
+		if len(in.AdditionalListeners) > 0 {
+			out.Provision.AdditionalListeners = make([]infrav1.AdditionalListener, len(in.AdditionalListeners))
+			for i := range in.AdditionalListeners {
+				listener := in.AdditionalListeners[i]
+				out.Provision.AdditionalListeners[i] = infrav1.AdditionalListener{
+					Port:     listener.Port,
+					Selector: listener.Selector,
+				}
+				if listener.DefaultPoolName != nil {
+					out.Provision.AdditionalListeners[i].DefaultPoolName = *listener.DefaultPoolName
+				}
+				if listener.Protocol != nil {
+					out.Provision.AdditionalListeners[i].Protocol = infrav1.LoadBalancerListenerProtocol(*listener.Protocol)
+				}
+			}
+		}
+
+		if len(in.BackendPools) > 0 {
+			out.Provision.BackendPools = make([]infrav1.LoadBalancerBackendPool, len(in.BackendPools))
+			for i := range in.BackendPools {
+				pool := in.BackendPools[i]
+				out.Provision.BackendPools[i] = infrav1.LoadBalancerBackendPool{
+					Algorithm: infrav1.LoadBalancerBackendPoolAlgorithm(pool.Algorithm),
+					Protocol:  infrav1.LoadBalancerBackendPoolProtocol(pool.Protocol),
+					HealthMonitor: infrav1.LoadBalancerHealthMonitor{
+						Delay:   pool.HealthMonitor.Delay,
+						Retries: pool.HealthMonitor.Retries,
+						Timeout: pool.HealthMonitor.Timeout,
+						Type:    infrav1.LoadBalancerBackendPoolHealthMonitorType(pool.HealthMonitor.Type),
+					},
+				}
+				if pool.Name != nil {
+					out.Provision.BackendPools[i].Name = *pool.Name
+				}
+				if pool.HealthMonitor.Port != nil {
+					out.Provision.BackendPools[i].HealthMonitor.Port = *pool.HealthMonitor.Port
+				}
+				if pool.HealthMonitor.URLPath != nil {
+					out.Provision.BackendPools[i].HealthMonitor.URLPath = *pool.HealthMonitor.URLPath
+				}
+			}
+		}
+
+		if len(in.SecurityGroups) > 0 {
+			out.Provision.SecurityGroups = make([]infrav1.ResourceIdentifier, len(in.SecurityGroups))
+			for i := range in.SecurityGroups {
+				out.Provision.SecurityGroups[i] = infrav1.ResourceIdentifier{}
+				if in.SecurityGroups[i].ID != nil && *in.SecurityGroups[i].ID != "" {
+					out.Provision.SecurityGroups[i].ID = *in.SecurityGroups[i].ID
+				}
+				if in.SecurityGroups[i].Name != nil && *in.SecurityGroups[i].Name != "" {
+					out.Provision.SecurityGroups[i].Name = *in.SecurityGroups[i].Name
+				}
+			}
+		}
+
+		if len(in.Subnets) > 0 {
+			out.Provision.Subnets = make([]infrav1.ResourceIdentifier, len(in.Subnets))
+			for i := range in.Subnets {
+				out.Provision.Subnets[i] = infrav1.ResourceIdentifier{}
+				if in.Subnets[i].ID != nil && *in.Subnets[i].ID != "" {
+					out.Provision.Subnets[i].ID = *in.Subnets[i].ID
+				}
+				if in.Subnets[i].Name != nil && *in.Subnets[i].Name != "" {
+					out.Provision.Subnets[i].Name = *in.Subnets[i].Name
+				}
+			}
+		}
+
+		return nil
+	}
+
+	if in.ID != nil && *in.ID != "" {
+		out.Type = infrav1.SourceTypeReference
+		out.Reference.ID = *in.ID
+		if in.Name != "" {
+			out.Reference.Name = in.Name
+		}
+		return nil
+	}
+
+	if in.Name != "" {
+		out.Type = infrav1.SourceTypeProvision
+		out.Provision.Name = in.Name
+		return nil
+	}
+
+	return nil
+}
+
+// Convert_v1beta3_LoadBalancerSource_To_v1beta2_VPCLoadBalancerSpec converts v1beta3 LoadBalancerSource to v1beta2 VPCLoadBalancerSpec.
+//
+//nolint:gocyclo // complexity is acceptable for conversion logic
+func Convert_v1beta3_LoadBalancerSource_To_v1beta2_VPCLoadBalancerSpec(in *infrav1.LoadBalancerSource, out *VPCLoadBalancerSpec, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	switch in.Type {
+	case infrav1.SourceTypeReference:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+		}
+		if in.Reference.Name != "" {
+			out.Name = in.Reference.Name
+		}
+	case infrav1.SourceTypeProvision:
+		if in.Provision.Name != "" {
+			out.Name = in.Provision.Name
+		}
+		if in.Provision.Type != "" {
+			out.Public = ptr.To(in.Provision.Type == infrav1.LoadBalancerTypePublic)
+		}
+		if len(in.Provision.AdditionalListeners) > 0 {
+			out.AdditionalListeners = make([]AdditionalListenerSpec, len(in.Provision.AdditionalListeners))
+			for i := range in.Provision.AdditionalListeners {
+				listener := in.Provision.AdditionalListeners[i]
+				out.AdditionalListeners[i] = AdditionalListenerSpec{
+					Port:     listener.Port,
+					Selector: listener.Selector,
+				}
+				if listener.DefaultPoolName != "" {
+					out.AdditionalListeners[i].DefaultPoolName = ptr.To(listener.DefaultPoolName)
+				}
+				if listener.Protocol != "" {
+					protocol := VPCLoadBalancerListenerProtocol(listener.Protocol)
+					out.AdditionalListeners[i].Protocol = &protocol
+				}
+			}
+		}
+		if len(in.Provision.BackendPools) > 0 {
+			out.BackendPools = make([]VPCLoadBalancerBackendPoolSpec, len(in.Provision.BackendPools))
+			for i := range in.Provision.BackendPools {
+				pool := in.Provision.BackendPools[i]
+				out.BackendPools[i] = VPCLoadBalancerBackendPoolSpec{
+					Algorithm: VPCLoadBalancerBackendPoolAlgorithm(pool.Algorithm),
+					Protocol:  VPCLoadBalancerBackendPoolProtocol(pool.Protocol),
+					HealthMonitor: VPCLoadBalancerHealthMonitorSpec{
+						Delay:   pool.HealthMonitor.Delay,
+						Retries: pool.HealthMonitor.Retries,
+						Timeout: pool.HealthMonitor.Timeout,
+						Type:    VPCLoadBalancerBackendPoolHealthMonitorType(pool.HealthMonitor.Type),
+					},
+				}
+				if pool.Name != "" {
+					out.BackendPools[i].Name = ptr.To(pool.Name)
+				}
+				if pool.HealthMonitor.Port != 0 {
+					out.BackendPools[i].HealthMonitor.Port = ptr.To(pool.HealthMonitor.Port)
+				}
+				if pool.HealthMonitor.URLPath != "" {
+					out.BackendPools[i].HealthMonitor.URLPath = ptr.To(pool.HealthMonitor.URLPath)
+				}
+			}
+		}
+		if len(in.Provision.SecurityGroups) > 0 {
+			out.SecurityGroups = make([]VPCResource, len(in.Provision.SecurityGroups))
+			for i := range in.Provision.SecurityGroups {
+				if in.Provision.SecurityGroups[i].ID != "" {
+					out.SecurityGroups[i].ID = ptr.To(in.Provision.SecurityGroups[i].ID)
+				}
+				if in.Provision.SecurityGroups[i].Name != "" {
+					out.SecurityGroups[i].Name = ptr.To(in.Provision.SecurityGroups[i].Name)
+				}
+			}
+		}
+		if len(in.Provision.Subnets) > 0 {
+			out.Subnets = make([]VPCResource, len(in.Provision.Subnets))
+			for i := range in.Provision.Subnets {
+				if in.Provision.Subnets[i].ID != "" {
+					out.Subnets[i].ID = ptr.To(in.Provision.Subnets[i].ID)
+				}
+				if in.Provision.Subnets[i].Name != "" {
+					out.Subnets[i].Name = ptr.To(in.Provision.Subnets[i].Name)
+				}
+			}
 		}
 	}
 

@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"k8s.io/utils/ptr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
@@ -36,7 +35,7 @@ func TestFetchBucketRegion(t *testing.T) {
 	testcases := []struct {
 		name           string
 		cos            *infrav1.CosInstance
-		vpc            *infrav1.VPCResourceReference
+		vpc            infrav1.VPCStatus
 		expectedRegion string
 	}{
 		{
@@ -44,43 +43,43 @@ func TestFetchBucketRegion(t *testing.T) {
 			cos: &infrav1.CosInstance{
 				BucketRegion: testRegion,
 			},
-			vpc: &infrav1.VPCResourceReference{
-				Region: ptr.To(vpcRegion),
+			vpc: infrav1.VPCStatus{
+				Region: vpcRegion,
 			},
 			expectedRegion: testRegion,
 		},
 		{
 			name: "Returns VPC region when COS bucket region is not set",
 			cos:  &infrav1.CosInstance{},
-			vpc: &infrav1.VPCResourceReference{
-				Region: ptr.To(vpcRegion),
+			vpc: infrav1.VPCStatus{
+				Region: vpcRegion,
 			},
 			expectedRegion: vpcRegion,
 		},
 		{
 			name: "Returns VPC region when COS is nil",
 			cos:  nil,
-			vpc: &infrav1.VPCResourceReference{
-				Region: ptr.To(vpcRegion),
+			vpc: infrav1.VPCStatus{
+				Region: vpcRegion,
 			},
 			expectedRegion: vpcRegion,
 		},
 		{
 			name:           "Returns empty string when both COS bucket region and VPC region are not set",
 			cos:            &infrav1.CosInstance{},
-			vpc:            &infrav1.VPCResourceReference{},
+			vpc:            infrav1.VPCStatus{},
 			expectedRegion: "",
 		},
 		{
 			name:           "Returns empty string when COS is nil and VPC region is not set",
 			cos:            nil,
-			vpc:            &infrav1.VPCResourceReference{},
+			vpc:            infrav1.VPCStatus{},
 			expectedRegion: "",
 		},
 		{
 			name:           "Returns empty string when both COS and VPC are nil",
 			cos:            nil,
-			vpc:            nil,
+			vpc:            infrav1.VPCStatus{},
 			expectedRegion: "",
 		},
 		{
@@ -88,7 +87,7 @@ func TestFetchBucketRegion(t *testing.T) {
 			cos: &infrav1.CosInstance{
 				BucketRegion: "",
 			},
-			vpc:            nil,
+			vpc:            infrav1.VPCStatus{},
 			expectedRegion: "",
 		},
 		{
@@ -96,8 +95,8 @@ func TestFetchBucketRegion(t *testing.T) {
 			cos: &infrav1.CosInstance{
 				BucketRegion: testRegion,
 			},
-			vpc: &infrav1.VPCResourceReference{
-				Region: ptr.To(vpcRegion),
+			vpc: infrav1.VPCStatus{
+				Region: vpcRegion,
 			},
 			expectedRegion: testRegion,
 		},

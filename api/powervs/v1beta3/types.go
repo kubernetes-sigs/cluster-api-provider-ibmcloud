@@ -120,89 +120,89 @@ var (
 	TransitGatewayConnectionStateDeleting = TransitGatewayConnectionState("deleting")
 )
 
-// VPCLoadBalancerBackendPoolAlgorithm describes the backend pool's load balancing algorithm.
+// LoadBalancerBackendPoolAlgorithm describes the backend pool's load balancing algorithm.
 // +kubebuilder:validation:Enum=least_connections;round_robin;weighted_round_robin
-type VPCLoadBalancerBackendPoolAlgorithm string
+type LoadBalancerBackendPoolAlgorithm string
 
 var (
-	// VPCLoadBalancerBackendPoolAlgorithmLeastConnections is the string representing the least_connections load balancing algorithm.
-	VPCLoadBalancerBackendPoolAlgorithmLeastConnections VPCLoadBalancerBackendPoolAlgorithm = vpcv1.CreateLoadBalancerPoolOptionsAlgorithmLeastConnectionsConst
+	// LoadBalancerBackendPoolAlgorithmLeastConnections is the string representing the least_connections load balancing algorithm.
+	LoadBalancerBackendPoolAlgorithmLeastConnections LoadBalancerBackendPoolAlgorithm = vpcv1.CreateLoadBalancerPoolOptionsAlgorithmLeastConnectionsConst
 
-	// VPCLoadBalancerBackendPoolAlgorithmRoundRobin is the string representing the round_robin load balancing algorithm.
-	VPCLoadBalancerBackendPoolAlgorithmRoundRobin VPCLoadBalancerBackendPoolAlgorithm = vpcv1.CreateLoadBalancerPoolOptionsAlgorithmRoundRobinConst
+	// LoadBalancerBackendPoolAlgorithmRoundRobin is the string representing the round_robin load balancing algorithm.
+	LoadBalancerBackendPoolAlgorithmRoundRobin LoadBalancerBackendPoolAlgorithm = vpcv1.CreateLoadBalancerPoolOptionsAlgorithmRoundRobinConst
 
-	// VPCLoadBalancerBackendPoolAlgorithmWeightedRoundRobin is the string representing the weighted_round_robin load balancing algorithm.
-	VPCLoadBalancerBackendPoolAlgorithmWeightedRoundRobin VPCLoadBalancerBackendPoolAlgorithm = vpcv1.CreateLoadBalancerPoolOptionsAlgorithmWeightedRoundRobinConst
+	// LoadBalancerBackendPoolAlgorithmWeightedRoundRobin is the string representing the weighted_round_robin load balancing algorithm.
+	LoadBalancerBackendPoolAlgorithmWeightedRoundRobin LoadBalancerBackendPoolAlgorithm = vpcv1.CreateLoadBalancerPoolOptionsAlgorithmWeightedRoundRobinConst
 )
 
-// VPCLoadBalancerBackendPoolProtocol describes the protocol for load balancer backend pools.
+// LoadBalancerBackendPoolProtocol describes the protocol for load balancer backend pools.
 // We have unique types in case IBM Cloud Load Balancer Listener and Backend Pool supported algorithms ever diverage.
 // +kubebuilder:validation:Enum=http;https;tcp;udp
-type VPCLoadBalancerBackendPoolProtocol string
+type LoadBalancerBackendPoolProtocol string
 
 var (
-	// VPCLoadBalancerBackendPoolProtocolHTTP is the string representing the http protocol for load balancer backend pools.
-	VPCLoadBalancerBackendPoolProtocolHTTP VPCLoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolHTTPConst
+	// LoadBalancerBackendPoolProtocolHTTP is the string representing the http protocol for load balancer backend pools.
+	LoadBalancerBackendPoolProtocolHTTP LoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolHTTPConst
 
-	// VPCLoadBalancerBackendPoolProtocolHTTPS is the string representing the https protocol for load balancer backend pools.
-	VPCLoadBalancerBackendPoolProtocolHTTPS VPCLoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolHTTPSConst
+	// LoadBalancerBackendPoolProtocolHTTPS is the string representing the https protocol for load balancer backend pools.
+	LoadBalancerBackendPoolProtocolHTTPS LoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolHTTPSConst
 
-	// VPCLoadBalancerBackendPoolProtocolTCP is the string representing the tcp protocol for load balancer backend pools.
-	VPCLoadBalancerBackendPoolProtocolTCP VPCLoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolTCPConst
+	// LoadBalancerBackendPoolProtocolTCP is the string representing the tcp protocol for load balancer backend pools.
+	LoadBalancerBackendPoolProtocolTCP LoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolTCPConst
 
-	// VPCLoadBalancerBackendPoolProtocolUDP is the string representing the tudp protocol for load balancer backend pools.
-	VPCLoadBalancerBackendPoolProtocolUDP VPCLoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolUDPConst
+	// LoadBalancerBackendPoolProtocolUDP is the string representing the tudp protocol for load balancer backend pools.
+	LoadBalancerBackendPoolProtocolUDP LoadBalancerBackendPoolProtocol = vpcv1.LoadBalancerPoolPrototypeLoadBalancerContextProtocolUDPConst
 )
 
-// VPCLoadBalancerListenerProtocol describes the protocol for load balancer listeners.
+// LoadBalancerListenerProtocol describes the protocol for load balancer listeners.
 // We have unique types in case IBM Cloud Load Balancer Listener and Backend Pool supported algorithms ever diverage.
 // +kubebuilder:validation:Enum=http;https;tcp;udp
-type VPCLoadBalancerListenerProtocol string
+type LoadBalancerListenerProtocol string
 
 var (
-	// VPCLoadBalancerListenerProtocolHTTP is the string representing the http protocol for load balancer listeners.
-	VPCLoadBalancerListenerProtocolHTTP VPCLoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolHTTPConst
+	// LoadBalancerListenerProtocolHTTP is the string representing the http protocol for load balancer listeners.
+	LoadBalancerListenerProtocolHTTP LoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolHTTPConst
 
-	// VPCLoadBalancerListenerProtocolHTTPS is the string representing the https protocol for load balancer listeners.
-	VPCLoadBalancerListenerProtocolHTTPS VPCLoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolHTTPSConst
+	// LoadBalancerListenerProtocolHTTPS is the string representing the https protocol for load balancer listeners.
+	LoadBalancerListenerProtocolHTTPS LoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolHTTPSConst
 
-	// VPCLoadBalancerListenerProtocolTCP is the string representing the tcp protocol for load balancer listeners.
-	VPCLoadBalancerListenerProtocolTCP VPCLoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolTCPConst
+	// LoadBalancerListenerProtocolTCP is the string representing the tcp protocol for load balancer listeners.
+	LoadBalancerListenerProtocolTCP LoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolTCPConst
 
-	// VPCLoadBalancerListenerProtocolUDP is the string representing the tudp protocol for load balancer listeners.
-	VPCLoadBalancerListenerProtocolUDP VPCLoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolUDPConst
+	// LoadBalancerListenerProtocolUDP is the string representing the tudp protocol for load balancer listeners.
+	LoadBalancerListenerProtocolUDP LoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolUDPConst
 )
 
-// VPCLoadBalancerBackendPoolHealthMonitorType describes the backend pool's health check protocol type.
+// LoadBalancerBackendPoolHealthMonitorType describes the backend pool's health check protocol type.
 // +kubebuilder:validation:Enum=http;https;tcp
-type VPCLoadBalancerBackendPoolHealthMonitorType string
+type LoadBalancerBackendPoolHealthMonitorType string
 
 var (
-	// VPCLoadBalancerBackendPoolHealthMonitorTypeHTTP is the string representing the http health pool protocol type.
-	VPCLoadBalancerBackendPoolHealthMonitorTypeHTTP VPCLoadBalancerBackendPoolHealthMonitorType = vpcv1.LoadBalancerPoolHealthMonitorTypeHTTPConst
+	// LoadBalancerBackendPoolHealthMonitorTypeHTTP is the string representing the http health pool protocol type.
+	LoadBalancerBackendPoolHealthMonitorTypeHTTP LoadBalancerBackendPoolHealthMonitorType = vpcv1.LoadBalancerPoolHealthMonitorTypeHTTPConst
 
-	// VPCLoadBalancerBackendPoolHealthMonitorTypeHTTPS is the string representing the https health pool protocol type.
-	VPCLoadBalancerBackendPoolHealthMonitorTypeHTTPS VPCLoadBalancerBackendPoolHealthMonitorType = vpcv1.LoadBalancerPoolHealthMonitorTypeHTTPSConst
+	// LoadBalancerBackendPoolHealthMonitorTypeHTTPS is the string representing the https health pool protocol type.
+	LoadBalancerBackendPoolHealthMonitorTypeHTTPS LoadBalancerBackendPoolHealthMonitorType = vpcv1.LoadBalancerPoolHealthMonitorTypeHTTPSConst
 
-	// VPCLoadBalancerBackendPoolHealthMonitorTypeTCP is the string representing the tcp health pool protocol type.
-	VPCLoadBalancerBackendPoolHealthMonitorTypeTCP VPCLoadBalancerBackendPoolHealthMonitorType = vpcv1.LoadBalancerPoolHealthMonitorTypeTCPConst
+	// LoadBalancerBackendPoolHealthMonitorTypeTCP is the string representing the tcp health pool protocol type.
+	LoadBalancerBackendPoolHealthMonitorTypeTCP LoadBalancerBackendPoolHealthMonitorType = vpcv1.LoadBalancerPoolHealthMonitorTypeTCPConst
 )
 
-// VPCLoadBalancerState describes the state of the load balancer.
-type VPCLoadBalancerState string
+// LoadBalancerState describes the state of the load balancer.
+type LoadBalancerState string
 
 var (
-	// VPCLoadBalancerStateActive is the string representing the load balancer in a active state.
-	VPCLoadBalancerStateActive = VPCLoadBalancerState("active")
+	// LoadBalancerStateActive is the string representing the load balancer in a active state.
+	LoadBalancerStateActive = LoadBalancerState("active")
 
-	// VPCLoadBalancerStateCreatePending is the string representing the load balancer in a queued state.
-	VPCLoadBalancerStateCreatePending = VPCLoadBalancerState("create_pending")
+	// LoadBalancerStateCreatePending is the string representing the load balancer in a queued state.
+	LoadBalancerStateCreatePending = LoadBalancerState("create_pending")
 
-	// VPCLoadBalancerStateUpdatePending is the string representing the load balancer in updating state.
-	VPCLoadBalancerStateUpdatePending = VPCLoadBalancerState("update_pending")
+	// LoadBalancerStateUpdatePending is the string representing the load balancer in updating state.
+	LoadBalancerStateUpdatePending = LoadBalancerState("update_pending")
 
-	// VPCLoadBalancerStateDeletePending is the string representing the load balancer in deleting state.
-	VPCLoadBalancerStateDeletePending = VPCLoadBalancerState("delete_pending")
+	// LoadBalancerStateDeletePending is the string representing the load balancer in deleting state.
+	LoadBalancerStateDeletePending = LoadBalancerState("delete_pending")
 )
 
 // VPCSubnetState describes the state of a VPC Subnet.
@@ -254,8 +254,6 @@ var (
 	ResourceTypeLoadBalancer = ResourceType("loadBalancer")
 	// ResourceTypeLoadBalancerPool is a Load Balancer Pool resource.
 	ResourceTypeLoadBalancerPool = ResourceType("loadBalancerPool")
-	// ResourceTypeVPC is Power VS network resource.
-	ResourceTypeVPC = ResourceType("vpc")
 	// ResourceTypeSubnet is VPC subnet resource.
 	ResourceTypeSubnet = ResourceType("subnet")
 	// ResourceTypeControlPlaneSubnet is a VPC subnet resource designated for the Control Plane.
