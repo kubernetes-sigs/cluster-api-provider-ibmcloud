@@ -1392,11 +1392,6 @@ func (s *ClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	cluster := s.IBMPowerVSCluster
 
-	// If Topology is VirtualIP, VPC won't be configured at all.
-	if cluster.Spec.VPC.Type == "" {
-		return false, nil
-	}
-
 	// 1. Idempotency & State Check: If we already resolved the VPC ID, just verify its state.
 	vpcID := cluster.Status.VPC.ID
 	if vpcID != "" {
@@ -1643,7 +1638,8 @@ func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 		case infrav1.SourceTypeReference:
 			subnetDetails, err = s.reconcileSubnetReference(subnetSpec.Reference)
 		case infrav1.SourceTypeProvision:
-			// Auto-assign zone if omitted from the top-level spec
+			// Zone is optional in a user-supplied VPCSubnets entry; fall back to a
+			// round-robin zone assignment across the region's available zones.
 			if subnetSpec.Zone == "" {
 				subnetSpec.Zone = vpcZones[i%len(vpcZones)]
 			}
@@ -1793,7 +1789,7 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 
 	isAnyLoadBalancerNotReady := false
 
-	for idx, lbSource := range loadBalancers {
+	for i, lbSource := range loadBalancers {
 		if lbSource.Type == infrav1.SourceTypeReference {
 			var loadBalancer *vpcv1.LoadBalancer
 			var err error
@@ -1811,7 +1807,7 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 			}
 
 			lbName := *loadBalancer.Name
-			if isReady := s.checkLoadBalancerStatus(ctx, *loadBalancer); !isReady {
+			if isReady := s.checkLoadBalancerState(ctx, *loadBalancer); !isReady {
 				log.V(3).Info("Referenced LoadBalancer is still not Active", "loadBalancerName", lbName)
 				isAnyLoadBalancerNotReady = true
 			}
@@ -1833,8 +1829,8 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 			if provision.Type == infrav1.LoadBalancerTypePrivate {
 				suffix = "private"
 			}
-			if idx > 0 {
-				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, idx)
+			if i > 0 {
+				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, i)
 			} else {
 				lbName = fmt.Sprintf("%s-lb-%s", s.IBMPowerVSCluster.Name, suffix)
 			}
@@ -1855,7 +1851,7 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 				return false, fmt.Errorf("failed to fetch load balancer details: received empty/nil response from cloud API for ID %s", lbID)
 			}
 
-			if isReady := s.checkLoadBalancerStatus(ctx, *loadBalancer); !isReady {
+			if isReady := s.checkLoadBalancerState(ctx, *loadBalancer); !isReady {
 				log.V(3).Info("LoadBalancer is still not Active", "loadBalancerName", lbName, "state", *loadBalancer.ProvisioningStatus)
 				isAnyLoadBalancerNotReady = true
 			}
@@ -2040,9 +2036,9 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 	}, nil
 }
 
-// checkLoadBalancerStatus checks the state of a VPC load balancer.
+// checkLoadBalancerState checks the state of a VPC load balancer.
 // If state is active, true is returned, in all other cases, it returns false indicating that load balancer is still not ready.
-func (s *ClusterScope) checkLoadBalancerStatus(ctx context.Context, lb vpcv1.LoadBalancer) bool {
+func (s *ClusterScope) checkLoadBalancerState(ctx context.Context, lb vpcv1.LoadBalancer) bool {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Checking the status of VPC load balancer", "loadBalancerName", *lb.Name)
 	switch *lb.ProvisioningStatus {
@@ -2724,7 +2720,7 @@ func (s *ClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, error) {
 		}
 	}
 
-	for idx, lbSource := range loadBalancers {
+	for i, lbSource := range loadBalancers {
 		if lbSource.Type == infrav1.SourceTypeReference {
 			log.V(3).Info("Skipping load balancer deletion as it is an external reference resource")
 			continue
@@ -2737,8 +2733,8 @@ func (s *ClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, error) {
 			if provision.Type == infrav1.LoadBalancerTypePrivate {
 				suffix = "private"
 			}
-			if idx > 0 {
-				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, idx)
+			if i > 0 {
+				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, i)
 			} else {
 				lbName = fmt.Sprintf("%s-lb-%s", s.IBMPowerVSCluster.Name, suffix)
 			}

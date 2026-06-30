@@ -48,10 +48,14 @@ spec:
       dhcpServer:
         name: ${CLUSTER_NAME}
   vpc:
-    name: ${CLUSTER_NAME}-vpc
+    type: Provision
     region: ${IBMVPC_REGION}
-  vpcSubnets:
-  - name: ${CLUSTER_NAME}-vpcsubnet
+    provision:
+      name: ${CLUSTER_NAME}-vpc
+  subnets:
+  - type: Provision
+    provision:
+      name: ${CLUSTER_NAME}-vpcsubnet
   transitGateway:
     type: Provision
     provision:
@@ -61,7 +65,9 @@ spec:
     powerVSConnection:
       type: Provision
   loadBalancers:
-  - name: ${CLUSTER_NAME}-loadbalancer
+  - type: Provision
+    provision:
+      name: ${CLUSTER_NAME}-loadbalancer
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: KubeadmControlPlane
