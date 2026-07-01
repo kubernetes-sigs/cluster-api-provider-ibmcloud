@@ -70,8 +70,10 @@ func NewService(options ServiceOptions) (PowerVS, error) {
 		return nil, err
 	}
 
+	ctx := context.Background()
 	return &Service{
-		session: session,
+		session:          session,
+		dataCenterClient: instance.NewIBMPIDatacenterClient(ctx, session, ""),
 	}, nil
 }
 
