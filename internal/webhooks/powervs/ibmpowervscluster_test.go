@@ -391,16 +391,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23",
+											},
 										},
 									},
 								},
@@ -431,16 +434,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23-1",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23-1",
+											},
 										},
 									},
 								},
@@ -475,16 +481,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23",
+											},
 										},
 									},
 								},
@@ -515,25 +524,28 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23",
+											},
 										},
 									},
-								},
-								{
-									Port:     25,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-25",
+									{
+										Port:     25,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-25",
+											},
 										},
 									},
 								},
@@ -568,16 +580,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23",
+											},
 										},
 									},
 								},
@@ -608,16 +623,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     25,
-									Protocol: &infrav1.VPCLoadBalancerListenerProtocolTCP,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-25",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     25,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-25",
+											},
 										},
 									},
 								},
@@ -652,16 +670,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: nil,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: "",
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23",
+											},
 										},
 									},
 								},
@@ -692,16 +713,19 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							ID: "capi-net-id",
 						},
 					},
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: "load-balancer-1",
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port:     23,
-									Protocol: nil,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											"listener-selector": "port-23",
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: "",
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												"listener-selector": "port-23",
+											},
 										},
 									},
 								},

@@ -139,7 +139,7 @@ func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) 
 	}
 
 	for _, loadBalancer := range cluster.Spec.LoadBalancers {
-		if *loadBalancer.Public {
+		if loadBalancer.Type == infrav1.SourceTypeProvision && loadBalancer.Provision.Type == infrav1.LoadBalancerTypePublic {
 			return allErrs
 		}
 	}
@@ -150,15 +150,22 @@ func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) 
 func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	found := make(map[string]bool)
 	for i, loadbalancer := range cluster.Spec.LoadBalancers {
-		if loadbalancer.Name == "" {
+		name := ""
+		switch loadbalancer.Type {
+		case infrav1.SourceTypeReference:
+			name = loadbalancer.Reference.Name
+		case infrav1.SourceTypeProvision:
+			name = loadbalancer.Provision.Name
+		}
+		if name == "" {
 			continue
 		}
 
-		if found[loadbalancer.Name] {
-			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", fmt.Sprintf("loadbalancers[%d]", i)), map[string]interface{}{"Name": loadbalancer.Name}))
+		if found[name] {
+			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", fmt.Sprintf("loadbalancers[%d]", i)), map[string]interface{}{"Name": name}))
 			continue
 		}
-		found[loadbalancer.Name] = true
+		found[name] = true
 	}
 
 	return allErrs
@@ -167,21 +174,28 @@ func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1.IBMPowerVSClust
 func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	found := make(map[string]bool)
 	for i, subnet := range cluster.Spec.VPCSubnets {
-		if subnet.Name == nil {
+		name := ""
+		switch subnet.Type {
+		case infrav1.SourceTypeReference:
+			name = subnet.Reference.Name
+		case infrav1.SourceTypeProvision:
+			name = subnet.Provision.Name
+		}
+		if name == "" {
 			continue
 		}
-		if found[*subnet.Name] {
-			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", fmt.Sprintf("vpcSubnets[%d]", i)), map[string]interface{}{"Name": *subnet.Name}))
+		if found[name] {
+			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", fmt.Sprintf("vpcSubnets[%d]", i)), map[string]interface{}{"Name": name}))
 			continue
 		}
-		found[*subnet.Name] = true
+		found[name] = true
 	}
 
 	return allErrs
 }
 
 func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster) *field.Error {
-	if cluster.Spec.Zone == "" || cluster.Spec.VPC == nil || cluster.Spec.VPC.Region == nil {
+	if cluster.Spec.Zone == "" || cluster.Spec.VPC.Region == "" {
 		return nil
 	}
 	// TransitGateway is now a value type, check if Type is set to determine if it's configured
@@ -190,7 +204,7 @@ func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster)
 	}
 	// GlobalRouting is now in Provision field and is a string enum, not a bool pointer
 	if cluster.Spec.TransitGateway.Type == infrav1.SourceTypeProvision {
-		if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.Provision.GlobalRouting == infrav1.TransitGatewayRoutingLocal && globalRouting != nil && *globalRouting {
+		if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, &cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.Provision.GlobalRouting == infrav1.TransitGatewayRoutingLocal && globalRouting != nil && *globalRouting {
 			return field.Invalid(field.NewPath("spec.transitGateway.provision.globalRouting"), cluster.Spec.TransitGateway.Provision.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
 		}
 	}
@@ -225,16 +239,16 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSClust
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", cluster.Spec.Zone)))
 	}
 
-	if cluster.Spec.VPC == nil {
+	if cluster.Spec.VPC.Type == "" {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc"), cluster.Spec.VPC, "value of VPC is empty"))
 	}
 
-	if cluster.Spec.VPC != nil && cluster.Spec.VPC.Region == nil {
+	if cluster.Spec.VPC.Region == "" {
 		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, "value of VPC region is empty"))
 	}
 
-	if cluster.Spec.VPC != nil && cluster.Spec.VPC.Region != nil && !regionUtil.ValidateVPCRegion(*cluster.Spec.VPC.Region) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", *cluster.Spec.VPC.Region)))
+	if cluster.Spec.VPC.Region != "" && !regionUtil.ValidateVPCRegion(cluster.Spec.VPC.Region) {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", cluster.Spec.VPC.Region)))
 	}
 
 	if cluster.Spec.ResourceGroup.Type == "" {
@@ -258,24 +272,18 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSClust
 func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
 	newLoadBalancerListeners := map[string]metav1.LabelSelector{}
 	for _, loadbalancer := range newCluster.Spec.LoadBalancers {
-		for _, additionalListener := range loadbalancer.AdditionalListeners {
-			var key string
-			if additionalListener.Protocol != nil {
-				key = fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)
-			} else {
-				// Use default protocol marker when protocol is not specified
+		for _, additionalListener := range loadbalancer.Provision.AdditionalListeners {
+			key := fmt.Sprintf("%d-%s", additionalListener.Port, additionalListener.Protocol)
+			if additionalListener.Protocol == "" {
 				key = fmt.Sprintf("%d-<default>", additionalListener.Port)
 			}
 			newLoadBalancerListeners[key] = additionalListener.Selector
 		}
 	}
 	for _, loadbalancer := range oldCluster.Spec.LoadBalancers {
-		for _, additionalListener := range loadbalancer.AdditionalListeners {
-			var key string
-			if additionalListener.Protocol != nil {
-				key = fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)
-			} else {
-				// Use default protocol marker when protocol is not specified
+		for _, additionalListener := range loadbalancer.Provision.AdditionalListeners {
+			key := fmt.Sprintf("%d-%s", additionalListener.Port, additionalListener.Protocol)
+			if additionalListener.Protocol == "" {
 				key = fmt.Sprintf("%d-<default>", additionalListener.Port)
 			}
 			if selector, ok := newLoadBalancerListeners[key]; ok && !reflect.DeepEqual(selector, additionalListener.Selector) {

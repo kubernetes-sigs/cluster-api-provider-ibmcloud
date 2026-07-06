@@ -88,66 +88,78 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 		}
 	}
 
-	// Workspace.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Workspace.Name = ""
-
-	// Network.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Network.Name = ""
-
-	// ResourceGroup.Name is not preserved in v1beta2 status (only ID is), so clear it for round-trip.
 	in.ResourceGroup.Name = ""
-
-	// DHCPServer.Name is not preserved in v1beta2 (only ID is), so clear it for round-trip
 	in.Network.DHCPServer.Name = ""
 
-	// TransitGateway status: v1beta3 has Name and connection details with Name/Status
-	// v1beta2 only has ID for TransitGateway and connections
+	if in.Initialization.Provisioned != nil && !*in.Initialization.Provisioned {
+		in.Initialization.Provisioned = nil
+	}
+
 	if in.TransitGateway.Name != "" || in.TransitGateway.VPCConnection.Name != "" ||
 		in.TransitGateway.VPCConnection.State != "" || in.TransitGateway.PowerVSConnection.Name != "" ||
 		in.TransitGateway.PowerVSConnection.State != "" {
-		// Clear fields not preserved in v1beta2
 		in.TransitGateway.Name = ""
 		in.TransitGateway.VPCConnection.Name = ""
 		in.TransitGateway.VPCConnection.State = ""
 		in.TransitGateway.PowerVSConnection.Name = ""
 		in.TransitGateway.PowerVSConnection.State = ""
 	}
+
+	if len(in.VPCSubnets) == 0 {
+		in.VPCSubnets = nil
+	}
+	if len(in.LoadBalancers) == 0 {
+		in.LoadBalancers = nil
+	}
+	for i := range in.VPCSubnets {
+		if in.VPCSubnets[i].ID == "" || in.VPCSubnets[i].Name == "" {
+			in.VPCSubnets = nil
+			break
+		}
+		if in.VPCSubnets[i].Zone != "" && in.VPCSubnets[i].ID != "" && in.VPCSubnets[i].Name != "" {
+			in.VPCSubnets[i].Zone = ""
+		}
+	}
+	for i := range in.LoadBalancers {
+		if in.LoadBalancers[i].Name == "" {
+			in.LoadBalancers = nil
+			break
+		}
+	}
+	in.VPC = infrav1.VPCStatus{}
 }
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
 
-	// v1beta2 represented Zone as *string. Normalize empty string to preserve nil semantics on round-trip.
-	if in.Zone == "" {
-		in.Zone = ""
+	switch in.Topology {
+	case infrav1.PowerVSVirtualIPTopology, infrav1.PowerVSLoadBalancerTopology:
+	default:
+		in.Topology = ""
 	}
 
-	// Enforce safe Enum values for Topology so round-trips match
-	if in.Topology != infrav1.PowerVSLoadBalancerTopology {
-		in.Topology = infrav1.PowerVSVirtualIPTopology
-	}
-
-	// Enforce the SourceType union constraints for v1beta3 Workspace so round-trip tests pass
 	switch in.Workspace.Type {
 	case infrav1.SourceTypeReference:
 		in.Workspace.Provision = infrav1.WorkspaceProvisionConfig{}
 	case infrav1.SourceTypeProvision:
 		in.Workspace.Reference = infrav1.ResourceIdentifier{}
 	default:
-		// If Type is not set or invalid, default to Provision with empty config
-		in.Workspace.Type = infrav1.SourceTypeProvision
-		in.Workspace.Reference = infrav1.ResourceIdentifier{}
-		in.Workspace.Provision = infrav1.WorkspaceProvisionConfig{}
-	}
-
-	// Ensure Workspace.Reference has at least ID or Name when Type is Reference
-	if in.Workspace.Type == infrav1.SourceTypeReference {
-		if in.Workspace.Reference.ID == "" && in.Workspace.Reference.Name == "" {
-			in.Workspace.Reference.ID = "fuzzed-workspace-id"
+		if in.Workspace.Reference.ID != "" || in.Workspace.Reference.Name != "" {
+			in.Workspace.Type = infrav1.SourceTypeReference
+			in.Workspace.Provision = infrav1.WorkspaceProvisionConfig{}
+		} else {
+			in.Workspace.Type = infrav1.SourceTypeProvision
+			in.Workspace.Reference = infrav1.ResourceIdentifier{}
+			in.Workspace.Provision = infrav1.WorkspaceProvisionConfig{}
 		}
 	}
 
-	// Enforce the SourceType union constraints for v1beta3 ResourceGroup so round-trip tests pass.
+	if in.Workspace.Type == infrav1.SourceTypeReference && in.Workspace.Reference.ID == "" && in.Workspace.Reference.Name == "" {
+		in.Workspace.Reference.ID = "fuzzed-workspace-id"
+	}
+
 	switch in.ResourceGroup.Type {
 	case infrav1.SourceTypeReference:
 		if in.ResourceGroup.Reference.ID == "" && in.ResourceGroup.Reference.Name == "" {
@@ -160,57 +172,141 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 		in.ResourceGroup.Reference = infrav1.ResourceIdentifier{}
 	}
 
-	// Enforce the SourceType union constraints for v1beta3 Network so round-trip tests pass
 	switch in.Network.Type {
 	case infrav1.SourceTypeReference:
 		in.Network.Provision = infrav1.NetworkProvisionConfig{}
 	case infrav1.SourceTypeProvision:
 		in.Network.Reference = infrav1.ResourceIdentifier{}
 	default:
-		// If Type is not set or invalid, clear both Reference and Provision
 		in.Network.Type = ""
 		in.Network.Reference = infrav1.ResourceIdentifier{}
 		in.Network.Provision = infrav1.NetworkProvisionConfig{}
 	}
 
-	// Network.DHCPServer.Name is not preserved in v1beta2, so clear it for round-trip
 	in.Network.Provision.DHCPServer.Name = ""
-
-	// TransitGateway: Enforce the SourceType union constraints for v1beta3 so round-trip tests pass
-	// v1beta3 has complex structure with Type, Reference, Provision, and Connections
-	// v1beta2 only has ID, Name, and GlobalRouting (no connection details in spec)
-
-	// Handle Type field and enforce union constraints
-	// Note: Full TransitGateway data is preserved via annotations, so we just need to
-	// enforce basic constraints for the fuzzer
 
 	switch in.TransitGateway.Type {
 	case infrav1.SourceTypeReference:
-		// Type is Reference, clear Provision
 		in.TransitGateway.Provision = infrav1.TransitGatewayProvision{}
-		// Ensure Reference has at least ID or Name
 		if in.TransitGateway.Reference.ID == "" && in.TransitGateway.Reference.Name == "" {
 			in.TransitGateway.Reference.ID = "fuzzed-tg-id"
 		}
 	case infrav1.SourceTypeProvision:
-		// Type is Provision, clear Reference
 		in.TransitGateway.Reference = infrav1.ResourceIdentifier{}
-		// Normalize GlobalRouting to valid enum values (clear invalid values)
 		if in.TransitGateway.Provision.GlobalRouting != "" &&
 			in.TransitGateway.Provision.GlobalRouting != infrav1.TransitGatewayRoutingGlobal &&
 			in.TransitGateway.Provision.GlobalRouting != infrav1.TransitGatewayRoutingLocal {
 			in.TransitGateway.Provision.GlobalRouting = ""
 		}
 	default:
-		// Type is empty or invalid - clear everything
 		in.TransitGateway.Type = ""
 		in.TransitGateway.Reference = infrav1.ResourceIdentifier{}
 		in.TransitGateway.Provision = infrav1.TransitGatewayProvision{}
 	}
 
-	// VPCConnection and PowerVSConnection are not preserved in v1beta2 spec, so clear them
 	in.TransitGateway.VPCConnection = infrav1.TransitGatewayConnectionSource{}
 	in.TransitGateway.PowerVSConnection = infrav1.TransitGatewayConnectionSource{}
+
+	switch in.VPC.Type {
+	case infrav1.SourceTypeReference:
+		in.VPC.Provision = infrav1.VPCProvision{}
+		if in.VPC.Reference.ID == "" && in.VPC.Reference.Name == "" {
+			in.VPC.Reference.ID = "fuzzed-vpc-id"
+		}
+	case infrav1.SourceTypeProvision:
+		in.VPC.Reference = infrav1.ResourceIdentifier{}
+	default:
+		if in.VPC.Reference.ID != "" {
+			in.VPC.Type = infrav1.SourceTypeReference
+			in.VPC.Provision = infrav1.VPCProvision{}
+		} else if in.VPC.Region != "" || in.VPC.Reference.Name != "" || in.VPC.Provision.Name != "" {
+			in.VPC.Type = infrav1.SourceTypeProvision
+			in.VPC.Reference = infrav1.ResourceIdentifier{}
+			if in.VPC.Provision.Name == "" {
+				in.VPC.Provision.Name = in.VPC.Reference.Name
+			}
+		} else {
+			in.VPC.Type = ""
+			in.VPC.Reference = infrav1.ResourceIdentifier{}
+			in.VPC.Provision = infrav1.VPCProvision{}
+		}
+	}
+
+	if len(in.VPCSubnets) == 0 {
+		in.VPCSubnets = nil
+	} else {
+		for i := range in.VPCSubnets {
+			switch in.VPCSubnets[i].Type {
+			case infrav1.SourceTypeReference:
+				in.VPCSubnets[i].Provision = infrav1.VPCSubnetProvision{}
+				if in.VPCSubnets[i].Reference.ID == "" && in.VPCSubnets[i].Reference.Name == "" {
+					in.VPCSubnets[i].Reference.ID = "fuzzed-subnet-id"
+				}
+			case infrav1.SourceTypeProvision:
+				in.VPCSubnets[i].Reference = infrav1.ResourceIdentifier{}
+			default:
+				if in.VPCSubnets[i].Reference.ID != "" {
+					in.VPCSubnets[i].Type = infrav1.SourceTypeReference
+					in.VPCSubnets[i].Provision = infrav1.VPCSubnetProvision{}
+				} else {
+					in.VPCSubnets[i].Type = infrav1.SourceTypeProvision
+					if in.VPCSubnets[i].Provision.Name == "" {
+						in.VPCSubnets[i].Provision.Name = in.VPCSubnets[i].Reference.Name
+					}
+					in.VPCSubnets[i].Reference = infrav1.ResourceIdentifier{}
+				}
+			}
+		}
+	}
+	if len(in.LoadBalancers) == 0 {
+		in.LoadBalancers = nil
+	} else {
+		for i := range in.LoadBalancers {
+			switch in.LoadBalancers[i].Type {
+			case infrav1.SourceTypeReference:
+				in.LoadBalancers[i].Provision = infrav1.LoadBalancerProvision{}
+				if in.LoadBalancers[i].Reference.ID == "" && in.LoadBalancers[i].Reference.Name == "" {
+					in.LoadBalancers[i].Reference.ID = "fuzzed-lb-id"
+				}
+			case infrav1.SourceTypeProvision:
+				in.LoadBalancers[i].Reference = infrav1.ResourceIdentifier{}
+				if in.LoadBalancers[i].Provision.Type != "" &&
+					in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePublic &&
+					in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePrivate {
+					in.LoadBalancers[i].Provision.Type = infrav1.LoadBalancerTypePrivate
+				}
+				if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
+					in.LoadBalancers[i].Provision.AdditionalListeners = nil
+				}
+				if in.LoadBalancers[i].Provision.Name == "" {
+					in.LoadBalancers[i].Provision.Type = ""
+				}
+			default:
+				if in.LoadBalancers[i].Reference.ID != "" {
+					in.LoadBalancers[i].Type = infrav1.SourceTypeReference
+					in.LoadBalancers[i].Provision = infrav1.LoadBalancerProvision{}
+				} else {
+					in.LoadBalancers[i].Type = infrav1.SourceTypeProvision
+					if in.LoadBalancers[i].Provision.Name == "" {
+						in.LoadBalancers[i].Provision.Name = in.LoadBalancers[i].Reference.Name
+					}
+					in.LoadBalancers[i].Reference = infrav1.ResourceIdentifier{}
+					if in.LoadBalancers[i].Provision.Type != "" &&
+						in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePublic &&
+						in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePrivate {
+						in.LoadBalancers[i].Provision.Type = infrav1.LoadBalancerTypePrivate
+					}
+					if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
+						in.LoadBalancers[i].Provision.AdditionalListeners = nil
+					}
+					if in.LoadBalancers[i].Provision.Name == "" {
+						in.LoadBalancers[i].Type = ""
+						in.LoadBalancers[i].Provision = infrav1.LoadBalancerProvision{}
+					}
+				}
+			}
+		}
+	}
 }
 
 func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Continue) {
@@ -221,18 +317,15 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 		}
 	}
 
-	// Enforce ID generation so the Workspace value-type mapping survives the round-trip
 	if in.ServiceInstance != nil && in.ServiceInstance.ID == nil {
 		id := "fuzzed-id"
 		in.ServiceInstance.ID = &id
 	}
 
-	// ServiceInstance with empty ID should be nil
 	if in.ServiceInstance != nil && in.ServiceInstance.ID != nil && *in.ServiceInstance.ID == "" {
 		in.ServiceInstance = nil
 	}
 
-	// ControllerCreated is not preserved in v1beta3, so set to nil for round-trip
 	if in.ServiceInstance != nil {
 		in.ServiceInstance.ControllerCreated = nil
 	}
@@ -247,15 +340,23 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 	}
 	if in.VPC != nil {
 		in.VPC.ControllerCreated = nil
+		if in.VPC.ID != nil && *in.VPC.ID == "" {
+			in.VPC.ID = nil
+		}
+		if in.VPC.ID == nil {
+			in.VPC = nil
+		}
 	}
 	if in.COSInstance != nil {
 		in.COSInstance.ControllerCreated = nil
+		if in.COSInstance.ID == nil || *in.COSInstance.ID == "" {
+			in.COSInstance = nil
+		}
 	}
 	if in.ResourceGroup != nil && (in.ResourceGroup.ID == nil || *in.ResourceGroup.ID == "") {
 		in.ResourceGroup = nil
 	}
 
-	// Network and DHCPServer with empty ID should be nil
 	if in.Network != nil && (in.Network.ID == nil || *in.Network.ID == "") {
 		in.Network = nil
 	}
@@ -263,12 +364,9 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 		in.DHCPServer = nil
 	}
 
-	// TransitGateway status normalization
 	if in.TransitGateway != nil {
-		// ControllerCreated is not preserved in v1beta3
 		in.TransitGateway.ControllerCreated = nil
 
-		// Normalize connection statuses
 		if in.TransitGateway.VPCConnection != nil {
 			in.TransitGateway.VPCConnection.ControllerCreated = nil
 			if in.TransitGateway.VPCConnection.ID == nil || *in.TransitGateway.VPCConnection.ID == "" {
@@ -283,17 +381,46 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 			}
 		}
 
-		// Empty ID should be nil
 		if in.TransitGateway.ID != nil && *in.TransitGateway.ID == "" {
 			in.TransitGateway.ID = nil
 		}
 
-		// If TransitGateway has no meaningful data, set to nil
 		if (in.TransitGateway.ID == nil || *in.TransitGateway.ID == "") &&
 			in.TransitGateway.VPCConnection == nil &&
 			in.TransitGateway.PowerVSConnection == nil {
 			in.TransitGateway = nil
 		}
+	}
+	for name, subnet := range in.VPCSubnet {
+		subnet.ControllerCreated = nil
+		if subnet.ID != nil && *subnet.ID == "" {
+			subnet.ID = nil
+		}
+		if subnet.ID == nil || name == "" {
+			delete(in.VPCSubnet, name)
+			continue
+		}
+		in.VPCSubnet[name] = subnet
+	}
+	if len(in.VPCSubnet) == 0 {
+		in.VPCSubnet = nil
+	}
+	for name, lb := range in.LoadBalancers {
+		lb.ControllerCreated = nil
+		if lb.ID != nil && *lb.ID == "" {
+			lb.ID = nil
+		}
+		if lb.Hostname != nil && *lb.Hostname == "" {
+			lb.Hostname = nil
+		}
+		if name == "" {
+			delete(in.LoadBalancers, name)
+			continue
+		}
+		in.LoadBalancers[name] = lb
+	}
+	if len(in.LoadBalancers) == 0 {
+		in.LoadBalancers = nil
 	}
 }
 
@@ -381,6 +508,107 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 		}
 	}
 
+	// Normalize only fields that are intentionally unsupported across versions.
+	for i := range in.VPCSubnets {
+		in.VPCSubnets[i].Ipv4CidrBlock = nil
+		if in.VPCSubnets[i].ID != nil && *in.VPCSubnets[i].ID == "" {
+			in.VPCSubnets[i].ID = nil
+		}
+		if in.VPCSubnets[i].Name != nil && *in.VPCSubnets[i].Name == "" {
+			in.VPCSubnets[i].Name = nil
+		}
+		if in.VPCSubnets[i].Zone != nil && *in.VPCSubnets[i].Zone == "" {
+			in.VPCSubnets[i].Zone = nil
+		}
+		if in.VPCSubnets[i].ID == nil && in.VPCSubnets[i].Name == nil {
+			in.VPCSubnets[i].Zone = nil
+		}
+	}
+	if len(in.VPCSubnets) == 0 {
+		in.VPCSubnets = nil
+	}
+
+	if in.VPC != nil {
+		if in.VPC.ID != nil && *in.VPC.ID == "" {
+			in.VPC.ID = nil
+		}
+		if in.VPC.Name != nil && *in.VPC.Name == "" {
+			in.VPC.Name = nil
+		}
+		if in.VPC.Region != nil && *in.VPC.Region == "" {
+			in.VPC.Region = nil
+		}
+		if in.VPC.ID == nil && in.VPC.Name == nil && in.VPC.Region == nil {
+			in.VPC = nil
+		}
+	}
+
+	for i := range in.LoadBalancers {
+		if in.LoadBalancers[i].ID != nil && *in.LoadBalancers[i].ID == "" {
+			in.LoadBalancers[i].ID = nil
+		}
+		for j := range in.LoadBalancers[i].AdditionalListeners {
+			if in.LoadBalancers[i].AdditionalListeners[j].DefaultPoolName != nil &&
+				*in.LoadBalancers[i].AdditionalListeners[j].DefaultPoolName == "" {
+				in.LoadBalancers[i].AdditionalListeners[j].DefaultPoolName = nil
+			}
+			if in.LoadBalancers[i].AdditionalListeners[j].Protocol != nil &&
+				*in.LoadBalancers[i].AdditionalListeners[j].Protocol == "" {
+				in.LoadBalancers[i].AdditionalListeners[j].Protocol = nil
+			}
+		}
+		if in.LoadBalancers[i].Public != nil {
+			in.LoadBalancers[i].ID = nil
+		}
+		if in.LoadBalancers[i].ID != nil {
+			in.LoadBalancers[i].ID = nil
+		}
+		if in.LoadBalancers[i].Name == "" {
+			in.LoadBalancers[i].ID = nil
+			in.LoadBalancers[i].Public = nil
+			in.LoadBalancers[i].SecurityGroups = nil
+		}
+		if len(in.LoadBalancers[i].AdditionalListeners) == 0 {
+			in.LoadBalancers[i].AdditionalListeners = nil
+		}
+		if len(in.LoadBalancers[i].BackendPools) == 0 {
+			in.LoadBalancers[i].BackendPools = nil
+		}
+		if len(in.LoadBalancers[i].SecurityGroups) == 0 {
+			in.LoadBalancers[i].SecurityGroups = nil
+		}
+		if len(in.LoadBalancers[i].Subnets) == 0 {
+			in.LoadBalancers[i].Subnets = nil
+		}
+		for j := range in.LoadBalancers[i].BackendPools {
+			if in.LoadBalancers[i].BackendPools[j].Name != nil && *in.LoadBalancers[i].BackendPools[j].Name == "" {
+				in.LoadBalancers[i].BackendPools[j].Name = nil
+			}
+			if in.LoadBalancers[i].BackendPools[j].HealthMonitor.URLPath != nil && *in.LoadBalancers[i].BackendPools[j].HealthMonitor.URLPath == "" {
+				in.LoadBalancers[i].BackendPools[j].HealthMonitor.URLPath = nil
+			}
+		}
+		for j := range in.LoadBalancers[i].SecurityGroups {
+			if in.LoadBalancers[i].SecurityGroups[j].ID != nil && *in.LoadBalancers[i].SecurityGroups[j].ID == "" {
+				in.LoadBalancers[i].SecurityGroups[j].ID = nil
+			}
+			if in.LoadBalancers[i].SecurityGroups[j].Name != nil && *in.LoadBalancers[i].SecurityGroups[j].Name == "" {
+				in.LoadBalancers[i].SecurityGroups[j].Name = nil
+			}
+		}
+		for j := range in.LoadBalancers[i].Subnets {
+			if in.LoadBalancers[i].Subnets[j].ID != nil && *in.LoadBalancers[i].Subnets[j].ID == "" {
+				in.LoadBalancers[i].Subnets[j].ID = nil
+			}
+			if in.LoadBalancers[i].Subnets[j].Name != nil && *in.LoadBalancers[i].Subnets[j].Name == "" {
+				in.LoadBalancers[i].Subnets[j].Name = nil
+			}
+		}
+	}
+	if len(in.LoadBalancers) == 0 {
+		in.LoadBalancers = nil
+	}
+
 	// TransitGateway: v1beta2 has simple structure (ID, Name, GlobalRouting)
 	// v1beta3 has complex structure with Type, Reference, Provision, Connections
 	// For round-trip, we need to normalize the v1beta2 structure
@@ -434,8 +662,14 @@ func IBMPowerVSClusterTemplateFuzzFuncs(_ runtimeserializer.CodecFactory) []inte
 
 func hubIBMPowerVSClusterTemplate(in *infrav1.IBMPowerVSClusterTemplate, c randfill.Continue) {
 	c.FillNoCustom(in)
-	// Annotations will have conversion-data added during ConvertFrom, so we can't compare them
-	// The test framework will handle this via MarshalData
+	hubIBMPowerVSClusterSpec(&in.Spec.Template.Spec, c)
+	// Annotations will have conversion-data added during ConvertFrom, so we can't compare them.
+	if len(in.Annotations) == 0 {
+		in.Annotations = nil
+	}
+	if len(in.Spec.Template.ObjectMeta.Annotations) == 0 {
+		in.Spec.Template.ObjectMeta.Annotations = nil
+	}
 }
 
 func hubIBMPowerVSClusterTemplateResource(in *infrav1.IBMPowerVSClusterTemplateResource, c randfill.Continue) {
@@ -446,6 +680,26 @@ func hubIBMPowerVSClusterTemplateResource(in *infrav1.IBMPowerVSClusterTemplateR
 func spokeIBMPowerVSClusterTemplateResource(in *IBMPowerVSClusterTemplateResource, c randfill.Continue) {
 	c.FillNoCustom(in)
 	spokeIBMPowerVSClusterSpec(&in.Spec, c)
+	if in.ObjectMeta.Annotations != nil && len(in.ObjectMeta.Annotations) == 0 {
+		in.ObjectMeta.Annotations = nil
+	}
+	if len(in.ObjectMeta.Labels) == 0 {
+		in.ObjectMeta.Labels = nil
+	}
+	if in.Spec.VPC != nil {
+		if in.Spec.VPC.ID != nil && *in.Spec.VPC.ID == "" {
+			in.Spec.VPC.ID = nil
+		}
+		if in.Spec.VPC.Name != nil && *in.Spec.VPC.Name == "" {
+			in.Spec.VPC.Name = nil
+		}
+		if in.Spec.VPC.Region != nil && *in.Spec.VPC.Region == "" {
+			in.Spec.VPC.Region = nil
+		}
+		if in.Spec.VPC.ID == nil && in.Spec.VPC.Name == nil && in.Spec.VPC.Region == nil {
+			in.Spec.VPC = nil
+		}
+	}
 }
 
 func IBMPowerVSMachineFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {

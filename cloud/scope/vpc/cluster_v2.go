@@ -2100,7 +2100,7 @@ func (s *ClusterScopeV2) getLoadBalancerSecurityGroupIDs(loadBalancer infrav1.VP
 }
 
 // buildLoadBalancerBackendPool will build a Load Balancer Pool based on the provided spec.
-func (s *ClusterScopeV2) buildLoadBalancerBackendPool(pool infrav1.VPCLoadBalancerBackendPoolSpec) vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext {
+func (s *ClusterScopeV2) buildLoadBalancerBackendPool(pool infrav1.LoadBalancerBackendPool) vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext {
 	monitor := &vpcv1.LoadBalancerPoolHealthMonitorPrototype{
 		Delay:      ptr.To(pool.HealthMonitor.Delay),
 		MaxRetries: ptr.To(pool.HealthMonitor.Retries),
@@ -2131,7 +2131,7 @@ func (s *ClusterScopeV2) getDefaultLoadBalancerBackendPools() []vpcv1.LoadBalanc
 	defaultPools := make([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext, 0, 1)
 
 	// For now, only one default pool is expected.
-	defaultPool := infrav1.VPCLoadBalancerBackendPoolSpec{
+	defaultPool := infrav1.LoadBalancerBackendPool{
 		Algorithm: infrav1.VPCLoadBalancerBackendPoolAlgorithmRoundRobin,
 		HealthMonitor: infrav1.VPCLoadBalancerHealthMonitorSpec{
 			Delay:   5,

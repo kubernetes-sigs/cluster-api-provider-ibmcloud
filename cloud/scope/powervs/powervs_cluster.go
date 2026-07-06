@@ -271,11 +271,11 @@ func (params ClusterScopeParams) getVPCClient() (vpc.Vpc, error) {
 	if params.VPCClientFactory != nil {
 		return params.VPCClientFactory()
 	}
-	if params.IBMPowerVSCluster.Spec.VPC == nil || params.IBMPowerVSCluster.Spec.VPC.Region == nil {
-		return nil, fmt.Errorf("failed to create VPC client as VPC info is nil")
+	if params.IBMPowerVSCluster.Spec.VPC.Region == "" {
+		return nil, fmt.Errorf("failed to create VPC client as VPC region is not set")
 	}
 	// Fetch the VPC service endpoint.
-	svcEndpoint := endpoints.FetchVPCEndpoint(*params.IBMPowerVSCluster.Spec.VPC.Region, params.ServiceEndpoint)
+	svcEndpoint := endpoints.FetchVPCEndpoint(params.IBMPowerVSCluster.Spec.VPC.Region, params.ServiceEndpoint)
 	return vpc.NewService(svcEndpoint)
 }
 
@@ -376,13 +376,8 @@ func (s *ClusterScope) APIServerPort() int32 {
 func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.ResourceType, resource infrav1.ResourceReference) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(3).Info("Setting status", "resourceType", resourceType, "resource", resource)
+	//nolint:gocritic // single case switch is intentional for future extensibility
 	switch resourceType {
-	case infrav1.ResourceTypeVPC:
-		if s.IBMPowerVSCluster.Status.VPC == nil {
-			s.IBMPowerVSCluster.Status.VPC = &resource
-			return
-		}
-		s.IBMPowerVSCluster.Status.VPC.Set(resource)
 	case infrav1.ResourceTypeCOSInstance:
 		if s.IBMPowerVSCluster.Status.COSInstance == nil {
 			s.IBMPowerVSCluster.Status.COSInstance = &resource
@@ -390,57 +385,6 @@ func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.Resou
 		}
 		s.IBMPowerVSCluster.Status.COSInstance.Set(resource)
 	}
-}
-
-// VPC returns the cluster VPC information.
-func (s *ClusterScope) VPC() *infrav1.VPCResourceReference {
-	return s.IBMPowerVSCluster.Spec.VPC
-}
-
-// GetVPCID returns the VPC id set in status field of IBMPowerVSCluster object. If it doesn't exist, returns nil.
-func (s *ClusterScope) GetVPCID() *string {
-	if s.IBMPowerVSCluster.Status.VPC != nil {
-		return s.IBMPowerVSCluster.Status.VPC.ID
-	}
-	return nil
-}
-
-// GetVPCSubnetID returns the VPC subnet id.
-func (s *ClusterScope) GetVPCSubnetID(subnetName string) *string {
-	if s.IBMPowerVSCluster.Status.VPCSubnet == nil {
-		return nil
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.VPCSubnet[subnetName]; ok {
-		return val.ID
-	}
-	return nil
-}
-
-// GetVPCSubnetIDs returns all the VPC subnet ids.
-func (s *ClusterScope) GetVPCSubnetIDs() []*string {
-	subnets := []*string{}
-	if s.IBMPowerVSCluster.Status.VPCSubnet == nil {
-		return nil
-	}
-	for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnet {
-		subnets = append(subnets, subnet.ID)
-	}
-	return subnets
-}
-
-// SetVPCSubnetStatus set the VPC subnet id.
-func (s *ClusterScope) SetVPCSubnetStatus(ctx context.Context, name string, resource infrav1.ResourceReference) {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Setting status", "name", name, "resource", resource)
-	if s.IBMPowerVSCluster.Status.VPCSubnet == nil {
-		s.IBMPowerVSCluster.Status.VPCSubnet = make(map[string]infrav1.ResourceReference)
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.VPCSubnet[name]; ok {
-		if val.ControllerCreated != nil && *val.ControllerCreated {
-			resource.ControllerCreated = val.ControllerCreated
-		}
-	}
-	s.IBMPowerVSCluster.Status.VPCSubnet[name] = resource
 }
 
 // GetVPCSecurityGroupByName returns the VPC security group id and its ruleIDs.
@@ -482,78 +426,82 @@ func (s *ClusterScope) SetVPCSecurityGroupStatus(ctx context.Context, name strin
 	s.IBMPowerVSCluster.Status.VPCSecurityGroups[name] = resource
 }
 
-// SetLoadBalancerStatus set the loadBalancer id.
-func (s *ClusterScope) SetLoadBalancerStatus(ctx context.Context, name string, loadBalancer infrav1.VPCLoadBalancerStatus) {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Setting status", "name", name, "status", loadBalancer)
-	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
-		s.IBMPowerVSCluster.Status.LoadBalancers = make(map[string]infrav1.VPCLoadBalancerStatus)
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.LoadBalancers[name]; ok {
-		if val.ControllerCreated != nil && *val.ControllerCreated {
-			loadBalancer.ControllerCreated = val.ControllerCreated
+// GetLoadBalancerID returns the cached load balancer ID from the status slice if it exists.
+func (s *ClusterScope) GetLoadBalancerID(name string) string {
+	for _, lb := range s.IBMPowerVSCluster.Status.LoadBalancers {
+		if lb.Name == name {
+			return lb.ID
 		}
 	}
-	s.IBMPowerVSCluster.Status.LoadBalancers[name] = loadBalancer
-}
-
-// GetLoadBalancerID returns the loadBalancer.
-func (s *ClusterScope) GetLoadBalancerID(loadBalancerName string) *string {
-	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
-		return nil
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.LoadBalancers[loadBalancerName]; ok {
-		return val.ID
-	}
-	return nil
-}
-
-// GetLoadBalancerState will return the state for the load balancer.
-func (s *ClusterScope) GetLoadBalancerState(name string) *infrav1.VPCLoadBalancerState {
-	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
-		return nil
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.LoadBalancers[name]; ok {
-		return &val.State
-	}
-	return nil
+	return ""
 }
 
 // GetPublicLoadBalancerHostName will return the hostname of the public load balancer.
 func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
-	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
+	cluster := s.IBMPowerVSCluster
+
+	// If no load balancers have been tracked in status yet, there's nothing to return.
+	if len(cluster.Status.LoadBalancers) == 0 {
 		return nil, nil
 	}
 
-	var name string
-	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
-		name = *s.GetServiceName(infrav1.ResourceTypeLoadBalancer)
-	}
+	// Case 1: If no load balancers are specified in the spec, it defaults to a single
+	// auto-managed public load balancer using the default service name.
+	if len(cluster.Spec.LoadBalancers) == 0 {
+		defaultName := fmt.Sprintf("%s-loadbalancer", cluster.Name)
 
-	for _, lb := range s.IBMPowerVSCluster.Spec.LoadBalancers {
-		if !*lb.Public {
-			continue
-		}
-
-		if lb.Name != "" {
-			name = lb.Name
-			break
-		}
-		if lb.ID != nil {
-			loadBalancer, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-				ID: lb.ID,
-			})
-			if err != nil {
-				return nil, err
+		for _, lbStatus := range cluster.Status.LoadBalancers {
+			if lbStatus.Name == defaultName && lbStatus.Hostname != "" {
+				return ptr.To(lbStatus.Hostname), nil
 			}
-			name = *loadBalancer.Name
-			break
+		}
+		return nil, nil
+	}
+
+	// Case 2: Evaluate explicitly configured load balancers to locate the public one.
+	for i, lb := range cluster.Spec.LoadBalancers {
+		var targetName string
+
+		switch lb.Type {
+		case infrav1.SourceTypeProvision:
+			// Default to Public if not explicitly overridden to Private
+			if lb.Provision.Type == infrav1.LoadBalancerTypePrivate {
+				continue
+			}
+
+			targetName = lb.Provision.Name
+			if targetName == "" {
+				targetName = fmt.Sprintf("%s-lb-%d", cluster.Name, i)
+			}
+
+		case infrav1.SourceTypeReference:
+			// For references, resolve the name via ID or use the explicit name provided
+			if lb.Reference.Name != "" {
+				targetName = lb.Reference.Name
+			} else if lb.Reference.ID != "" {
+				// Fallback to a live API fetch if we only have an ID
+				lbDetails, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+					ID: ptr.To(lb.Reference.ID),
+				})
+				if err != nil {
+					return nil, fmt.Errorf("failed to fetch referenced load balancer (%s) details: %w", lb.Reference.ID, err)
+				}
+				if lbDetails != nil && lbDetails.Name != nil {
+					targetName = *lbDetails.Name
+				}
+			}
+		}
+
+		// Search status array for a name match
+		if targetName != "" {
+			for _, lbStatus := range cluster.Status.LoadBalancers {
+				if lbStatus.Name == targetName && lbStatus.Hostname != "" {
+					return ptr.To(lbStatus.Hostname), nil
+				}
+			}
 		}
 	}
 
-	if val, ok := s.IBMPowerVSCluster.Status.LoadBalancers[name]; ok {
-		return val.Hostname, nil
-	}
 	return nil, nil
 }
 
@@ -1201,12 +1149,12 @@ func (s *ClusterScope) provisionTransitGateway(ctx context.Context) (*tgapiv1.Tr
 		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
 
-	if s.IBMPowerVSCluster.Status.Workspace.ID == "" || s.IBMPowerVSCluster.Status.VPC == nil {
+	if s.IBMPowerVSCluster.Status.Workspace.ID == "" || s.IBMPowerVSCluster.Status.VPC.ID == "" {
 		return nil, fmt.Errorf("failed to proceed with transit gateway creation: PowerVS workspace or VPC reconciliation is not yet complete")
 	}
 
 	// Determine Routing
-	location, sysGlobalRouting, err := genutil.GetTransitGatewayLocationAndRouting(ptr.To(s.Zone()), s.VPC().Region)
+	location, sysGlobalRouting, err := genutil.GetTransitGatewayLocationAndRouting(ptr.To(s.Zone()), &s.IBMPowerVSCluster.Status.VPC.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transit gateway location and routing: %w", err)
 	}
@@ -1439,21 +1387,25 @@ func findConnectionByNetwork(existingConns []tgapiv1.TransitGatewayConnectionCus
 	return nil
 }
 
-// ReconcileVPC reconciles VPC.
+// ReconcileVPC evaluates the user's intent and reconciles the IBM Cloud VPC accordingly.
 func (s *ClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	// if VPC server id is set means the VPC is already created
-	vpcID := s.GetVPCID()
-	if vpcID != nil {
-		log.V(3).Info("VPC ID is set, fetching details", "vpcID", *vpcID)
+	cluster := s.IBMPowerVSCluster
+
+	// 1. Idempotency & State Check: If we already resolved the VPC ID, just verify its state.
+	vpcID := cluster.Status.VPC.ID
+	if vpcID != "" {
+		log.V(3).Info("VPC ID is set, fetching details", "vpcID", vpcID)
+
 		vpcDetails, _, err := s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
-			ID: vpcID,
+			ID: ptr.To(vpcID),
 		})
 		if err != nil {
-			return false, fmt.Errorf("error fetching VPC details: %w", err)
+			return false, fmt.Errorf("failed to fetch VPC (id: %s) details: %w", vpcID, err)
 		}
+
 		if vpcDetails == nil {
-			return false, fmt.Errorf("vpc with ID %s not found", *vpcID)
+			return false, fmt.Errorf("vpc not found with ID: %s", vpcID)
 		}
 
 		if vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1.VPCStatePending) {
@@ -1463,223 +1415,329 @@ func (s *ClusterScope) ReconcileVPC(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	log.Info("Checking whether VPC already exist")
-	// check vpc exist in cloud
-	id, err := s.checkVPC(ctx)
+	// 2. We don't have an ID yet. Route logic based strictly on the user's explicit intent.
+	log.Info("Resolving IBM Cloud VPC", "type", cluster.Spec.VPC.Type)
+
+	switch cluster.Spec.VPC.Type {
+	case infrav1.SourceTypeReference:
+		return s.reconcileVPCReference(ctx)
+
+	case infrav1.SourceTypeProvision:
+		return s.reconcileVPCProvision(ctx)
+
+	default:
+		return false, fmt.Errorf("unknown VPC source type: %s", cluster.Spec.VPC.Type)
+	}
+}
+
+// reconcileVPCReference handles verifying an explicitly referenced VPC.
+//
+//nolint:revive,unparam // ctx parameter is used for logging context
+func (s *ClusterScope) reconcileVPCReference(ctx context.Context) (bool, error) {
+	ref := s.IBMPowerVSCluster.Spec.VPC.Reference
+
+	var vpcDetails *vpcv1.VPC
+	var err error
+
+	if ref.ID != "" {
+		vpcDetails, _, err = s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{ID: ptr.To(ref.ID)})
+	} else if ref.Name != "" {
+		vpcDetails, err = s.IBMVPCClient.GetVPCByName(ref.Name)
+	} else {
+		return false, fmt.Errorf("VPC reference must have either ID or Name set")
+	}
+
+	if err != nil {
+		return false, fmt.Errorf("failed to get referenced VPC: %w", err)
+	}
+	if vpcDetails == nil || vpcDetails.ID == nil || vpcDetails.Name == nil {
+		return false, fmt.Errorf("referenced VPC not found or returned nil fields")
+	}
+
+	// Update the Status using the new highly-specific VPCStatus struct and include the shared Region
+	s.IBMPowerVSCluster.Status.VPC = infrav1.VPCStatus{
+		ID:     *vpcDetails.ID,
+		Name:   *vpcDetails.Name,
+		Region: s.IBMPowerVSCluster.Spec.VPC.Region,
+	}
+	return false, nil
+}
+
+// reconcileVPCProvision handles idempotently creating a new VPC.
+func (s *ClusterScope) reconcileVPCProvision(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	vpcName := s.IBMPowerVSCluster.Spec.VPC.Provision.Name
+	if vpcName == "" {
+		vpcName = fmt.Sprintf("%s-vpc", s.IBMPowerVSCluster.Name)
+	}
+
+	// Check if a VPC with the target name already exists (e.g. from a previous partial run)
+	log.Info("Checking whether VPC already exists by name", "name", vpcName)
+	vpcDetails, err := s.IBMVPCClient.GetVPCByName(vpcName)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if VPC exists: %w", err)
 	}
-	if id != "" {
-		log.V(3).Info("VPC found in cloud", "vpcID", id)
-		s.SetStatus(ctx, infrav1.ResourceTypeVPC, infrav1.ResourceReference{ID: &id, ControllerCreated: ptr.To(false)})
+
+	if vpcDetails != nil && vpcDetails.ID != nil && vpcDetails.Name != nil {
+		log.V(3).Info("VPC found in cloud by name matching", "vpcID", *vpcDetails.ID)
+
+		// Map matched VPC state to our specific VPCStatus type
+		s.IBMPowerVSCluster.Status.VPC = infrav1.VPCStatus{
+			ID:     *vpcDetails.ID,
+			Name:   *vpcDetails.Name,
+			Region: s.IBMPowerVSCluster.Spec.VPC.Region,
+		}
 		return false, nil
 	}
 
-	// TODO(karthik-k-n): create a generic cluster scope/service and implement common vpc logics, which can be consumed by both vpc and powervs
-
-	// create VPC
-	log.Info("Creating a VPC")
-	vpcID, err = s.createVPC()
+	// Create the VPC if it does not exist
+	log.Info("Creating a new VPC", "name", vpcName)
+	newVPC, err := s.createVPC(vpcName)
 	if err != nil {
 		return false, fmt.Errorf("failed to create VPC: %w", err)
 	}
-	log.Info("Created VPC", "vpcID", *vpcID)
-	s.SetStatus(ctx, infrav1.ResourceTypeVPC, infrav1.ResourceReference{ID: vpcID, ControllerCreated: ptr.To(true)})
-	return true, nil
+
+	log.Info("Created VPC", "vpcID", *newVPC.ID)
+
+	// Record newly provisioned VPC into Status
+	s.IBMPowerVSCluster.Status.VPC = infrav1.VPCStatus{
+		ID:     *newVPC.ID,
+		Name:   *newVPC.Name,
+		Region: s.IBMPowerVSCluster.Spec.VPC.Region,
+	}
+
+	return true, nil // Requeue to hit Step 1 and await active status
 }
 
-// checkVPC checks VPC exist in cloud.
-func (s *ClusterScope) checkVPC(ctx context.Context) (string, error) {
-	var (
-		err        error
-		vpcDetails *vpcv1.VPC
-	)
-	log := ctrl.LoggerFrom(ctx)
-	if s.IBMPowerVSCluster.Spec.VPC != nil && s.IBMPowerVSCluster.Spec.VPC.ID != nil {
-		vpcDetails, _, err = s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
-			ID: s.IBMPowerVSCluster.Spec.VPC.ID,
-		})
-	} else {
-		vpcDetails, err = s.getVPCByName()
-	}
-
-	if err != nil {
-		return "", fmt.Errorf("failed to get VPC: %w", err)
-	}
-	if vpcDetails == nil {
-		log.Info("VPC not found in cloud", "vpc", s.IBMPowerVSCluster.Spec.VPC)
-		return "", nil
-	}
-	log.Info("VPC found in cloud", "vpcID", *vpcDetails.ID)
-	return *vpcDetails.ID, nil
-}
-
-func (s *ClusterScope) getVPCByName() (*vpcv1.VPC, error) {
-	vpcDetails, err := s.IBMVPCClient.GetVPCByName(*s.GetServiceName(infrav1.ResourceTypeVPC))
-	if err != nil {
-		return nil, fmt.Errorf("error fetching VPC details with name: %w", err)
-	}
-	return vpcDetails, nil
-}
-
-// createVPC creates VPC.
-func (s *ClusterScope) createVPC() (*string, error) {
+// createVPC provisions a new VPC in IBM Cloud.
+func (s *ClusterScope) createVPC(name string) (*vpcv1.VPC, error) {
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
 		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
 	}
+
 	addressPrefixManagement := "auto"
 	vpcOption := &vpcv1.CreateVPCOptions{
-		ResourceGroup:           &vpcv1.ResourceGroupIdentity{ID: &resourceGroupID},
-		Name:                    s.GetServiceName(infrav1.ResourceTypeVPC),
-		AddressPrefixManagement: &addressPrefixManagement,
+		ResourceGroup:           &vpcv1.ResourceGroupIdentity{ID: ptr.To(resourceGroupID)},
+		Name:                    ptr.To(name),
+		AddressPrefixManagement: ptr.To(addressPrefixManagement),
 	}
+
 	vpcDetails, _, err := s.IBMVPCClient.CreateVPC(vpcOption)
 	if err != nil {
 		return nil, err
 	}
 
-	// set security group for vpc
-	options := &vpcv1.CreateSecurityGroupRuleOptions{}
-	options.SetSecurityGroupID(*vpcDetails.DefaultSecurityGroup.ID)
-	options.SetSecurityGroupRulePrototype(&vpcv1.SecurityGroupRulePrototype{
-		Direction: core.StringPtr("inbound"),
-		Protocol:  core.StringPtr("tcp"),
-		IPVersion: core.StringPtr("ipv4"),
-		PortMin:   core.Int64Ptr(int64(s.APIServerPort())),
-		PortMax:   core.Int64Ptr(int64(s.APIServerPort())),
-	})
-	if _, _, err = s.IBMVPCClient.CreateSecurityGroupRule(options); err != nil {
-		return nil, fmt.Errorf("error creating security group rule for VPC: %w", err)
+	// set security group rule for vpc
+	if vpcDetails.DefaultSecurityGroup != nil && vpcDetails.DefaultSecurityGroup.ID != nil {
+		options := &vpcv1.CreateSecurityGroupRuleOptions{}
+		options.SetSecurityGroupID(*vpcDetails.DefaultSecurityGroup.ID)
+		options.SetSecurityGroupRulePrototype(&vpcv1.SecurityGroupRulePrototype{
+			Direction: core.StringPtr("inbound"),
+			Protocol:  core.StringPtr("tcp"),
+			IPVersion: core.StringPtr("ipv4"),
+			PortMin:   core.Int64Ptr(int64(s.APIServerPort())),
+			PortMax:   core.Int64Ptr(int64(s.APIServerPort())),
+		})
+		if _, _, err = s.IBMVPCClient.CreateSecurityGroupRule(options); err != nil {
+			return nil, fmt.Errorf("error creating security group rule for VPC: %w", err)
+		}
 	}
-	return vpcDetails.ID, nil
+
+	return vpcDetails, nil
 }
 
-// ReconcileVPCSubnets reconciles VPC subnet.
+// ReconcileVPCSubnets evaluates the user's intent and reconciles all IBM Cloud VPC subnets.
+//
+//nolint:gocyclo // complexity is acceptable for reconciliation logic
 func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	subnets := make([]infrav1.Subnet, 0)
-	vpcZones, err := regionUtil.VPCZonesForVPCRegion(*s.VPC().Region)
+	cluster := s.IBMPowerVSCluster
+
+	// If Topology is VirtualIP, subnets are skipped entirely.
+	if cluster.Spec.Topology == infrav1.PowerVSVirtualIPTopology {
+		return false, nil
+	}
+
+	// 1. Gather all available VPC Zones for the region to handle dynamic expansion
+	vpcRegion := cluster.Spec.VPC.Region
+	if vpcRegion == "" {
+		return false, fmt.Errorf("cannot reconcile VPC subnets: VPC region is missing from spec")
+	}
+	vpcZones, err := regionUtil.VPCZonesForVPCRegion(vpcRegion)
 	if err != nil {
-		return false, fmt.Errorf("error fetching VPC zones associated with VPC region: %w", err)
+		return false, fmt.Errorf("error fetching VPC zones associated with VPC region %s: %w", vpcRegion, err)
 	}
 	if len(vpcZones) == 0 {
-		return false, fmt.Errorf("failed to fetch VPC zones, no zone found for region %s", *s.VPC().Region)
+		return false, fmt.Errorf("failed to fetch VPC zones, no zones found for region %s", vpcRegion)
 	}
-	// check whether user has set the vpc subnets
-	if len(s.IBMPowerVSCluster.Spec.VPCSubnets) == 0 {
-		// if the user did not set any subnet, we try to create subnet in all the zones.
-		log.V(3).Info("VPC subnets details are not set in spec, creating subnets in all zones in the region", "region", *s.VPC().Region)
+
+	// 2. Expand desired subnets (Use spec array, or generate default ones if empty)
+	var desiredSubnets []infrav1.VPCSubnetSource
+	if len(cluster.Spec.VPCSubnets) == 0 {
+		log.V(3).Info("VPC subnets not configured in spec, auto-expanding default subnets for all zones", "region", vpcRegion)
 		for _, zone := range vpcZones {
-			subnet := infrav1.Subnet{
-				Name: ptr.To(fmt.Sprintf("%s-%s", *s.GetServiceName(infrav1.ResourceTypeSubnet), zone)),
-				Zone: ptr.To(zone),
-			}
-			subnets = append(subnets, subnet)
+			desiredSubnets = append(desiredSubnets, infrav1.VPCSubnetSource{
+				Type: infrav1.SourceTypeProvision,
+				Zone: zone, // Set at top-level
+				Provision: infrav1.VPCSubnetProvision{
+					Name: fmt.Sprintf("%s-subnet-%s", cluster.Name, zone),
+				},
+			})
 		}
 	} else {
-		subnets = append(subnets, s.IBMPowerVSCluster.Spec.VPCSubnets...)
+		desiredSubnets = cluster.Spec.VPCSubnets
 	}
 
-	for index, subnet := range subnets {
-		log.Info("Reconciling VPC subnet", "subnet", subnet)
-		var subnetID *string
-		if subnet.ID != nil {
-			subnetID = subnet.ID
+	// Track whether any subnets require a requeue to catch up to an active state
+	anyPending := false
+
+	// 3. Process each subnet using our SSA-compliant list matching
+	for i, subnetSpec := range desiredSubnets {
+		// Determine the calculated or explicit Name for this subnet configuration
+		var subnetName string
+		if subnetSpec.Type == infrav1.SourceTypeReference {
+			subnetName = subnetSpec.Reference.Name
 		} else {
-			if subnet.Name == nil {
-				subnet.Name = ptr.To(fmt.Sprintf("%s-%d", *s.GetServiceName(infrav1.ResourceTypeSubnet), index))
+			subnetName = subnetSpec.Provision.Name
+			if subnetName == "" {
+				subnetName = fmt.Sprintf("%s-subnet-%d", cluster.Name, i)
 			}
-			subnetID = s.GetVPCSubnetID(*subnet.Name)
 		}
 
-		if subnetID != nil {
-			log.V(3).Info("VPC subnet ID is set, fetching details", "subnetID", *subnetID)
-			subnetDetails, _, err := s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{
-				ID: subnetID,
-			})
+		log.Info("Reconciling VPC subnet entry", "name", subnetName, "type", subnetSpec.Type)
+
+		// 4. Idempotency Check: See if this specific subnet is already populated in Status.VPCSubnets list
+		var existingStatus *infrav1.VPCSubnetStatus // Updated to the new specific status type
+		for j := range cluster.Status.VPCSubnets {
+			if cluster.Status.VPCSubnets[j].Name == subnetName {
+				existingStatus = &cluster.Status.VPCSubnets[j]
+				break
+			}
+		}
+
+		// If it's already resolved in status, verify it still exists in the cloud
+		if existingStatus != nil && existingStatus.ID != "" {
+			log.V(3).Info("VPC subnet ID already tracked in status, verifying runtime presence", "name", subnetName, "id", existingStatus.ID)
+			subnetDetails, _, err := s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{ID: ptr.To(existingStatus.ID)})
 			if err != nil {
-				return false, fmt.Errorf("error fetching VPC subnet details: %w", err)
+				return false, fmt.Errorf("error verifying active VPC subnet (id: %s): %w", existingStatus.ID, err)
 			}
 			if subnetDetails == nil {
-				return false, fmt.Errorf("failed to get VPC subnet with ID %s", *subnetID)
+				return false, fmt.Errorf("tracked VPC subnet (id: %s) was not found in IBM Cloud", existingStatus.ID)
 			}
-			// check for next subnet
-			s.SetVPCSubnetStatus(ctx, *subnetDetails.Name, infrav1.ResourceReference{ID: subnetDetails.ID})
+
+			// Subnet is healthy and verified; carry on to the next list entry
 			continue
 		}
 
-		// check VPC subnet exist in cloud
-		vpcSubnetID, err := s.checkVPCSubnet(ctx, *subnet.Name)
-		if err != nil {
-			return false, fmt.Errorf("error checking VPC subnet with name: %w", err)
+		// 5. Route to intent-based sub-handlers if status is empty
+		var subnetDetails *vpcv1.Subnet
+		switch subnetSpec.Type {
+		case infrav1.SourceTypeReference:
+			subnetDetails, err = s.reconcileSubnetReference(subnetSpec.Reference)
+		case infrav1.SourceTypeProvision:
+			// Zone is optional in a user-supplied VPCSubnets entry; fall back to a
+			// round-robin zone assignment across the region's available zones.
+			if subnetSpec.Zone == "" {
+				subnetSpec.Zone = vpcZones[i%len(vpcZones)]
+			}
+			// Pass the resolved zone explicitly to the provisioner
+			subnetDetails, err = s.reconcileSubnetProvision(subnetName, subnetSpec.Zone)
+			anyPending = true // Newly provisioned resources warrant a requeue loop
+		default:
+			return false, fmt.Errorf("unknown VPC subnet source type: %s", subnetSpec.Type)
 		}
-		if vpcSubnetID != "" {
-			log.V(3).Info("Found VPC subnet in cloud", "subnetID", vpcSubnetID)
-			s.SetVPCSubnetStatus(ctx, *subnet.Name, infrav1.ResourceReference{ID: &vpcSubnetID, ControllerCreated: ptr.To(false)})
-			// check for next subnet
+
+		if err != nil {
+			return false, fmt.Errorf("failed resolving subnet %s: %w", subnetName, err)
+		}
+
+		// Skip status update if subnet details are not available
+		if subnetDetails == nil || subnetDetails.ID == nil || subnetDetails.Name == nil {
 			continue
 		}
 
-		if subnet.Zone == nil {
-			subnet.Zone = &vpcZones[index%len(vpcZones)]
+		// Dynamically extract the actual Zone from the cloud payload if available, fallback to spec
+		actualZone := subnetSpec.Zone
+		if subnetDetails.Zone != nil && subnetDetails.Zone.Name != nil {
+			actualZone = *subnetDetails.Zone.Name
 		}
-		log.Info("Creating VPC subnet")
-		subnetID, err = s.createVPCSubnet(subnet)
-		if err != nil {
-			return false, fmt.Errorf("error creating VPC subnet: %w", err)
-		}
-		log.Info("Created VPC subnet", "subnetID", subnetID)
-		s.SetVPCSubnetStatus(ctx, *subnet.Name, infrav1.ResourceReference{ID: subnetID, ControllerCreated: ptr.To(true)})
-		// Requeue only when the creation of all subnets has been triggered.
-		if index == len(subnets)-1 {
-			return true, nil
-		}
+
+		// 6. Update Status array using the new struct
+		s.updateSubnetStatusList(infrav1.VPCSubnetStatus{
+			ID:   *subnetDetails.ID,
+			Name: *subnetDetails.Name,
+			Zone: actualZone,
+		})
 	}
-	return false, nil
+
+	return anyPending, nil
 }
 
-// checkVPCSubnet checks if VPC subnet by the given name exists in cloud.
-func (s *ClusterScope) checkVPCSubnet(ctx context.Context, subnetName string) (string, error) {
-	log := ctrl.LoggerFrom(ctx)
-	vpcSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(subnetName)
+// reconcileSubnetReference verifies a referenced external VPC subnet.
+func (s *ClusterScope) reconcileSubnetReference(ref infrav1.ResourceIdentifier) (*vpcv1.Subnet, error) {
+	var subnetDetails *vpcv1.Subnet
+	var err error
+
+	if ref.ID != "" {
+		subnetDetails, _, err = s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{ID: ptr.To(ref.ID)})
+	} else if ref.Name != "" {
+		subnetDetails, err = s.IBMVPCClient.GetVPCSubnetByName(ref.Name)
+	} else {
+		return nil, fmt.Errorf("subnet reference configuration must have either ID or Name defined")
+	}
+
 	if err != nil {
-		return "", err
+		return nil, fmt.Errorf("failed fetching referenced subnet: %w", err)
 	}
-	if vpcSubnet == nil {
-		log.V(3).Info("VPC subnet not found in cloud", "subnetName", subnetName)
-		return "", nil
+	if subnetDetails == nil || subnetDetails.ID == nil || subnetDetails.Name == nil {
+		return nil, fmt.Errorf("referenced subnet could not be located or returned partial results")
 	}
-	return *vpcSubnet.ID, nil
+
+	return subnetDetails, nil
 }
 
-// createVPCSubnet creates a VPC subnet.
-func (s *ClusterScope) createVPCSubnet(subnet infrav1.Subnet) (*string, error) {
-	// TODO(karthik-k-n): consider moving to clusterscope
-	// fetch resource group id
+// reconcileSubnetProvision handles lookup by name or dynamically creating a new VPC subnet.
+func (s *ClusterScope) reconcileSubnetProvision(name string, zone string) (*vpcv1.Subnet, error) {
+	// Look up by name to enforce idempotency
+	subnetDetails, err := s.IBMVPCClient.GetVPCSubnetByName(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed checking subnet presence by name: %w", err)
+	}
+
+	if subnetDetails != nil && subnetDetails.ID != nil && subnetDetails.Name != nil {
+		return subnetDetails, nil
+	}
+
+	// Create a new subnet if it does not exist
+	return s.createVPCSubnet(name, zone)
+}
+
+// createVPCSubnet provisions the raw subnet resource within the Cloud VPC.
+func (s *ClusterScope) createVPCSubnet(name string, zone string) (*vpcv1.Subnet, error) {
 	resourceGroupID := s.GetResourceGroupID()
 	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
+		return nil, fmt.Errorf("resource group ID is empty")
 	}
 
-	// create subnet
-	vpcID := s.GetVPCID()
-	if vpcID == nil {
-		return nil, fmt.Errorf("VPC ID is empty")
+	vpcID := s.IBMPowerVSCluster.Status.VPC.ID
+	if vpcID == "" {
+		return nil, fmt.Errorf("cannot create subnet: managing VPC ID is not found in status")
 	}
 
 	ipVersion := vpcSubnetIPVersion4
-
 	options := &vpcv1.CreateSubnetOptions{}
 	options.SetSubnetPrototype(&vpcv1.SubnetPrototype{
 		IPVersion:             &ipVersion,
 		TotalIpv4AddressCount: ptr.To(vpcSubnetIPAddressCount),
-		Name:                  subnet.Name,
+		Name:                  ptr.To(name),
 		VPC: &vpcv1.VPCIdentity{
-			ID: vpcID,
+			ID: ptr.To(vpcID),
 		},
 		Zone: &vpcv1.ZoneIdentity{
-			Name: subnet.Zone,
+			Name: ptr.To(zone),
 		},
 		ResourceGroup: &vpcv1.ResourceGroupIdentity{
 			ID: &resourceGroupID,
@@ -1688,12 +1746,311 @@ func (s *ClusterScope) createVPCSubnet(subnet infrav1.Subnet) (*string, error) {
 
 	subnetDetails, _, err := s.IBMVPCClient.CreateSubnet(options)
 	if err != nil {
-		return nil, fmt.Errorf("error creating VPC subnet: %w", err)
+		return nil, fmt.Errorf("error invoking VPC CreateSubnet API: %w", err)
 	}
 	if subnetDetails == nil {
-		return nil, fmt.Errorf("created VPC subnet is nil")
+		return nil, fmt.Errorf("created VPC subnet details returned nil response")
 	}
-	return subnetDetails.ID, nil
+
+	return subnetDetails, nil
+}
+
+// updateSubnetStatusList handles adding or updating an item within the SSA associative list.
+func (s *ClusterScope) updateSubnetStatusList(status infrav1.VPCSubnetStatus) {
+	for i, existing := range s.IBMPowerVSCluster.Status.VPCSubnets {
+		if existing.Name == status.Name {
+			s.IBMPowerVSCluster.Status.VPCSubnets[i] = status
+			return
+		}
+	}
+	s.IBMPowerVSCluster.Status.VPCSubnets = append(s.IBMPowerVSCluster.Status.VPCSubnets, status)
+}
+
+// ReconcileLoadBalancers reconcile loadBalancer.
+//
+//nolint:gocyclo // complexity is acceptable for reconciliation logic
+func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	// Setup defaulting if no load balancers are specified in the spec
+	loadBalancers := make([]infrav1.LoadBalancerSource, 0)
+	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
+		log.V(3).Info("VPC load balancer is not set, constructing a default provisioned public load balancer")
+		loadBalancers = append(loadBalancers, infrav1.LoadBalancerSource{
+			Type: infrav1.SourceTypeProvision,
+			Provision: infrav1.LoadBalancerProvision{
+				Name: fmt.Sprintf("%s-lb-public", s.IBMPowerVSCluster.Name),
+				Type: infrav1.LoadBalancerTypePublic,
+			},
+		})
+	} else {
+		loadBalancers = append(loadBalancers, s.IBMPowerVSCluster.Spec.LoadBalancers...)
+	}
+
+	isAnyLoadBalancerNotReady := false
+
+	for i, lbSource := range loadBalancers {
+		if lbSource.Type == infrav1.SourceTypeReference {
+			var loadBalancer *vpcv1.LoadBalancer
+			var err error
+
+			if lbSource.Reference.ID != "" {
+				loadBalancer, _, err = s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(lbSource.Reference.ID)})
+			} else if lbSource.Reference.Name != "" {
+				loadBalancer, err = s.IBMVPCClient.GetLoadBalancerByName(lbSource.Reference.Name)
+			} else {
+				return false, fmt.Errorf("referenced load balancer must have either an ID or Name")
+			}
+
+			if err != nil || loadBalancer == nil {
+				return false, fmt.Errorf("failed to fetch referenced load balancer details: %w", err)
+			}
+
+			lbName := *loadBalancer.Name
+			if isReady := s.checkLoadBalancerState(ctx, *loadBalancer); !isReady {
+				log.V(3).Info("Referenced LoadBalancer is still not Active", "loadBalancerName", lbName)
+				isAnyLoadBalancerNotReady = true
+			}
+
+			s.SetLoadBalancerStatus(ctx, lbName, infrav1.LoadBalancerStatus{
+				Name:     lbName,
+				ID:       *loadBalancer.ID,
+				State:    infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
+				Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+			})
+			continue
+		}
+
+		// Provision the load balancer
+		provision := lbSource.Provision
+		lbName := provision.Name
+		if lbName == "" {
+			suffix := "public"
+			if provision.Type == infrav1.LoadBalancerTypePrivate {
+				suffix = "private"
+			}
+			if i > 0 {
+				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, i)
+			} else {
+				lbName = fmt.Sprintf("%s-lb-%s", s.IBMPowerVSCluster.Name, suffix)
+			}
+		}
+
+		// Check if we already have the ID cached in status
+		lbID := s.GetLoadBalancerID(lbName)
+		if lbID != "" {
+			log.V(3).Info("Load balancer ID is set, fetching load balancer details", "loadBalancerID", lbID)
+			loadBalancer, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+				ID: ptr.To(lbID),
+			})
+			if err != nil {
+				return false, fmt.Errorf("failed to fetch load balancer details: %w", err)
+			}
+
+			if loadBalancer == nil {
+				return false, fmt.Errorf("failed to fetch load balancer details: received empty/nil response from cloud API for ID %s", lbID)
+			}
+
+			if isReady := s.checkLoadBalancerState(ctx, *loadBalancer); !isReady {
+				log.V(3).Info("LoadBalancer is still not Active", "loadBalancerName", lbName, "state", *loadBalancer.ProvisioningStatus)
+				isAnyLoadBalancerNotReady = true
+			}
+
+			s.SetLoadBalancerStatus(ctx, lbName, infrav1.LoadBalancerStatus{
+				Name:     lbName,
+				ID:       *loadBalancer.ID,
+				State:    infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
+				Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+			})
+			continue
+		}
+
+		// Check if load balancer already exists in cloud by name
+		lbStatus, err := s.checkLoadBalancer(ctx, lbName)
+		if err != nil {
+			return false, fmt.Errorf("failed to check if load balancer exists: %w", err)
+		}
+		if lbStatus != nil {
+			log.V(3).Info("Found load balancer in cloud", "loadBalancerID", lbStatus.ID)
+			s.SetLoadBalancerStatus(ctx, lbName, *lbStatus)
+			continue
+		}
+
+		// Pre-flight check on ports
+		if err := s.checkLoadBalancerPort(lbName, provision); err != nil {
+			return false, fmt.Errorf("failed to check load balancer port: %w", err)
+		}
+
+		// Create loadBalancer
+		log.Info("Creating load balancer", "name", lbName)
+		lbStatus, err = s.createLoadBalancer(ctx, lbName, provision)
+		if err != nil {
+			return false, fmt.Errorf("failed to create load balancer: %w", err)
+		}
+		log.Info("Created load balancer", "loadBalancerID", lbStatus.ID)
+		s.SetLoadBalancerStatus(ctx, lbName, *lbStatus)
+		isAnyLoadBalancerNotReady = true
+	}
+
+	if isAnyLoadBalancerNotReady {
+		return false, nil
+	}
+	return true, nil
+}
+
+// SetLoadBalancerStatus updates or appends the load balancer status.
+func (s *ClusterScope) SetLoadBalancerStatus(ctx context.Context, name string, status infrav1.LoadBalancerStatus) {
+	log := ctrl.LoggerFrom(ctx)
+	log.V(3).Info("Setting load balancer status", "name", name, "status", status)
+
+	// Ensure the slice is initialized
+	if s.IBMPowerVSCluster.Status.LoadBalancers == nil {
+		s.IBMPowerVSCluster.Status.LoadBalancers = make([]infrav1.LoadBalancerStatus, 0)
+	}
+
+	// Check if the entry already exists in the slice to update it in place
+	for i, current := range s.IBMPowerVSCluster.Status.LoadBalancers {
+		if current.Name == name {
+			s.IBMPowerVSCluster.Status.LoadBalancers[i] = status
+			return
+		}
+	}
+
+	s.IBMPowerVSCluster.Status.LoadBalancers = append(s.IBMPowerVSCluster.Status.LoadBalancers, status)
+}
+
+func (s *ClusterScope) checkLoadBalancerPort(lbName string, prov infrav1.LoadBalancerProvision) error {
+	for _, listener := range prov.AdditionalListeners {
+		if listener.Port == int64(s.APIServerPort()) {
+			return fmt.Errorf("port %d for the %s load balancer cannot be used as an additional listener port, as it is already assigned to the API server", listener.Port, lbName)
+		}
+	}
+	return nil
+}
+
+// checkLoadBalancer checks if VPC load balancer by the given name exists in cloud.
+func (s *ClusterScope) checkLoadBalancer(ctx context.Context, name string) (*infrav1.LoadBalancerStatus, error) {
+	log := ctrl.LoggerFrom(ctx)
+	loadBalancer, err := s.IBMVPCClient.GetLoadBalancerByName(name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch load balancer details: %w", err)
+	}
+	if loadBalancer == nil {
+		log.V(3).Info("VPC load balancer not found in cloud")
+		return nil, nil
+	}
+	return &infrav1.LoadBalancerStatus{
+		Name:     name,
+		ID:       *loadBalancer.ID,
+		State:    infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
+		Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+	}, nil
+}
+
+// createLoadBalancer creates loadBalancer.
+func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, prov infrav1.LoadBalancerProvision) (*infrav1.LoadBalancerStatus, error) {
+	log := ctrl.LoggerFrom(ctx)
+	options := &vpcv1.CreateLoadBalancerOptions{}
+
+	resourceGroupID := s.GetResourceGroupID()
+	if resourceGroupID == "" {
+		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
+	}
+
+	// Handle the new Enum for visibility
+	isPublic := true // Defaults to Public
+	if prov.Type == infrav1.LoadBalancerTypePrivate {
+		isPublic = false
+	}
+
+	options.SetIsPublic(isPublic)
+	options.SetName(lbName)
+	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
+		ID: &resourceGroupID,
+	})
+
+	if len(s.IBMPowerVSCluster.Status.VPCSubnets) == 0 {
+		return nil, fmt.Errorf("no VPC subnets are present in cluster status for load balancer creation")
+	}
+
+	for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnets {
+		if subnet.ID == "" {
+			continue
+		}
+		subnet := &vpcv1.SubnetIdentity{
+			ID: ptr.To(subnet.ID),
+		}
+		options.Subnets = append(options.Subnets, subnet)
+	}
+
+	options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
+		{
+			Algorithm:     core.StringPtr("round_robin"),
+			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
+			Name:          core.StringPtr(fmt.Sprintf("%s-pool-%d", lbName, s.APIServerPort())),
+			Protocol:      core.StringPtr("tcp"),
+		},
+	})
+
+	options.SetListeners([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
+		{
+			Protocol: core.StringPtr("tcp"),
+			Port:     core.Int64Ptr(int64(s.APIServerPort())),
+			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
+				Name: core.StringPtr(fmt.Sprintf("%s-pool-%d", lbName, s.APIServerPort())),
+			},
+		},
+	})
+
+	for _, additionalListener := range prov.AdditionalListeners {
+		pool := vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
+			Algorithm:     core.StringPtr("round_robin"),
+			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
+			Name:          ptr.To(fmt.Sprintf("additional-pool-%d", additionalListener.Port)),
+			Protocol:      core.StringPtr("tcp"),
+		}
+		options.Pools = append(options.Pools, pool)
+
+		listener := vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
+			Protocol: core.StringPtr("tcp"),
+			Port:     core.Int64Ptr(additionalListener.Port),
+			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
+				Name: ptr.To(fmt.Sprintf("additional-pool-%d", additionalListener.Port)),
+			},
+		}
+		options.Listeners = append(options.Listeners, listener)
+	}
+
+	log.V(5).Info("Creating load balancer", "options", options)
+	loadBalancer, _, err := s.IBMVPCClient.CreateLoadBalancer(options)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create load balancer: %w", err)
+	}
+
+	lbState := infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus)
+	return &infrav1.LoadBalancerStatus{
+		Name:     lbName,
+		ID:       *loadBalancer.ID,
+		State:    lbState,
+		Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+	}, nil
+}
+
+// checkLoadBalancerState checks the state of a VPC load balancer.
+// If state is active, true is returned, in all other cases, it returns false indicating that load balancer is still not ready.
+func (s *ClusterScope) checkLoadBalancerState(ctx context.Context, lb vpcv1.LoadBalancer) bool {
+	log := ctrl.LoggerFrom(ctx)
+	log.V(3).Info("Checking the status of VPC load balancer", "loadBalancerName", *lb.Name)
+	switch *lb.ProvisioningStatus {
+	case string(infrav1.LoadBalancerStateActive):
+		log.V(3).Info("Load balancer is in active state")
+		return true
+	case string(infrav1.LoadBalancerStateCreatePending):
+		log.V(3).Info("Load balancer creation is in pending state")
+	case string(infrav1.LoadBalancerStateUpdatePending):
+		log.V(3).Info("Load balancer is in updating state")
+	}
+	return false
 }
 
 // ReconcileVPCSecurityGroups reconciles VPC security group.
@@ -1903,7 +2260,7 @@ func (s *ClusterScope) createVPCSecurityGroup(ctx context.Context, spec infrav1.
 
 	options := &vpcv1.CreateSecurityGroupOptions{
 		VPC: &vpcv1.VPCIdentity{
-			ID: s.GetVPCID(),
+			ID: &s.IBMPowerVSCluster.Status.VPC.ID,
 		},
 		Name: spec.Name,
 		ResourceGroup: &vpcv1.ResourceGroupIdentity{
@@ -2075,7 +2432,7 @@ func (s *ClusterScope) validateVPCSecurityGroup(ctx context.Context, securityGro
 			return nil, nil, nil
 		}
 	}
-	if securityGroupDet.VPC == nil || securityGroupDet.VPC.ID == nil || *securityGroupDet.VPC.ID != *s.GetVPCID() {
+	if securityGroupDet.VPC == nil || securityGroupDet.VPC.ID == nil || *securityGroupDet.VPC.ID != s.IBMPowerVSCluster.Status.VPC.ID {
 		return nil, nil, fmt.Errorf("VPC security group by name exists but is not attached to VPC")
 	}
 
@@ -2091,217 +2448,6 @@ func (s *ClusterScope) validateVPCSecurityGroup(ctx context.Context, securityGro
 	}
 
 	return securityGroupDet, ruleIDs, nil
-}
-
-// ReconcileLoadBalancers reconcile loadBalancer.
-func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error) {
-	log := ctrl.LoggerFrom(ctx)
-	loadBalancers := make([]infrav1.VPCLoadBalancerSpec, 0)
-	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
-		log.V(3).Info("VPC load balancer is not set, constructing one")
-		loadBalancer := infrav1.VPCLoadBalancerSpec{
-			Name:   *s.GetServiceName(infrav1.ResourceTypeLoadBalancer),
-			Public: ptr.To(true),
-		}
-		loadBalancers = append(loadBalancers, loadBalancer)
-	} else {
-		loadBalancers = append(loadBalancers, s.IBMPowerVSCluster.Spec.LoadBalancers...)
-	}
-
-	isAnyLoadBalancerNotReady := false
-
-	for index, loadBalancer := range loadBalancers {
-		var loadBalancerID *string
-		if loadBalancer.ID != nil {
-			loadBalancerID = loadBalancer.ID
-		} else {
-			if loadBalancer.Name == "" {
-				loadBalancer.Name = fmt.Sprintf("%s-%d", *s.GetServiceName(infrav1.ResourceTypeLoadBalancer), index)
-			}
-			loadBalancerID = s.GetLoadBalancerID(loadBalancer.Name)
-		}
-		if loadBalancerID != nil {
-			log.V(3).Info("Load balancer ID is set, fetching load balancer details", "loadBalancerID", *loadBalancerID)
-			loadBalancer, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-				ID: loadBalancerID,
-			})
-			if err != nil {
-				return false, fmt.Errorf("failed to fetch load balancer details: %w", err)
-			}
-
-			if isReady := s.checkLoadBalancerStatus(ctx, *loadBalancer); !isReady {
-				log.V(3).Info("LoadBalancer is still not Active", "loadBalancerName", *loadBalancer.Name, "state", *loadBalancer.ProvisioningStatus)
-				isAnyLoadBalancerNotReady = true
-			}
-
-			loadBalancerStatus := infrav1.VPCLoadBalancerStatus{
-				ID:       loadBalancer.ID,
-				State:    infrav1.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
-				Hostname: loadBalancer.Hostname,
-			}
-			s.SetLoadBalancerStatus(ctx, *loadBalancer.Name, loadBalancerStatus)
-			continue
-		}
-
-		// check VPC load balancer exist in cloud
-		loadBalancerStatus, err := s.checkLoadBalancer(ctx, loadBalancer)
-		if err != nil {
-			return false, fmt.Errorf("failed to check if load balancer exists: %w", err)
-		}
-		if loadBalancerStatus != nil {
-			log.V(3).Info("Found load balancer in cloud", "loadBalancerID", *loadBalancerStatus.ID)
-			s.SetLoadBalancerStatus(ctx, loadBalancer.Name, *loadBalancerStatus)
-			continue
-		}
-
-		// check load balancer port against apiserver port.
-		if err := s.checkLoadBalancerPort(loadBalancer); err != nil {
-			return false, fmt.Errorf("failed to check load balancer port: %w", err)
-		}
-
-		// create loadBalancer
-		log.Info("Creating load balancer")
-		loadBalancerStatus, err = s.createLoadBalancer(ctx, loadBalancer)
-		if err != nil {
-			return false, fmt.Errorf("failed to create load balancer: %w", err)
-		}
-		log.Info("Created load balancer", "loadBalancerID", loadBalancerStatus.ID)
-		s.SetLoadBalancerStatus(ctx, loadBalancer.Name, *loadBalancerStatus)
-		isAnyLoadBalancerNotReady = true
-	}
-	if isAnyLoadBalancerNotReady {
-		return false, nil
-	}
-	return true, nil
-}
-
-// checkLoadBalancerStatus checks the state of a VPC load balancer.
-// If state is active, true is returned, in all other cases, it returns false indicating that load balancer is still not ready.
-func (s *ClusterScope) checkLoadBalancerStatus(ctx context.Context, lb vpcv1.LoadBalancer) bool {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Checking the status of VPC load balancer", "loadBalancerName", *lb.Name)
-	switch *lb.ProvisioningStatus {
-	case string(infrav1.VPCLoadBalancerStateActive):
-		log.V(3).Info("Load balancer is in active state")
-		return true
-	case string(infrav1.VPCLoadBalancerStateCreatePending):
-		log.V(3).Info("Load balancer creation is in pending state")
-	case string(infrav1.VPCLoadBalancerStateUpdatePending):
-		log.V(3).Info("Load balancer is in updating state")
-	}
-	return false
-}
-
-func (s *ClusterScope) checkLoadBalancerPort(lb infrav1.VPCLoadBalancerSpec) error {
-	for _, listener := range lb.AdditionalListeners {
-		if listener.Port == int64(s.APIServerPort()) {
-			return fmt.Errorf("port %d for the %s load balancer cannot be used as an additional listener port, as it is already assigned to the API server", listener.Port, lb.Name)
-		}
-	}
-	return nil
-}
-
-// checkLoadBalancer checks if VPC load balancer by the given name exists in cloud.
-func (s *ClusterScope) checkLoadBalancer(ctx context.Context, lb infrav1.VPCLoadBalancerSpec) (*infrav1.VPCLoadBalancerStatus, error) {
-	log := ctrl.LoggerFrom(ctx)
-	loadBalancer, err := s.IBMVPCClient.GetLoadBalancerByName(lb.Name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch load balancer details: %w", err)
-	}
-	if loadBalancer == nil {
-		log.V(3).Info("VPC load balancer not found in cloud")
-		return nil, nil
-	}
-	return &infrav1.VPCLoadBalancerStatus{
-		ID:       loadBalancer.ID,
-		State:    infrav1.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus),
-		Hostname: loadBalancer.Hostname,
-	}, nil
-}
-
-// createLoadBalancer creates loadBalancer.
-func (s *ClusterScope) createLoadBalancer(ctx context.Context, lb infrav1.VPCLoadBalancerSpec) (*infrav1.VPCLoadBalancerStatus, error) {
-	log := ctrl.LoggerFrom(ctx)
-	options := &vpcv1.CreateLoadBalancerOptions{}
-	// TODO(karthik-k-n): consider moving resource group id to clusterscope
-	// fetch resource group id
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
-	}
-
-	var isPublic bool
-	if lb.Public != nil && *lb.Public {
-		isPublic = true
-	}
-	options.SetIsPublic(isPublic)
-	options.SetName(lb.Name)
-	options.SetResourceGroup(&vpcv1.ResourceGroupIdentity{
-		ID: &resourceGroupID,
-	})
-
-	subnetIDs := s.GetVPCSubnetIDs()
-	if subnetIDs == nil {
-		return nil, fmt.Errorf("no subnets are present for load balancer creation")
-	}
-	for _, subnetID := range subnetIDs {
-		subnet := &vpcv1.SubnetIdentity{
-			ID: subnetID,
-		}
-		options.Subnets = append(options.Subnets, subnet)
-	}
-	options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
-		{
-			Algorithm:     core.StringPtr("round_robin"),
-			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
-			// Note: Appending port number to the name, it will be referenced to set target port while adding new pool member
-			Name:     core.StringPtr(fmt.Sprintf("%s-pool-%d", lb.Name, s.APIServerPort())),
-			Protocol: core.StringPtr("tcp"),
-		},
-	})
-
-	options.SetListeners([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
-		{
-			Protocol: core.StringPtr("tcp"),
-			Port:     core.Int64Ptr(int64(s.APIServerPort())),
-			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
-				Name: core.StringPtr(fmt.Sprintf("%s-pool-%d", lb.Name, s.APIServerPort())),
-			},
-		},
-	})
-
-	for _, additionalListeners := range lb.AdditionalListeners {
-		pool := vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
-			Algorithm:     core.StringPtr("round_robin"),
-			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
-			// Note: Appending port number to the name, it will be referenced to set target port while adding new pool member
-			Name:     ptr.To(fmt.Sprintf("additional-pool-%d", additionalListeners.Port)),
-			Protocol: core.StringPtr("tcp"),
-		}
-		options.Pools = append(options.Pools, pool)
-
-		listener := vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
-			Protocol: core.StringPtr("tcp"),
-			Port:     core.Int64Ptr(additionalListeners.Port),
-			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
-				Name: ptr.To(fmt.Sprintf("additional-pool-%d", additionalListeners.Port)),
-			},
-		}
-		options.Listeners = append(options.Listeners, listener)
-	}
-
-	log.V(5).Info("Creating load balancer", "options", options)
-	loadBalancer, _, err := s.IBMVPCClient.CreateLoadBalancer(options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create load balancer: %w", err)
-	}
-	lbState := infrav1.VPCLoadBalancerState(*loadBalancer.ProvisioningStatus)
-	return &infrav1.VPCLoadBalancerStatus{
-		ID:                loadBalancer.ID,
-		State:             lbState,
-		Hostname:          loadBalancer.Hostname,
-		ControllerCreated: ptr.To(true),
-	}, nil
 }
 
 // COSInstance returns the COS instance reference.
@@ -2473,14 +2619,12 @@ func (s *ClusterScope) createCOSServiceInstance() (*resourcecontrollerv2.Resourc
 
 // fetchVPCCRN returns VPC CRN.
 func (s *ClusterScope) fetchVPCCRN() (*string, error) {
-	vpcID := s.GetVPCID()
-	if vpcID == nil {
-		if s.IBMPowerVSCluster.Spec.VPC != nil && s.IBMPowerVSCluster.Spec.VPC.ID != nil {
-			vpcID = s.IBMPowerVSCluster.Spec.VPC.ID
-		}
+	vpcID := s.IBMPowerVSCluster.Status.VPC.ID
+	if vpcID == "" {
+		return nil, fmt.Errorf("failed to fetch VPC ID for VPC %v, ID is empty", s.IBMPowerVSCluster.Status.VPC.ID)
 	}
 	vpcDetails, _, err := s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
-		ID: vpcID,
+		ID: ptr.To(vpcID),
 	})
 	if err != nil {
 		return nil, err
@@ -2508,11 +2652,6 @@ func (s *ClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) {
 // GetServiceName returns name of given service type from spec or generate a name for it.
 func (s *ClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string {
 	switch resourceType {
-	case infrav1.ResourceTypeVPC:
-		if s.VPC() == nil || s.VPC().Name == nil {
-			return ptr.To(fmt.Sprintf("%s-vpc", s.InfraCluster()))
-		}
-		return s.VPC().Name
 	case infrav1.ResourceTypeCOSInstance:
 		if s.COSInstance() == nil || s.COSInstance().Name == "" {
 			return ptr.To(fmt.Sprintf("%s-cosinstance", s.InfraCluster()))
@@ -2523,55 +2662,8 @@ func (s *ClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string
 			return ptr.To(fmt.Sprintf("%s-cosbucket", s.InfraCluster()))
 		}
 		return &s.COSInstance().BucketName
-	case infrav1.ResourceTypeSubnet:
-		return ptr.To(fmt.Sprintf("%s-vpcsubnet", s.InfraCluster()))
-	case infrav1.ResourceTypeLoadBalancer:
-		return ptr.To(fmt.Sprintf("%s-loadbalancer", s.InfraCluster()))
 	}
 	return nil
-}
-
-// DeleteLoadBalancer deletes loadBalancer.
-func (s *ClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, error) {
-	log := ctrl.LoggerFrom(ctx)
-	var errs []error
-	requeue := false
-	for _, lb := range s.IBMPowerVSCluster.Status.LoadBalancers {
-		if lb.ID == nil || lb.ControllerCreated == nil || !*lb.ControllerCreated {
-			log.Info("Skipping load balancer deletion as resource is not created by controller")
-			continue
-		}
-
-		lb, resp, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-			ID: lb.ID,
-		})
-
-		if err != nil {
-			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
-				log.Info("Load balancer successfully deleted")
-				continue
-			}
-			errs = append(errs, fmt.Errorf("failed to fetch load balancer: %w", err))
-			continue
-		}
-
-		if lb != nil && lb.ProvisioningStatus != nil && *lb.ProvisioningStatus == string(infrav1.VPCLoadBalancerStateDeletePending) {
-			log.V(3).Info("Load balancer is currently being deleted")
-			return true, nil
-		}
-
-		if _, err = s.IBMVPCClient.DeleteLoadBalancer(&vpcv1.DeleteLoadBalancerOptions{
-			ID: lb.ID,
-		}); err != nil {
-			errs = append(errs, fmt.Errorf("failed to delete load balancer: %w", err))
-			continue
-		}
-		requeue = true
-	}
-	if len(errs) > 0 {
-		return false, kerrors.NewAggregate(errs)
-	}
-	return requeue, nil
 }
 
 // DeleteVPCSecurityGroups deletes VPC security group.
@@ -2604,81 +2696,262 @@ func (s *ClusterScope) DeleteVPCSecurityGroups(ctx context.Context) error {
 	return nil
 }
 
-// DeleteVPCSubnet deletes VPC subnet.
-func (s *ClusterScope) DeleteVPCSubnet(ctx context.Context) (bool, error) {
+// DeleteLoadBalancer deletes provisioned load balancers.
+//
+//nolint:gocyclo // complexity is acceptable for deletion logic
+func (s *ClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var errs []error
 	requeue := false
-	for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnet {
-		if subnet.ID == nil || subnet.ControllerCreated == nil || !*subnet.ControllerCreated {
-			log.Info("Skipping VPC subnet deletion as resource is not created by controller")
+
+	// Gather all load balancers configured for this cluster
+	loadBalancers := s.IBMPowerVSCluster.Spec.LoadBalancers
+
+	// Fallback to the default naming setup if the spec was totally omitted
+	if len(loadBalancers) == 0 {
+		loadBalancers = []infrav1.LoadBalancerSource{
+			{
+				Type: infrav1.SourceTypeProvision,
+				Provision: infrav1.LoadBalancerProvision{
+					Name: fmt.Sprintf("%s-lb-public", s.IBMPowerVSCluster.Name),
+					Type: infrav1.LoadBalancerTypePublic,
+				},
+			},
+		}
+	}
+
+	for i, lbSource := range loadBalancers {
+		if lbSource.Type == infrav1.SourceTypeReference {
+			log.V(3).Info("Skipping load balancer deletion as it is an external reference resource")
 			continue
 		}
 
-		net, resp, err := s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{
-			ID: subnet.ID,
-		})
-
-		if err != nil {
-			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
-				log.Info("VPC subnet successfully deleted")
-				continue
+		provision := lbSource.Provision
+		lbName := provision.Name
+		if lbName == "" {
+			suffix := "public"
+			if provision.Type == infrav1.LoadBalancerTypePrivate {
+				suffix = "private"
 			}
-			errs = append(errs, fmt.Errorf("failed to fetch VPC subnet: %w", err))
+			if i > 0 {
+				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, i)
+			} else {
+				lbName = fmt.Sprintf("%s-lb-%s", s.IBMPowerVSCluster.Name, suffix)
+			}
+		}
+
+		// Look up the cached ID from the status slice
+		var lbID string
+		for _, lbStatus := range s.IBMPowerVSCluster.Status.LoadBalancers {
+			if lbStatus.Name == lbName {
+				lbID = lbStatus.ID
+				break
+			}
+		}
+
+		var cloudLB *vpcv1.LoadBalancer
+		var err error
+		isNotFound := false
+
+		// Efficient Fetch: Only use the ID if we have it, otherwise fallback to Name
+		if lbID != "" {
+			var resp *core.DetailedResponse
+			cloudLB, resp, err = s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+				ID: ptr.To(lbID),
+			})
+			// Check if the cloud returned a 404 (Not Found)
+			if err != nil && resp != nil && resp.StatusCode == ResourceNotFoundCode {
+				isNotFound = true
+			}
+		} else {
+			cloudLB, err = s.IBMVPCClient.GetLoadBalancerByName(lbName)
+			if err == nil && cloudLB == nil {
+				isNotFound = true
+			}
+		}
+
+		// Handle fetch errors (ignoring 404s since we want to delete anyway)
+		if err != nil && !isNotFound {
+			errs = append(errs, fmt.Errorf("failed to fetch load balancer %s details: %w", lbName, err))
 			continue
 		}
 
-		if net != nil && net.Status != nil && *net.Status == string(infrav1.VPCSubnetStateDeleting) {
-			return true, nil
+		// If it's already gone, we have nothing left to do for this iteration!
+		if isNotFound || cloudLB == nil {
+			log.Info("Load balancer already deleted or never existed", "name", lbName)
+			continue
 		}
 
-		if _, err = s.IBMVPCClient.DeleteSubnet(&vpcv1.DeleteSubnetOptions{
-			ID: net.ID,
+		// Ensure we have the definitive ID and state from the cloud payload
+		lbID = ptr.Deref(cloudLB.ID, "")
+		statusState := ptr.Deref(cloudLB.ProvisioningStatus, "")
+
+		// If it's already mid-deletion, we must requeue to check again later
+		if statusState == string(infrav1.LoadBalancerStateDeletePending) {
+			log.V(3).Info("Load balancer is currently being deleted, waiting", "name", lbName)
+			requeue = true
+			continue
+		}
+
+		// Issue the direct deletion command
+		log.Info("Sending delete request for load balancer", "name", lbName, "id", lbID)
+		if _, err = s.IBMVPCClient.DeleteLoadBalancer(&vpcv1.DeleteLoadBalancerOptions{
+			ID: ptr.To(lbID),
 		}); err != nil {
-			errs = append(errs, fmt.Errorf("failed to delete VPC subnet: %w", err))
+			errs = append(errs, fmt.Errorf("failed to trigger deletion for load balancer %s: %w", lbName, err))
 			continue
 		}
+
+		// Deletion triggered successfully, requeue to verify complete removal on the next tick
 		requeue = true
 	}
+
 	if len(errs) > 0 {
 		return false, kerrors.NewAggregate(errs)
 	}
 	return requeue, nil
 }
 
-// DeleteVPC deletes VPC.
+// DeleteVPCSubnets handles tearing down IBM Cloud VPC subnets if they were provisioned by the controller.
+func (s *ClusterScope) DeleteVPCSubnets(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	cluster := s.IBMPowerVSCluster
+	var errs []error
+	requeue := false
+
+	// 1. Determine which subnets are actively managed (Provisioned) by the controller.
+	managedSubnetNames := make(map[string]bool)
+	if len(cluster.Spec.VPCSubnets) == 0 {
+		// If spec is empty, all subnets tracked in status were auto-expanded defaults and thus provisioned.
+		for _, ref := range cluster.Status.VPCSubnets {
+			managedSubnetNames[ref.Name] = true
+		}
+	} else {
+		// Otherwise, loop through spec and only flag subnets explicitly marked as 'Provision'.
+		for i, subnetSpec := range cluster.Spec.VPCSubnets {
+			if subnetSpec.Type == infrav1.SourceTypeProvision {
+				name := subnetSpec.Provision.Name
+				if name == "" {
+					name = fmt.Sprintf("%s-subnet-%d", cluster.Name, i)
+				}
+				managedSubnetNames[name] = true
+			}
+		}
+	}
+
+	// Updated to use the new VPCSubnetStatus struct
+	var updatedStatus []infrav1.VPCSubnetStatus
+
+	// 2. Process each subnet currently tracked in the status array.
+	for _, subnetRef := range cluster.Status.VPCSubnets {
+		// If it's a referenced subnet, skip deletion and do not keep it in the updated status
+		if !managedSubnetNames[subnetRef.Name] {
+			log.Info("Skipping VPC subnet deletion as it is referenced, not managed by controller", "name", subnetRef.Name)
+			continue
+		}
+
+		if subnetRef.ID == "" {
+			continue
+		}
+
+		// 3. Fetch current state from IBM Cloud
+		net, resp, err := s.IBMVPCClient.GetSubnet(&vpcv1.GetSubnetOptions{ID: ptr.To(subnetRef.ID)})
+		if err != nil {
+			// If it's completely gone, we successfully deleted it.
+			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
+				log.Info("VPC subnet successfully deleted from cloud", "id", subnetRef.ID, "name", subnetRef.Name)
+				continue
+			}
+			errs = append(errs, fmt.Errorf("failed to fetch VPC subnet (id: %s) during deletion: %w", subnetRef.ID, err))
+			updatedStatus = append(updatedStatus, subnetRef) // Keep in status to retry on next requeue
+			continue
+		}
+
+		// 4. Check if deletion is already in progress
+		if net != nil && net.Status != nil && *net.Status == string(infrav1.VPCSubnetStateDeleting) {
+			log.V(3).Info("VPC subnet deletion is actively in progress", "id", subnetRef.ID)
+			requeue = true
+			updatedStatus = append(updatedStatus, subnetRef)
+			continue
+		}
+
+		// 5. Issue the Delete API Call
+		log.Info("Issuing delete command for VPC subnet", "id", subnetRef.ID, "name", subnetRef.Name)
+		if _, err = s.IBMVPCClient.DeleteSubnet(&vpcv1.DeleteSubnetOptions{ID: net.ID}); err != nil {
+			errs = append(errs, fmt.Errorf("failed to delete VPC subnet (id: %s): %w", subnetRef.ID, err))
+			updatedStatus = append(updatedStatus, subnetRef)
+			continue
+		}
+
+		// Requeue to monitor progress until it returns 404
+		requeue = true
+		updatedStatus = append(updatedStatus, subnetRef)
+	}
+
+	// 6. Update the status array to drop subnets that successfully returned 404
+	cluster.Status.VPCSubnets = updatedStatus
+
+	if len(errs) > 0 {
+		return false, kerrors.NewAggregate(errs)
+	}
+	return requeue, nil
+}
+
+// DeleteVPC handles tearing down the IBM Cloud VPC if it was provisioned by the controller.
 func (s *ClusterScope) DeleteVPC(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1.ResourceTypeVPC) {
-		log.Info("Skipping VPC deletion as resource is not created by controller")
+	cluster := s.IBMPowerVSCluster
+
+	// 1. Guard check: If the user referenced an existing VPC, do not delete it.
+	if cluster.Spec.VPC.Type != infrav1.SourceTypeProvision {
+		log.Info("Skipping VPC deletion as it is not managed/provisioned by the controller")
 		return false, nil
 	}
 
-	if s.IBMPowerVSCluster.Status.VPC.ID == nil {
+	// 2. If it's already completely wiped out from our status tracking, nothing to do.
+	vpcID := cluster.Status.VPC.ID
+	if vpcID == "" {
+		log.Info("VPC already removed or untracked in status")
 		return false, nil
 	}
 
+	// 3. Fetch the current runtime state of the VPC from IBM Cloud.
 	vpcDetails, resp, err := s.IBMVPCClient.GetVPC(&vpcv1.GetVPCOptions{
-		ID: s.IBMPowerVSCluster.Status.VPC.ID,
+		ID: ptr.To(vpcID),
 	})
 
 	if err != nil {
 		if resp != nil && resp.StatusCode == ResourceNotFoundCode {
-			log.Info("VPC successfully deleted")
+			log.Info("VPC successfully deleted from cloud")
+			// Clear status using the new VPCStatus struct
+			cluster.Status.VPC = infrav1.VPCStatus{}
 			return false, nil
 		}
-		return false, fmt.Errorf("failed to fetch VPC: %w", err)
+		return false, fmt.Errorf("failed to fetch VPC (id: %s) details during deletion: %w", vpcID, err)
 	}
 
-	if vpcDetails != nil && vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1.VPCStateDeleting) {
+	if vpcDetails == nil {
+		log.Info("VPC returned nil details, assuming gone")
+		// Clear status using the new VPCStatus struct
+		cluster.Status.VPC = infrav1.VPCStatus{}
+		return false, nil
+	}
+
+	// 4. Short-circuit if the VPC deletion operation is currently actively running in the cloud.
+	if vpcDetails.Status != nil && *vpcDetails.Status == string(infrav1.VPCStateDeleting) {
+		log.V(3).Info("VPC deletion is actively in progress in IBM Cloud")
 		return true, nil
 	}
 
+	// 5. Issue the actual Delete call to the IBM Cloud VPC API.
+	log.Info("Issuing delete command for VPC", "vpcID", vpcID, "name", *vpcDetails.Name)
 	if _, err = s.IBMVPCClient.DeleteVPC(&vpcv1.DeleteVPCOptions{
 		ID: vpcDetails.ID,
 	}); err != nil {
-		return false, fmt.Errorf("failed to delete VPC: %w", err)
+		return false, fmt.Errorf("failed to delete VPC (id: %s): %w", vpcID, err)
 	}
+
+	// Requeue immediately to hit step 4 and monitor progress until it returns a 404.
 	return true, nil
 }
 
@@ -2938,13 +3211,8 @@ func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 
 // resourceCreatedByController helps to identify resource created by controller or not.
 func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.ResourceType) bool {
+	//nolint:gocritic // single case switch is intentional for future extensibility
 	switch resourceType {
-	case infrav1.ResourceTypeVPC:
-		vpcStatus := s.IBMPowerVSCluster.Status.VPC
-		if vpcStatus == nil || vpcStatus.ControllerCreated == nil || !*vpcStatus.ControllerCreated {
-			return false
-		}
-		return true
 	case infrav1.ResourceTypeCOSInstance:
 		cosInstance := s.IBMPowerVSCluster.Status.COSInstance
 		if cosInstance == nil || cosInstance.ControllerCreated == nil || !*cosInstance.ControllerCreated {
@@ -2957,5 +3225,5 @@ func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.Resour
 
 // bucketRegion returns the region to use for COS bucket for the ClusterScope.
 func (s *ClusterScope) bucketRegion() string {
-	return fetchBucketRegion(s.COSInstance(), s.VPC())
+	return fetchBucketRegion(s.COSInstance(), s.IBMPowerVSCluster.Status.VPC)
 }

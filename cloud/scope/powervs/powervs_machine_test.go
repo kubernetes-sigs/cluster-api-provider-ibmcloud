@@ -239,9 +239,10 @@ func TestBucketRegion(t *testing.T) {
 			machineScope: MachineScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						VPC: &infrav1.VPCResourceReference{
-							Region: ptr.To(region),
-						},
+						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: region},
+					},
+					Status: infrav1.IBMPowerVSClusterStatus{
+						VPC: infrav1.VPCStatus{Region: region},
 					},
 				},
 			},
@@ -261,9 +262,7 @@ func TestBucketRegion(t *testing.T) {
 						CosInstance: &infrav1.CosInstance{
 							BucketRegion: region,
 						},
-						VPC: &infrav1.VPCResourceReference{
-							Region: ptr.To(vpcRegion),
-						},
+						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: vpcRegion},
 					},
 				},
 			},
@@ -276,9 +275,10 @@ func TestBucketRegion(t *testing.T) {
 						CosInstance: &infrav1.CosInstance{
 							BucketRegion: "",
 						},
-						VPC: &infrav1.VPCResourceReference{
-							Region: ptr.To(vpcRegion),
-						},
+						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: vpcRegion},
+					},
+					Status: infrav1.IBMPowerVSClusterStatus{
+						VPC: infrav1.VPCStatus{Region: vpcRegion},
 					},
 				},
 			},
@@ -288,7 +288,7 @@ func TestBucketRegion(t *testing.T) {
 			machineScope: MachineScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						VPC: &infrav1.VPCResourceReference{},
+						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: "us-east"},
 					},
 				},
 			},
@@ -1522,7 +1522,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-23"),
@@ -1559,16 +1559,21 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: loadBalancerName,
-							ID:   ptr.To(loadBalancerID),
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port: 23,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											testListenerSelector: "port-23",
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID:   loadBalancerID,
+								Name: loadBalancerName,
+							},
+							Provision: infrav1.LoadBalancerProvision{
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port: 23,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												testListenerSelector: "port-23",
+											},
 										},
 									},
 								},
@@ -1577,9 +1582,10 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-						loadBalancerName: {
-							ID: ptr.To(loadBalancerID),
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{
+							Name: loadBalancerName,
+							ID:   loadBalancerID,
 						},
 					},
 				},
@@ -1603,7 +1609,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-22"),
@@ -1643,16 +1649,18 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: loadBalancerName,
-							ID:   ptr.To(loadBalancerID),
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port: 22,
-									Selector: metav1.LabelSelector{
-										MatchLabels: map[string]string{
-											testListenerSelector: "port-22",
+							Type:      infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName},
+							Provision: infrav1.LoadBalancerProvision{
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port: 22,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{
+												testListenerSelector: "port-22",
+											},
 										},
 									},
 								},
@@ -1661,9 +1669,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-						loadBalancerName: {
-							ID: ptr.To(loadBalancerID),
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{
+
+							Name: loadBalancerName,
+
+							ID: loadBalancerID,
 						},
 					},
 				},
@@ -1690,7 +1701,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-6443"),
@@ -1730,22 +1741,27 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: loadBalancerName,
-							ID:   ptr.To(loadBalancerID),
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port: 6443,
+							Type:      infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName},
+							Provision: infrav1.LoadBalancerProvision{
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port: 6443,
+									},
 								},
 							},
 						},
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-						loadBalancerName: {
-							ID: ptr.To(loadBalancerID),
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{
+
+							Name: loadBalancerName,
+
+							ID: loadBalancerID,
 						},
 					},
 				},
@@ -1768,7 +1784,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-6443"),
@@ -1818,25 +1834,30 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
 						{
-							Name: loadBalancerName,
-							ID:   ptr.To(loadBalancerID),
-							AdditionalListeners: []infrav1.AdditionalListenerSpec{
-								{
-									Port: 6443,
-								},
-								{
-									Port: 24,
+							Type:      infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName},
+							Provision: infrav1.LoadBalancerProvision{
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port: 6443,
+									},
+									{
+										Port: 24,
+									},
 								},
 							},
 						},
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-						loadBalancerName: {
-							ID: ptr.To(loadBalancerID),
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{
+
+							Name: loadBalancerName,
+
+							ID: loadBalancerID,
 						},
 					},
 				},
@@ -1891,17 +1912,18 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				IBMVPCClient: mockClient,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: loadBalancerName,
-								ID:   ptr.To(loadBalancerID),
-							},
+								Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName}},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							loadBalancerName: {
-								ID: ptr.To(loadBalancerID),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+
+								Name: loadBalancerName,
+
+								ID: loadBalancerID,
 							},
 						},
 					},
@@ -1918,7 +1940,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancers := &vpcv1.LoadBalancer{
-				ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateCreatePending),
+				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateCreatePending),
 			}
 			mockClient := vpcmock.NewMockVpc(mockCtrl)
 
@@ -1927,17 +1949,18 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				IBMVPCClient: mockClient,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: loadBalancerName,
-								ID:   ptr.To(loadBalancerID),
-							},
+								Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName}},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							loadBalancerName: {
-								ID: ptr.To(loadBalancerID),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+
+								Name: loadBalancerName,
+
+								ID: loadBalancerID,
 							},
 						},
 					},
@@ -1954,7 +1977,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancers := &vpcv1.LoadBalancer{
-				ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 			}
 			mockClient := vpcmock.NewMockVpc(mockCtrl)
 			mockClient.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(loadBalancerID)}).Return(loadBalancers, nil, nil)
@@ -1962,17 +1985,18 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				IBMVPCClient: mockClient,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: loadBalancerName,
-								ID:   ptr.To(loadBalancerID),
-							},
+								Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName}},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							loadBalancerName: {
-								ID: ptr.To(loadBalancerID),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+
+								Name: loadBalancerName,
+
+								ID: loadBalancerID,
 							},
 						},
 					},
@@ -1992,7 +2016,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			loadBalancers := &vpcv1.LoadBalancer{
 				ID:                 ptr.To(loadBalancerID),
 				Name:               ptr.To(loadBalancerName),
-				ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 				Pools: []vpcv1.LoadBalancerPoolReference{
 					{
 						ID:   ptr.To("pool-id-0"),
@@ -2022,17 +2046,18 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: loadBalancerName,
-								ID:   ptr.To(loadBalancerID),
-							},
+								Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName}},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							loadBalancerName: {
-								ID: ptr.To(loadBalancerID),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+
+								Name: loadBalancerName,
+
+								ID: loadBalancerID,
 							},
 						},
 					},
@@ -2054,14 +2079,13 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			scope := MachineScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								ID: ptr.To(loadBalancerID),
-							},
+								Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName}},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{},
+						LoadBalancers: []infrav1.LoadBalancerStatus{},
 					},
 				},
 			}
@@ -2079,7 +2103,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			loadBalancers := &vpcv1.LoadBalancer{
 				ID:                 ptr.To(loadBalancerID),
 				Name:               ptr.To(loadBalancerName),
-				ProvisioningStatus: (*string)(&infrav1.VPCLoadBalancerStateActive),
+				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
 				Pools: []vpcv1.LoadBalancerPoolReference{
 					{
 						ID:   ptr.To("pool-id-2"),
@@ -2103,17 +2127,18 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						LoadBalancers: []infrav1.VPCLoadBalancerSpec{
+						LoadBalancers: []infrav1.LoadBalancerSource{
 							{
-								Name: loadBalancerName,
-								ID:   ptr.To(loadBalancerID),
-							},
+								Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: loadBalancerID, Name: loadBalancerName}},
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
-							loadBalancerName: {
-								ID: ptr.To(loadBalancerID),
+						LoadBalancers: []infrav1.LoadBalancerStatus{
+							{
+
+								Name: loadBalancerName,
+
+								ID: loadBalancerID,
 							},
 						},
 					},

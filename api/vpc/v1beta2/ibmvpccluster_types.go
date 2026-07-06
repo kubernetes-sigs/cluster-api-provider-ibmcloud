@@ -90,12 +90,11 @@ type VPCLoadBalancerSpec struct {
 	// +listType=map
 	// +listMapKey=port
 	// +optional
-	// ++kubebuilder:validation:UniqueItems=true
 	AdditionalListeners []AdditionalListenerSpec `json:"additionalListeners,omitempty"`
 
 	// backendPools defines the load balancer's backend pools.
 	// +optional
-	BackendPools []VPCLoadBalancerBackendPoolSpec `json:"backendPools,omitempty"`
+	BackendPools []LoadBalancerBackendPool `json:"backendPools,omitempty"`
 
 	// securityGroups defines the Security Groups to attach to the load balancer.
 	// Security Groups defined here are expected to already exist when the load balancer is reconciled (these do not get created when reconciling the load balancer).
@@ -134,8 +133,8 @@ type AdditionalListenerSpec struct {
 	Selector metav1.LabelSelector `json:"selector,omitempty"`
 }
 
-// VPCLoadBalancerBackendPoolSpec defines the desired configuration of a VPC Load Balancer Backend Pool.
-type VPCLoadBalancerBackendPoolSpec struct {
+// LoadBalancerBackendPool defines the desired configuration of a VPC Load Balancer Backend Pool.
+type LoadBalancerBackendPool struct {
 	// name defines the name of the Backend Pool.
 	// +kubebuilder:validation:MinLength:=1
 	// +kubebuilder:validation:MaxLength:=63

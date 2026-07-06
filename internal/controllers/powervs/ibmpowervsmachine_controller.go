@@ -256,7 +256,7 @@ func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create VPC load balancer pool member: %w", err)
 	}
-	if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
+	if poolMember != nil && (poolMember.ProvisioningStatus == nil || *poolMember.ProvisioningStatus != string(infrav1.LoadBalancerStateActive)) {
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 	return ctrl.Result{}, nil
@@ -413,7 +413,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 	}
 
-	if machineScope.IBMPowerVSCluster.Spec.VPC == nil || machineScope.IBMPowerVSCluster.Spec.VPC.Region == nil {
+	if machineScope.IBMPowerVSCluster.Spec.VPC.Region == "" {
 		log.Info("Skipping configuring machine to load balancer as VPC is not set")
 		deprecatedv1beta1conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition)
 		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{

@@ -72,6 +72,18 @@ const (
 	TransitGatewayRoutingGlobal TransitGatewayRouting = "Global"
 )
 
+// LoadBalancerType defines the network visibility of the VPC Load Balancer.
+// +kubebuilder:validation:Enum=Public;Private
+type LoadBalancerType string
+
+const (
+	// LoadBalancerTypePublic indicates the load balancer is accessible from the internet.
+	LoadBalancerTypePublic LoadBalancerType = "Public"
+
+	// LoadBalancerTypePrivate indicates the load balancer is only accessible internally within the VPC.
+	LoadBalancerTypePrivate LoadBalancerType = "Private"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
@@ -129,38 +141,22 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	TransitGateway TransitGatewaySource `json:"transitGateway,omitempty,omitzero"`
 
-	// vpc contains information about IBM Cloud VPC resources.
-	// when omitted system will dynamically create the VPC with name CLUSTER_NAME-vpc.
-	// when VPC.ID is set, its expected that there exist a VPC with ID or else system will give error.
-	// when VPC.Name is set, system will first check for VPC with Name, if not exist system will create new VPC.
-	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
-	// 1. it is expected to set the VPC.Region, not setting will result in webhook error.
+	// vpc specifies how the IBM Cloud VPC should be sourced.
 	// +optional
-	VPC *VPCResourceReference `json:"vpc,omitempty"`
+	VPC VPCSource `json:"vpc,omitempty,omitzero"`
 
-	// vpcSubnets contains information about IBM Cloud VPC Subnet resources.
-	// when omitted system will create the subnets in all the zone corresponding to VPC.Region, with name CLUSTER_NAME-vpcsubnet-ZONE_NAME.
-	// possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
-	// when VPCSubnets[].ID is set, its expected that there exist a subnet with ID or else system will give error.
-	// when VPCSubnets[].Zone is not set, a random zone is picked from available zones of VPC.Region.
-	// when VPCSubnets[].Name is not set, system will set name as CLUSTER_NAME-vpcsubnet-INDEX.
-	// if subnet with name VPCSubnets[].Name not found, system will create new subnet in VPCSubnets[].Zone.
+	// Subnets configures the VPC Subnets bound to this cluster environment.
 	// +optional
-	VPCSubnets []Subnet `json:"vpcSubnets,omitempty"`
+	VPCSubnets []VPCSubnetSource `json:"subnets,omitempty"`
+
+	// loadBalancers contains information about IBM Cloud VPC Load Balancer resources.
+	// This field is rejected by the API if the Topology is set to VirtualIP.
+	// +optional
+	LoadBalancers []LoadBalancerSource `json:"loadBalancers,omitempty"`
 
 	// vpcSecurityGroups to attach it to the VPC resource
 	// +optional
 	VPCSecurityGroups []VPCSecurityGroup `json:"vpcSecurityGroups,omitempty"`
-
-	// loadBalancers is optional configuration for configuring loadbalancers to control plane or data plane nodes.
-	// when omitted system will create a default public loadbalancer with name CLUSTER_NAME-loadbalancer.
-	// when specified a vpc loadbalancer will be created and controlPlaneEndpoint will be set with associated hostname of loadbalancer.
-	// ControlPlaneEndpoint will be set with associated hostname of public loadbalancer.
-	// when LoadBalancers[].ID is set, its expected that there exist a loadbalancer with ID or else system will give error.
-	// when LoadBalancers[].Name is set, system will first check for loadbalancer with Name, if not exist system will create new loadbalancer.
-	// For each loadbalancer a default backed pool and front listener will be configured with port 6443.
-	// +optional
-	LoadBalancers []VPCLoadBalancerSpec `json:"loadBalancers,omitempty"`
 
 	// cosInstance contains options to configure a supporting IBM Cloud COS bucket for this
 	// cluster - currently used for nodes requiring Ignition
@@ -207,20 +203,27 @@ type IBMPowerVSClusterStatus struct {
 	// transitGateway is reference to IBM Cloud TransitGateway.
 	TransitGateway TransitGatewayStatus `json:"transitGateway,omitempty,omitzero"`
 
-	// vpc is reference to IBM Cloud VPC resources.
-	VPC *ResourceReference `json:"vpc,omitempty"`
+	// VPC tracks the observed state of the provisioned or referenced IBM Cloud VPC.
+	// +optional
+	VPC VPCStatus `json:"vpc,omitempty,omitzero"`
 
-	// vpcSubnet is reference to IBM Cloud VPC subnet.
-	VPCSubnet map[string]ResourceReference `json:"vpcSubnet,omitempty"`
+	// VPCSubnets tracks the current status of the VPC subnets.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	VPCSubnets []VPCSubnetStatus `json:"vpcSubnets,omitempty"`
+
+	// loadBalancers tracks the status of the IBM Cloud VPC Load Balancers.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	LoadBalancers []LoadBalancerStatus `json:"loadBalancers,omitempty"`
 
 	// vpcSecurityGroups is reference to IBM Cloud VPC security group.
 	VPCSecurityGroups map[string]VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
 
 	// cosInstance is reference to IBM Cloud COS Instance resource.
 	COSInstance *ResourceReference `json:"cosInstance,omitempty"`
-
-	// loadBalancers reference to IBM Cloud VPC Loadbalancer.
-	LoadBalancers map[string]VPCLoadBalancerStatus `json:"loadBalancers,omitempty"`
 
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
 	// +optional
@@ -285,30 +288,6 @@ type IBMPowerVSClusterInitializationStatus struct {
 	// NOTE: this field is part of the Cluster API contract, and it is used to orchestrate initial Cluster provisioning.
 	// +optional
 	Provisioned *bool `json:"provisioned,omitempty"`
-}
-
-// VPCResourceReference is a reference to a specific VPC resource by ID or Name
-// Only one of ID or Name may be specified. Specifying more than one will result in
-// a validation error.
-type VPCResourceReference struct {
-	// id of resource.
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength:=64
-	// +kubebuilder:validation:Pattern=`^[-0-9a-z_]+$`
-	// +optional
-	ID *string `json:"id,omitempty"`
-
-	// name of resource.
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength:=63
-	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
-	// +optional
-	Name *string `json:"name,omitempty"`
-
-	// region of IBM Cloud VPC.
-	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource,
-	// it is expected to set the region, not setting will result in webhook error.
-	Region *string `json:"region,omitempty"`
 }
 
 // TransitGatewaySource holds the TransitGateway information and determines how it is sourced.
@@ -641,4 +620,260 @@ type ResourceGroupSource struct {
 	// Reference specifies the existing Resource Group to use by Name or ID.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+}
+
+// VPCSource defines how the IBM Cloud VPC is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+type VPCSource struct {
+	// Type defines whether to use an existing VPC or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="VPC type is immutable once set"
+	Type SourceType `json:"type"`
+
+	// Region is the IBM Cloud region where the VPC is or will be located.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Region string `json:"region"`
+
+	// Reference contains the information to identify an existing VPC.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty"`
+
+	// Provision contains the configuration for provisioning a new VPC.
+	// +optional
+	Provision VPCProvision `json:"provision,omitempty"`
+}
+
+// VPCProvision holds the configuration for creating a new VPC.
+type VPCProvision struct {
+	// Name of the VPC to be created.
+	// If omitted, the system will dynamically create the VPC with the name <CLUSTER_NAME>-vpc.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// VPCStatus tracks the live observed state of the IBM Cloud VPC.
+type VPCStatus struct {
+	// ID is the validated string identifier returned by the IBM Cloud API.
+	// +kubebuilder:validation:Required
+	ID string `json:"id"`
+
+	// Name is the unique name identifying the VPC in the cloud.
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// Region is the IBM Cloud region where the VPC resides.
+	// +optional
+	Region string `json:"region,omitempty"`
+}
+
+// VPCSubnetSource defines how the IBM Cloud VPC Subnet is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
+type VPCSubnetSource struct {
+	// Type defines whether to use an existing VPC Subnet or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	Type SourceType `json:"type"`
+
+	// Zone of the IBM Cloud VPC Subnet.
+	// When provisioning, if omitted, a random zone is picked from available zones of the VPC.Region.
+	// +optional
+	Zone string `json:"zone,omitempty"`
+
+	// Reference contains the information to identify an existing VPC Subnet.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty"`
+
+	// Provision contains the configuration for provisioning a new VPC Subnet.
+	// +optional
+	Provision VPCSubnetProvision `json:"provision,omitempty"`
+}
+
+// VPCSubnetProvision holds the configuration for a new VPC Subnet.
+type VPCSubnetProvision struct {
+	// Name of the VPC Subnet to be created.
+	// If omitted, the system will dynamically create the VPC subnet with name <CLUSTER_NAME>-vpcsubnet-<INDEX>.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// VPCSubnetStatus defines the observed state of an IBM Cloud VPC Subnet.
+type VPCSubnetStatus struct {
+	// ID is the validated string identifier returned by the IBM Cloud API.
+	// +kubebuilder:validation:Required
+	ID string `json:"id"`
+
+	// Name is the unique name identifying the subnet in the cloud.
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// Zone is the actual IBM Cloud zone where the subnet resides.
+	// +optional
+	Zone string `json:"zone,omitempty"`
+}
+
+// LoadBalancerSource defines how the IBM Cloud VPC Load Balancer is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
+type LoadBalancerSource struct {
+	// Type defines whether to use an existing Load Balancer or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	Type SourceType `json:"type,omitempty"`
+
+	// Reference contains the information to identify an existing Load Balancer.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// Provision contains the configuration for provisioning a new Load Balancer.
+	// +optional
+	Provision LoadBalancerProvision `json:"provision,omitempty,omitzero"`
+}
+
+// LoadBalancerProvision holds the configuration for a new VPC Load Balancer.
+type LoadBalancerProvision struct {
+	// Name sets the name of the VPC load balancer.
+	// If omitted, the system will dynamically create it.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// Type indicates whether the load balancer is public or private.
+	// +kubebuilder:default=Public
+	// +optional
+	Type LoadBalancerType `json:"type,omitempty"`
+
+	// AdditionalListeners sets the additional listeners for the load balancer.
+	// +listType=map
+	// +listMapKey=port
+	// +optional
+	AdditionalListeners []AdditionalListener `json:"additionalListeners,omitempty"`
+
+	// BackendPools defines the load balancer's backend pools.
+	// +optional
+	BackendPools []LoadBalancerBackendPool `json:"backendPools,omitempty"`
+
+	// SecurityGroups defines the Security Groups to attach to the load balancer.
+	// +optional
+	SecurityGroups []ResourceIdentifier `json:"securityGroups,omitempty"`
+
+	// Subnets defines the VPC Subnets to attach to the load balancer.
+	// +optional
+	Subnets []ResourceIdentifier `json:"subnets,omitempty"`
+}
+
+// AdditionalListener defines the desired state of an
+// additional listener on a VPC load balancer.
+type AdditionalListener struct {
+	// defaultPoolName defines the name of a VPC Load Balancer Backend Pool to use for the VPC Load Balancer Listener.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	DefaultPoolName string `json:"defaultPoolName,omitempty"`
+
+	// port sets the port for the additional listener.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	// +required
+	Port int64 `json:"port,omitempty"`
+
+	// protocol defines the protocol to use for the VPC Load Balancer Listener.
+	// Will default to TCP protocol if not specified.
+	// +optional
+	Protocol LoadBalancerListenerProtocol `json:"protocol,omitempty"`
+
+	// selector is used to find IBMPowerVSMachines with matching labels.
+	// If the label matches, the machine is then added to the load balancer listener configuration.
+	// +optional
+	Selector metav1.LabelSelector `json:"selector,omitempty"`
+}
+
+// LoadBalancerBackendPool defines the desired configuration of a VPC Load Balancer Backend Pool.
+type LoadBalancerBackendPool struct {
+	// name defines the name of the Backend Pool.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// algorithm defines the load balancing algorithm to use.
+	// +required
+	Algorithm LoadBalancerBackendPoolAlgorithm `json:"algorithm,omitempty"`
+
+	// healthMonitor defines the backend pool's health monitor.
+	// +required
+	HealthMonitor LoadBalancerHealthMonitor `json:"healthMonitor,omitempty"`
+
+	// protocol defines the protocol to use for the Backend Pool.
+	// +required
+	Protocol LoadBalancerBackendPoolProtocol `json:"protocol,omitempty"`
+}
+
+// LoadBalancerHealthMonitor defines the desired state of a Health Monitor resource for a VPC Load Balancer Backend Pool.
+// +kubebuilder:validation:XValidation:rule="self.delay > self.timeout",message="health monitor's delay must be greater than the timeout"
+type LoadBalancerHealthMonitor struct {
+	// delay defines the seconds to wait between health checks.
+	// +kubebuilder:validation:Minimum=2
+	// +kubebuilder:validation:Maximum=60
+	// +required
+	Delay int64 `json:"delay,omitempty"`
+
+	// retries defines the max retries for health check.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=10
+	// +required
+	Retries int64 `json:"retries,omitempty"`
+
+	// port defines the port to perform health monitoring on.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	// +optional
+	Port int64 `json:"port,omitempty"`
+
+	// timeout defines the seconds to wait for a health check response.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=59
+	// +required
+	Timeout int64 `json:"timeout,omitempty"`
+
+	// type defines the protocol used for health checks.
+	// +required
+	Type LoadBalancerBackendPoolHealthMonitorType `json:"type,omitempty"`
+
+	// urlPath defines the URL to use for health monitoring.
+	// +kubebuilder:validation:Pattern=`^\/(([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})+(\/([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})*)*)?(\\?([a-zA-Z0-9-._~!$&'()*+,;=:@\/?]|%[a-fA-F0-9]{2})*)?$`
+	// +optional
+	URLPath string `json:"urlPath,omitempty"`
+}
+
+// LoadBalancerStatus defines the status of a VPC load balancer.
+type LoadBalancerStatus struct {
+	// Name is the unique identifier for the load balancer configuration.
+	// +required
+	Name string `json:"name,omitempty"`
+
+	// ID of the VPC load balancer.
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// State is the status of the load balancer.
+	// +optional
+	State LoadBalancerState `json:"state,omitempty"`
+
+	// Hostname is the hostname of load balancer.
+	// +optional
+	Hostname string `json:"hostname,omitempty"`
 }

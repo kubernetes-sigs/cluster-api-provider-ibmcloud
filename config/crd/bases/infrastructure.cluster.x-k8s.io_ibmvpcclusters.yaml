@@ -346,8 +346,8 @@ spec:
                     description: backendPools defines the load balancer's backend
                       pools.
                     items:
-                      description: VPCLoadBalancerBackendPoolSpec defines the desired
-                        configuration of a VPC Load Balancer Backend Pool.
+                      description: LoadBalancerBackendPool defines the desired configuration
+                        of a VPC Load Balancer Backend Pool.
                       properties:
                         algorithm:
                           description: algorithm defines the load balancing algorithm
@@ -668,9 +668,8 @@ spec:
                           description: backendPools defines the load balancer's backend
                             pools.
                           items:
-                            description: VPCLoadBalancerBackendPoolSpec defines the
-                              desired configuration of a VPC Load Balancer Backend
-                              Pool.
+                            description: LoadBalancerBackendPool defines the desired
+                              configuration of a VPC Load Balancer Backend Pool.
                             properties:
                               algorithm:
                                 description: algorithm defines the load balancing

@@ -582,7 +582,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		Status: metav1.ConditionFalse,
 		Reason: infrav1.VPCSubnetDeletingReason,
 	})
-	if requeue, err := clusterScope.DeleteVPCSubnet(ctx); err != nil {
+	if requeue, err := clusterScope.DeleteVPCSubnets(ctx); err != nil {
 		allErrs = append(allErrs, fmt.Errorf("failed to delete VPC subnet: %w", err))
 	} else if requeue {
 		log.Info("VPC subnet deletion is pending, requeuing")
