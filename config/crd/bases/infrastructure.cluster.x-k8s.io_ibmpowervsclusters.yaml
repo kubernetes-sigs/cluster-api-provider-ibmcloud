@@ -1264,36 +1264,74 @@ spec:
                 type: object
               cosInstance:
                 description: |-
-                  cosInstance contains options to configure a supporting IBM Cloud COS bucket for this
-                  cluster - currently used for nodes requiring Ignition
-                  (https://coreos.github.io/ignition/) for bootstrapping (requires
-                  BootstrapFormatIgnition feature flag to be enabled).
-                  when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource and Ignition is set, then
-                  1. CosInstance.Name should be set not setting will result in webhook error.
-                  2. CosInstance.BucketName should be set not setting will result in webhook error.
-                  3. CosInstance.BucketRegion should be set not setting will result in webhook error.
+                  COSInstance contains options to configure a supporting IBM Cloud COS instance and bucket
+                  for this cluster. It is currently used for nodes requiring Ignition for bootstrapping.
                 properties:
                   bucketName:
-                    description: bucketName is IBM cloud COS bucket name
+                    description: BucketName is the name of the IBM Cloud COS bucket
+                      used for Ignition bootstrapping.
+                    minLength: 1
                     type: string
                   bucketRegion:
-                    description: bucketRegion is IBM cloud COS bucket region
+                    description: BucketRegion is the IBM Cloud region where the COS
+                      bucket resides or will be created.
+                    minLength: 1
                     type: string
-                  name:
-                    description: |-
-                      name defines name of IBM cloud COS instance to be created.
-                      when IBMPowerVSCluster.Ignition is set
-                    maxLength: 63
-                    minLength: 3
-                    pattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
+                  provision:
+                    description: Provision contains the configuration for provisioning
+                      a new COS instance and bucket.
+                    properties:
+                      name:
+                        description: |-
+                          Name defines the explicit name of the IBM Cloud COS instance to be created.
+                          If omitted, the system will dynamically create it using the cluster name.
+                        maxLength: 63
+                        minLength: 3
+                        pattern: ^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$
+                        type: string
+                    type: object
+                  reference:
+                    description: Reference contains the information to identify an
+                      existing COS instance.
+                    properties:
+                      id:
+                        description: ID of the resource.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the resource.
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of id or name must be specified
+                      rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) ==
+                        1'
+                  type:
+                    description: Type defines whether to use an existing COS instance
+                      or provision a new one.
+                    enum:
+                    - Reference
+                    - Provision
                     type: string
+                    x-kubernetes-validations:
+                    - message: COS instance type is immutable once set
+                      rule: self == oldSelf
+                required:
+                - type
                 type: object
+                x-kubernetes-validations:
+                - message: reference configuration is required when type is Reference,
+                    and forbidden otherwise
+                  rule: 'self.type == ''Reference'' ? has(self.reference) : !has(self.reference)'
+                - message: provision configuration is required when type is Provision,
+                    and forbidden otherwise
+                  rule: 'self.type == ''Provision'' ? has(self.provision) : !has(self.provision)'
               ignition:
-                description: ignition defined options related to the bootstrapping
+                description: Ignition defines options related to the bootstrapping
                   systems where Ignition is used.
                 properties:
                   version:
-                    default: "2.3"
                     description: version defines which version of Ignition will be
                       used to generate bootstrap data.
                     enum:
@@ -2398,6 +2436,8 @@ spec:
             - message: TransitGateway must not be configured when topology is set
                 to VirtualIP
               rule: '!has(self.topology) || self.topology != ''VirtualIP'' || !has(self.transitGateway)'
+            - message: cosInstance configuration is required when ignition is specified
+              rule: 'has(self.ignition) ? has(self.cosInstance) : true'
           status:
             description: status defines the observed state of IBMPowerVSCluster
             properties:
@@ -2464,16 +2504,27 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               cosInstance:
-                description: cosInstance is reference to IBM Cloud COS Instance resource.
+                description: COSInstance tracks the observed state of the provisioned
+                  or referenced IBM Cloud COS instance.
                 properties:
-                  controllerCreated:
-                    default: false
-                    description: controllerCreated indicates whether the resource
-                      is created by the controller.
-                    type: boolean
-                  id:
-                    description: id represents the id of the resource.
+                  bucketName:
+                    description: BucketName tracks the confirmed bucket used for bootstrapping.
                     type: string
+                  bucketRegion:
+                    description: BucketRegion tracks the confirmed region where the
+                      bucket resides.
+                    type: string
+                  id:
+                    description: ID is the validated string identifier (CRN or GUID)
+                      returned by the IBM Cloud API.
+                    type: string
+                  name:
+                    description: Name is the unique name identifying the COS instance
+                      in the cloud.
+                    type: string
+                required:
+                - id
+                - name
                 type: object
               deprecated:
                 description: deprecated groups all the status fields that are deprecated

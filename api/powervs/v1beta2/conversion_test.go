@@ -129,6 +129,15 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 		}
 	}
 	in.VPC = infrav1.VPCStatus{}
+
+	// COSInstance: only ID survives round-trip through v1beta2 (which uses *ResourceReference with only ID).
+	// Name, BucketName, and BucketRegion are not stored in v1beta2 Status.COSInstance.
+	in.COSInstance.Name = ""
+	in.COSInstance.BucketName = ""
+	in.COSInstance.BucketRegion = ""
+	if in.COSInstance.ID == "" {
+		in.COSInstance = infrav1.COSInstanceStatus{}
+	}
 }
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
@@ -207,6 +216,31 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 	in.TransitGateway.VPCConnection = infrav1.TransitGatewayConnectionSource{}
 	in.TransitGateway.PowerVSConnection = infrav1.TransitGatewayConnectionSource{}
 
+	// COSInstance: v1beta2 has no Type/Reference concept — only Name/BucketName/BucketRegion (always Provision).
+	// Restrict hub to SourceTypeProvision or empty so hub-spoke-hub round-trips faithfully.
+	// SourceTypeReference cannot survive round-trip through v1beta2.
+	switch in.COSInstance.Type {
+	case infrav1.SourceTypeProvision:
+		in.COSInstance.Reference = infrav1.ResourceIdentifier{}
+	default:
+		// Treat unknown/Reference/empty as Provision if there's bucket data
+		in.COSInstance.Reference = infrav1.ResourceIdentifier{}
+		if in.COSInstance.BucketName != "" || in.COSInstance.BucketRegion != "" || in.COSInstance.Provision.Name != "" {
+			in.COSInstance.Type = infrav1.SourceTypeProvision
+		} else {
+			in.COSInstance = infrav1.COSInstanceSource{}
+		}
+	}
+
+	// Ignition: only Version survives round-trip; constrain to valid v1beta2 enum values
+	if in.Ignition.Version != "" {
+		switch in.Ignition.Version {
+		case "2.3", "2.4", "3.0", "3.1", "3.2", "3.3", "3.4":
+		default:
+			in.Ignition.Version = "3.4"
+		}
+	}
+
 	switch in.VPC.Type {
 	case infrav1.SourceTypeReference:
 		in.VPC.Provision = infrav1.VPCProvision{}
@@ -226,7 +260,10 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 				in.VPC.Provision.Name = in.VPC.Reference.Name
 			}
 		} else {
-			in.VPC.Type = ""
+			// No ID, Name, or Region — nothing survives to v1beta2 (VPC will be nil).
+			// On the way back, a nil v1beta2 VPC always produces Type=Provision, so
+			// the hub must also carry Type=Provision to survive the round-trip.
+			in.VPC.Type = infrav1.SourceTypeProvision
 			in.VPC.Reference = infrav1.ResourceIdentifier{}
 			in.VPC.Provision = infrav1.VPCProvision{}
 		}
@@ -649,6 +686,20 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 		if in.TransitGateway.ID == nil && in.TransitGateway.Name == nil && in.TransitGateway.GlobalRouting == nil {
 			in.TransitGateway = nil
 		}
+	}
+
+	// CosInstance: normalise for round-trip
+	// v1beta3 COSInstanceSource.Reference is not representable in v1beta2 CosInstance (no ID/Name fields)
+	// so Reference-type COS instances drop the Reference on round-trip through v1beta2.
+	if in.CosInstance != nil {
+		if in.CosInstance.Name == "" && in.CosInstance.BucketName == "" && in.CosInstance.BucketRegion == "" {
+			in.CosInstance = nil
+		}
+	}
+
+	// Ignition: empty Version should be nil
+	if in.Ignition != nil && in.Ignition.Version == "" {
+		in.Ignition = nil
 	}
 }
 

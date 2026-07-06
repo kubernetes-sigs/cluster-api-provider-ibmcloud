@@ -387,29 +387,19 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	return nil, nil
 }
 
-func (m *MachineScope) resolveUserData(ctx context.Context) (string, error) {
-	userData, err := m.GetRawBootstrapData()
-	if err != nil {
-		return "", err
-	}
-	if m.UseIgnition() {
-		data, err := m.ignitionUserData(ctx, userData)
-		if err != nil {
-			return "", err
-		}
-		return base64.StdEncoding.EncodeToString(data), nil
-	}
-	return base64.StdEncoding.EncodeToString(userData), err
+// UseIgnition returns true if the user configured a COS Instance,
+// which acts as the master switch for the Ignition bootstrap workflow.
+func (m *MachineScope) UseIgnition() bool {
+	return m.IBMPowerVSCluster.Spec.COSInstance.Type != ""
 }
 
-func getIgnitionVersion(scope *MachineScope) string {
-	if scope.IBMPowerVSCluster.Spec.Ignition == nil {
-		scope.IBMPowerVSCluster.Spec.Ignition = &infrav1.Ignition{}
+// getIgnitionVersion returns the user-specified Ignition version,
+// or falls back to the default "2.3" if it was left unset.
+func (m *MachineScope) getIgnitionVersion() string {
+	if m.IBMPowerVSCluster.Spec.Ignition.Version == "" {
+		return "2.3"
 	}
-	if scope.IBMPowerVSCluster.Spec.Ignition.Version == "" {
-		scope.IBMPowerVSCluster.Spec.Ignition.Version = infrav1.DefaultIgnitionVersion
-	}
-	return scope.IBMPowerVSCluster.Spec.Ignition.Version
+	return m.IBMPowerVSCluster.Spec.Ignition.Version
 }
 
 func (m *MachineScope) bootstrapDataKey() string {
@@ -438,15 +428,17 @@ func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 
 	cosClient, err := m.createCOSClient(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to create COS client %w", err)
+		return "", fmt.Errorf("failed to create COS client: %w", err)
 	}
+
 	key := m.bootstrapDataKey()
 	log.V(3).Info("Bootstrap data key name", "key", key)
 
-	bucket := m.bucketName()
-	region := m.bucketRegion()
-	if region == "" {
-		return "", fmt.Errorf("failed to determine COS bucket region, both bucket region and VPC region not set")
+	// Fetch directly from the elevated Spec fields
+	bucket := m.IBMPowerVSCluster.Spec.COSInstance.BucketName
+	region := m.IBMPowerVSCluster.Spec.COSInstance.BucketRegion
+	if bucket == "" || region == "" {
+		return "", fmt.Errorf("cannot push ignition data: COS bucket name or region is not set in cluster spec")
 	}
 
 	if _, err := cosClient.PutObject(&s3.PutObjectInput{
@@ -454,7 +446,7 @@ func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}); err != nil {
-		return "", fmt.Errorf("failed to push object to COS bucket %w", err)
+		return "", fmt.Errorf("failed to push object to COS bucket: %w", err)
 	}
 
 	objHost := fmt.Sprintf("%s.s3.%s.%s", bucket, region, cosURLDomain)
@@ -469,6 +461,7 @@ func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 			objHost = fmt.Sprintf("%s.%s", bucket, cosServiceEndpoint)
 		}
 	}
+
 	objectURL := &url.URL{
 		Scheme: "https",
 		Host:   objHost,
@@ -482,7 +475,7 @@ func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 func (m *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([]byte, error) {
 	objectURL, err := m.createIgnitionData(ctx, userData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create user data object %w", err)
+		return nil, fmt.Errorf("failed to create user data object: %w", err)
 	}
 
 	auth, err := authenticator.GetIAMAuthenticator()
@@ -499,7 +492,7 @@ func (m *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 	}
 	token := "Bearer " + iamtoken
 
-	ignVersion := getIgnitionVersion(m)
+	ignVersion := m.getIgnitionVersion()
 	semver, err := semver.ParseTolerant(ignVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ignition version %q: %w", ignVersion, err)
@@ -547,41 +540,34 @@ func (m *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 	}
 }
 
-// UseIgnition returns true if Ignition is set in IBMPowerVSCluster.
-func (m *MachineScope) UseIgnition() bool {
-	return m.IBMPowerVSCluster.Spec.Ignition != nil
-}
-
-// DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
-func (m *MachineScope) DeleteMachine() error {
-	if err := m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID); err != nil {
-		record.Warnf(m.IBMPowerVSMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
-		return err
-	}
-	record.Eventf(m.IBMPowerVSMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMPowerVSMachine.Name)
-	return nil
-}
-
-// DeleteMachineIgnition deletes the ignition associated with machine.
+// DeleteMachineIgnition deletes the ignition data associated with the machine.
 func (m *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	_, err := m.GetRawBootstrapData()
-	if err != nil {
-		return err
-	}
+
+	// 1. Guard check: If the machine isn't using Ignition, skip teardown.
 	if !m.UseIgnition() {
 		log.V(3).Info("Machine is not using user data of type ignition")
 		return nil
 	}
-	cosClient, err := m.createCOSClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create COS client %w", err)
+
+	// 2. Fetch the bucket name strictly from the Status field
+	bucket := m.IBMPowerVSCluster.Status.COSInstance.BucketName
+	if bucket == "" {
+		log.Info("COS bucket name is not populated in cluster status, skipping ignition deletion")
+		return nil
 	}
 
-	bucket := m.bucketName()
-	objs, _ := cosClient.ListObjects(&s3.ListObjectsInput{
+	cosClient, err := m.createCOSClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create COS client: %w", err)
+	}
+
+	objs, err := cosClient.ListObjects(&s3.ListObjectsInput{
 		Bucket: aws.String(bucket),
 	})
+	if err != nil {
+		return fmt.Errorf("failed to list objects in bucket %s: %w", bucket, err)
+	}
 
 	for _, j := range objs.Contents {
 		if strings.Contains(*j.Key, m.Name()) {
@@ -590,7 +576,7 @@ func (m *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 				Key:    j.Key,
 			}); err != nil {
 				record.Warnf(m.IBMPowerVSMachine, "FailedDeleteMachineIgnition", "Failed machine ignition deletion - %v", err)
-				return fmt.Errorf("failed to delete COS object %w", err)
+				return fmt.Errorf("failed to delete COS object: %w", err)
 			}
 		}
 	}
@@ -601,30 +587,17 @@ func (m *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 // createCOSClient creates a new cosClient from the supplied parameters.
 func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	log := ctrl.LoggerFrom(ctx)
-	var cosInstanceName string
-	if m.IBMPowerVSCluster.Spec.CosInstance == nil || m.IBMPowerVSCluster.Spec.CosInstance.Name == "" {
-		cosInstanceName = fmt.Sprintf("%s-%s", m.IBMPowerVSCluster.GetName(), "cosinstance")
-	} else {
-		cosInstanceName = m.IBMPowerVSCluster.Spec.CosInstance.Name
+
+	// 1. Get the ID from IBMPowerVSCluster status.
+	cosID := m.IBMPowerVSCluster.Status.COSInstance.ID
+	if cosID == "" {
+		return nil, fmt.Errorf("COS instance ID is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
 
-	resourceInstance := resourcecontroller.InstanceFilter{
-		Name:           cosInstanceName,
-		ResourceID:     resourcecontroller.CosResourceID,
-		ResourcePlanID: resourcecontroller.CosResourcePlanID,
-	}
-
-	serviceInstance, err := m.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
-	if err != nil {
-		log.Error(err, "failed to get COS service instance", "name", cosInstanceName)
-		return nil, err
-	}
-	if serviceInstance == nil {
-		log.V(3).Info("COS service instance is nil")
-		return nil, errors.New("COS service instance is nil")
-	}
-	if *serviceInstance.State != string(infrav1.WorkspaceStateActive) {
-		return nil, fmt.Errorf("COS service instance is not in active state, current state: %s", *serviceInstance.State)
+	// 2. Fetch the region directly from IBMPowerVSCluster status.
+	region := m.IBMPowerVSCluster.Status.COSInstance.BucketRegion
+	if region == "" {
+		return nil, fmt.Errorf("COS bucket region is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
 
 	props, err := authenticator.GetProperties()
@@ -633,16 +606,12 @@ func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	}
 	apiKey := props["APIKEY"]
 	if apiKey == "" {
-		fmt.Printf("IBM Cloud API key is not provided, set %s environmental variable", "IBMCLOUD_API_KEY")
-	}
-
-	region := m.bucketRegion()
-	if region == "" {
-		return nil, fmt.Errorf("failed to determine COS bucket region, both bucket region and VPC region not set")
+		return nil, fmt.Errorf("IBM Cloud API key is not provided, set IBMCLOUD_API_KEY environmental variable")
 	}
 
 	serviceEndpoint := fmt.Sprintf("s3.%s.%s", region, cosURLDomain)
-	// Fetch the COS service endpoint.
+
+	// Fetch the custom COS service endpoint if provided
 	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), m.ServiceEndpoint)
 	if cosServiceEndpoint != "" {
 		log.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
@@ -652,16 +621,18 @@ func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	cosOptions := cos.ServiceOptions{
 		Options: &cosSession.Options{
 			Config: aws.Config{
-				Endpoint: &serviceEndpoint,
-				Region:   &region,
+				Endpoint: ptr.To(serviceEndpoint),
+				Region:   ptr.To(region),
 			},
 		},
 	}
 
-	cosClient, err := cos.NewService(cosOptions, apiKey, *serviceInstance.GUID)
+	// Build the client using our cached, validated ID
+	cosClient, err := cos.NewService(cosOptions, apiKey, cosID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create COS client: %w", err)
 	}
+
 	return cosClient, nil
 }
 
@@ -683,6 +654,34 @@ func (m *MachineScope) GetRawBootstrapData() ([]byte, error) {
 	}
 
 	return value, nil
+}
+
+func (m *MachineScope) resolveUserData(ctx context.Context) (string, error) {
+	userData, err := m.GetRawBootstrapData()
+	if err != nil {
+		return "", err
+	}
+
+	if m.UseIgnition() {
+		data, err := m.ignitionUserData(ctx, userData)
+		if err != nil {
+			return "", err
+		}
+		return base64.StdEncoding.EncodeToString(data), nil
+	}
+
+	// Explicitly return nil for the error since it is guaranteed to be nil here
+	return base64.StdEncoding.EncodeToString(userData), nil
+}
+
+// DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
+func (m *MachineScope) DeleteMachine() error {
+	if err := m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID); err != nil {
+		record.Warnf(m.IBMPowerVSMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
+		return err
+	}
+	record.Eventf(m.IBMPowerVSMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMPowerVSMachine.Name)
+	return nil
 }
 
 func getImageID(image *infrav1.IBMPowerVSResourceReference, m *MachineScope) (*string, error) {
@@ -1198,19 +1197,6 @@ func (m *MachineScope) APIServerPort() int32 {
 		return m.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return infrav1.DefaultAPIServerPort
-}
-
-// TODO: reuse getServiceName function instead.
-func (m *MachineScope) bucketName() string {
-	if m.IBMPowerVSCluster.Spec.CosInstance != nil && m.IBMPowerVSCluster.Spec.CosInstance.BucketName != "" {
-		return m.IBMPowerVSCluster.Spec.CosInstance.BucketName
-	}
-	return fmt.Sprintf("%s-%s", m.IBMPowerVSCluster.GetName(), "cosbucket")
-}
-
-// bucketRegion returns the region of the COS bucket for the MachineScope.
-func (m *MachineScope) bucketRegion() string {
-	return fetchBucketRegion(m.IBMPowerVSCluster.Spec.CosInstance, m.IBMPowerVSCluster.Status.VPC)
 }
 
 // zoneCacheEntry holds the supported system types and the exact time they were fetched for a specific zone.

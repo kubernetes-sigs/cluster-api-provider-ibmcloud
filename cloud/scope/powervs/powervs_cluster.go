@@ -370,23 +370,6 @@ func (s *ClusterScope) APIServerPort() int32 {
 	return infrav1.DefaultAPIServerPort
 }
 
-// TODO: Can we use generic here.
-
-// SetStatus set the IBMPowerVSCluster status for provided ResourceType.
-func (s *ClusterScope) SetStatus(ctx context.Context, resourceType infrav1.ResourceType, resource infrav1.ResourceReference) {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Setting status", "resourceType", resourceType, "resource", resource)
-	//nolint:gocritic // single case switch is intentional for future extensibility
-	switch resourceType {
-	case infrav1.ResourceTypeCOSInstance:
-		if s.IBMPowerVSCluster.Status.COSInstance == nil {
-			s.IBMPowerVSCluster.Status.COSInstance = &resource
-			return
-		}
-		s.IBMPowerVSCluster.Status.COSInstance.Set(resource)
-	}
-}
-
 // GetVPCSecurityGroupByName returns the VPC security group id and its ruleIDs.
 func (s *ClusterScope) GetVPCSecurityGroupByName(name string) (*string, []*string, *bool) {
 	if s.IBMPowerVSCluster.Status.VPCSecurityGroups == nil {
@@ -1231,7 +1214,7 @@ func (s *ClusterScope) checkAndUpdateTransitGatewayConnections(ctx context.Conte
 		return false, fmt.Errorf("failed to fetch VPC CRN: %w", err)
 	}
 
-	pvsServiceInstanceCRN, err := s.fetchPowerVSServiceInstanceCRN()
+	pvsServiceInstanceCRN, err := s.fetchPowerVSWorkspaceCRN()
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch PowerVS service instance CRN: %w", err)
 	}
@@ -2450,31 +2433,184 @@ func (s *ClusterScope) validateVPCSecurityGroup(ctx context.Context, securityGro
 	return securityGroupDet, ruleIDs, nil
 }
 
-// COSInstance returns the COS instance reference.
-func (s *ClusterScope) COSInstance() *infrav1.CosInstance {
-	return s.IBMPowerVSCluster.Spec.CosInstance
-}
-
-// ReconcileCOSInstance reconcile COS bucket.
+// ReconcileCOSInstance evaluates the user's intent and reconciles the COS instance and bucket.
 func (s *ClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	// check COS service instance exist in cloud
-	cosServiceInstanceStatus, err := s.checkCOSServiceInstance(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to check if COS instance in cloud: %w", err)
+	cluster := s.IBMPowerVSCluster
+
+	// 1. Opt-out check: If Type is empty, the user omitted the COSInstance block entirely.
+	if cluster.Spec.COSInstance.Type == "" {
+		return nil
 	}
-	if cosServiceInstanceStatus != nil {
-		log.V(3).Info("COS service instance found in cloud")
-		s.SetStatus(ctx, infrav1.ResourceTypeCOSInstance, infrav1.ResourceReference{ID: cosServiceInstanceStatus.GUID, ControllerCreated: ptr.To(false)})
-	} else {
-		// create COS service instance
-		log.V(3).Info("Creating COS service instance")
-		cosServiceInstanceStatus, err = s.createCOSServiceInstance()
+
+	cosSpec := cluster.Spec.COSInstance
+	var instanceID string
+	var instanceName string
+
+	// 2. Idempotency & State Check: If we already resolved the COS ID, just verify its state.
+	if cluster.Status.COSInstance.ID != "" {
+		instanceID = cluster.Status.COSInstance.ID
+		log.V(3).Info("COS Instance ID is set, verifying presence in cloud", "id", instanceID)
+
+		instance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+			ID: &instanceID,
+		})
 		if err != nil {
-			return fmt.Errorf("failed to create COS service instance: %w", err)
+			return fmt.Errorf("failed to fetch COS instance (id: %s) details: %w", instanceID, err)
 		}
-		log.Info("Created COS service instance", "cosID", cosServiceInstanceStatus.GUID)
-		s.SetStatus(ctx, infrav1.ResourceTypeCOSInstance, infrav1.ResourceReference{ID: cosServiceInstanceStatus.GUID, ControllerCreated: ptr.To(true)})
+		if instance == nil {
+			return fmt.Errorf("COS instance not found in cloud with ID: %s", instanceID)
+		}
+
+		// Ensure the instance is active before attempting to wire up buckets
+		if *instance.State != string(infrav1.WorkspaceStateActive) {
+			return fmt.Errorf("COS instance is not active, current state: %s", *instance.State)
+		}
+		instanceName = *instance.Name
+	} else {
+		// 3. We don't have an ID yet. Route logic based strictly on the user's explicit intent.
+		log.Info("Resolving IBM Cloud COS Instance", "type", cosSpec.Type)
+
+		var instance *resourcecontrollerv2.ResourceInstance
+		var err error
+
+		switch cosSpec.Type {
+		case infrav1.SourceTypeReference:
+			instance, err = s.reconcileCOSReference(ctx, cosSpec.Reference)
+		case infrav1.SourceTypeProvision:
+			name := cosSpec.Provision.Name
+			if name == "" {
+				name = fmt.Sprintf("%s-cos", cluster.Name)
+			}
+			instance, err = s.reconcileCOSProvision(ctx, name)
+		default:
+			return fmt.Errorf("unknown COS instance source type: %s", cosSpec.Type)
+		}
+
+		if err != nil {
+			return fmt.Errorf("failed to resolve COS instance: %w", err)
+		}
+
+		instanceID = *instance.GUID
+		instanceName = *instance.Name
+	}
+
+	// Record the resolved instance identity
+	cluster.Status.COSInstance.ID = instanceID
+	cluster.Status.COSInstance.Name = instanceName
+
+	targetBucketName := cluster.Status.COSInstance.BucketName
+	if targetBucketName == "" {
+		targetBucketName = cosSpec.BucketName
+		if targetBucketName == "" {
+			targetBucketName = fmt.Sprintf("%s-cos-bucket", cluster.Name)
+		}
+	}
+
+	targetBucketRegion := cluster.Status.COSInstance.BucketRegion
+	if targetBucketRegion == "" {
+		targetBucketRegion = cosSpec.BucketRegion
+		if targetBucketRegion == "" {
+			targetBucketRegion = cluster.Status.VPC.Region
+			if targetBucketRegion == "" {
+				return fmt.Errorf("failed to determine COS bucket region: both bucket region and VPC region are unset")
+			}
+		}
+	}
+
+	// 4. Setup the COS Client now that we have a guaranteed active instance ID
+	if err := s.setupCOSClient(instanceID, cosSpec.BucketRegion); err != nil {
+		return fmt.Errorf("failed to configure COS client: %w", err)
+	}
+
+	// 5. Reconcile the Bucket
+	if err := s.reconcileCOSBucket(ctx, targetBucketName); err != nil {
+		return fmt.Errorf("failed to reconcile COS bucket: %w", err)
+	}
+
+	cluster.Status.COSInstance.BucketName = targetBucketName
+	cluster.Status.COSInstance.BucketRegion = targetBucketRegion
+
+	return nil
+}
+
+// reconcileCOSReference handles verifying an explicitly referenced COS instance.
+func (s *ClusterScope) reconcileCOSReference(_ context.Context, ref infrav1.ResourceIdentifier) (*resourcecontrollerv2.ResourceInstance, error) {
+	if ref.ID != "" {
+		instance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+			ID: &ref.ID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed fetching referenced COS instance by ID: %w", err)
+		}
+		if instance == nil {
+			return nil, fmt.Errorf("referenced COS instance ID %s not found", ref.ID)
+		}
+		return instance, nil
+	} else if ref.Name != "" {
+		filter := resourcecontroller.InstanceFilter{
+			Name:           ref.Name,
+			ResourceID:     resourcecontroller.CosResourceID,
+			ResourcePlanID: resourcecontroller.CosResourcePlanID,
+		}
+		instance, err := s.ResourceClient.GetResourceInstanceByFilter(filter)
+		if err != nil {
+			return nil, fmt.Errorf("failed fetching referenced COS instance by Name: %w", err)
+		}
+		if instance == nil {
+			return nil, fmt.Errorf("referenced COS instance Name %s not found", ref.Name)
+		}
+		return instance, nil
+	}
+	return nil, fmt.Errorf("COS reference must have either ID or Name set")
+}
+
+// reconcileCOSProvision handles idempotently creating a new COS instance.
+func (s *ClusterScope) reconcileCOSProvision(ctx context.Context, name string) (*resourcecontrollerv2.ResourceInstance, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	// Check if an instance with the target name already exists
+	filter := resourcecontroller.InstanceFilter{
+		Name:           name,
+		ResourceID:     resourcecontroller.CosResourceID,
+		ResourcePlanID: resourcecontroller.CosResourcePlanID,
+	}
+	instance, err := s.ResourceClient.GetResourceInstanceByFilter(filter)
+	if err != nil {
+		return nil, fmt.Errorf("failed checking for existing COS instance: %w", err)
+	}
+
+	if instance != nil {
+		log.V(3).Info("COS instance found in cloud by name matching", "name", name, "id", *instance.GUID)
+		return instance, nil
+	}
+
+	// Create a new instance if it doesn't exist
+	log.Info("Creating a new COS service instance", "name", name)
+	resourceGroupID := s.GetResourceGroupID()
+	if resourceGroupID == "" {
+		return nil, fmt.Errorf("resource group ID is empty")
+	}
+
+	target := "Global"
+	newInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
+		Name:           ptr.To(name),
+		Target:         ptr.To(target),
+		ResourceGroup:  ptr.To(resourceGroupID),
+		ResourcePlanID: ptr.To(resourcecontroller.CosResourcePlanID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed creating COS instance via API: %w", err)
+	}
+
+	return newInstance, nil
+}
+
+// setupCOSClient authenticates and builds the SDK wrapper for bucket manipulation.
+func (s *ClusterScope) setupCOSClient(instanceID, bucketRegion string) error {
+	// Skip if already initialized during a previous run in this reconciliation loop
+	if s.COSClient != nil {
+		return nil
 	}
 
 	props, err := authenticator.GetProperties()
@@ -2484,137 +2620,73 @@ func (s *ClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 
 	apiKey, ok := props["APIKEY"]
 	if !ok {
-		return fmt.Errorf("IBM Cloud API key is not provided, set %s environmental variable", "IBMCLOUD_API_KEY")
+		return fmt.Errorf("IBM Cloud API key is not provided, set IBMCLOUD_API_KEY environmental variable")
 	}
 
-	region := s.bucketRegion()
-	if region == "" {
-		return fmt.Errorf("failed to determine COS bucket region, both bucket region and VPC region not set")
-	}
+	serviceEndpoint := fmt.Sprintf("s3.%s.%s", bucketRegion, cosURLDomain)
 
-	serviceEndpoint := fmt.Sprintf("s3.%s.%s", region, cosURLDomain)
-	// Fetch the COS service endpoint.
+	// Check for a custom endpoint override
 	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
 	if cosServiceEndpoint != "" {
-		log.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
 		serviceEndpoint = cosServiceEndpoint
 	}
 
 	cosOptions := cos.ServiceOptions{
 		Options: &cosSession.Options{
 			Config: aws.Config{
-				Endpoint: &serviceEndpoint,
-				Region:   &region,
+				Endpoint: ptr.To(serviceEndpoint),
+				Region:   ptr.To(bucketRegion),
 			},
 		},
 	}
 
-	cosClient, err := cos.NewServiceWrapper(cosOptions, apiKey, *cosServiceInstanceStatus.GUID)
+	cosClient, err := cos.NewServiceWrapper(cosOptions, apiKey, instanceID)
 	if err != nil {
-		return fmt.Errorf("failed to create COS client: %w", err)
+		return fmt.Errorf("failed to create COS client wrapper: %w", err)
 	}
+
 	s.COSClient = cosClient
-
-	// check bucket exist in service instance
-	if exist, err := s.checkCOSBucket(); exist {
-		log.V(3).Info("COS bucket found in cloud")
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to check if COS bucket exists: %w", err)
-	}
-
-	// create bucket in service instance
-	if err := s.createCOSBucket(); err != nil {
-		return fmt.Errorf("failed to create COS bucket: %w", err)
-	}
 	return nil
 }
 
-func (s *ClusterScope) checkCOSBucket() (bool, error) {
-	if _, err := s.COSClient.GetBucketByName(*s.GetServiceName(infrav1.ResourceTypeCOSBucket)); err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case s3.ErrCodeNoSuchBucket, "Forbidden", "NotFound":
-				// If the bucket doesn't exist that's ok, we'll try to create it
-				return false, nil
-			default:
-				return false, err
-			}
-		} else {
-			return false, err
-		}
-	}
-	return true, nil
-}
+// reconcileCOSBucket checks for the existence of the bucket and creates it if missing.
+func (s *ClusterScope) reconcileCOSBucket(ctx context.Context, bucketName string) error {
+	log := ctrl.LoggerFrom(ctx)
 
-func (s *ClusterScope) createCOSBucket() error {
-	input := &s3.CreateBucketInput{
-		Bucket: ptr.To(*s.GetServiceName(infrav1.ResourceTypeCOSBucket)),
-	}
-	_, err := s.COSClient.CreateBucket(input)
+	// Attempt to get the bucket
+	_, err := s.COSClient.GetBucketByName(bucketName)
 	if err == nil {
+		log.V(3).Info("COS bucket already exists in cloud", "bucketName", bucketName)
 		return nil
 	}
 
 	aerr, ok := err.(awserr.Error)
 	if !ok {
-		return fmt.Errorf("failed to create COS bucket %w", err)
+		return fmt.Errorf("failed to check if COS bucket exists: %w", err)
 	}
 
 	switch aerr.Code() {
-	// If bucket already exists, all good.
-	case s3.ErrCodeBucketAlreadyOwnedByYou:
+	case s3.ErrCodeNoSuchBucket, "Forbidden", "NotFound":
+		log.Info("Creating new COS bucket", "bucketName", bucketName)
+
+		input := &s3.CreateBucketInput{
+			Bucket: ptr.To(bucketName),
+		}
+
+		if _, err := s.COSClient.CreateBucket(input); err != nil {
+			// Handle edge case where it was created in the milliseconds between check and create
+			if createErr, isAwsErr := err.(awserr.Error); isAwsErr {
+				if createErr.Code() == s3.ErrCodeBucketAlreadyOwnedByYou || createErr.Code() == s3.ErrCodeBucketAlreadyExists {
+					return nil
+				}
+			}
+			return fmt.Errorf("failed to execute CreateBucket API: %w", err)
+		}
 		return nil
-	case s3.ErrCodeBucketAlreadyExists:
-		return nil
+
 	default:
-		return fmt.Errorf("failed to create COS bucket %w", err)
+		return fmt.Errorf("unexpected error checking bucket presence: %w", err)
 	}
-}
-
-func (s *ClusterScope) checkCOSServiceInstance(ctx context.Context) (*resourcecontrollerv2.ResourceInstance, error) {
-	log := ctrl.LoggerFrom(ctx)
-	// check cos service instance
-	resourceInstance := resourcecontroller.InstanceFilter{
-		Name:           *s.GetServiceName(infrav1.ResourceTypeCOSInstance),
-		ResourceID:     resourcecontroller.CosResourceID,
-		ResourcePlanID: resourcecontroller.CosResourcePlanID,
-	}
-
-	serviceInstance, err := s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get COS service instance: %w", err)
-	}
-
-	if serviceInstance == nil {
-		log.V(3).Info("COS service instance is not found", "cosInstanceName", *s.GetServiceName(infrav1.ResourceTypeCOSInstance))
-		return nil, nil
-	}
-	if *serviceInstance.State != string(infrav1.WorkspaceStateActive) {
-		return nil, fmt.Errorf("COS service instance is not in active state, current state: %s", *serviceInstance.State)
-	}
-	return serviceInstance, nil
-}
-
-func (s *ClusterScope) createCOSServiceInstance() (*resourcecontrollerv2.ResourceInstance, error) {
-	// fetch resource group id.
-	resourceGroupID := s.GetResourceGroupID()
-	if resourceGroupID == "" {
-		return nil, fmt.Errorf("failed to fetch resource group ID for resource group %v, ID is empty", s.ResourceGroupName())
-	}
-
-	target := "Global"
-	// create service instance
-	serviceInstance, _, err := s.ResourceClient.CreateResourceInstance(&resourcecontrollerv2.CreateResourceInstanceOptions{
-		Name:           s.GetServiceName(infrav1.ResourceTypeCOSInstance),
-		Target:         &target,
-		ResourceGroup:  &resourceGroupID,
-		ResourcePlanID: ptr.To(resourcecontroller.CosResourcePlanID),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return serviceInstance, nil
 }
 
 // fetchVPCCRN returns VPC CRN.
@@ -2632,8 +2704,8 @@ func (s *ClusterScope) fetchVPCCRN() (*string, error) {
 	return vpcDetails.CRN, nil
 }
 
-// fetchPowerVSServiceInstanceCRN returns Power VS service instance CRN.
-func (s *ClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) {
+// fetchPowerVSWorkspaceCRN returns PowerVS workspace CRN.
+func (s *ClusterScope) fetchPowerVSWorkspaceCRN() (*string, error) {
 	workspaceID := s.IBMPowerVSCluster.Status.Workspace.ID
 	workspace, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
 		ID: &workspaceID,
@@ -2645,25 +2717,6 @@ func (s *ClusterScope) fetchPowerVSServiceInstanceCRN() (*string, error) {
 		return nil, fmt.Errorf("workspace CRN is empty %s", workspaceID)
 	}
 	return workspace.CRN, nil
-}
-
-// TODO(karthik-k-n): Decide on proper naming format for services.
-
-// GetServiceName returns name of given service type from spec or generate a name for it.
-func (s *ClusterScope) GetServiceName(resourceType infrav1.ResourceType) *string {
-	switch resourceType {
-	case infrav1.ResourceTypeCOSInstance:
-		if s.COSInstance() == nil || s.COSInstance().Name == "" {
-			return ptr.To(fmt.Sprintf("%s-cosinstance", s.InfraCluster()))
-		}
-		return &s.COSInstance().Name
-	case infrav1.ResourceTypeCOSBucket:
-		if s.COSInstance() == nil || s.COSInstance().BucketName == "" {
-			return ptr.To(fmt.Sprintf("%s-cosbucket", s.InfraCluster()))
-		}
-		return &s.COSInstance().BucketName
-	}
-	return nil
 }
 
 // DeleteVPCSecurityGroups deletes VPC security group.
@@ -3171,59 +3224,56 @@ func (s *ClusterScope) DeleteWorkspace(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-// DeleteCOSInstance deletes COS instance.
+// DeleteCOSInstance handles tearing down the IBM Cloud COS instance and its contents
+// if it was provisioned by the controller.
 func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	if !s.isResourceCreatedByController(infrav1.ResourceTypeCOSInstance) {
-		log.Info("Skipping COS instance deletion as resource is not created by controller")
+	cluster := s.IBMPowerVSCluster
+
+	// 1. If it was never configured or never resolved into status, there is nothing to delete.
+	if cluster.Status.COSInstance.ID == "" {
+		return nil
+	}
+	// 2. We only delete the instance if the Type is explicitly set to Provision.
+	if cluster.Spec.COSInstance.Type != infrav1.SourceTypeProvision {
+		log.Info("Skipping COS instance deletion as it is referenced, not managed by controller",
+			"id", cluster.Status.COSInstance.ID, "name", cluster.Status.COSInstance.Name)
 		return nil
 	}
 
-	if s.IBMPowerVSCluster.Status.COSInstance.ID == nil {
-		return nil
-	}
+	instanceID := cluster.Status.COSInstance.ID
 
+	// 3. Fetch the current state from IBM Cloud
 	cosInstance, resp, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
-		ID: s.IBMPowerVSCluster.Status.COSInstance.ID,
+		ID: &instanceID,
 	})
 	if err != nil {
+		// If it's completely gone, we successfully finished deletion.
 		if resp != nil && resp.StatusCode == ResourceNotFoundCode {
+			log.Info("COS service instance successfully removed from cloud (returned 404)", "id", instanceID)
 			return nil
 		}
-		return fmt.Errorf("failed to fetch COS service instance: %w", err)
+		return fmt.Errorf("failed to fetch COS service instance (id: %s) during deletion: %w", instanceID, err)
 	}
 
-	if cosInstance != nil && (*cosInstance.State == "pending_reclamation" || *cosInstance.State == string(infrav1.WorkspaceStateRemoved)) {
-		log.Info("COS service instance has been removed")
-		return nil
-	}
-
-	if _, err = s.ResourceClient.DeleteResourceInstance(&resourcecontrollerv2.DeleteResourceInstanceOptions{
-		ID:        cosInstance.ID,
-		Recursive: ptr.To(true),
-	}); err != nil {
-		log.Error(err, "failed to delete COS service instance")
-		return err
-	}
-	log.Info("COS service instance successfully deleted")
-	return nil
-}
-
-// resourceCreatedByController helps to identify resource created by controller or not.
-func (s *ClusterScope) isResourceCreatedByController(resourceType infrav1.ResourceType) bool {
-	//nolint:gocritic // single case switch is intentional for future extensibility
-	switch resourceType {
-	case infrav1.ResourceTypeCOSInstance:
-		cosInstance := s.IBMPowerVSCluster.Status.COSInstance
-		if cosInstance == nil || cosInstance.ControllerCreated == nil || !*cosInstance.ControllerCreated {
-			return false
+	// 4. Check if deletion/reclamation is already processing in the cloud
+	if cosInstance != nil && cosInstance.State != nil {
+		state := *cosInstance.State
+		if state == "pending_reclamation" || state == string(infrav1.WorkspaceStateRemoved) {
+			log.Info("COS service instance deletion is actively in progress or reclaimed", "id", instanceID, "state", state)
+			return nil
 		}
-		return true
 	}
-	return false
-}
 
-// bucketRegion returns the region to use for COS bucket for the ClusterScope.
-func (s *ClusterScope) bucketRegion() string {
-	return fetchBucketRegion(s.COSInstance(), s.IBMPowerVSCluster.Status.VPC)
+	// 5. Issue the recursive Delete API Call
+	log.Info("Issuing recursive delete command for managed COS service instance", "id", instanceID, "name", cluster.Status.COSInstance.Name)
+	if _, err = s.ResourceClient.DeleteResourceInstance(&resourcecontrollerv2.DeleteResourceInstanceOptions{
+		ID:        ptr.To(instanceID),
+		Recursive: ptr.To(true), // Recursive drops associated buckets/bindings inside it
+	}); err != nil {
+		return fmt.Errorf("failed to execute DeleteResourceInstance API for %s: %w", instanceID, err)
+	}
+
+	log.Info("COS service instance delete command accepted successfully")
+	return nil
 }

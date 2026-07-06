@@ -40,8 +40,8 @@ func GetClusterByName(ctx context.Context, c client.Client, namespace, name stri
 	return cluster, nil
 }
 
-func fetchBucketRegion(cos *infrav1.CosInstance, vpc infrav1.VPCStatus) string {
-	if cos != nil && cos.BucketRegion != "" {
+func fetchBucketRegion(cos infrav1.COSInstanceSource, vpc infrav1.VPCStatus) string {
+	if cos.BucketRegion != "" {
 		return cos.BucketRegion
 	}
 	return vpc.Region

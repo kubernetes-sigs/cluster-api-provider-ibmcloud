@@ -73,6 +73,11 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 			return err
 		}
 	}
+
+	// Convert COSInstance status: v1beta2 *ResourceReference -> v1beta3 COSInstanceStatus
+	if in.COSInstance != nil && in.COSInstance.ID != nil && *in.COSInstance.ID != "" {
+		out.COSInstance.ID = *in.COSInstance.ID
+	}
 	if in.VPCSubnet != nil {
 		out.VPCSubnets = make([]infrav1.VPCSubnetStatus, 0, len(in.VPCSubnet))
 		for name, subnet := range in.VPCSubnet {
@@ -187,6 +192,15 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 		if err := Convert_v1beta3_VPCStatus_To_v1beta2_ResourceReference(&in.VPC, out.VPC, s); err != nil {
 			return err
 		}
+	}
+
+	// Convert COSInstance status: v1beta3 COSInstanceStatus -> v1beta2 *ResourceReference
+	if in.COSInstance.ID != "" {
+		out.COSInstance = &ResourceReference{
+			ID: ptr.To(in.COSInstance.ID),
+		}
+	} else {
+		out.COSInstance = nil
 	}
 
 	if in.VPCSubnets != nil {
@@ -385,9 +399,20 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.VPC = restored.Spec.VPC
 		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
 		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
+		dst.Spec.COSInstance = restored.Spec.COSInstance
+		// If Type was lost (v1beta2 annotation has no Type field), infer it from provision/reference data
+		if dst.Spec.COSInstance.Type == "" {
+			if dst.Spec.COSInstance.Reference.ID != "" || dst.Spec.COSInstance.Reference.Name != "" {
+				dst.Spec.COSInstance.Type = infrav1.SourceTypeReference
+			} else if dst.Spec.COSInstance.BucketName != "" || dst.Spec.COSInstance.BucketRegion != "" || dst.Spec.COSInstance.Provision.Name != "" {
+				dst.Spec.COSInstance.Type = infrav1.SourceTypeProvision
+			}
+		}
+		dst.Spec.Ignition = restored.Spec.Ignition
 		dst.Status.VPC = restored.Status.VPC
 		dst.Status.VPCSubnets = restored.Status.VPCSubnets
 		dst.Status.LoadBalancers = restored.Status.LoadBalancers
+		dst.Status.COSInstance = restored.Status.COSInstance
 		dst.Annotations = restored.Annotations
 	}
 
@@ -436,11 +461,14 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 			VPC:           dst.Spec.VPC,
 			VPCSubnets:    dst.Spec.VPCSubnets,
 			LoadBalancers: dst.Spec.LoadBalancers,
+			CosInstance:   dst.Spec.CosInstance,
+			Ignition:      dst.Spec.Ignition,
 		},
 		Status: IBMPowerVSClusterStatus{
 			VPC:           dst.Status.VPC,
 			VPCSubnet:     dst.Status.VPCSubnet,
 			LoadBalancers: dst.Status.LoadBalancers,
+			COSInstance:   dst.Status.COSInstance,
 		},
 	}
 	if err := utilconversion.MarshalData(restored, dst); err != nil {
@@ -453,9 +481,12 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 		dst.Spec.VPC = restored.Spec.VPC
 		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
 		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
+		dst.Spec.CosInstance = restored.Spec.CosInstance
+		dst.Spec.Ignition = restored.Spec.Ignition
 		dst.Status.VPC = restored.Status.VPC
 		dst.Status.VPCSubnet = restored.Status.VPCSubnet
 		dst.Status.LoadBalancers = restored.Status.LoadBalancers
+		dst.Status.COSInstance = restored.Status.COSInstance
 	}
 
 	// Fix annotation discrepancy during round-trip
@@ -478,6 +509,15 @@ func (src *IBMPowerVSClusterTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	if ok {
 		// Restore any fields that were lost in conversion
 		dst.Spec = restored.Spec
+		// Re-infer COSInstance.Type if it was lost in the v1beta2 annotation (which has no Type field)
+		spec := &dst.Spec.Template.Spec
+		if spec.COSInstance.Type == "" {
+			if spec.COSInstance.Reference.ID != "" || spec.COSInstance.Reference.Name != "" {
+				spec.COSInstance.Type = infrav1.SourceTypeReference
+			} else if spec.COSInstance.BucketName != "" || spec.COSInstance.BucketRegion != "" || spec.COSInstance.Provision.Name != "" {
+				spec.COSInstance.Type = infrav1.SourceTypeProvision
+			}
+		}
 	}
 	if dst.Annotations != nil && len(dst.Annotations) == 0 {
 		dst.Annotations = nil
@@ -498,6 +538,8 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 					VPC:           dst.Spec.Template.Spec.VPC,
 					VPCSubnets:    dst.Spec.Template.Spec.VPCSubnets,
 					LoadBalancers: dst.Spec.Template.Spec.LoadBalancers,
+					CosInstance:   dst.Spec.Template.Spec.CosInstance,
+					Ignition:      dst.Spec.Template.Spec.Ignition,
 				},
 			},
 		},
@@ -513,6 +555,8 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 		dst.Spec.Template.Spec.VPC = restored.Spec.Template.Spec.VPC
 		dst.Spec.Template.Spec.VPCSubnets = restored.Spec.Template.Spec.VPCSubnets
 		dst.Spec.Template.Spec.LoadBalancers = restored.Spec.Template.Spec.LoadBalancers
+		dst.Spec.Template.Spec.CosInstance = restored.Spec.Template.Spec.CosInstance
+		dst.Spec.Template.Spec.Ignition = restored.Spec.Template.Spec.Ignition
 	}
 
 	if len(dst.Annotations) == 0 {
@@ -657,6 +701,16 @@ func Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(in *
 		out.VPC.Type = infrav1.SourceTypeProvision
 	}
 
+	// Convert CosInstance: v1beta2 *CosInstance -> v1beta3 COSInstanceSource (value)
+	if in.CosInstance != nil {
+		convertV1beta2CosInstanceToV1beta3(in.CosInstance, &out.COSInstance)
+	}
+
+	// Convert Ignition: v1beta2 *Ignition -> v1beta3 Ignition (value)
+	if in.Ignition != nil {
+		out.Ignition = infrav1.Ignition{Version: in.Ignition.Version}
+	}
+
 	return nil
 }
 
@@ -712,6 +766,30 @@ func convertV1beta2NetworkToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMP
 
 	out.Network.Type = infrav1.SourceTypeProvision
 	return Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in.DHCPServer, &out.Network.Provision.DHCPServer, nil)
+}
+
+func convertV1beta2CosInstanceToV1beta3(in *CosInstance, out *infrav1.COSInstanceSource) {
+	// v1beta2 CosInstance has no Type field; it is always provision-style (Name/BucketName/BucketRegion).
+	// Any non-empty CosInstance is treated as SourceTypeProvision.
+	out.BucketName = in.BucketName
+	out.BucketRegion = in.BucketRegion
+	out.Provision.Name = in.Name
+	if in.Name != "" || in.BucketName != "" || in.BucketRegion != "" {
+		out.Type = infrav1.SourceTypeProvision
+	}
+}
+
+func convertV1beta3CosInstanceToV1beta2(in *infrav1.COSInstanceSource, out *CosInstance) {
+	out.BucketName = in.BucketName
+	out.BucketRegion = in.BucketRegion
+	switch in.Type {
+	case infrav1.SourceTypeProvision:
+		out.Name = in.Provision.Name
+	case infrav1.SourceTypeReference:
+		// Reference mode: no Name in v1beta2 CosInstance; keep BucketName/BucketRegion only
+	default:
+		out.Name = in.Provision.Name
+	}
 }
 
 //nolint:gocyclo
@@ -814,6 +892,22 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 		if out.VPC.ID == nil && out.VPC.Name == nil && out.VPC.Region == nil {
 			out.VPC = nil
 		}
+	}
+
+	// Convert COSInstance: v1beta3 COSInstanceSource (value) -> v1beta2 *CosInstance
+	if in.COSInstance.BucketName != "" || in.COSInstance.BucketRegion != "" || in.COSInstance.Type != "" {
+		cos := &CosInstance{}
+		convertV1beta3CosInstanceToV1beta2(&in.COSInstance, cos)
+		out.CosInstance = cos
+	} else {
+		out.CosInstance = nil
+	}
+
+	// Convert Ignition: v1beta3 Ignition (value) -> v1beta2 *Ignition
+	if in.Ignition.Version != "" {
+		out.Ignition = &Ignition{Version: in.Ignition.Version}
+	} else {
+		out.Ignition = nil
 	}
 
 	return nil
