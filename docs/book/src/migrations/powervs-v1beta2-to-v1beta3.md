@@ -6,11 +6,28 @@ This guide helps you migrate from v1beta2 to v1beta3 PowerVS APIs. The v1beta3 A
 
 > **Note**: This migration guide covers the currently implemented changes. Additional API improvements will be documented as they are completed.
 
+## Table of Contents
+
+| # | Section | Resource |
+|---|---------|----------|
+| 1 | [Cluster Topology](#1-cluster-topology) | `IBMPowerVSCluster` |
+| 2 | [Zone and Resource Group](#2-zone-and-resource-group-data-type-enhancements) | `IBMPowerVSCluster` |
+| 3 | [Workspace Configuration](#3-workspace-configuration) | `IBMPowerVSCluster` |
+| 4 | [Network Configuration](#4-network-configuration) | `IBMPowerVSCluster` |
+| 5 | [TransitGateway Configuration](#5-transitgateway-configuration) | `IBMPowerVSCluster` |
+| 6 | [VPC Configuration](#6-vpc-configuration) | `IBMPowerVSCluster` |
+| 7 | [VPC Subnet Configuration](#7-vpc-subnet-configuration) | `IBMPowerVSCluster` |
+| 8 | [LoadBalancer Configuration](#8-loadbalancer-configuration) | `IBMPowerVSCluster` |
+| 9 | [IBMPowerVSMachine Configuration](#9-ibmpowervsmachine-configuration) | `IBMPowerVSMachine` |
+| 10 | [IBMPowerVSImage Configuration](#10-ibmpowervsimage-configuration) | `IBMPowerVSImage` |
+| 11 | [Status Field Changes](#status-field-changes) | All resources |
+| 12 | [Conversion Webhook](#conversion-webhook) | All resources |
+
 ## What's Changed
 
 The v1beta3 API introduces several major improvements across PowerVS resources. This guide documents the changes for:
 
-- **IBMPowerVSCluster** - Topology, Zone, Resource Group, Workspace, and Network configuration
+- **IBMPowerVSCluster** - Topology, Zone, Resource Group, Workspace, Network, TransitGateway, VPC, VPC Subnets, and LoadBalancer configuration
 - **IBMPowerVSMachine** - Workspace and Network references
 - **IBMPowerVSImage** - Workspace reference
 
@@ -199,7 +216,272 @@ spec:
 
 ---
 
-## 5. IBMPowerVSMachine Configuration
+## 5. TransitGateway Configuration
+
+### v1beta2 (Deprecated)
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  transitGateway:
+    name: "my-transit-gateway"   # OR use id
+    id: "tgw-id-123"
+    globalRouting: true          # *bool pointer — true = Global, false = Local
+```
+
+### v1beta3 (New)
+
+**Option A: Reference an Existing Transit Gateway**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  transitGateway:
+    type: Reference
+    reference:
+      id: "tgw-id-123"
+      # OR use name instead of id
+      # name: "my-transit-gateway"
+```
+
+**Option B: Provision a New Transit Gateway**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  transitGateway:
+    type: Provision
+    provision:
+      name: "my-transit-gateway"   # Optional: defaults to <cluster-name>-tgw
+      globalRouting: Global        # Enum: Local or Global (auto-detected if omitted)
+    # Optionally control how VPC/PowerVS connections are sourced
+    vpcConnection:
+      type: Provision
+    powerVSConnection:
+      type: Provision
+```
+
+**Key Points:**
+- The `type` field (`Reference` / `Provision`) replaces the flat `name`/`id` struct.
+- `globalRouting` is now an enum (`Local` / `Global`) instead of a `*bool`.
+- When omitted, the system automatically selects routing based on PowerVS and VPC regions.
+- Individual connections (`vpcConnection`, `powerVSConnection`) can each independently reference an existing connection or provision a new one.
+- The controller only deletes Transit Gateways and connections it created (`type: Provision`).
+
+---
+
+## 6. VPC Configuration
+
+### v1beta2 (Deprecated)
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  vpc:
+    id: "vpc-id-123"      # OR use name
+    name: "my-vpc"
+    region: "us-east"     # Required only when create-infra annotation is set
+```
+
+### v1beta3 (New)
+
+**Option A: Reference an Existing VPC**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  vpc:
+    type: Reference
+    region: "us-east"     # Required
+    reference:
+      id: "vpc-id-123"
+      # OR use name instead of id
+      # name: "my-vpc"
+```
+
+**Option B: Provision a New VPC**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  vpc:
+    type: Provision
+    region: "us-east"     # Required
+    provision:
+      name: "my-new-vpc"  # Optional: defaults to <cluster-name>-vpc
+```
+
+**Key Points:**
+- `type` (`Reference` / `Provision`) is now required and replaces the implicit behavior of v1beta2.
+- `region` is always required in v1beta3 (was only required under the create-infra annotation in v1beta2).
+- The `type` field is immutable once set.
+- The controller only deletes VPCs it created (`type: Provision`).
+
+---
+
+## 7. VPC Subnet Configuration
+
+### v1beta2 (Deprecated)
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  vpcSubnets:
+    - name: "my-subnet"
+      id: "subnet-id-123"  # OR use name
+      zone: "us-east-1"
+      cidr: "10.0.0.0/24"  # IPv4 CIDR block
+```
+
+### v1beta3 (New)
+
+**Option A: Reference Existing Subnets**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  subnets:                  # Field renamed from vpcSubnets to subnets
+    - type: Reference
+      zone: "us-east-1"
+      reference:
+        id: "subnet-id-123"
+        # OR use name instead of id
+        # name: "my-subnet"
+```
+
+**Option B: Provision New Subnets**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  subnets:
+    - type: Provision
+      zone: "us-east-1"      # Optional: random zone picked if omitted
+      provision:
+        name: "my-subnet"    # Optional: defaults to <cluster-name>-vpcsubnet-<INDEX>
+```
+
+**Key Points:**
+- The field was **renamed** from `vpcSubnets` to `subnets`.
+- Each entry now requires a `type` field (`Reference` / `Provision`).
+- The `cidr` field from the v1beta2 `Subnet` struct has been removed in v1beta3.
+- When `type: Provision` and `zone` is omitted, a random zone is selected from those available in the VPC region.
+- The controller only deletes subnets it created (`type: Provision`).
+
+---
+
+## 8. LoadBalancer Configuration
+
+### v1beta2 (Deprecated)
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  loadBalancers:
+    - name: "my-lb"
+      id: "lb-id-123"        # OR use name
+      public: true           # *bool pointer — true = public, false = private
+      additionalListeners:
+        - port: 443
+          protocol: TCP
+          defaultPoolName: "my-pool"  # *string pointer
+      backendPools:
+        - name: "my-pool"    # *string pointer
+          algorithm: round_robin
+          protocol: tcp
+          healthMonitor:
+            delay: 10
+            retries: 3
+            timeout: 5
+            type: tcp
+      securityGroups:
+        - id: "sg-id-123"
+          name: "my-sg"      # VPCResource struct
+      subnets:
+        - id: "subnet-id-123"
+          name: "my-subnet"  # VPCResource struct
+```
+
+### v1beta3 (New)
+
+**Option A: Reference an Existing Load Balancer**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  loadBalancers:
+    - type: Reference
+      reference:
+        id: "lb-id-123"
+        # OR use name instead of id
+        # name: "my-lb"
+```
+
+**Option B: Provision a New Load Balancer**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  loadBalancers:
+    - type: Provision
+      provision:
+        name: "my-lb"         # Optional: defaults to <cluster-name>-loadbalancer
+        type: Public          # Enum: Public or Private (default: Public)
+        additionalListeners:
+          - port: 443
+            protocol: TCP
+            defaultPoolName: "my-pool"  # plain string (no longer a pointer)
+        backendPools:
+          - name: "my-pool"   # plain string (no longer a pointer)
+            algorithm: round_robin
+            protocol: tcp
+            healthMonitor:
+              delay: 10
+              retries: 3
+              timeout: 5
+              type: tcp
+        securityGroups:
+          - id: "sg-id-123"   # ResourceIdentifier: id or name
+        subnets:
+          - name: "my-subnet" # ResourceIdentifier: id or name
+```
+
+**Key Points:**
+- `type` (`Reference` / `Provision`) is now required at the top level of each entry.
+- The flat `id`/`name` fields on a LoadBalancer entry have moved into `reference` (when `type: Reference`).
+- The `public` field (`*bool`) is replaced by `provision.type` enum (`Public` / `Private`), defaulting to `Public`.
+- `securityGroups` and `subnets` now use `ResourceIdentifier` instead of the v1beta2 `VPCResource` struct.
+- `additionalListeners[].defaultPoolName` changed from `*string` (pointer) to a plain `string`.
+- `backendPools[].name` changed from `*string` (pointer) to a plain `string`.
+- The controller only deletes load balancers it created (`type: Provision`).
+
+---
+
+## 9. IBMPowerVSMachine Configuration
 
 ### Workspace Reference
 
@@ -268,7 +550,7 @@ spec:
 
 ---
 
-## 6. IBMPowerVSImage Configuration
+## 10. IBMPowerVSImage Configuration
 
 ### Workspace Reference
 
@@ -327,10 +609,29 @@ spec:
 status:
   serviceInstance:
     id: "workspace-id"
-    controllerCreated: true  # Boolean pointer in status
+    controllerCreated: true     # Boolean pointer in status
   network:
     id: "network-id"
     controllerCreated: true
+  vpc:
+    id: "vpc-id"
+    controllerCreated: true
+  vpcSubnet:                    # keyed map
+    us-east-1: { id: "subnet-id", controllerCreated: true }
+  transitGateway:
+    id: "tgw-id"
+    controllerCreated: true
+    vpcConnection:
+      id: "conn-id"
+      controllerCreated: true
+    powerVSConnection:
+      id: "conn-id"
+      controllerCreated: true
+  loadBalancers:                # keyed map
+    my-lb:
+      id: "lb-id"
+      hostname: "my-lb.example.com"
+      controllerCreated: true
 ```
 
 ### v1beta3 Status
@@ -345,13 +646,40 @@ status:
     dhcpServer:
       id: "dhcp-id"
       name: "my-dhcp"
+  vpc:
+    id: "vpc-id"
+    name: "my-vpc"
+    region: "us-east"
+  vpcSubnets:                   # renamed from vpcSubnet (map) to vpcSubnets (list)
+    - id: "subnet-id"
+      name: "my-subnet"
+      zone: "us-east-1"
+  transitGateway:
+    id: "tgw-id"
+    name: "my-tgw"
+    vpcConnection:              # connection status includes state
+      id: "conn-id"
+      name: "my-vpc-conn"
+      state: "attached"
+    powerVSConnection:
+      id: "conn-id"
+      name: "my-pvs-conn"
+      state: "attached"
+  loadBalancers:                # changed from map to list; hostname is a plain string
+    - name: "my-lb"
+      id: "lb-id"
+      state: "active"
+      hostname: "my-lb.example.com"
 ```
 
 **Key Points:**
-- `controllerCreated` flag removed from Status.
-- Ownership is now determined by the `type` field in Spec.
-- Status includes both `id` and `name` for better observability.
+- `controllerCreated` removed from all Status fields. Ownership is determined solely by the `type` field in Spec.
+- All Status resources expose both `id` and `name` for better observability.
 - DHCP server status is nested under network status.
+- VPC Status now includes `region`.
+- `vpcSubnet` (keyed map) renamed to `vpcSubnets` (ordered list), with `zone` included per entry.
+- TransitGateway connection status now includes `state` (e.g., `attached`, `pending`).
+- `loadBalancers` changed from a keyed map (`map[string]VPCLoadBalancerStatus`) to an ordered list (`[]LoadBalancerStatus`).
 
 ---
 
@@ -362,14 +690,21 @@ The v1beta3 API includes automatic conversion webhooks that handle migration:
 - **v1beta2 → v1beta3**: Automatically converts old format to new
   - `Status.ControllerCreated: true` → `Spec.Type: Provision`
   - `Status.ControllerCreated: false` → `Spec.Type: Reference`
-  - Boolean SNAT → Enum SNAT
+  - Boolean SNAT → Enum SNAT (`true` → `Enabled`, `false` → `Disabled`)
+  - `*bool globalRouting` on TransitGateway → Enum routing (`true` → `Global`, `false` → `Local`)
+  - `*bool public` on LoadBalancer → Enum type (`true` → `Public`, `false` → `Private`)
   - Annotation-based topology → Explicit `topology` field
   - Pointer strings → Value types (for `zone` and `resourceGroup`)
+  - `vpcSubnets[]` (flat Subnet struct) → `subnets[]` with `type`/`reference`/`provision` shape
+  - `loadBalancers` keyed map in status → `loadBalancers` list in status
+  - `vpcSubnet` keyed map in status → `vpcSubnets` list in status
 
 - **v1beta3 → v1beta2**: Converts back for compatibility
   - `Spec.Type: Provision` → `Status.ControllerCreated: true`
   - `Spec.Type: Reference` → `Status.ControllerCreated: false`
   - Explicit `topology` field → Annotation-based configuration
+  - Enum routing → `*bool globalRouting`
+  - Enum LB type → `*bool public`
 
 **Note:** While conversion webhooks provide compatibility, it's recommended to migrate to v1beta3 explicitly for better maintainability.
 
