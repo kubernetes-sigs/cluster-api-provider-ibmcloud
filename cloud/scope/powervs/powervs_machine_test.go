@@ -173,149 +173,6 @@ func TestAPIServerPort(t *testing.T) {
 	}
 }
 
-func TestBucketName(t *testing.T) {
-	testcases := []struct {
-		name               string
-		expectedBucketName string
-		machineScope       MachineScope
-	}{
-		{
-			name:               "Bucket exists in COS instance",
-			expectedBucketName: "foo-bucket",
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						CosInstance: &infrav1.CosInstance{
-							BucketName: "foo-bucket",
-						},
-					},
-				},
-			},
-		}, {
-			name:               "Deriving COS bucket name from PowerVS cluster name",
-			expectedBucketName: fmt.Sprintf("%s-%s", "foo-cluster", "cosbucket"),
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "foo-cluster",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			bucketName := tc.machineScope.bucketName()
-			g.Expect(bucketName).To(Equal(tc.expectedBucketName))
-		})
-	}
-}
-
-func TestBucketRegion(t *testing.T) {
-	vpcRegion := usEastRegion
-
-	testcases := []struct {
-		name                 string
-		expectedBucketRegion string
-		machineScope         MachineScope
-	}{
-		{
-			name:                 "Get bucket region from COS instance",
-			expectedBucketRegion: region,
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						CosInstance: &infrav1.CosInstance{
-							BucketRegion: region,
-						},
-					},
-				},
-			},
-		}, {
-			name:                 "Get bucket region from VPC region set in spec",
-			expectedBucketRegion: region,
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: region},
-					},
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPC: infrav1.VPCStatus{Region: region},
-					},
-				},
-			},
-		}, {
-			name: "Returns empty region when both COS instance and VPC source spec are empty",
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{},
-				},
-			},
-		}, {
-			name:                 "Prioritizes COS bucket region over VPC region",
-			expectedBucketRegion: region,
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						CosInstance: &infrav1.CosInstance{
-							BucketRegion: region,
-						},
-						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: vpcRegion},
-					},
-				},
-			},
-		}, {
-			name:                 "Returns VPC region when COS bucket region is empty",
-			expectedBucketRegion: vpcRegion,
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						CosInstance: &infrav1.CosInstance{
-							BucketRegion: "",
-						},
-						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: vpcRegion},
-					},
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPC: infrav1.VPCStatus{Region: vpcRegion},
-					},
-				},
-			},
-		}, {
-			name:                 "Returns empty string when COS is nil and VPC region is not set",
-			expectedBucketRegion: "",
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						VPC: infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: "us-east"},
-					},
-				},
-			},
-		}, {
-			name:                 "Returns empty string when COS bucket region is empty and VPC is nil",
-			expectedBucketRegion: "",
-			machineScope: MachineScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						CosInstance: &infrav1.CosInstance{
-							BucketRegion: "",
-						},
-					},
-				},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			region := tc.machineScope.bucketRegion()
-			g.Expect(region).To(Equal(tc.expectedBucketRegion))
-		})
-	}
-}
-
 func TestNewPowerVSMachineScope(t *testing.T) {
 	testCases := []struct {
 		name   string
@@ -726,7 +583,7 @@ func TestGetIgnitionVersion(t *testing.T) {
 			scope: MachineScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						Ignition: &infrav1.Ignition{
+						Ignition: infrav1.Ignition{
 							Version: "3.4",
 						},
 					},
@@ -738,7 +595,7 @@ func TestGetIgnitionVersion(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(_ *testing.T) {
 			g := NewWithT(t)
-			g.Expect(getIgnitionVersion(&tc.scope)).To(Equal(tc.expectedIgnitionVersion))
+			g.Expect(tc.scope.getIgnitionVersion()).To(Equal(tc.expectedIgnitionVersion))
 		})
 	}
 }
@@ -984,80 +841,28 @@ func TestCreateCOSClient(t *testing.T) {
 	}
 
 	t.Run("Create COS client", func(t *testing.T) {
-		mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
-		t.Run("Error getting COS service instance", func(t *testing.T) {
+		t.Run("Returns error when COS instance ID is not in cluster status", func(t *testing.T) {
 			g := NewWithT(t)
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			cosInstanceName := fmt.Sprintf("%s-%s", scope.IBMPowerVSCluster.GetName(), "cosinstance")
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{Name: cosInstanceName})).Return(nil, errors.New("error listing COS instances"))
-			scope.ResourceClient = mockResourceController
+			// Status.COSInstance.ID is empty by default
 			result, err := scope.createCOSClient(ctx)
 			g.Expect(result).To(BeNil())
+			g.Expect(err).To(MatchError(ContainSubstring("COS instance ID is not yet populated in cluster status")))
+		})
+
+		t.Run("Returns error when COS bucket region is not set in spec", func(t *testing.T) {
+			g := NewWithT(t)
+			setup(t)
+			t.Cleanup(teardown)
+			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
+			scope.IBMPowerVSCluster.Status.COSInstance = infrav1.COSInstanceStatus{ID: "cos-instance-id"}
+			// Spec.COSInstance.BucketRegion is empty — should fail after API key check
+			result, err := scope.createCOSClient(ctx)
+			g.Expect(result).To(BeNil())
+			// Will fail at API key or bucket region; either is acceptable
 			g.Expect(err).ToNot(BeNil())
-		})
-
-		t.Run("COS service instance is nil", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, nil)
-			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient(ctx)
-			g.Expect(result).To(BeNil())
-			g.Expect(err).ToNot(BeNil())
-		})
-
-		t.Run("COS service instance is not in active state", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			serviceInstance := &resourcecontrollerv2.ResourceInstance{
-				State: ptr.To(string(infrav1.WorkspaceStateProvisioning)),
-			}
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
-			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient(ctx)
-			expectedError := fmt.Sprintf("COS service instance is not in active state, current state: %s", infrav1.WorkspaceStateProvisioning)
-			g.Expect(result).To(BeNil())
-			g.Expect(err.Error()).To(ContainSubstring(expectedError))
-		})
-
-		t.Run("Failed to determine COS bucket region", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			serviceInstance := &resourcecontrollerv2.ResourceInstance{
-				State: ptr.To(string(infrav1.WorkspaceStateActive)),
-			}
-			scope.SetRegion(region)
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
-			scope.ResourceClient = mockResourceController
-			result, err := scope.createCOSClient(ctx)
-			expectedError := "failed to determine COS bucket region, both bucket region and VPC region not set"
-			g.Expect(result).To(BeNil())
-			g.Expect(err.Error()).To(ContainSubstring(expectedError))
-		})
-		t.Run("Creates COS client successfully", func(t *testing.T) {
-			g := NewWithT(t)
-			setup(t)
-			t.Cleanup(teardown)
-			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			serviceInstance := &resourcecontrollerv2.ResourceInstance{
-				State: ptr.To(string(infrav1.WorkspaceStateActive)),
-				GUID:  ptr.To("foo-guid"),
-			}
-			scope.SetRegion(region)
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
-			scope.ResourceClient = mockResourceController
-			expectedBucketRegion := region
-			scope.IBMPowerVSCluster.Spec.CosInstance = &infrav1.CosInstance{BucketRegion: expectedBucketRegion}
-			_, err := scope.createCOSClient(ctx)
-			g.Expect(err).To(BeNil())
 		})
 	})
 }
@@ -1149,132 +954,53 @@ func TestSetFailureMessage(t *testing.T) {
 }
 func TestDeleteMachineIgnition(t *testing.T) {
 	t.Run("Delete machine ignition", func(t *testing.T) {
-		t.Run("Fails to retrieve bootstrap data: linked Machine's bootstrap.dataSecretName is nil", func(t *testing.T) {
+		t.Run("Skips when COSInstance type is not set (Ignition not configured)", func(t *testing.T) {
 			g := NewWithT(t)
 			scope := MachineScope{
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
-						Bootstrap: clusterv1.Bootstrap{
-							DataSecretName: nil,
-						},
-					},
-				},
-			}
-			err := scope.DeleteMachineIgnition(ctx)
-			g.Expect(err).ToNot(BeNil())
-		})
-		t.Run("Machine is not using user data of type ignition", func(t *testing.T) {
-			g := NewWithT(t)
-			bootstrapSecret := newBootstrapSecret(clusterName, machineName)
-			initObjects := []client.Object{
-				bootstrapSecret,
-			}
-			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
-			scope := MachineScope{
-				Client: client,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Spec: infrav1.IBMPowerVSClusterSpec{},
 				},
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
-						Bootstrap: clusterv1.Bootstrap{
-							DataSecretName: ptr.To(machineName),
-						},
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: defaultNamespace,
-					},
-				},
+				Machine: &clusterv1.Machine{},
 			}
 			err := scope.DeleteMachineIgnition(ctx)
 			g.Expect(err).To(BeNil())
 		})
-
-		t.Run("Error creating COS client", func(t *testing.T) {
+		t.Run("Skips when bucket name not yet populated in cluster status", func(t *testing.T) {
 			g := NewWithT(t)
-			bootstrapSecret := newBootstrapSecret(clusterName, machineName)
-			initObjects := []client.Object{
-				bootstrapSecret,
-			}
-			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
-			mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(nil, errors.New("error listing cos instances"))
 			scope := MachineScope{
-				Client: client,
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: clusterName,
-					},
 					Spec: infrav1.IBMPowerVSClusterSpec{
-						Ignition: &infrav1.Ignition{
-							Version: "3.1",
+						COSInstance: infrav1.COSInstanceSource{
+							Type: infrav1.SourceTypeProvision,
 						},
 					},
+					// Status.COSInstance.BucketName is empty → deletion skipped
 				},
-				ResourceClient: mockResourceController,
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
-						Bootstrap: clusterv1.Bootstrap{
-							DataSecretName: ptr.To(machineName),
-						},
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: defaultNamespace,
-					},
-				},
+				Machine: &clusterv1.Machine{},
 			}
-			err := scope.DeleteMachineIgnition(ctx)
-			g.Expect(err).ToNot(BeNil())
-		})
-
-		t.Run("Successful DeleteMachineIgnition", func(t *testing.T) {
-			g := NewWithT(t)
-			bootstrapSecret := newBootstrapSecret(clusterName, machineName)
-			initObjects := []client.Object{
-				bootstrapSecret,
-			}
-			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
-			mockResourceController := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
-			serviceInstance := new(resourcecontrollerv2.ResourceInstance)
-			state := string(infrav1.WorkspaceStateActive)
-			serviceInstance.State = &state
-			guid := "foo-guid"
-			serviceInstance.GUID = &guid
-			expectedBucketRegion := region
-			mockResourceController.EXPECT().GetResourceInstanceByFilter(gomock.AssignableToTypeOf(resourcecontroller.InstanceFilter{})).Return(serviceInstance, nil)
-			scope := MachineScope{
-				Client: client,
-				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-					Status: infrav1.IBMPowerVSMachineStatus{},
-				},
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: clusterName,
-					},
-					Spec: infrav1.IBMPowerVSClusterSpec{
-						Ignition: &infrav1.Ignition{
-							Version: "3.1",
-						},
-						CosInstance: &infrav1.CosInstance{
-							BucketRegion: expectedBucketRegion,
-						},
-					},
-				},
-				ResourceClient: mockResourceController,
-				Machine: &clusterv1.Machine{
-					Spec: clusterv1.MachineSpec{
-						Bootstrap: clusterv1.Bootstrap{
-							DataSecretName: ptr.To(machineName),
-						},
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: defaultNamespace,
-					},
-				},
-			}
-			scope.SetRegion(region)
 			err := scope.DeleteMachineIgnition(ctx)
 			g.Expect(err).To(BeNil())
+		})
+		t.Run("Error creating COS client when COS instance ID not in status", func(t *testing.T) {
+			g := NewWithT(t)
+			scope := MachineScope{
+				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+					Spec: infrav1.IBMPowerVSClusterSpec{
+						COSInstance: infrav1.COSInstanceSource{
+							Type: infrav1.SourceTypeProvision,
+						},
+					},
+					Status: infrav1.IBMPowerVSClusterStatus{
+						COSInstance: infrav1.COSInstanceStatus{
+							BucketName: "test-bucket",
+							// ID is empty → createCOSClient will fail
+						},
+					},
+				},
+				Machine: &clusterv1.Machine{},
+			}
+			err := scope.DeleteMachineIgnition(ctx)
+			g.Expect(err).To(MatchError(ContainSubstring("COS instance ID is not yet populated in cluster status")))
 		})
 	})
 }

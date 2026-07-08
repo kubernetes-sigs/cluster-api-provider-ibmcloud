@@ -34,13 +34,13 @@ func TestFetchBucketRegion(t *testing.T) {
 
 	testcases := []struct {
 		name           string
-		cos            *infrav1.CosInstance
+		cos            infrav1.COSInstanceSource
 		vpc            infrav1.VPCStatus
 		expectedRegion string
 	}{
 		{
 			name: "Returns bucket region from COS instance when set",
-			cos: &infrav1.CosInstance{
+			cos: infrav1.COSInstanceSource{
 				BucketRegion: testRegion,
 			},
 			vpc: infrav1.VPCStatus{
@@ -50,15 +50,15 @@ func TestFetchBucketRegion(t *testing.T) {
 		},
 		{
 			name: "Returns VPC region when COS bucket region is not set",
-			cos:  &infrav1.CosInstance{},
+			cos:  infrav1.COSInstanceSource{},
 			vpc: infrav1.VPCStatus{
 				Region: vpcRegion,
 			},
 			expectedRegion: vpcRegion,
 		},
 		{
-			name: "Returns VPC region when COS is nil",
-			cos:  nil,
+			name: "Returns VPC region when COS is empty",
+			cos:  infrav1.COSInstanceSource{},
 			vpc: infrav1.VPCStatus{
 				Region: vpcRegion,
 			},
@@ -66,25 +66,19 @@ func TestFetchBucketRegion(t *testing.T) {
 		},
 		{
 			name:           "Returns empty string when both COS bucket region and VPC region are not set",
-			cos:            &infrav1.CosInstance{},
+			cos:            infrav1.COSInstanceSource{},
 			vpc:            infrav1.VPCStatus{},
 			expectedRegion: "",
 		},
 		{
-			name:           "Returns empty string when COS is nil and VPC region is not set",
-			cos:            nil,
+			name:           "Returns empty string when COS and VPC are empty",
+			cos:            infrav1.COSInstanceSource{},
 			vpc:            infrav1.VPCStatus{},
 			expectedRegion: "",
 		},
 		{
-			name:           "Returns empty string when both COS and VPC are nil",
-			cos:            nil,
-			vpc:            infrav1.VPCStatus{},
-			expectedRegion: "",
-		},
-		{
-			name: "Returns empty string when COS bucket region is empty and VPC is nil",
-			cos: &infrav1.CosInstance{
+			name: "Returns empty string when COS bucket region is empty and VPC is empty",
+			cos: infrav1.COSInstanceSource{
 				BucketRegion: "",
 			},
 			vpc:            infrav1.VPCStatus{},
@@ -92,7 +86,7 @@ func TestFetchBucketRegion(t *testing.T) {
 		},
 		{
 			name: "Prioritizes COS bucket region over VPC region",
-			cos: &infrav1.CosInstance{
+			cos: infrav1.COSInstanceSource{
 				BucketRegion: testRegion,
 			},
 			vpc: infrav1.VPCStatus{

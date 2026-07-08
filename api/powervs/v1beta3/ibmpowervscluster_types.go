@@ -104,6 +104,9 @@ func init() {
 //
 // TransitGateway Validation (VirtualIP):
 // +kubebuilder:validation:XValidation:rule="!has(self.topology) || self.topology != 'VirtualIP' || !has(self.transitGateway)",message="TransitGateway must not be configured when topology is set to VirtualIP"
+//
+// Ignition Validation:
+// +kubebuilder:validation:XValidation:rule="has(self.ignition) ? has(self.cosInstance) : true",message="cosInstance configuration is required when ignition is specified"
 type IBMPowerVSClusterSpec struct {
 	// controlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
@@ -158,20 +161,14 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	VPCSecurityGroups []VPCSecurityGroup `json:"vpcSecurityGroups,omitempty"`
 
-	// cosInstance contains options to configure a supporting IBM Cloud COS bucket for this
-	// cluster - currently used for nodes requiring Ignition
-	// (https://coreos.github.io/ignition/) for bootstrapping (requires
-	// BootstrapFormatIgnition feature flag to be enabled).
-	// when powervs.cluster.x-k8s.io/create-infra=true annotation is set on IBMPowerVSCluster resource and Ignition is set, then
-	// 1. CosInstance.Name should be set not setting will result in webhook error.
-	// 2. CosInstance.BucketName should be set not setting will result in webhook error.
-	// 3. CosInstance.BucketRegion should be set not setting will result in webhook error.
+	// COSInstance contains options to configure a supporting IBM Cloud COS instance and bucket
+	// for this cluster. It is currently used for nodes requiring Ignition for bootstrapping.
 	// +optional
-	CosInstance *CosInstance `json:"cosInstance,omitempty"`
+	COSInstance COSInstanceSource `json:"cosInstance,omitempty,omitzero"`
 
-	// ignition defined options related to the bootstrapping systems where Ignition is used.
+	// Ignition defines options related to the bootstrapping systems where Ignition is used.
 	// +optional
-	Ignition *Ignition `json:"ignition,omitempty"`
+	Ignition Ignition `json:"ignition,omitempty,omitzero"`
 }
 
 // IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
@@ -222,8 +219,9 @@ type IBMPowerVSClusterStatus struct {
 	// vpcSecurityGroups is reference to IBM Cloud VPC security group.
 	VPCSecurityGroups map[string]VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
 
-	// cosInstance is reference to IBM Cloud COS Instance resource.
-	COSInstance *ResourceReference `json:"cosInstance,omitempty"`
+	// COSInstance tracks the observed state of the provisioned or referenced IBM Cloud COS instance.
+	// +optional
+	COSInstance COSInstanceStatus `json:"cosInstance,omitempty,omitzero"`
 
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
 	// +optional
@@ -392,28 +390,11 @@ type ResourceConnectionStatus struct {
 	State string `json:"state,omitempty"`
 }
 
-// CosInstance represents IBM Cloud COS instance.
-type CosInstance struct {
-	// name defines name of IBM cloud COS instance to be created.
-	// when IBMPowerVSCluster.Ignition is set
-	// +kubebuilder:validation:MinLength:=3
-	// +kubebuilder:validation:MaxLength:=63
-	// +kubebuilder:validation:Pattern=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
-	Name string `json:"name,omitempty"`
-
-	// bucketName is IBM cloud COS bucket name
-	BucketName string `json:"bucketName,omitempty"`
-
-	// bucketRegion is IBM cloud COS bucket region
-	BucketRegion string `json:"bucketRegion,omitempty"`
-}
-
 // Ignition defines options related to the bootstrapping systems where Ignition is used.
 type Ignition struct {
 	// version defines which version of Ignition will be used to generate bootstrap data.
 	//
 	// +optional
-	// +kubebuilder:default="2.3"
 	// +kubebuilder:validation:Enum="2.3";"2.4";"3.0";"3.1";"3.2";"3.3";"3.4"
 	Version string `json:"version,omitempty"`
 }
@@ -876,4 +857,63 @@ type LoadBalancerStatus struct {
 	// Hostname is the hostname of load balancer.
 	// +optional
 	Hostname string `json:"hostname,omitempty"`
+}
+
+// COSInstanceSource defines how the IBM Cloud COS instance is sourced.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+type COSInstanceSource struct {
+	// Type defines whether to use an existing COS instance or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="COS instance type is immutable once set"
+	Type SourceType `json:"type,omitempty"`
+
+	// BucketName is the name of the IBM Cloud COS bucket used for Ignition bootstrapping.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	BucketName string `json:"bucketName,omitempty"`
+
+	// BucketRegion is the IBM Cloud region where the COS bucket resides or will be created.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	BucketRegion string `json:"bucketRegion,omitempty"`
+
+	// Reference contains the information to identify an existing COS instance.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// Provision contains the configuration for provisioning a new COS instance and bucket.
+	// +optional
+	Provision COSInstanceProvision `json:"provision,omitempty,omitzero"`
+}
+
+// COSInstanceProvision holds the configuration for creating a new COS instance.
+type COSInstanceProvision struct {
+	// Name defines the explicit name of the IBM Cloud COS instance to be created.
+	// If omitted, the system will dynamically create it using the cluster name.
+	// +kubebuilder:validation:MinLength=3
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$`
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// COSInstanceStatus tracks the live observed state of the IBM Cloud COS instance.
+type COSInstanceStatus struct {
+	// ID is the validated string identifier (CRN or GUID) returned by the IBM Cloud API.
+	// +kubebuilder:validation:Required
+	ID string `json:"id,omitempty"`
+
+	// Name is the unique name identifying the COS instance in the cloud.
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
+
+	// BucketName tracks the confirmed bucket used for bootstrapping.
+	// +optional
+	BucketName string `json:"bucketName,omitempty"`
+
+	// BucketRegion tracks the confirmed region where the bucket resides.
+	// +optional
+	BucketRegion string `json:"bucketRegion,omitempty"`
 }

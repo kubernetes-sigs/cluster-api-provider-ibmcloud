@@ -252,7 +252,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	})
 
 	// reconcile COSInstance
-	if clusterScope.IBMPowerVSCluster.Spec.Ignition != nil {
+	if clusterScope.IBMPowerVSCluster.Spec.COSInstance.Type != "" {
 		log.Info("Reconciling COS service instance")
 		if err := clusterScope.ReconcileCOSInstance(ctx); err != nil {
 			deprecatedv1beta1conditions.MarkFalse(powerVSCluster.cluster, infrav1.COSInstanceReadyV1Beta2Condition, infrav1.COSInstanceReconciliationFailedV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
@@ -625,7 +625,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
 
-	if clusterScope.IBMPowerVSCluster.Spec.Ignition != nil {
+	if clusterScope.IBMPowerVSCluster.Spec.COSInstance.Type != "" {
 		conditions.Set(clusterScope.IBMPowerVSCluster, metav1.Condition{
 			Type:   infrav1.COSInstanceReadyCondition,
 			Status: metav1.ConditionFalse,

@@ -760,7 +760,12 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			name: "When reconcile COS service instance returns error",
 			powervsClusterScope: func() *powervsscope.ClusterScope {
 				powerVSCluster := getPowerVSClusterWithSpecAndStatus()
-				powerVSCluster.Spec.Ignition = &infrav1.Ignition{Version: "3.4"}
+				powerVSCluster.Spec.Ignition = infrav1.Ignition{Version: "3.4"}
+				powerVSCluster.Spec.COSInstance = infrav1.COSInstanceSource{
+					Type:         infrav1.SourceTypeProvision,
+					BucketName:   "test-bucket",
+					BucketRegion: "us-south",
+				}
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: powerVSCluster,
 				}
@@ -782,7 +787,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1.COSInstanceReconciliationFailedReason,
-					Message:            "failed to check if COS instance in cloud: failed to get COS service instance: error getting instance by name",
+					Message:            "failed to resolve COS instance: failed checking for existing COS instance: error getting instance by name",
 				},
 				getVPCLBReadyCondition(),
 				getWorkspaceReadyCondition(),
@@ -1480,11 +1485,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 	t.Run("When delete COSInstance returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
-		clusterScope.IBMPowerVSCluster.Status.COSInstance = &infrav1.ResourceReference{
-			ID:                ptr.To("CosInstanceID"),
-			ControllerCreated: ptr.To(true),
-		}
 		clusterScope.IBMPowerVSCluster.Spec = infrav1.IBMPowerVSClusterSpec{
 			Topology: infrav1.PowerVSLoadBalancerTopology,
 			Workspace: infrav1.WorkspaceSource{
@@ -1493,8 +1493,14 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					ID: "service-instance-1",
 				},
 			},
+			COSInstance: infrav1.COSInstanceSource{
+				Type: infrav1.SourceTypeProvision,
+			},
 			LoadBalancers: []infrav1.LoadBalancerSource{},
-			Ignition:      &infrav1.Ignition{Version: "3.4"},
+			Ignition:      infrav1.Ignition{Version: "3.4"},
+		}
+		clusterScope.IBMPowerVSCluster.Status.COSInstance = infrav1.COSInstanceStatus{
+			ID: "CosInstanceID",
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1535,7 +1541,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 			},
 			LoadBalancers: []infrav1.LoadBalancerSource{},
-			Ignition:      &infrav1.Ignition{Version: "3.4"},
+			Ignition:      infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
