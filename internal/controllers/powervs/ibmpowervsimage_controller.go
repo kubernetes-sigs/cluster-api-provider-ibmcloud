@@ -248,9 +248,9 @@ func reconcileImage(ctx context.Context, img *models.ImageReference, imageScope 
 		}
 
 		imageScope.SetImageID(image.ImageID)
-		log.Info("ImageID", imageScope.GetImageID())
+		log.Info("ImageID", "imageID", imageScope.GetImageID())
 		imageScope.SetImageState(image.State)
-		log.Info("ImageState", image.State)
+		log.Info("ImageState", "imageState", image.State)
 
 		switch imageScope.GetImageState() {
 		case infrav1.PowerVSImageStateQueued:

@@ -18,6 +18,8 @@ package resourcecontroller
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
@@ -44,7 +46,20 @@ const (
 	// CosResourcePlanID is IBM COS plan id, can be retrieved using ibmcloud cli
 	// ibmcloud catalog service cloud-object-storage.
 	CosResourcePlanID = "1e4e33e4-cfa6-4f12-9016-be594a6d5f87"
+	// CosResourceLitePlanID is IBM COS Lite plan id (free, staging/non-paid accounts).
+	// Can be retrieved using: ibmcloud catalog service cloud-object-storage.
+	CosResourceLitePlanID = "2fdf0c08-2d32-4f46-84b5-32e0c92fffd8"
 )
+
+// GetCOSResourcePlanID returns the appropriate COS plan ID based on the IBMCLOUD_STAGING
+// environment variable. Staging (non-paid) accounts require the Lite plan; production uses Standard.
+func GetCOSResourcePlanID() string {
+	v := strings.ToLower(os.Getenv("IBMCLOUD_STAGING"))
+	if v == "true" || v == "1" || v == "yes" || v == "on" {
+		return CosResourceLitePlanID
+	}
+	return CosResourcePlanID
+}
 
 // InstanceFilter defines the filters for searching resource instances.
 type InstanceFilter struct {
@@ -227,7 +242,6 @@ func (s *Service) GetResourceInstanceByFilter(filter InstanceFilter) (*resourcec
 
 		serviceInstances, _, err := s.client.ListResourceInstances(listServiceInstanceOptions)
 		if err != nil {
-			fmt.Printf("error listing instances")
 			return false, "", err
 		}
 
