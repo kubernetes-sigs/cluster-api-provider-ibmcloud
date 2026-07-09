@@ -2609,7 +2609,7 @@ func (s *ClusterScope) reconcileCOSReference(_ context.Context, ref infrav1.Reso
 		filter := resourcecontroller.InstanceFilter{
 			Name:           ref.Name,
 			ResourceID:     resourcecontroller.CosResourceID,
-			ResourcePlanID: resourcecontroller.CosResourcePlanID,
+			ResourcePlanID: resourcecontroller.GetCOSResourcePlanID(),
 		}
 		instance, err := s.ResourceClient.GetResourceInstanceByFilter(filter)
 		if err != nil {
@@ -2631,7 +2631,7 @@ func (s *ClusterScope) reconcileCOSProvision(ctx context.Context, name string) (
 	filter := resourcecontroller.InstanceFilter{
 		Name:           name,
 		ResourceID:     resourcecontroller.CosResourceID,
-		ResourcePlanID: resourcecontroller.CosResourcePlanID,
+		ResourcePlanID: resourcecontroller.GetCOSResourcePlanID(),
 	}
 	instance, err := s.ResourceClient.GetResourceInstanceByFilter(filter)
 	if err != nil {
@@ -2655,7 +2655,7 @@ func (s *ClusterScope) reconcileCOSProvision(ctx context.Context, name string) (
 		Name:           ptr.To(name),
 		Target:         ptr.To(target),
 		ResourceGroup:  ptr.To(resourceGroupID),
-		ResourcePlanID: ptr.To(resourcecontroller.CosResourcePlanID),
+		ResourcePlanID: ptr.To(resourcecontroller.GetCOSResourcePlanID()),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed creating COS instance via API: %w", err)

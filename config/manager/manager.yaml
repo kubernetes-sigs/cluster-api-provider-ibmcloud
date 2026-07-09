@@ -31,6 +31,9 @@ spec:
         - "--insecure-diagnostics=${CAPIBM_INSECURE_DIAGNOSTICS:=false}"
         - "--service-endpoint=${SERVICE_ENDPOINT:=none}"
         - "--v=${LOGLEVEL:=0}"
+        env:
+        - name: IBMCLOUD_STAGING
+          value: "${IBMCLOUD_STAGING:-}"
         image: controller:latest
         name: manager
         ports:
