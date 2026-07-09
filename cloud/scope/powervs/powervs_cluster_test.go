@@ -37,7 +37,6 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	mockP "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
@@ -219,164 +218,6 @@ func TestGetDHCPServerID(t *testing.T) {
 		t.Run(tc.name, func(_ *testing.T) {
 			dhcpServerID := tc.clusterScope.IBMPowerVSCluster.Status.Network.DHCPServer.ID
 			g.Expect(dhcpServerID).To(Equal(tc.expectedID))
-		})
-	}
-}
-
-func TestVPCSecurityGroupByName(t *testing.T) {
-	testCases := []struct {
-		name         string
-		sgName       string
-		expectedID   *string
-		clusterScope ClusterScope
-	}{
-		{
-			name: "VPC SG status is not set",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
-			},
-		},
-		{
-			name: "VPC SG status is empty",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: make(map[string]infrav1.VPCSecurityGroupStatus),
-					},
-				},
-			},
-		},
-		{
-			name: "empty SG name is passed",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-							"sg": {
-								ID: ptr.To("sg-1"),
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "invalid SG name is passed",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-							"sg": {
-								ID: ptr.To("sg-1"),
-							},
-						},
-					},
-				},
-			},
-			sgName: "sg2",
-		},
-		{
-			name: "valid SG name is passed",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-							"sg": {
-								ID: ptr.To("sg-1"),
-							},
-						},
-					},
-				},
-			},
-			sgName:     "sg",
-			expectedID: ptr.To("sg-1"),
-		},
-	}
-
-	for _, tc := range testCases {
-		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			sgID, _, _ := tc.clusterScope.GetVPCSecurityGroupByName(tc.sgName)
-			g.Expect(pointer.Dereference(sgID)).To(Equal(pointer.Dereference(tc.expectedID)))
-		})
-	}
-}
-
-func TestVPCSecurityGroupByID(t *testing.T) {
-	testCases := []struct {
-		name         string
-		sgID         string
-		expectedID   *string
-		clusterScope ClusterScope
-	}{
-		{
-			name: "VPC SG status is not set",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
-			},
-		},
-		{
-			name: "VPC SG status is empty",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: make(map[string]infrav1.VPCSecurityGroupStatus),
-					},
-				},
-			},
-		},
-		{
-			name: "empty SG ID is passed",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-							"sg": {
-								ID: ptr.To("sg-1"),
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "invalid SG ID is passed",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-							"sg": {
-								ID: ptr.To("sg-1"),
-							},
-						},
-					},
-				},
-			},
-			sgID: "sg2",
-		},
-		{
-			name: "valid SG ID is passed",
-			clusterScope: ClusterScope{
-				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-					Status: infrav1.IBMPowerVSClusterStatus{
-						VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-							"sg": {
-								ID: ptr.To("sg-1"),
-							},
-						},
-					},
-				},
-			},
-			sgID:       "sg-1",
-			expectedID: ptr.To("sg-1"),
-		},
-	}
-
-	for _, tc := range testCases {
-		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			sgID, _, _ := tc.clusterScope.GetVPCSecurityGroupByID(tc.sgID)
-			g.Expect(pointer.Dereference(sgID)).To(Equal(pointer.Dereference(tc.expectedID)))
 		})
 	}
 }
@@ -1061,41 +902,59 @@ func TestDeleteVPCSecurityGroups(t *testing.T) {
 		mockCtrl = gomock.NewController(t)
 		mockVpc = mock.NewMockVpc(mockCtrl)
 	}
-
 	teardown := func() {
 		mockCtrl.Finish()
 	}
-	powervsClusterScope := func() *ClusterScope {
+
+	// scopeWithProvisionSG returns a ClusterScope with one Provision-type SG named "sc"
+	// in the spec (so deletion is triggered) and the matching status entry.
+	scopeWithProvisionSG := func() *ClusterScope {
 		return &ClusterScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPCSecurityGroups: map[string]infrav1.VPCSecurityGroupStatus{
-						"sc": {
-							ID:                ptr.To("sc-id"),
-							ControllerCreated: ptr.To(true),
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{
+							Type:      infrav1.SourceTypeProvision,
+							Provision: infrav1.VPCSecurityGroupProvision{Name: "sc"},
 						},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupStatus{
+						{ID: "sc-id", Name: "sc"},
 					},
 				},
 			},
 		}
 	}
 
-	t.Run("When security group is not found", func(*testing.T) {
+	t.Run("When security group is not found (404), skip deletion", func(*testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		clusterScope := powervsClusterScope()
+		clusterScope := scopeWithProvisionSG()
 		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(nil, &core.DetailedResponse{StatusCode: 404}, errors.New("not found"))
 		clusterScope.IBMVPCClient = mockVpc
 		err := clusterScope.DeleteVPCSecurityGroups(ctx)
 		g.Expect(err).To(BeNil())
 	})
+
+	t.Run("When GetSecurityGroup returns error", func(*testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := scopeWithProvisionSG()
+		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(nil, nil, errors.New("failed to get security group"))
+		clusterScope.IBMVPCClient = mockVpc
+		err := clusterScope.DeleteVPCSecurityGroups(ctx)
+		g.Expect(err).To(Not(BeNil()))
+	})
+
 	t.Run("When DeleteSecurityGroup returns error", func(*testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-
-		clusterScope := powervsClusterScope()
+		clusterScope := scopeWithProvisionSG()
 		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{
 			ID:   ptr.To("sc-id"),
 			Name: ptr.To("sc"),
@@ -1106,22 +965,11 @@ func TestDeleteVPCSecurityGroups(t *testing.T) {
 		g.Expect(err).To(Not(BeNil()))
 	})
 
-	t.Run("When GetSecurityGroup returns error", func(*testing.T) {
+	t.Run("When DeleteSecurityGroup successfully deletes security group", func(*testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		clusterScope := powervsClusterScope()
-		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(nil, nil, errors.New("failed to get security group"))
-		clusterScope.IBMVPCClient = mockVpc
-		err := clusterScope.DeleteVPCSecurityGroups(ctx)
-		g.Expect(err).To(Not(BeNil()))
-	})
-
-	t.Run("When DeleteSecurityGroup successfully deletes security group in cloud", func(*testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		clusterScope := powervsClusterScope()
+		clusterScope := scopeWithProvisionSG()
 		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{
 			ID:   ptr.To("sc-id"),
 			Name: ptr.To("sc"),
@@ -1132,23 +980,26 @@ func TestDeleteVPCSecurityGroups(t *testing.T) {
 		g.Expect(err).To(BeNil())
 	})
 
-	t.Run("When deleting multiple SecurityGroup", func(*testing.T) {
+	t.Run("When deleting multiple managed SecurityGroups", func(*testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		clusterScope := powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1.VPCSecurityGroupStatus{
-			"sc1": {
-				ID:                ptr.To("sc-id"),
-				ControllerCreated: ptr.To(true),
-			},
-			"sc2": {
-				ID:                ptr.To("sc-id"),
-				ControllerCreated: ptr.To(true),
-			},
-			"sc3": {
-				ID:                ptr.To("sc-id"),
-				ControllerCreated: ptr.To(true),
+		clusterScope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: "sc1"}},
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: "sc2"}},
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: "sc3"}},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupStatus{
+						{ID: "sc1-id", Name: "sc1"},
+						{ID: "sc2-id", Name: "sc2"},
+						{ID: "sc3-id", Name: "sc3"},
+					},
+				},
 			},
 		}
 		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{
@@ -1161,23 +1012,30 @@ func TestDeleteVPCSecurityGroups(t *testing.T) {
 		g.Expect(err).To(BeNil())
 	})
 
-	t.Run("When one security group is not created by controller", func(*testing.T) {
+	t.Run("When one security group is referenced (not managed), skip it", func(*testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		clusterScope := powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1.VPCSecurityGroupStatus{
-			"sc1": {
-				ID:                ptr.To("sc-id"),
-				ControllerCreated: ptr.To(true),
-			},
-			"sc2": {
-				ID: ptr.To("sc-id"),
+		clusterScope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						// sc1 is managed (Provision), sc2 is referenced — only sc1 should be deleted
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: "sc1"}},
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{Name: "sc2"}},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupStatus{
+						{ID: "sc1-id", Name: "sc1"},
+						{ID: "sc2-id", Name: "sc2"},
+					},
+				},
 			},
 		}
 		mockVpc.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{
-			ID:   ptr.To("sc-id"),
-			Name: ptr.To("sc"),
+			ID:   ptr.To("sc1-id"),
+			Name: ptr.To("sc1"),
 		}, nil, nil)
 		mockVpc.EXPECT().DeleteSecurityGroup(gomock.Any()).Return(&core.DetailedResponse{}, nil)
 		clusterScope.IBMVPCClient = mockVpc
@@ -1185,14 +1043,22 @@ func TestDeleteVPCSecurityGroups(t *testing.T) {
 		g.Expect(err).To(BeNil())
 	})
 
-	t.Run("When security group is not created by controller", func(*testing.T) {
+	t.Run("When no security groups are managed by controller, no deletion occurs", func(*testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		clusterScope := powervsClusterScope()
-		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1.VPCSecurityGroupStatus{
-			"sc": {
-				ID: ptr.To("sc-id"),
+		clusterScope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "sc-id"}},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupStatus{
+						{ID: "sc-id", Name: "sc"},
+					},
+				},
 			},
 		}
 		clusterScope.IBMVPCClient = mockVpc
@@ -3446,7 +3312,7 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 		mockCtrl.Finish()
 	}
 
-	t.Run("When SecurityGroup ID is set and returns error while getting SecurityGroup", func(t *testing.T) {
+	t.Run("When Reference SG ID is set and GetSecurityGroup returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -3454,18 +3320,18 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						ID: ptr.To("securityGroupID"),
-					}),
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: securityGroupID}},
+					},
 				},
 			},
 		}
-
 		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(nil, nil, errors.New("failed to get security group"))
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).ToNot(BeNil())
 	})
-	t.Run("When SecurityGroup Name is set and returns error while creating SecurityGroup", func(t *testing.T) {
+
+	t.Run("When Reference SG ID is set and SecurityGroup exists", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -3473,20 +3339,57 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: securityGroupID}},
+					},
 				},
 			},
 		}
+		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: &securityGroupName, ID: &securityGroupID}, nil, nil)
+		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
+		g.Expect(err).To(BeNil())
+	})
 
+	t.Run("When Reference SG Name is set and GetSecurityGroupByName returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{Name: securityGroupName}},
+					},
+				},
+			},
+		}
+		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("failed to get security group"))
+		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When Provision SG Name is set and CreateSecurityGroup returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: securityGroupName}},
+					},
+				},
+			},
+		}
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(nil, nil, errors.New("failed to create security group"))
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).ToNot(BeNil())
 	})
 
-	t.Run("When SecurityGroup Name is set and creates SecurityGroup successfully", func(t *testing.T) {
+	t.Run("When Provision SG Name is set and SecurityGroup is created successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -3494,1602 +3397,92 @@ func TestReconcileVPCSecurityGroups(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: securityGroupName}},
+					},
 				},
 			},
 		}
-
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, nil)
-		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
-		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroup Name is set and SecurityGroup already exists", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: &securityGroupName, ID: &securityGroupID, VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}, nil)
+		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To(securityGroupID), Name: ptr.To(securityGroupName)}, nil, nil)
+		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To(securityGroupID), Name: ptr.To(securityGroupName)}, nil, nil)
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).To(BeNil())
 	})
 
-	t.Run("When SecurityGroup ID is set and SecurityGroup already exists", func(t *testing.T) {
+	t.Run("When Provision SG already exists", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						ID: ptr.To("securityGroupID"),
-					}),
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: securityGroupName}},
+					},
 				},
 			},
 		}
-
-		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: &securityGroupName, ID: &securityGroupID, VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}, nil, nil)
+		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: &securityGroupName, ID: &securityGroupID}, nil)
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("When SecurityGroup Name is set and GetSecurityGroup returns error", func(t *testing.T) {
+
+	t.Run("When Provision SG is created but CreateSecurityGroupRule returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		vpcSecurityGroupStatus := make(map[string]infrav1.VPCSecurityGroupStatus)
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPCSecurityGroups: vpcSecurityGroupStatus,
-				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.VPCSecurityGroupProvision{
+								Name: securityGroupName,
+								Rules: []infrav1.VPCSecurityGroupRule{
+									{
+										Action:    infrav1.VPCSecurityGroupRuleActionAllow,
+										Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
+										Source: infrav1.VPCSecurityGroupRulePrototype{
+											Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
+											Remotes: []infrav1.VPCSecurityGroupRuleRemote{
+												{Address: "192.168.0.1", RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("failed to get security group"))
-		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When SecurityGroup Name is set  and returns error while getting SecurityGroupRules", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		vpcSecurityGroupStatus := make(map[string]infrav1.VPCSecurityGroupStatus)
-		vpcSecurityGroupStatus["securityGroupName"] = infrav1.VPCSecurityGroupStatus{
-			ID:      ptr.To("securityGroupID"),
-			RuleIDs: []*string{ptr.To("ruleID")},
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPCSecurityGroups: vpcSecurityGroupStatus,
-					VPC:               infrav1.VPCStatus{ID: "vpcID"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
-		mockVPC.EXPECT().GetSecurityGroupRule(gomock.Any()).Return(nil, nil, errors.New("failed to get security group rule"))
-		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When SecurityGroup is created successfully but returns error while creating SecurityGroupRules", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					Address:    ptr.To("192.168.0.1/24"),
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, nil)
-		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
+		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To(securityGroupID), Name: ptr.To(securityGroupName)}, nil, nil)
+		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To(securityGroupID), Name: ptr.To(securityGroupName)}, nil, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, errors.New("failed to create security group rule"))
 		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).ToNot(BeNil())
 	})
-}
 
-func TestValidateVPCSecurityGroup(t *testing.T) {
-	var (
-		mockVPC  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-	setup := func(t *testing.T) {
-		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockVPC = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
-	}
-
-	t.Run("When SecurityGroup by name exists and SecurityGroupRule matches", func(t *testing.T) {
+	t.Run("When unknown source type is provided", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("0.0.0.0/0"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("securityGroupID"), Rules: vpcSecurityGroupRules, VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(securityGroupDetails, nil)
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeEquivalentTo([]*string{ptr.To("ruleID")}))
-		g.Expect(sg).To(BeEquivalentTo(securityGroupDetails))
-		g.Expect(err).To(BeNil())
-	})
-
-	t.Run("When SecurityGroup by id exists and SecurityGroupRule matches", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("0.0.0.0/0"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("securityGroupID"), Rules: vpcSecurityGroupRules, VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}
-		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(securityGroupDetails, nil, nil)
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeEquivalentTo([]*string{ptr.To("ruleID")}))
-		g.Expect(sg).To(BeEquivalentTo(securityGroupDetails))
-		g.Expect(err).To(BeNil())
-	})
-
-	t.Run("When SecurityGroup by name doesn't exist and return error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name: ptr.To("securityGroupNamw"),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("failed to get SecurityGroup"))
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When SecurityGroup by id doesn't exist and return error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID: ptr.To("securityGroupID"),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(nil, nil, errors.New("failed to get SecurityGroup"))
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When SecurityGroup by name exists but is not attached to VPC", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name: ptr.To("securityGroupName"),
-		}
 		clusterScope := ClusterScope{
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
+					VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
+						{Type: "unknown"},
+					},
 				},
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("sgID")}
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(securityGroupDetails, nil)
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeEmpty())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When SecurityGroup by name exists but VPC id not matching", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name: ptr.To("securityGroupName"),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("sgID"), VPC: &vpcv1.VPCReference{ID: ptr.To("vpcID")}}
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(securityGroupDetails, nil)
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When SecurityGroup by id exists but VPC id not matching", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID: ptr.To("securityGroupID"),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("sgID"), VPC: &vpcv1.VPCReference{ID: ptr.To("vpcID")}}
-		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(securityGroupDetails, nil, nil)
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When it returns error while validating SecurityGroupRules", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					CIDRSubnetName: ptr.To("CIDRSubnetName"),
-					RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				PortRange: &infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535,
-					MinimumPort: 1,
-				},
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID:      ptr.To("ruleID"),
-			PortMax: ptr.To(int64(65535)),
-			PortMin: ptr.To(int64(1)),
-		}
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("securityGroupID"), Rules: vpcSecurityGroupRules, VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}
-		mockVPC.EXPECT().GetSecurityGroup(gomock.Any()).Return(securityGroupDetails, nil, nil)
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("failed to get VPC subnet"))
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("When SecurityGroupRule doesn't exist and creates it", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					Address:    ptr.To("192.168.1.1/24"),
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("securityGroupID"), VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}
-		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{Protocol: ptr.To("tcp"), ID: ptr.To("ruleID")}, nil, nil)
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(securityGroupDetails, nil)
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).To(BeNil())
-	})
-
-	t.Run("When SecurityGroupRule doesn't match and return error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroupStatus := make(map[string]infrav1.VPCSecurityGroupStatus)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPCSecurityGroups: vpcSecurityGroupStatus,
-					VPC:               infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		securityGroupDetails := &vpcv1.SecurityGroup{Name: ptr.To("securityGroupName"), ID: ptr.To("securityGroupID"), Rules: vpcSecurityGroupRules, VPC: &vpcv1.VPCReference{ID: ptr.To("VPCID")}}
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(securityGroupDetails, nil)
-		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, errors.New("failed to create security group rule"))
-		sg, ruleIDs, err := clusterScope.validateVPCSecurityGroup(ctx, vpcSecurityGroup)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(sg).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-}
-
-func TestValidateVPCSecurityGroupRule(t *testing.T) {
-	var (
-		mockVPC  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-	setup := func(t *testing.T) {
-		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockVPC = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
-	}
-
-	t.Run("When it matches SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolTcpudp", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				PortRange: &infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535,
-					MinimumPort: 1,
-				},
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("0.0.0.0/0"),
-			},
-			ID:      ptr.To("ruleID"),
-			PortMax: ptr.To(int64(65535)),
-			PortMin: ptr.To(int64(1)),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(*ruleID).To(BeEquivalentTo("ruleID"))
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolTcpudp", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				PortRange: &infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535,
-					MinimumPort: 1,
-				},
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID:      ptr.To("ruleID"),
-			PortMax: ptr.To(int64(65535)),
-			PortMin: ptr.To(int64(1)),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(ruleID).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolTcpudp returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
-			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				PortRange: &infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535,
-					MinimumPort: 1,
-				},
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID:      ptr.To("ruleID"),
-			PortMax: ptr.To(int64(65535)),
-			PortMin: ptr.To(int64(1)),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("failed to get VPC subnet"))
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(ruleID).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When it matches SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolAll", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("0.0.0.0/0"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := make([]vpcv1.SecurityGroupRuleIntf, 0, 1)
-		vpcSecurityGroupRules = append(vpcSecurityGroupRules, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(*ruleID).To(BeEquivalentTo("ruleID"))
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolAll", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			Address:    ptr.To("192.168.0.1/24"),
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				Address: ptr.To("192.168.1.1/24"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := make([]vpcv1.SecurityGroupRuleIntf, 0, 1)
-		vpcSecurityGroupRules = append(vpcSecurityGroupRules, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(ruleID).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolAll returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
-			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("failed to get VPC subnet"))
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(ruleID).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When it matches SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolIcmp", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
-			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				ICMPCode: ptr.To(int64(12)),
-				ICMPType: ptr.To(int64(3)),
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CRN: ptr.To("crn"),
-			},
-			ID:   ptr.To("ruleID"),
-			Code: ptr.To(int64(12)),
-			Type: ptr.To(int64(3)),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: ptr.To("crn"), CRN: ptr.To("crn")}, nil)
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(*ruleID).To(BeEquivalentTo("ruleID"))
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolIcmp", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
-			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				ICMPCode: ptr.To(int64(12)),
-				ICMPType: ptr.To(int64(3)),
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CRN: ptr.To("crn"),
-			},
-			ID:   ptr.To("ruleID"),
-			Code: ptr.To(int64(12)),
-			Type: ptr.To(int64(3)),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: ptr.To("crn"), CRN: ptr.To("CRN")}, nil)
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(ruleID).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroupRule of protocolType SecurityGroupRuleSecurityGroupRuleProtocolIcmp returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
-			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				ICMPCode: ptr.To(int64(12)),
-				ICMPType: ptr.To(int64(3)),
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CRN: ptr.To("crn"),
-			},
-			ID:   ptr.To("ruleID"),
-			Code: ptr.To(int64(12)),
-			Type: ptr.To(int64(3)),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("failed to get securityGroup"))
-		ruleID, match, err := clusterScope.validateSecurityGroupRule(vpcSecurityGroupRules, rules.Direction, rules.Destination, remote)
-		g.Expect(ruleID).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).ToNot(BeNil())
-	})
-}
-
-func TestValidateVPCSecurityGroupRules(t *testing.T) {
-	var (
-		mockVPC  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-	setup := func(t *testing.T) {
-		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockVPC = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
-	}
-
-	t.Run("When SecurityGroupRule of Direction Inbound matches", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("inbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("0.0.0.0/0"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleIDs, match, err := clusterScope.validateVPCSecurityGroupRules(vpcSecurityGroupRules, vpcSecurityGroup.Rules)
-		g.Expect(ruleIDs).To(BeEquivalentTo([]*string{ptr.To("ruleID")}))
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroupRule of Direction Inbound doesn't match", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("inbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "securityGroupID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleIDs, match, err := clusterScope.validateVPCSecurityGroupRules(vpcSecurityGroupRules, vpcSecurityGroup.Rules)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroupRule of Direction Inbound returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
-			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("inbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("failed to get VPC subnet"))
-		ruleIDs, match, err := clusterScope.validateVPCSecurityGroupRules(vpcSecurityGroupRules, vpcSecurityGroup.Rules)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When SecurityGroupRule of Direction Outbound matches", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("0.0.0.0/0"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleIDs, match, err := clusterScope.validateVPCSecurityGroupRules(vpcSecurityGroupRules, vpcSecurityGroup.Rules)
-		g.Expect(ruleIDs).To(BeEquivalentTo([]*string{ptr.To("ruleID")}))
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When SecurityGroupRule of Direction Outbound doesn't match", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroupRule := vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{
-			Direction: ptr.To("outbound"),
-			Protocol:  ptr.To("tcp"),
-			Remote: &vpcv1.SecurityGroupRuleRemote{
-				CIDRBlock: ptr.To("192.168.1.1/24"),
-			},
-			ID: ptr.To("ruleID"),
-		}
-
-		vpcSecurityGroupRules := append([]vpcv1.SecurityGroupRuleIntf{}, &vpcSecurityGroupRule)
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			ID:    ptr.To("securityGroupID"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
-		ruleIDs, match, err := clusterScope.validateVPCSecurityGroupRules(vpcSecurityGroupRules, vpcSecurityGroup.Rules)
-		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-}
-
-func TestValidateVPCSecurityGroupRuleRemote(t *testing.T) {
-	var (
-		mockVPC  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-	setup := func(t *testing.T) {
-		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockVPC = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
-	}
-	t.Run("When it matches the remoteType Address", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			Address:    ptr.To("192.168.0.1/24"),
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{Address: ptr.To("192.168.0.1/24")}, remote)
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match the remoteType Address", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			Address:    ptr.To("192.168.0.1/24"),
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{Address: ptr.To("192.168.1.1/24")}, remote)
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it matches the remoteType Any", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CIDRBlock: ptr.To("0.0.0.0/0")}, remote)
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match the remoteType Any", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CIDRBlock: ptr.To("192.168.1.1/24")}, remote)
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it matches the remoteType CIDR", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
-			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(&vpcv1.Subnet{Ipv4CIDRBlock: ptr.To("192.168.1.1/24")}, nil)
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CIDRBlock: ptr.To("192.168.1.1/24")}, remote)
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match the remoteType CIDR", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
-			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(&vpcv1.Subnet{Ipv4CIDRBlock: ptr.To("192.168.0.1/24")}, nil)
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CIDRBlock: ptr.To("192.168.1.1/24")}, remote)
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When the remoteType CIDR and it returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
-			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("failed to get VPC subnet"))
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CIDRBlock: ptr.To("192.168.1.1/24")}, remote)
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).ToNot(BeNil())
-	})
-	t.Run("When it matches the remoteType SG", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
-			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: ptr.To("192.168.1.1/24"), CRN: ptr.To("crn")}, nil)
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CRN: ptr.To("crn")}, remote)
-		g.Expect(match).To(BeTrue())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When it doesn't match the remoteType SG", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
-			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
-		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{Name: ptr.To("192.168.1.1/24"), CRN: ptr.To("CRN")}, nil)
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CRN: ptr.To("crn")}, remote)
-		g.Expect(match).To(BeFalse())
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When the remoteType SG and it returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
-			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
 			},
 		}
-
-		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("failed to get security group"))
-		match, err := clusterScope.validateVPCSecurityGroupRuleRemote(&vpcv1.SecurityGroupRuleRemote{CRN: ptr.To("crn")}, remote)
-		g.Expect(match).To(BeFalse())
+		err := clusterScope.ReconcileVPCSecurityGroups(ctx)
 		g.Expect(err).ToNot(BeNil())
 	})
 }
@@ -5102,7 +3495,7 @@ func TestCreateVPCSecurityGroupRule(t *testing.T) {
 	securityGroupID := "securityGroupID"
 	var portMax int64 = 65535
 	var portMin int64 = 1
-	var protocol = "tcp"
+	protocol := "tcp"
 	setup := func(t *testing.T) {
 		t.Helper()
 		mockCtrl = gomock.NewController(t)
@@ -5112,257 +3505,128 @@ func TestCreateVPCSecurityGroupRule(t *testing.T) {
 		mockCtrl.Finish()
 	}
 
-	t.Run("Creates SecurityGroupRule of remoteType Address successfully", func(t *testing.T) {
+	t.Run("Creates rule of remoteType Address successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		remote := infrav1.VPCSecurityGroupRuleRemote{
-			Address:    ptr.To("192.168.0.1/24"),
+			Address:    "192.168.0.1/24",
 			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
 		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("outbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeEquivalentTo(ptr.To("ruleID")))
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "outbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(Equal("ruleID"))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("Creates SecurityGroupRule of remoteType CIDR successfully", func(t *testing.T) {
+
+	t.Run("Creates rule of remoteType CIDR successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
+			CIDRSubnetName: "CIDRSubnetName",
 			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
 		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(&vpcv1.Subnet{Ipv4CIDRBlock: ptr.To("192.168.1.1/24")}, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("outbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeEquivalentTo(ptr.To("ruleID")))
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "outbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(Equal("ruleID"))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("SecurityGroupRule of remoteType CIDR returns error when getting VPC subnet", func(t *testing.T) {
+
+	t.Run("Rule of remoteType CIDR returns error when getting VPC subnet", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		remote := infrav1.VPCSecurityGroupRuleRemote{
-			CIDRSubnetName: ptr.To("CIDRSubnetName"),
+			CIDRSubnetName: "CIDRSubnetName",
 			RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
 		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, errors.New("failed to get VPC subnet"))
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("outbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeNil())
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "outbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(BeEmpty())
 		g.Expect(err).ToNot(BeNil())
 	})
-	t.Run("Creates SecurityGroupRule of remoteType Any successfully", func(t *testing.T) {
+
+	t.Run("Creates rule of remoteType Any successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		remote := infrav1.VPCSecurityGroupRuleRemote{
-			RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny,
-		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
+		remote := infrav1.VPCSecurityGroupRuleRemote{RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny}
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("outbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeEquivalentTo(ptr.To("ruleID")))
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "outbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(Equal("ruleID"))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("Creates SecurityGroupRule of remoteType SG successfully", func(t *testing.T) {
+
+	t.Run("Creates rule of remoteType SG successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
+			SecurityGroupName: "securityGroupName",
 			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
 		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(&vpcv1.SecurityGroup{CRN: ptr.To("crn"), Name: ptr.To("securityGroupName")}, nil)
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp{Direction: ptr.To("inbound"), ID: ptr.To("ruleID")}, nil, nil)
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("inbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeEquivalentTo(ptr.To("ruleID")))
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "inbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(Equal("ruleID"))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("SecurityGroupRule of remoteType SG returns error while getting securityGroup", func(t *testing.T) {
+
+	t.Run("Rule of remoteType SG returns error while getting securityGroup", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
+			SecurityGroupName: "securityGroupName",
 			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
 		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, errors.New("failed to get security group"))
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("inbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeNil())
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "inbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(BeEmpty())
 		g.Expect(err).ToNot(BeNil())
 	})
-	t.Run("SecurityGroupRule of remoteType SG returns error when SecurityGroup doesn't exist", func(t *testing.T) {
+
+	t.Run("Rule of remoteType SG returns error when SecurityGroup doesn't exist", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
 		remote := infrav1.VPCSecurityGroupRuleRemote{
-			SecurityGroupName: ptr.To("securityGroupName"),
+			SecurityGroupName: "securityGroupName",
 			RemoteType:        infrav1.VPCSecurityGroupRuleRemoteTypeSG,
 		}
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes:  append([]infrav1.VPCSecurityGroupRuleRemote{}, remote),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
 		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name:  ptr.To("securityGroupName"),
-						Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-					}),
-				},
-			},
+			IBMVPCClient:      mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-
 		mockVPC.EXPECT().GetSecurityGroupByName(gomock.Any()).Return(nil, nil)
-		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, &securityGroupID, ptr.To("inbound"), &protocol, &portMin, &portMax, remote)
-		g.Expect(ruleID).To(BeNil())
+		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "inbound", protocol, portMin, portMax, remote)
+		g.Expect(ruleID).To(BeEmpty())
 		g.Expect(err).ToNot(BeNil())
 	})
 }
@@ -5381,237 +3645,85 @@ func TestCreateVPCSecurityGroupRules(t *testing.T) {
 		mockCtrl.Finish()
 	}
 
-	t.Run("When SecurityGroupRule of Direction Outbound created successfully", func(t *testing.T) {
+	t.Run("Outbound rule with Address remote created successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					Address:    ptr.To("192.168.0.1/24"),
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				PortRange: &infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535,
-					MinimumPort: 1,
+		rules := []infrav1.VPCSecurityGroupRule{
+			{
+				Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
+				Destination: infrav1.VPCSecurityGroupRulePrototype{
+					Remotes:   []infrav1.VPCSecurityGroupRuleRemote{{Address: "192.168.0.1/24", RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress}},
+					Protocol:  infrav1.VPCSecurityGroupRuleProtocolTCP,
+					PortRange: infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535, MinimumPort: 1},
 				},
 			},
 		}
-
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
+		clusterScope := ClusterScope{IBMVPCClient: mockVPC, IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{}}
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
-		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, vpcSecurityGroup.Rules, ptr.To("securityGroupID"))
-		g.Expect(ruleIDs).To(BeEquivalentTo([]*string{ptr.To("ruleID")}))
+		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, rules, "securityGroupID")
+		g.Expect(ruleIDs).To(Equal([]string{"ruleID"}))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("When SecurityGroupRule of Direction Outbound returns error", func(t *testing.T) {
+
+	t.Run("Outbound rule returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					CIDRSubnetName: ptr.To("CIDRSubnetName"),
-					RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
+		rules := []infrav1.VPCSecurityGroupRule{
+			{
+				Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
+				Destination: infrav1.VPCSecurityGroupRulePrototype{
+					Remotes:  []infrav1.VPCSecurityGroupRuleRemote{{CIDRSubnetName: "CIDRSubnetName", RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeCIDR}},
+					Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
 				},
 			},
 		}
-
+		clusterScope := ClusterScope{IBMVPCClient: mockVPC, IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{}}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
-		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, vpcSecurityGroup.Rules, ptr.To("securityGroupID"))
+		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, rules, "securityGroupID")
 		g.Expect(ruleIDs).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
 	})
-	t.Run("When SecurityGroupRule of Direction Inbound created successfully", func(t *testing.T) {
+
+	t.Run("Inbound rule with Address remote created successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					Address:    ptr.To("192.168.0.1/24"),
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-				PortRange: &infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535,
-					MinimumPort: 1,
+		rules := []infrav1.VPCSecurityGroupRule{
+			{
+				Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
+				Source: infrav1.VPCSecurityGroupRulePrototype{
+					Remotes:   []infrav1.VPCSecurityGroupRuleRemote{{Address: "192.168.0.1/24", RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress}},
+					Protocol:  infrav1.VPCSecurityGroupRuleProtocolTCP,
+					PortRange: infrav1.VPCSecurityGroupPortRange{MaximumPort: 65535, MinimumPort: 1},
 				},
 			},
 		}
-
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
-				},
-			},
-		}
-
+		clusterScope := ClusterScope{IBMVPCClient: mockVPC, IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{}}
 		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp{Direction: ptr.To("inbound"), ID: ptr.To("ruleID")}, nil, nil)
-		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, vpcSecurityGroup.Rules, ptr.To("securityGroupID"))
-		g.Expect(ruleIDs).To(BeEquivalentTo([]*string{ptr.To("ruleID")}))
+		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, rules, "securityGroupID")
+		g.Expect(ruleIDs).To(Equal([]string{"ruleID"}))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("When SecurityGroupRule of Direction Inbound returns error", func(t *testing.T) {
+
+	t.Run("Inbound rule returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
-			Source: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					CIDRSubnetName: ptr.To("CIDRSubnetName"),
-					RemoteType:     infrav1.VPCSecurityGroupRuleRemoteTypeCIDR,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					VPC: infrav1.VPCStatus{ID: "VPCID", Name: "vpcName"},
-				},
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, vpcSecurityGroup),
+		rules := []infrav1.VPCSecurityGroupRule{
+			{
+				Direction: infrav1.VPCSecurityGroupRuleDirectionInbound,
+				Source: infrav1.VPCSecurityGroupRulePrototype{
+					Remotes:  []infrav1.VPCSecurityGroupRuleRemote{{CIDRSubnetName: "CIDRSubnetName", RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeCIDR}},
+					Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
 				},
 			},
 		}
-
+		clusterScope := ClusterScope{IBMVPCClient: mockVPC, IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{}}
 		mockVPC.EXPECT().GetVPCSubnetByName(gomock.Any()).Return(nil, nil)
-		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, vpcSecurityGroup.Rules, ptr.To("securityGroupID"))
+		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, rules, "securityGroupID")
 		g.Expect(ruleIDs).To(BeNil())
-		g.Expect(err).ToNot(BeNil())
-	})
-}
-
-func TestCreateVPCSecurityGroupRulesAndSetStatus(t *testing.T) {
-	var (
-		mockVPC  *mock.MockVpc
-		mockCtrl *gomock.Controller
-	)
-	setup := func(t *testing.T) {
-		t.Helper()
-		mockCtrl = gomock.NewController(t)
-		mockVPC = mock.NewMockVpc(mockCtrl)
-	}
-	teardown := func() {
-		mockCtrl.Finish()
-	}
-	t.Run("When SecurityGroupRule is created successfully", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					Address:    ptr.To("192.168.0.1/24"),
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
-					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
-				},
-			},
-		}
-
-		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
-		err := clusterScope.createVPCSecurityGroupRulesAndSetStatus(ctx, vpcSecurityGroup.Rules, ptr.To("securityGroupID"), ptr.To("securityGroupName"))
-		g.Expect(err).To(BeNil())
-	})
-	t.Run("When CreateSecurityGroupRule returns error", func(t *testing.T) {
-		g := NewWithT(t)
-		setup(t)
-		t.Cleanup(teardown)
-		rules := infrav1.VPCSecurityGroupRule{
-			Direction: infrav1.VPCSecurityGroupRuleDirectionOutbound,
-			Destination: &infrav1.VPCSecurityGroupRulePrototype{
-				Remotes: append([]infrav1.VPCSecurityGroupRuleRemote{}, infrav1.VPCSecurityGroupRuleRemote{
-					Address:    ptr.To("192.168.0.1/24"),
-					RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAddress,
-				}),
-				Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
-			},
-		}
-		vpcSecurityGroup := infrav1.VPCSecurityGroup{
-			Name:  ptr.To("securityGroupName"),
-			Rules: append([]*infrav1.VPCSecurityGroupRule{}, &rules),
-		}
-		clusterScope := ClusterScope{
-			IBMVPCClient: mockVPC,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
-					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
-				},
-			},
-		}
-
-		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(nil, nil, errors.New("failed to create securityGroupRules"))
-		err := clusterScope.createVPCSecurityGroupRulesAndSetStatus(ctx, vpcSecurityGroup.Rules, ptr.To("securityGroupID"), ptr.To("securityGroupName"))
 		g.Expect(err).ToNot(BeNil())
 	})
 }
@@ -5629,7 +3741,8 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 	teardown := func() {
 		mockCtrl.Finish()
 	}
-	t.Run("When SecurityGroup is created successfully", func(t *testing.T) {
+
+	t.Run("SecurityGroup is created successfully", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -5637,20 +3750,17 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
 					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 			},
 		}
-
 		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(&vpcv1.SecurityGroup{ID: ptr.To("securityGroupID")}, nil, nil)
-		sg, err := clusterScope.createVPCSecurityGroup(ctx, clusterScope.IBMPowerVSCluster.Spec.VPCSecurityGroups[0])
-		g.Expect(*sg).To(BeEquivalentTo("securityGroupID"))
+		sgID, err := clusterScope.createVPCSecurityGroup(ctx, "securityGroupName")
+		g.Expect(ptr.Deref(sgID, "")).To(Equal("securityGroupID"))
 		g.Expect(err).To(BeNil())
 	})
-	t.Run("When SecurityGroup returns error", func(t *testing.T) {
+
+	t.Run("CreateSecurityGroup returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -5658,17 +3768,13 @@ func TestCreateVPCSecurityGroup(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCSecurityGroups: append([]infrav1.VPCSecurityGroup{}, infrav1.VPCSecurityGroup{
-						Name: ptr.To("securityGroupName"),
-					}),
 					ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "resourceGroupID"}},
 				},
 			},
 		}
-
 		mockVPC.EXPECT().CreateSecurityGroup(gomock.Any()).Return(nil, nil, errors.New("failed to create SecurityGroup"))
-		sg, err := clusterScope.createVPCSecurityGroup(ctx, clusterScope.IBMPowerVSCluster.Spec.VPCSecurityGroups[0])
-		g.Expect(sg).To(BeNil())
+		sgID, err := clusterScope.createVPCSecurityGroup(ctx, "securityGroupName")
+		g.Expect(sgID).To(BeNil())
 		g.Expect(err).ToNot(BeNil())
 	})
 }

@@ -110,6 +110,24 @@ func Convert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(
 			out.LoadBalancers = nil
 		}
 	}
+	// Convert VPCSecurityGroups status: v1beta2 map[string]VPCSecurityGroupStatus -> v1beta3 []VPCSecurityGroupStatus.
+	// The map key is the security group name; it is stored in v1beta3 VPCSecurityGroupStatus.Name.
+	if in.VPCSecurityGroups != nil {
+		out.VPCSecurityGroups = make([]infrav1.VPCSecurityGroupStatus, 0, len(in.VPCSecurityGroups))
+		for name, sg := range in.VPCSecurityGroups {
+			if name == "" {
+				continue
+			}
+			status := infrav1.VPCSecurityGroupStatus{Name: name}
+			if err := Convert_v1beta2_VPCSecurityGroupStatus_To_v1beta3_VPCSecurityGroupStatus(&sg, &status, s); err != nil {
+				return err
+			}
+			out.VPCSecurityGroups = append(out.VPCSecurityGroups, status)
+		}
+		if len(out.VPCSecurityGroups) == 0 {
+			out.VPCSecurityGroups = nil
+		}
+	}
 	out.Conditions = nil
 	if in.V1Beta2 != nil {
 		out.Conditions = in.V1Beta2.Conditions
@@ -242,6 +260,28 @@ func Convert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterStatus(
 		}
 		if len(out.LoadBalancers) == 0 {
 			out.LoadBalancers = nil
+		}
+	}
+	// Convert VPCSecurityGroups status: v1beta3 []VPCSecurityGroupStatus -> v1beta2 map[string]VPCSecurityGroupStatus.
+	// The v1beta3 Name field becomes the map key; entries without a Name or ID are skipped.
+	if in.VPCSecurityGroups != nil {
+		out.VPCSecurityGroups = make(map[string]VPCSecurityGroupStatus, len(in.VPCSecurityGroups))
+		for i := range in.VPCSecurityGroups {
+			sg := VPCSecurityGroupStatus{}
+			if err := Convert_v1beta3_VPCSecurityGroupStatus_To_v1beta2_VPCSecurityGroupStatus(&in.VPCSecurityGroups[i], &sg, s); err != nil {
+				return err
+			}
+			name := in.VPCSecurityGroups[i].Name
+			if name == "" {
+				name = ptr.Deref(sg.ID, "")
+			}
+			if name == "" {
+				continue
+			}
+			out.VPCSecurityGroups[name] = sg
+		}
+		if len(out.VPCSecurityGroups) == 0 {
+			out.VPCSecurityGroups = nil
 		}
 	}
 	if in.Conditions == nil {
@@ -1620,5 +1660,208 @@ func Convert_v1beta3_LoadBalancerSource_To_v1beta2_VPCLoadBalancerSpec(in *infra
 		}
 	}
 
+	return nil
+}
+
+// Convert_v1beta2_VPCSecurityGroup_To_v1beta3_VPCSecurityGroupSource converts v1beta2 VPCSecurityGroup to v1beta3 VPCSecurityGroupSource.
+// v1beta2 VPCSecurityGroup has ID/Name pointers and a Rules slice; v1beta3 uses a Type/Reference/Provision union.
+// If an ID is set the entry is treated as a Reference, otherwise as a Provision entry.
+func Convert_v1beta2_VPCSecurityGroup_To_v1beta3_VPCSecurityGroupSource(in *VPCSecurityGroup, out *infrav1.VPCSecurityGroupSource, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	if in.ID != nil && *in.ID != "" {
+		out.Type = infrav1.SourceTypeReference
+		out.Reference.ID = *in.ID
+		if in.Name != nil {
+			out.Reference.Name = *in.Name
+		}
+		return nil
+	}
+
+	out.Type = infrav1.SourceTypeProvision
+	if in.Name != nil {
+		out.Provision.Name = *in.Name
+	}
+	for _, tag := range in.Tags {
+		if tag != nil {
+			out.Provision.Tags = append(out.Provision.Tags, *tag)
+		}
+	}
+	for _, rule := range in.Rules {
+		if rule == nil {
+			continue
+		}
+		v3Rule := infrav1.VPCSecurityGroupRule{}
+		if err := Convert_v1beta2_VPCSecurityGroupRule_To_v1beta3_VPCSecurityGroupRule(rule, &v3Rule, nil); err != nil {
+			return err
+		}
+		out.Provision.Rules = append(out.Provision.Rules, v3Rule)
+	}
+	return nil
+}
+
+// Convert_v1beta3_VPCSecurityGroupSource_To_v1beta2_VPCSecurityGroup converts v1beta3 VPCSecurityGroupSource to v1beta2 VPCSecurityGroup.
+func Convert_v1beta3_VPCSecurityGroupSource_To_v1beta2_VPCSecurityGroup(in *infrav1.VPCSecurityGroupSource, out *VPCSecurityGroup, _ apimachineryconversion.Scope) error {
+	if in == nil {
+		return nil
+	}
+
+	switch in.Type {
+	case infrav1.SourceTypeReference:
+		if in.Reference.ID != "" {
+			out.ID = ptr.To(in.Reference.ID)
+		}
+		if in.Reference.Name != "" {
+			out.Name = ptr.To(in.Reference.Name)
+		}
+	case infrav1.SourceTypeProvision:
+		if in.Provision.Name != "" {
+			out.Name = ptr.To(in.Provision.Name)
+		}
+		for _, tag := range in.Provision.Tags {
+			t := tag
+			out.Tags = append(out.Tags, &t)
+		}
+		for i := range in.Provision.Rules {
+			v2Rule := &VPCSecurityGroupRule{}
+			if err := Convert_v1beta3_VPCSecurityGroupRule_To_v1beta2_VPCSecurityGroupRule(&in.Provision.Rules[i], v2Rule, nil); err != nil {
+				return err
+			}
+			out.Rules = append(out.Rules, v2Rule)
+		}
+	}
+	return nil
+}
+
+// Convert_v1beta2_VPCSecurityGroupRule_To_v1beta3_VPCSecurityGroupRule converts v1beta2 VPCSecurityGroupRule to v1beta3.
+// The key difference is that v1beta2 Destination/Source are pointers while v1beta3 uses value types.
+func Convert_v1beta2_VPCSecurityGroupRule_To_v1beta3_VPCSecurityGroupRule(in *VPCSecurityGroupRule, out *infrav1.VPCSecurityGroupRule, _ apimachineryconversion.Scope) error {
+	out.Action = infrav1.VPCSecurityGroupRuleAction(in.Action)
+	out.Direction = infrav1.VPCSecurityGroupRuleDirection(in.Direction)
+	if in.SecurityGroupID != nil {
+		out.SecurityGroupID = *in.SecurityGroupID
+	}
+	if in.Destination != nil {
+		if err := Convert_v1beta2_VPCSecurityGroupRulePrototype_To_v1beta3_VPCSecurityGroupRulePrototype(in.Destination, &out.Destination, nil); err != nil {
+			return err
+		}
+	}
+	if in.Source != nil {
+		if err := Convert_v1beta2_VPCSecurityGroupRulePrototype_To_v1beta3_VPCSecurityGroupRulePrototype(in.Source, &out.Source, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Convert_v1beta3_VPCSecurityGroupRule_To_v1beta2_VPCSecurityGroupRule converts v1beta3 VPCSecurityGroupRule to v1beta2.
+func Convert_v1beta3_VPCSecurityGroupRule_To_v1beta2_VPCSecurityGroupRule(in *infrav1.VPCSecurityGroupRule, out *VPCSecurityGroupRule, _ apimachineryconversion.Scope) error {
+	out.Action = VPCSecurityGroupRuleAction(in.Action)
+	out.Direction = VPCSecurityGroupRuleDirection(in.Direction)
+	if in.SecurityGroupID != "" {
+		out.SecurityGroupID = ptr.To(in.SecurityGroupID)
+	}
+	if in.Direction == infrav1.VPCSecurityGroupRuleDirectionOutbound {
+		out.Destination = &VPCSecurityGroupRulePrototype{}
+		if err := Convert_v1beta3_VPCSecurityGroupRulePrototype_To_v1beta2_VPCSecurityGroupRulePrototype(&in.Destination, out.Destination, nil); err != nil {
+			return err
+		}
+	}
+	if in.Direction == infrav1.VPCSecurityGroupRuleDirectionInbound {
+		out.Source = &VPCSecurityGroupRulePrototype{}
+		if err := Convert_v1beta3_VPCSecurityGroupRulePrototype_To_v1beta2_VPCSecurityGroupRulePrototype(&in.Source, out.Source, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Convert_v1beta2_VPCSecurityGroupRulePrototype_To_v1beta3_VPCSecurityGroupRulePrototype converts v1beta2 VPCSecurityGroupRulePrototype to v1beta3.
+// The key difference is that v1beta2 PortRange is a pointer while v1beta3 uses a value type.
+func Convert_v1beta2_VPCSecurityGroupRulePrototype_To_v1beta3_VPCSecurityGroupRulePrototype(in *VPCSecurityGroupRulePrototype, out *infrav1.VPCSecurityGroupRulePrototype, _ apimachineryconversion.Scope) error {
+	out.ICMPCode = in.ICMPCode
+	out.ICMPType = in.ICMPType
+	out.Protocol = infrav1.VPCSecurityGroupRuleProtocol(in.Protocol)
+	if in.PortRange != nil {
+		out.PortRange = infrav1.VPCSecurityGroupPortRange{
+			MaximumPort: in.PortRange.MaximumPort,
+			MinimumPort: in.PortRange.MinimumPort,
+		}
+	}
+	for i := range in.Remotes {
+		v3Remote := infrav1.VPCSecurityGroupRuleRemote{
+			RemoteType: infrav1.VPCSecurityGroupRuleRemoteType(in.Remotes[i].RemoteType),
+		}
+		if in.Remotes[i].CIDRSubnetName != nil {
+			v3Remote.CIDRSubnetName = *in.Remotes[i].CIDRSubnetName
+		}
+		if in.Remotes[i].Address != nil {
+			v3Remote.Address = *in.Remotes[i].Address
+		}
+		if in.Remotes[i].SecurityGroupName != nil {
+			v3Remote.SecurityGroupName = *in.Remotes[i].SecurityGroupName
+		}
+		out.Remotes = append(out.Remotes, v3Remote)
+	}
+	return nil
+}
+
+// Convert_v1beta3_VPCSecurityGroupRulePrototype_To_v1beta2_VPCSecurityGroupRulePrototype converts v1beta3 VPCSecurityGroupRulePrototype to v1beta2.
+func Convert_v1beta3_VPCSecurityGroupRulePrototype_To_v1beta2_VPCSecurityGroupRulePrototype(in *infrav1.VPCSecurityGroupRulePrototype, out *VPCSecurityGroupRulePrototype, _ apimachineryconversion.Scope) error {
+	out.ICMPCode = in.ICMPCode
+	out.ICMPType = in.ICMPType
+	out.Protocol = VPCSecurityGroupRuleProtocol(in.Protocol)
+	if in.PortRange.MaximumPort != 0 || in.PortRange.MinimumPort != 0 {
+		out.PortRange = &VPCSecurityGroupPortRange{
+			MaximumPort: in.PortRange.MaximumPort,
+			MinimumPort: in.PortRange.MinimumPort,
+		}
+	}
+	for i := range in.Remotes {
+		v2Remote := VPCSecurityGroupRuleRemote{
+			RemoteType: VPCSecurityGroupRuleRemoteType(in.Remotes[i].RemoteType),
+		}
+		if in.Remotes[i].CIDRSubnetName != "" {
+			v2Remote.CIDRSubnetName = ptr.To(in.Remotes[i].CIDRSubnetName)
+		}
+		if in.Remotes[i].Address != "" {
+			v2Remote.Address = ptr.To(in.Remotes[i].Address)
+		}
+		if in.Remotes[i].SecurityGroupName != "" {
+			v2Remote.SecurityGroupName = ptr.To(in.Remotes[i].SecurityGroupName)
+		}
+		out.Remotes = append(out.Remotes, v2Remote)
+	}
+	return nil
+}
+
+// Convert_v1beta2_VPCSecurityGroupStatus_To_v1beta3_VPCSecurityGroupStatus converts a single v1beta2 VPCSecurityGroupStatus to v1beta3.
+// v1beta2 tracks RuleIDs as []*string; v1beta3 tracks them as []VPCSecurityGroupRuleStatus.
+// ControllerCreated is a v1beta2-only field and is dropped.
+func Convert_v1beta2_VPCSecurityGroupStatus_To_v1beta3_VPCSecurityGroupStatus(in *VPCSecurityGroupStatus, out *infrav1.VPCSecurityGroupStatus, _ apimachineryconversion.Scope) error {
+	if in.ID != nil {
+		out.ID = *in.ID
+	}
+	for _, rid := range in.RuleIDs {
+		if rid != nil {
+			out.Rules = append(out.Rules, infrav1.VPCSecurityGroupRuleStatus{ID: *rid})
+		}
+	}
+	return nil
+}
+
+// Convert_v1beta3_VPCSecurityGroupStatus_To_v1beta2_VPCSecurityGroupStatus converts a single v1beta3 VPCSecurityGroupStatus to v1beta2.
+// Name and full rule details are v1beta3-only fields and are dropped.
+func Convert_v1beta3_VPCSecurityGroupStatus_To_v1beta2_VPCSecurityGroupStatus(in *infrav1.VPCSecurityGroupStatus, out *VPCSecurityGroupStatus, _ apimachineryconversion.Scope) error {
+	if in.ID != "" {
+		out.ID = ptr.To(in.ID)
+	}
+	for i := range in.Rules {
+		if in.Rules[i].ID != "" {
+			out.RuleIDs = append(out.RuleIDs, ptr.To(in.Rules[i].ID))
+		}
+	}
 	return nil
 }
