@@ -44,6 +44,7 @@ import (
 	"github.com/IBM/ibm-cos-sdk-go/aws"
 	cosSession "github.com/IBM/ibm-cos-sdk-go/aws/session"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
+	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	corev1 "k8s.io/api/core/v1"
@@ -157,7 +158,9 @@ func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error)
 	}
 
 	// Create Resource Controller client.
-	var serviceOption resourcecontroller.ServiceOptions
+	serviceOption := resourcecontroller.ServiceOptions{
+		ResourceControllerV2Options: &resourcecontrollerv2.ResourceControllerV2Options{},
+	}
 	// Fetch the resource controller endpoint.
 	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
 	if rcEndpoint != "" {
@@ -221,7 +224,13 @@ func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error)
 	}
 
 	// Fetch the service endpoint.
-	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
+	// Use FetchEndpoints (ID-only match) rather than the deprecated FetchPVSEndpoint
+	// (region+ID match). FetchPVSEndpoint silently returns "" when the region derived from
+	// serviceInstance.RegionID does not match the region stored in the ServiceEndpoint list,
+	// leaving the session URL as the production default and generating a "bluemix" CRN
+	// instead of "staging" — causing the PowerVS API to validate the token against
+	// iam.cloud.ibm.com/identity/keys instead of iam.test.cloud.ibm.com/identity/keys.
+	if svcEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), params.ServiceEndpoint); svcEndpoint != "" {
 		serviceOptions.IBMPIOptions.URL = svcEndpoint
 		params.Logger.V(3).Info("Overriding the default PowerVS service endpoint", "serviceEndpoint", svcEndpoint)
 	}

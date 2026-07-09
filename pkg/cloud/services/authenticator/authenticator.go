@@ -72,6 +72,7 @@ func GetIAMAuthenticator() (*core.IamAuthenticator, error) {
 
 	auth := &core.IamAuthenticator{
 		ApiKey: apiKey,
+		URL:    props["AUTH_URL"],
 	}
 
 	return auth, nil
