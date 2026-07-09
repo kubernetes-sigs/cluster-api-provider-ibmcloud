@@ -138,6 +138,38 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 	if in.COSInstance.ID == "" {
 		in.COSInstance = infrav1.COSInstanceStatus{}
 	}
+
+	// VPCSecurityGroups: v1beta2 status is map[string]VPCSecurityGroupStatus keyed by Name.
+	// When Name is empty the ID is used as the map key; on the return trip that becomes Name.
+	// So if Name is empty but ID is set, set Name = ID to ensure round-trip equality.
+	for i := range in.VPCSecurityGroups {
+		sg := &in.VPCSecurityGroups[i]
+		if sg.Name == "" && sg.ID != "" {
+			sg.Name = sg.ID
+		}
+		// Normalize empty Rules entries that won't survive
+		for j := len(sg.Rules) - 1; j >= 0; j-- {
+			if sg.Rules[j].ID == "" {
+				sg.Rules = append(sg.Rules[:j], sg.Rules[j+1:]...)
+			}
+		}
+		if len(sg.Rules) == 0 {
+			sg.Rules = nil
+		}
+	}
+	// Drop entries missing both Name and ID (can't be keyed in v1beta2 map)
+	filtered := in.VPCSecurityGroups[:0]
+	for i := range in.VPCSecurityGroups {
+		if in.VPCSecurityGroups[i].Name == "" && in.VPCSecurityGroups[i].ID == "" {
+			continue
+		}
+		filtered = append(filtered, in.VPCSecurityGroups[i])
+	}
+	if len(filtered) == 0 {
+		in.VPCSecurityGroups = nil
+	} else {
+		in.VPCSecurityGroups = filtered
+	}
 }
 
 func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Continue) {
@@ -295,6 +327,59 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 			}
 		}
 	}
+	if len(in.VPCSecurityGroups) == 0 {
+		in.VPCSecurityGroups = nil
+	} else {
+		for i := range in.VPCSecurityGroups {
+			switch in.VPCSecurityGroups[i].Type {
+			case infrav1.SourceTypeReference:
+				in.VPCSecurityGroups[i].Provision = infrav1.VPCSecurityGroupProvision{}
+				if in.VPCSecurityGroups[i].Reference.ID == "" && in.VPCSecurityGroups[i].Reference.Name == "" {
+					in.VPCSecurityGroups[i].Reference.ID = "fuzzed-sg-id"
+				}
+			case infrav1.SourceTypeProvision:
+				in.VPCSecurityGroups[i].Reference = infrav1.ResourceIdentifier{}
+				if len(in.VPCSecurityGroups[i].Provision.Rules) == 0 {
+					in.VPCSecurityGroups[i].Provision.Rules = nil
+				}
+				if len(in.VPCSecurityGroups[i].Provision.Tags) == 0 {
+					in.VPCSecurityGroups[i].Provision.Tags = nil
+				}
+				for j := range in.VPCSecurityGroups[i].Provision.Rules {
+					rule := &in.VPCSecurityGroups[i].Provision.Rules[j]
+					if len(rule.Destination.Remotes) == 0 {
+						rule.Destination.Remotes = nil
+					}
+					if len(rule.Source.Remotes) == 0 {
+						rule.Source.Remotes = nil
+					}
+				}
+			default:
+				if in.VPCSecurityGroups[i].Reference.ID != "" {
+					in.VPCSecurityGroups[i].Type = infrav1.SourceTypeReference
+					in.VPCSecurityGroups[i].Provision = infrav1.VPCSecurityGroupProvision{}
+				} else {
+					in.VPCSecurityGroups[i].Type = infrav1.SourceTypeProvision
+					in.VPCSecurityGroups[i].Reference = infrav1.ResourceIdentifier{}
+					in.VPCSecurityGroups[i].Provision.Rules = nil
+					in.VPCSecurityGroups[i].Provision.Tags = nil
+					in.VPCSecurityGroups[i].Provision.Name = ""
+				}
+			}
+		}
+		// If all entries collapsed to empty Provision, nil out the slice
+		allEmpty := true
+		for i := range in.VPCSecurityGroups {
+			if in.VPCSecurityGroups[i].Type != "" {
+				allEmpty = false
+				break
+			}
+		}
+		if allEmpty {
+			in.VPCSecurityGroups = nil
+		}
+	}
+
 	if len(in.LoadBalancers) == 0 {
 		in.LoadBalancers = nil
 	} else {
@@ -314,6 +399,15 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 				}
 				if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
 					in.LoadBalancers[i].Provision.AdditionalListeners = nil
+				}
+				if len(in.LoadBalancers[i].Provision.BackendPools) == 0 {
+					in.LoadBalancers[i].Provision.BackendPools = nil
+				}
+				if len(in.LoadBalancers[i].Provision.SecurityGroups) == 0 {
+					in.LoadBalancers[i].Provision.SecurityGroups = nil
+				}
+				if len(in.LoadBalancers[i].Provision.Subnets) == 0 {
+					in.LoadBalancers[i].Provision.Subnets = nil
 				}
 				if in.LoadBalancers[i].Provision.Name == "" {
 					in.LoadBalancers[i].Provision.Type = ""
@@ -458,6 +552,34 @@ func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Contin
 	}
 	if len(in.LoadBalancers) == 0 {
 		in.LoadBalancers = nil
+	}
+
+	for name, sg := range in.VPCSecurityGroups {
+		sg.ControllerCreated = nil
+		// Drop nil RuleID entries — they won't survive the round-trip
+		filtered := sg.RuleIDs[:0]
+		for _, rid := range sg.RuleIDs {
+			if rid != nil && *rid != "" {
+				filtered = append(filtered, rid)
+			}
+		}
+		if len(filtered) == 0 {
+			sg.RuleIDs = nil
+		} else {
+			sg.RuleIDs = filtered
+		}
+		// Empty ID means this entry can't survive (no key data)
+		if sg.ID != nil && *sg.ID == "" {
+			sg.ID = nil
+		}
+		if name == "" || (sg.ID == nil) {
+			delete(in.VPCSecurityGroups, name)
+			continue
+		}
+		in.VPCSecurityGroups[name] = sg
+	}
+	if len(in.VPCSecurityGroups) == 0 {
+		in.VPCSecurityGroups = nil
 	}
 }
 
@@ -644,6 +766,106 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 	}
 	if len(in.LoadBalancers) == 0 {
 		in.LoadBalancers = nil
+	}
+
+	for i := range in.VPCSecurityGroups {
+		sg := &in.VPCSecurityGroups[i]
+		// Normalize pointer fields: empty string → nil
+		if sg.ID != nil && *sg.ID == "" {
+			sg.ID = nil
+		}
+		if sg.Name != nil && *sg.Name == "" {
+			sg.Name = nil
+		}
+		// When an ID is set, the SG is treated as a Reference on conversion.
+		// Rules and Tags are not persisted for Reference SGs.
+		if sg.ID != nil && *sg.ID != "" {
+			sg.Rules = nil
+			sg.Tags = nil
+			continue
+		}
+		// Empty Rules slice → nil
+		if len(sg.Rules) == 0 {
+			sg.Rules = nil
+		} else {
+			// Nil Rule pointers within slice won't survive.
+			// v1beta3 only carries Destination for outbound rules and Source for inbound rules.
+			// Rules with an invalid Direction will have both Destination and Source dropped on
+			// round-trip, so we must also drop them here.
+			filtered := sg.Rules[:0]
+			for _, rule := range sg.Rules {
+				if rule == nil {
+					continue
+				}
+				// Only valid Direction values survive the round-trip.
+				if rule.Direction != VPCSecurityGroupRuleDirectionInbound &&
+					rule.Direction != VPCSecurityGroupRuleDirectionOutbound {
+					continue
+				}
+				// Destination is only preserved for outbound; Source for inbound.
+				if rule.Direction == VPCSecurityGroupRuleDirectionInbound {
+					rule.Destination = nil
+				}
+				if rule.Direction == VPCSecurityGroupRuleDirectionOutbound {
+					rule.Source = nil
+				}
+				// Normalize rule pointer fields
+				if rule.SecurityGroupID != nil && *rule.SecurityGroupID == "" {
+					rule.SecurityGroupID = nil
+				}
+				// Empty Destination/Source Remotes → nil
+				if rule.Destination != nil && len(rule.Destination.Remotes) == 0 {
+					rule.Destination.Remotes = nil
+				}
+				if rule.Source != nil && len(rule.Source.Remotes) == 0 {
+					rule.Source.Remotes = nil
+				}
+				// Empty PortRange pointer fields
+				if rule.Destination != nil && rule.Destination.PortRange != nil &&
+					rule.Destination.PortRange.MaximumPort == 0 && rule.Destination.PortRange.MinimumPort == 0 {
+					rule.Destination.PortRange = nil
+				}
+				if rule.Source != nil && rule.Source.PortRange != nil &&
+					rule.Source.PortRange.MaximumPort == 0 && rule.Source.PortRange.MinimumPort == 0 {
+					rule.Source.PortRange = nil
+				}
+				filtered = append(filtered, rule)
+			}
+			if len(filtered) == 0 {
+				sg.Rules = nil
+			} else {
+				sg.Rules = filtered
+			}
+		}
+		// Empty Tags → nil, nil tag pointer entries won't survive
+		if len(sg.Tags) == 0 {
+			sg.Tags = nil
+		} else {
+			filteredTags := sg.Tags[:0]
+			for _, tag := range sg.Tags {
+				if tag != nil && *tag != "" {
+					filteredTags = append(filteredTags, tag)
+				}
+			}
+			if len(filteredTags) == 0 {
+				sg.Tags = nil
+			} else {
+				sg.Tags = filteredTags
+			}
+		}
+	}
+	// Drop SGs where neither ID nor Name is set
+	filteredSGs := in.VPCSecurityGroups[:0]
+	for i := range in.VPCSecurityGroups {
+		if in.VPCSecurityGroups[i].ID == nil && in.VPCSecurityGroups[i].Name == nil {
+			continue
+		}
+		filteredSGs = append(filteredSGs, in.VPCSecurityGroups[i])
+	}
+	if len(filteredSGs) == 0 {
+		in.VPCSecurityGroups = nil
+	} else {
+		in.VPCSecurityGroups = filteredSGs
 	}
 
 	// TransitGateway: v1beta2 has simple structure (ID, Name, GlobalRouting)

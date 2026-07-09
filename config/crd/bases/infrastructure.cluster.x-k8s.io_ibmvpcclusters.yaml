@@ -847,13 +847,6 @@ spec:
                             description: VPCSecurityGroupRule defines a VPC Security
                               Group Rule for a specified Security Group.
                             properties:
-                              action:
-                                description: action defines whether to allow or deny
-                                  traffic defined by the Security Group Rule.
-                                enum:
-                                - allow
-                                - deny
-                                type: string
                               destination:
                                 description: |-
                                   destination is a VPCSecurityGroupRulePrototype which defines the destination of outbound traffic for the Security Group Rule.
@@ -1118,7 +1111,6 @@ spec:
                                   rule: 'self.protocol == ''icmp'' ? !has(self.portRange)
                                     : true'
                             required:
-                            - action
                             - direction
                             type: object
                             x-kubernetes-validations:

@@ -1238,11 +1238,11 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		g := NewWithT(t)
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
-		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = map[string]infrav1.VPCSecurityGroupStatus{
-			"sc": {
-				ID:                ptr.To("sc-id"),
-				ControllerCreated: ptr.To(true),
-			},
+		clusterScope.IBMPowerVSCluster.Spec.VPCSecurityGroups = []infrav1.VPCSecurityGroupSource{
+			{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCSecurityGroupProvision{Name: "sc"}},
+		}
+		clusterScope.IBMPowerVSCluster.Status.VPCSecurityGroups = []infrav1.VPCSecurityGroupStatus{
+			{ID: "sc-id", Name: "sc"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
 		mockPowerVS.EXPECT().WithClients(gomock.Any())
@@ -1704,9 +1704,10 @@ func TestReconcileVPCResources(t *testing.T) {
 									Reference: infrav1.ResourceIdentifier{ID: "subnet-id", Name: "subnet1"},
 								},
 							},
-							VPCSecurityGroups: []infrav1.VPCSecurityGroup{
+							VPCSecurityGroups: []infrav1.VPCSecurityGroupSource{
 								{
-									Name: ptr.To("security-group"),
+									Type:      infrav1.SourceTypeProvision,
+									Provision: infrav1.VPCSecurityGroupProvision{Name: "security-group"},
 								},
 							},
 						},
@@ -1726,7 +1727,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				return clusterScope
 			},
 			reconcileResult: reconcileResult{
-				error: errors.New("failed to validate existing security group: vpc security group not found"),
+				error: errors.New("failed to reconcile security group: failed to query VPC security group by name 'security-group': vpc security group not found"),
 			},
 
 			conditions: clusterv1.Conditions{
@@ -1737,7 +1738,7 @@ func TestReconcileVPCResources(t *testing.T) {
 					Severity:           clusterv1.ConditionSeverityError,
 					LastTransitionTime: metav1.Time{},
 					Reason:             infrav1.VPCSecurityGroupReconciliationFailedReason,
-					Message:            "failed to validate existing security group: vpc security group not found",
+					Message:            "failed to reconcile security group: failed to query VPC security group by name 'security-group': vpc security group not found",
 				},
 				getVPCSubnetReadyCondition(),
 			},
