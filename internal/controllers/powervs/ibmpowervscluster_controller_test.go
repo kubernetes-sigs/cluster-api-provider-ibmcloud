@@ -19,7 +19,6 @@ package powervs
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -43,10 +42,11 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
+	"sigs.k8s.io/cluster-api/util/conditions"
+	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
@@ -536,11 +536,15 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							Topology:      infrav1.PowerVSLoadBalancerTopology,
 							Zone:          "dal10",
 							ResourceGroup: infrav1.ResourceGroupSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "rg-id"}},
-							VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{Name: "vpc-name"}},
+							VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeProvision, Region: "us-south"},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
 							Workspace: infrav1.ResourceReferenceV1Beta3{
 								ID: "serviceInstanceID",
+							},
+							VPC: infrav1.VPCStatus{
+								ID:   "vpcID",
+								Name: "vpcName",
 							},
 						},
 					},
@@ -561,8 +565,9 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 
 				clusterScope.ResourceManagerClient = getMockResourceManager(t)
 
+				// VPC is pending (requeue), so both goroutines requeue rather than error.
 				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
-				mockVPC.EXPECT().GetVPCByName(gomock.Any()).Return(nil, errors.New("vpc not found"))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("pending")}, nil, nil)
 				clusterScope.IBMVPCClient = mockVPC
 
 				return clusterScope
@@ -811,14 +816,28 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 				mockPowerVS.EXPECT().WithClients(gomock.Any())
 				clusterScope.IBMPowerVSClient = mockPowerVS
 
-				clusterScope.ResourceClient = getMockResourceController(t)
+				// getMockResourceController expects Times(2); only called once here since TG is not reached.
+				mockRC := resourceclientmock.NewMockResourceController(gomock.NewController(t))
+				mockRC.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
+					Name: ptr.To("serviceInstanceName"), ID: ptr.To("serviceInstanceID"),
+					State: ptr.To("active"), CRN: ptr.To("powervs_crn"),
+				}, nil, nil)
+				clusterScope.ResourceClient = mockRC
 				clusterScope.ResourceManagerClient = getMockResourceManager(t)
-				clusterScope.IBMVPCClient = getMockVPC(t)
-				clusterScope.TransitGatewayClient = getMockTransitGateway(t)
+				// VPC goroutine still runs in parallel; TG is not reached due to error.
+				mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
+				mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active"), CRN: ptr.To("vpc_crn")}, nil, nil)
+				mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{ID: ptr.To("subnet-id"), Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+				mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+					ID: ptr.To("lb-id"), Name: ptr.To("capi-powervs-cluster-lb-public"),
+					ProvisioningStatus: ptr.To("active"),
+				}, nil, nil)
+				clusterScope.IBMVPCClient = mockVPC
 
 				return clusterScope
 			},
-			expectedResult: ctrl.Result{RequeueAfter: 30 * time.Second},
+			// Network reconciliation errors propagate immediately rather than silently requeueing.
+			expectedError: fmt.Errorf("failed to reconcile network: %w", fmt.Errorf("failed to fetch network by ID: %w", errors.New("error get networkByID"))),
 		},
 		{
 			name: "When getting loadbalancer hostname returns error",
@@ -1563,7 +1582,8 @@ func TestReconcileVPCResources(t *testing.T) {
 	testCases := []struct {
 		name                    string
 		powerVSClusterScopeFunc func() *powervsscope.ClusterScope
-		reconcileResult         reconcileResult
+		wantRequeue             bool
+		wantErr                 error
 		conditions              clusterv1.Conditions
 	}{
 		{
@@ -1584,9 +1604,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				error: errors.New("vpc not found"),
-			},
+			wantErr: errors.New("vpc not found"),
 			conditions: clusterv1.Conditions{
 				clusterv1.Condition{
 					Type:               infrav1.VPCReadyCondition,
@@ -1616,11 +1634,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				Result: reconcile.Result{
-					RequeueAfter: 20 * time.Second,
-				},
-			},
+			wantRequeue: true,
 		},
 		{
 			name: "when Reconciling VPC subnets returns error",
@@ -1642,9 +1656,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				error: errors.New("vpc subnet not found"),
-			},
+			wantErr: errors.New("vpc subnet not found"),
 
 			conditions: clusterv1.Conditions{
 				getVPCReadyCondition(),
@@ -1681,11 +1693,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				Result: reconcile.Result{
-					RequeueAfter: 20 * time.Second,
-				},
-			},
+			wantRequeue: true,
 			conditions: clusterv1.Conditions{
 				getVPCReadyCondition(),
 			},
@@ -1726,9 +1734,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				error: errors.New("failed to reconcile security group: failed to query VPC security group by name 'security-group': vpc security group not found"),
-			},
+			wantErr: errors.New("failed to reconcile security group: failed to query VPC security group by name 'security-group': vpc security group not found"),
 
 			conditions: clusterv1.Conditions{
 				getVPCReadyCondition(),
@@ -1779,9 +1785,7 @@ func TestReconcileVPCResources(t *testing.T) {
 				clusterScope.IBMVPCClient = mockVPC
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				error: errors.New("load balancer not found"),
-			},
+			wantErr: errors.New("load balancer not found"),
 
 			conditions: clusterv1.Conditions{
 				clusterv1.Condition{
@@ -1852,26 +1856,22 @@ func TestReconcileVPCResources(t *testing.T) {
 				Client: testEnv.Client,
 			}
 			clusterScope := tc.powerVSClusterScopeFunc()
-			ch := make(chan reconcileResult, 1)
-			pvsCluster := &powerVSCluster{
-				cluster: clusterScope.IBMPowerVSCluster,
-			}
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			reconciler.reconcileVPCResources(ctx, clusterScope, pvsCluster, ch, wg)
-			wg.Wait()
-			close(ch)
-			result := <-ch
-			g.Expect(result.Result).To(Equal(tc.reconcileResult.Result))
-			if tc.reconcileResult.error != nil {
-				g.Expect(result).To(MatchError(ContainSubstring(tc.reconcileResult.Error())))
+			res := reconciler.reconcileVPCResources(ctx, clusterScope)
+			g.Expect(res.requeue).To(Equal(tc.wantRequeue))
+			if tc.wantErr != nil {
+				g.Expect(res.err).To(MatchError(ContainSubstring(tc.wantErr.Error())))
 			} else {
-				g.Expect(result.error).To(BeNil())
+				g.Expect(res.err).To(BeNil())
+			}
+			// Apply conditions returned by the helper (mirrors what reconcile() does).
+			for i := range res.conditions {
+				conditions.Set(clusterScope.IBMPowerVSCluster, res.conditions[i])
+				deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, res.legacy[i])
 			}
 			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 				return metav1.Time{}
 			})
-			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			g.Expect(clusterScope.IBMPowerVSCluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
 }
@@ -1880,7 +1880,8 @@ func TestReconcilePowerVSResources(t *testing.T) {
 	testCases := []struct {
 		name                    string
 		powerVSClusterScopeFunc func() *powervsscope.ClusterScope
-		reconcileResult         reconcileResult
+		wantRequeue             bool
+		wantErr                 error
 		conditions              clusterv1.Conditions
 	}{
 		{
@@ -1900,9 +1901,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope.ResourceClient = mockResourceController
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				error: errors.New("error getting resource instance"),
-			},
+			wantErr: errors.New("error getting resource instance"),
 
 			conditions: clusterv1.Conditions{
 				clusterv1.Condition{
@@ -1932,11 +1931,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope.ResourceClient = mockResourceController
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				Result: reconcile.Result{
-					RequeueAfter: 20 * time.Second,
-				},
-			},
+			wantRequeue: true,
 		},
 		{
 			name: "When Reconciling network returns error",
@@ -1971,9 +1966,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope.IBMPowerVSClient = mockPowerVS
 				return clusterScope
 			},
-			reconcileResult: reconcileResult{
-				error: errors.New("error getting network"),
-			},
+			wantErr: errors.New("error getting network"),
 			conditions: clusterv1.Conditions{
 				clusterv1.Condition{
 					Type:               infrav1.NetworkReadyCondition,
@@ -2037,26 +2030,22 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				Client: testEnv.Client,
 			}
 			clusterScope := tc.powerVSClusterScopeFunc()
-			ch := make(chan reconcileResult, 1)
-			pvsCluster := &powerVSCluster{
-				cluster: clusterScope.IBMPowerVSCluster,
-			}
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			reconciler.reconcilePowerVSResources(ctx, clusterScope, pvsCluster, ch, wg)
-			wg.Wait()
-			close(ch)
-			result := <-ch
-			g.Expect(result.Result).To(Equal(tc.reconcileResult.Result))
-			if tc.reconcileResult.error != nil {
-				g.Expect(result).To(MatchError(ContainSubstring(tc.reconcileResult.Error())))
+			res := reconciler.reconcilePowerVSResources(ctx, clusterScope)
+			g.Expect(res.requeue).To(Equal(tc.wantRequeue))
+			if tc.wantErr != nil {
+				g.Expect(res.err).To(MatchError(ContainSubstring(tc.wantErr.Error())))
 			} else {
-				g.Expect(result.error).To(BeNil())
+				g.Expect(res.err).To(BeNil())
+			}
+			// Apply conditions returned by the helper (mirrors what reconcile() does).
+			for i := range res.conditions {
+				conditions.Set(clusterScope.IBMPowerVSCluster, res.conditions[i])
+				deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, res.legacy[i])
 			}
 			ignoreLastTransitionTime := cmp.Transformer("", func(metav1.Time) metav1.Time {
 				return metav1.Time{}
 			})
-			g.Expect(pvsCluster.cluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
+			g.Expect(clusterScope.IBMPowerVSCluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
 }

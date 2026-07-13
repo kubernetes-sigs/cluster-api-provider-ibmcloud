@@ -75,14 +75,12 @@ type IBMPowerVSClusterReconciler struct {
 	ClientFactory powervsscope.ClientFactory
 }
 
-type powerVSCluster struct {
-	cluster *infrav1.IBMPowerVSCluster
-	mu      sync.Mutex
-}
-
-type reconcileResult struct {
-	reconcile.Result
-	error
+// componentResult holds the outcome of a concurrent component reconciliation.
+type componentResult struct {
+	requeue    bool
+	err        error
+	conditions []metav1.Condition
+	legacy     []*clusterv1.Condition
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,verbs=get;list;watch;create;update;patch;delete
@@ -161,17 +159,17 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	return r.reconcile(ctx, clusterScope)
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) { //nolint:gocyclo
+func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	// 1. If it's VirtualIP, do the minimal logic and return early.
+	// If it's VirtualIP, do the minimal logic and return early.
 	if clusterScope.IBMPowerVSCluster.Spec.Topology == infrav1.PowerVSVirtualIPTopology {
 		log.Info("Reconciling in VirtualIP topology mode")
 		clusterScope.IBMPowerVSCluster.Status.Initialization.Provisioned = ptr.To(true)
 		return ctrl.Result{}, nil
 	}
 
-	// 2. Otherwise, assume LoadBalancer and proceed with the heavy VPC/TG logic.
+	// Otherwise, assume LoadBalancer and proceed with the heavy VPC/TG logic.
 	if clusterScope.IBMPowerVSCluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
 		return ctrl.Result{}, fmt.Errorf("unknown topology: %q", clusterScope.IBMPowerVSCluster.Spec.Topology)
 	}
@@ -187,102 +185,80 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 	if err := clusterScope.ReconcileResourceGroup(ctx); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to reconcile resource group: %w", err)
 	}
-
-	powerVSCluster := &powerVSCluster{
-		cluster: clusterScope.IBMPowerVSCluster,
-	}
-
+	//
 	var wg sync.WaitGroup
-	ch := make(chan reconcileResult)
+	ch := make(chan componentResult, 2)
 
-	// reconcile PowerVS resources
 	wg.Add(1)
-	go r.reconcilePowerVSResources(ctx, clusterScope, powerVSCluster, ch, &wg)
-
-	// reconcile VPC
-	wg.Add(1)
-	go r.reconcileVPCResources(ctx, clusterScope, powerVSCluster, ch, &wg)
-
-	// wait for above reconcile to complete and close the channel
 	go func() {
-		wg.Wait()
-		close(ch)
+		defer wg.Done()
+		ch <- r.reconcilePowerVSResources(ctx, clusterScope)
 	}()
 
-	var requeue bool
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ch <- r.reconcileVPCResources(ctx, clusterScope)
+	}()
+
+	wg.Wait()
+	close(ch)
+
 	var errList []error
-	// receive return values from the channel and decide the requeue
-	for val := range ch {
-		if val.RequeueAfter > 0 {
-			requeue = true
+	var needsRequeue bool
+
+	for res := range ch {
+		if res.err != nil {
+			errList = append(errList, res.err)
 		}
-		if val.error != nil {
-			errList = append(errList, val.error)
+		if res.requeue {
+			needsRequeue = true
+		}
+
+		for i := range res.conditions {
+			conditions.Set(clusterScope.IBMPowerVSCluster, res.conditions[i])
+			deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, res.legacy[i])
 		}
 	}
 
-	if requeue && len(errList) > 1 {
-		return ctrl.Result{RequeueAfter: 30 * time.Second}, kerrors.NewAggregate(errList)
-	} else if requeue {
-		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
-	} else if len(errList) > 1 {
+	if len(errList) > 0 {
 		return ctrl.Result{}, kerrors.NewAggregate(errList)
 	}
+	if needsRequeue {
+		log.Info("PowerVS or VPC infrastructure components are still provisioning, requeuing before Transit Gateway")
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
 
-	// reconcile Transit Gateway
 	log.Info("Reconciling transit gateway")
 	if requeue, err := clusterScope.ReconcileTransitGateway(ctx); err != nil {
-		deprecatedv1beta1conditions.MarkFalse(powerVSCluster.cluster, infrav1.TransitGatewayReadyV1Beta2Condition, infrav1.TransitGatewayReconciliationFailedV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.TransitGatewayReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.TransitGatewayNotReadyReason,
-			Message: err.Error(),
-		})
+		cond, leg := r.buildConds(infrav1.TransitGatewayReadyCondition, infrav1.TransitGatewayReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.TransitGatewayNotReadyReason, infrav1.TransitGatewayReconciliationFailedV1Beta2Reason, err.Error())
+		conditions.Set(clusterScope.IBMPowerVSCluster, cond)
+		deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, leg)
 		return reconcile.Result{}, fmt.Errorf("failed to reconcile transit gateway: %w", err)
 	} else if requeue {
 		log.Info("Creating a transit gateway is pending, requeuing")
 		return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
-	deprecatedv1beta1conditions.MarkTrue(powerVSCluster.cluster, infrav1.TransitGatewayReadyV1Beta2Condition)
-	powerVSCluster.updateCondition(metav1.Condition{
-		Type:   infrav1.TransitGatewayReadyCondition,
-		Status: metav1.ConditionTrue,
-		Reason: infrav1.TransitGatewayReadyReason,
-	})
 
-	// reconcile COSInstance
+	cond, leg := r.buildConds(infrav1.TransitGatewayReadyCondition, infrav1.TransitGatewayReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.TransitGatewayReadyReason, "", "")
+	conditions.Set(clusterScope.IBMPowerVSCluster, cond)
+	deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, leg)
+
 	if clusterScope.IBMPowerVSCluster.Spec.COSInstance.Type != "" {
 		log.Info("Reconciling COS service instance")
 		if err := clusterScope.ReconcileCOSInstance(ctx); err != nil {
-			deprecatedv1beta1conditions.MarkFalse(powerVSCluster.cluster, infrav1.COSInstanceReadyV1Beta2Condition, infrav1.COSInstanceReconciliationFailedV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
-			powerVSCluster.updateCondition(metav1.Condition{
-				Type:    infrav1.COSInstanceReadyCondition,
-				Status:  metav1.ConditionFalse,
-				Reason:  infrav1.COSInstanceNotReadyReason,
-				Message: err.Error(),
-			})
+			c, l := r.buildConds(infrav1.COSInstanceReadyCondition, infrav1.COSInstanceReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.COSInstanceNotReadyReason, infrav1.COSInstanceReconciliationFailedV1Beta2Reason, err.Error())
+			conditions.Set(clusterScope.IBMPowerVSCluster, c)
+			deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, l)
 			return reconcile.Result{}, fmt.Errorf("failed to reconcile COS instance: %w", err)
 		}
-		deprecatedv1beta1conditions.MarkTrue(powerVSCluster.cluster, infrav1.COSInstanceReadyV1Beta2Condition)
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:   infrav1.COSInstanceReadyCondition,
-			Status: metav1.ConditionTrue,
-			Reason: infrav1.COSInstanceReadyReason,
-		})
+		c, l := r.buildConds(infrav1.COSInstanceReadyCondition, infrav1.COSInstanceReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.COSInstanceReadyReason, "", "")
+		conditions.Set(clusterScope.IBMPowerVSCluster, c)
+		deprecatedv1beta1conditions.Set(clusterScope.IBMPowerVSCluster, l)
 	}
 
-	var networkReady, loadBalancerReady bool
-	for _, cond := range clusterScope.IBMPowerVSCluster.Status.Conditions {
-		if cond.Type == infrav1.NetworkReadyCondition && cond.Status == metav1.ConditionTrue {
-			networkReady = true
-		}
-		if cond.Type == infrav1.LoadBalancerReadyCondition && cond.Status == metav1.ConditionTrue {
-			loadBalancerReady = true
-		}
-	}
-
-	if !networkReady || !loadBalancerReady {
+	if !conditions.IsTrue(clusterScope.IBMPowerVSCluster, infrav1.NetworkReadyCondition) ||
+		!conditions.IsTrue(clusterScope.IBMPowerVSCluster, infrav1.VPCLoadBalancerReadyCondition) {
 		log.Info("Network or LoadBalancer still not ready, requeuing")
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
@@ -297,225 +273,124 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 		return reconcile.Result{RequeueAfter: time.Minute}, nil
 	}
 
-	// update cluster object with load balancer host name
 	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Host = *hostName
 	clusterScope.IBMPowerVSCluster.Spec.ControlPlaneEndpoint.Port = clusterScope.APIServerPort()
 	clusterScope.IBMPowerVSCluster.Status.Initialization.Provisioned = ptr.To(true)
+
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Context, clusterScope *powervsscope.ClusterScope, powerVSCluster *powerVSCluster, ch chan reconcileResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	log := ctrl.LoggerFrom(ctx)
-	log = log.WithName("powervs")
+func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Context, clusterScope *powervsscope.ClusterScope) componentResult {
+	log := ctrl.LoggerFrom(ctx).WithName("powervs")
+	res := componentResult{}
 
 	log.Info("Reconciling PowerVS resources")
 	defer log.Info("Finished Reconciling PowerVS resources")
 
-	// reconcile PowerVS Workspace.
 	log.Info("Reconciling PowerVS workspace")
 	if requeue, err := clusterScope.ReconcileWorkspace(ctx); err != nil {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status:   corev1.ConditionFalse,
-			Type:     infrav1.ServiceInstanceReadyV1Beta2Condition,
-			Reason:   infrav1.ServiceInstanceReconciliationFailedV1Beta2Reason,
-			Severity: clusterv1.ConditionSeverityError,
-			Message:  err.Error(),
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.WorkspaceReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.WorkspaceNotReadyReason,
-			Message: err.Error(),
-		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile PowerVS workspace: %w", err)}
-		return
+		c, l := r.buildConds(infrav1.WorkspaceReadyCondition, infrav1.ServiceInstanceReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.WorkspaceNotReadyReason, infrav1.ServiceInstanceReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
+		res.err = fmt.Errorf("failed to reconcile PowerVS workspace: %w", err)
+		return res
 	} else if requeue {
-		log.Info("PowerVS workspace creation is pending, requeuing")
-		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
-		return
+		log.Info("PowerVS workspace creation is pending")
+		res.requeue = true
+		return res
 	}
-	deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-		Status: corev1.ConditionTrue,
-		Type:   infrav1.ServiceInstanceReadyV1Beta2Condition,
-	})
-	powerVSCluster.updateCondition(metav1.Condition{
-		Type:   infrav1.WorkspaceReadyCondition,
-		Status: metav1.ConditionTrue,
-		Reason: infrav1.WorkspaceReadyReason,
-	})
+	c, l := r.buildConds(infrav1.WorkspaceReadyCondition, infrav1.ServiceInstanceReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.WorkspaceReadyReason, "", "")
+	res.conditions = append(res.conditions, c)
+	res.legacy = append(res.legacy, l)
 
 	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.IBMPowerVSCluster.Status.Workspace.ID})
 
-	// reconcile network
 	log.Info("Reconciling network")
 	if networkActive, err := clusterScope.ReconcileNetwork(ctx); err != nil {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status:   corev1.ConditionFalse,
-			Type:     infrav1.NetworkReadyV1Beta2Condition,
-			Reason:   infrav1.NetworkReconciliationFailedV1Beta2Reason,
-			Severity: clusterv1.ConditionSeverityError,
-			Message:  err.Error(),
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.NetworkReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.NetworkNotReadyReason,
-			Message: err.Error(),
-		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile network: %w", err)}
-		return
-	} else if networkActive {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status: corev1.ConditionTrue,
-			Type:   infrav1.NetworkReadyV1Beta2Condition,
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:   infrav1.NetworkReadyCondition,
-			Status: metav1.ConditionTrue,
-			Reason: infrav1.NetworkReadyReason,
-		})
-		return
+		c, l := r.buildConds(infrav1.NetworkReadyCondition, infrav1.NetworkReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.NetworkNotReadyReason, infrav1.NetworkReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
+		res.err = fmt.Errorf("failed to reconcile network: %w", err)
+		return res
+	} else if !networkActive {
+		log.Info("PowerVS network creation is pending")
+	} else {
+		c, l = r.buildConds(infrav1.NetworkReadyCondition, infrav1.NetworkReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.NetworkReadyReason, "", "")
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
 	}
-	// Do not want to block the reconciliation of other resources like setting up TG and COS, so skipping the requeue and only logging the info.
-	log.Info("PowerVS network creation is pending")
+
+	return res
 }
 
-func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context, clusterScope *powervsscope.ClusterScope, powerVSCluster *powerVSCluster, ch chan reconcileResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	log := ctrl.LoggerFrom(ctx)
-	log = log.WithName("vpc")
+func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context, clusterScope *powervsscope.ClusterScope) componentResult {
+	log := ctrl.LoggerFrom(ctx).WithName("vpc")
+	res := componentResult{}
 
 	log.Info("Reconciling VPC")
-	defer log.Info("Finished VPC reconciliation")
-
 	if requeue, err := clusterScope.ReconcileVPC(ctx); err != nil {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status:   corev1.ConditionFalse,
-			Type:     infrav1.VPCReadyV1Beta2Condition,
-			Reason:   infrav1.VPCReconciliationFailedV1Beta2Reason,
-			Severity: clusterv1.ConditionSeverityError,
-			Message:  err.Error(),
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.VPCReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.VPCNotReadyReason,
-			Message: err.Error(),
-		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile VPC: %w", err)}
-		return
+		c, l := r.buildConds(infrav1.VPCReadyCondition, infrav1.VPCReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.VPCNotReadyReason, infrav1.VPCReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
+		res.err = fmt.Errorf("failed to reconcile VPC: %w", err)
+		return res
 	} else if requeue {
-		log.Info("VPC creation is pending, requeuing")
-		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
-		return
+		log.Info("VPC creation is pending")
+		res.requeue = true
+		return res
 	}
-	deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-		Status: corev1.ConditionTrue,
-		Type:   infrav1.VPCReadyV1Beta2Condition,
-	})
-	powerVSCluster.updateCondition(metav1.Condition{
-		Type:   infrav1.VPCReadyCondition,
-		Status: metav1.ConditionTrue,
-		Reason: infrav1.VPCReadyReason,
-	})
+	c, l := r.buildConds(infrav1.VPCReadyCondition, infrav1.VPCReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.VPCReadyReason, "", "")
+	res.conditions = append(res.conditions, c)
+	res.legacy = append(res.legacy, l)
 
 	// reconcile VPC Subnet
 	log.Info("Reconciling VPC subnets")
 	if requeue, err := clusterScope.ReconcileVPCSubnets(ctx); err != nil {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status:   corev1.ConditionFalse,
-			Type:     infrav1.VPCSubnetReadyV1Beta2Condition,
-			Reason:   infrav1.VPCSubnetReconciliationFailedV1Beta2Reason,
-			Severity: clusterv1.ConditionSeverityError,
-			Message:  err.Error(),
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.VPCSubnetReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.VPCSubnetNotReadyReason,
-			Message: err.Error(),
-		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile VPC subnets: %w", err)}
-		return
+		c, l := r.buildConds(infrav1.VPCSubnetReadyCondition, infrav1.VPCSubnetReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.VPCSubnetNotReadyReason, infrav1.VPCSubnetReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
+		res.err = fmt.Errorf("failed to reconcile VPC subnets: %w", err)
+		return res
 	} else if requeue {
-		log.Info("VPC subnet creation is pending, requeuing")
-		ch <- reconcileResult{reconcile.Result{RequeueAfter: 20 * time.Second}, nil}
-		return
+		log.Info("VPC subnet creation is pending")
+		res.requeue = true
+		return res
 	}
-	deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-		Status: corev1.ConditionTrue,
-		Type:   infrav1.VPCSubnetReadyV1Beta2Condition,
-	})
-	powerVSCluster.updateCondition(metav1.Condition{
-		Type:   infrav1.VPCSubnetReadyCondition,
-		Status: metav1.ConditionTrue,
-		Reason: infrav1.VPCSubnetReadyReason,
-	})
+	c, l = r.buildConds(infrav1.VPCSubnetReadyCondition, infrav1.VPCSubnetReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.VPCSubnetReadyReason, "", "")
+	res.conditions = append(res.conditions, c)
+	res.legacy = append(res.legacy, l)
 
 	// reconcile VPC security group
 	log.Info("Reconciling VPC security group")
 	if err := clusterScope.ReconcileVPCSecurityGroups(ctx); err != nil {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status:   corev1.ConditionFalse,
-			Type:     infrav1.VPCSecurityGroupReadyV1Beta2Condition,
-			Reason:   infrav1.VPCSecurityGroupReconciliationFailedV1Beta2Reason,
-			Severity: clusterv1.ConditionSeverityError,
-			Message:  err.Error(),
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.VPCSecurityGroupReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.VPCSecurityGroupReconciliationFailedReason,
-			Message: err.Error(),
-		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile VPC security groups: %w", err)}
-		return
+		c, l := r.buildConds(infrav1.VPCSecurityGroupReadyCondition, infrav1.VPCSecurityGroupReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.VPCSecurityGroupReconciliationFailedReason, infrav1.VPCSecurityGroupReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
+		res.err = fmt.Errorf("failed to reconcile VPC security groups: %w", err)
+		return res
 	}
-	deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-		Status: corev1.ConditionTrue,
-		Type:   infrav1.VPCSecurityGroupReadyV1Beta2Condition,
-	})
-	powerVSCluster.updateCondition(metav1.Condition{
-		Type:   infrav1.VPCSecurityGroupReadyCondition,
-		Status: metav1.ConditionTrue,
-		Reason: infrav1.VPCSecurityGroupReadyCondition,
-	})
+	c, l = r.buildConds(infrav1.VPCSecurityGroupReadyCondition, infrav1.VPCSecurityGroupReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.VPCSecurityGroupReadyReason, "", "")
+	res.conditions = append(res.conditions, c)
+	res.legacy = append(res.legacy, l)
 
 	// reconcile LoadBalancer
 	log.Info("Reconciling VPC load balancers")
 	if loadBalancerReady, err := clusterScope.ReconcileLoadBalancers(ctx); err != nil {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status:   corev1.ConditionFalse,
-			Type:     infrav1.LoadBalancerReadyV1Beta2Condition,
-			Reason:   infrav1.LoadBalancerReconciliationFailedV1Beta2Reason,
-			Severity: clusterv1.ConditionSeverityError,
-			Message:  err.Error(),
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:    infrav1.VPCLoadBalancerReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.VPCLoadBalancerNotReadyReason,
-			Message: err.Error(),
-		})
-		ch <- reconcileResult{reconcile.Result{}, fmt.Errorf("failed to reconcile VPC load balancers: %w", err)}
-		return
-	} else if loadBalancerReady {
-		deprecatedv1beta1conditions.Set(powerVSCluster.cluster, &clusterv1.Condition{
-			Status: corev1.ConditionTrue,
-			Type:   infrav1.LoadBalancerReadyV1Beta2Condition,
-		})
-		powerVSCluster.updateCondition(metav1.Condition{
-			Type:   infrav1.VPCLoadBalancerReadyCondition,
-			Status: metav1.ConditionTrue,
-			Reason: infrav1.VPCLoadBalancerReadyReason,
-		})
-		return
+		c, l := r.buildConds(infrav1.VPCLoadBalancerReadyCondition, infrav1.LoadBalancerReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.VPCLoadBalancerNotReadyReason, infrav1.LoadBalancerReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
+		res.err = fmt.Errorf("failed to reconcile VPC load balancers: %w", err)
+		return res
+	} else if !loadBalancerReady {
+		log.Info("VPC load balancer creation is pending")
+		// Not blocking here.
+	} else {
+		c, l = r.buildConds(infrav1.VPCLoadBalancerReadyCondition, infrav1.LoadBalancerReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.VPCLoadBalancerReadyReason, "", "")
+		res.conditions = append(res.conditions, c)
+		res.legacy = append(res.legacy, l)
 	}
-	// Do not want to block the reconciliation of other resources like setting up TG and COS, so skipping the requeue and only logging the info.
-	log.Info("VPC load balancer creation is pending")
+
+	return res
 }
 
 func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) {
@@ -646,12 +521,6 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	return ctrl.Result{}, nil
 }
 
-func (update *powerVSCluster) updateCondition(condition metav1.Condition) {
-	update.mu.Lock()
-	defer update.mu.Unlock()
-	conditions.Set(update.cluster, condition)
-}
-
 func (r *IBMPowerVSClusterReconciler) deleteIBMPowerVSImage(ctx context.Context, clusterScope *powervsscope.ClusterScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	cluster := clusterScope.IBMPowerVSCluster
@@ -775,6 +644,27 @@ func (c *clusterDescendants) filterOwnedDescendants(cluster *infrav1.IBMPowerVSC
 	}
 
 	return ownedDescendants, nil
+}
+
+// buildConds generates both a metav1.Condition and a legacy v1beta1 Condition simultaneously.
+// reason is used for the modern condition; legacyReason is used for the legacy condition.
+func (r *IBMPowerVSClusterReconciler) buildConds(condType string, legacyType clusterv1.ConditionType, status metav1.ConditionStatus, reason, legacyReason, msg string) (metav1.Condition, *clusterv1.Condition) {
+	cond := metav1.Condition{
+		Type:    condType,
+		Status:  status,
+		Reason:  reason,
+		Message: msg,
+	}
+	legacy := &clusterv1.Condition{
+		Type:    legacyType,
+		Status:  corev1.ConditionStatus(status),
+		Reason:  legacyReason,
+		Message: msg,
+	}
+	if status == metav1.ConditionFalse {
+		legacy.Severity = clusterv1.ConditionSeverityError
+	}
+	return cond, legacy
 }
 
 // patchIBMPowerVSCluster updates the IBMPowerVSCluster and its status on the API server.
