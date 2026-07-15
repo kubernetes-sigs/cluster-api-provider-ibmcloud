@@ -239,3 +239,7 @@ func Convert_v1beta2_IBMVPCMachineStatus_To_v1beta1_IBMVPCMachineStatus(in *infr
 func Convert_v1beta2_NetworkInterface_To_v1beta1_NetworkInterface(in *infrav1.NetworkInterface, out *NetworkInterface, s apiconversion.Scope) error {
 	return autoConvert_v1beta2_NetworkInterface_To_v1beta1_NetworkInterface(in, out, s)
 }
+
+func Convert_v1beta2_VPCVolume_To_v1beta1_VPCVolume(in *infrav1.VPCVolume, out *VPCVolume, s apiconversion.Scope) error {
+	return autoConvert_v1beta2_VPCVolume_To_v1beta1_VPCVolume(in, out, s)
+}
