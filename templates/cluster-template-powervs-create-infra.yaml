@@ -91,7 +91,7 @@ spec:
           value: external
         - name: eviction-hard
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
-        name: '{{ v1.local_hostname }}'
+        name: '{{ ds.meta_data.name }}'
     joinConfiguration:
       nodeRegistration:
         criSocket: /var/run/containerd/containerd.sock
@@ -100,13 +100,13 @@ spec:
           value: external
         - name: eviction-hard
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
-        name: '{{ v1.local_hostname }}'
+        name: '{{ ds.meta_data.name }}'
     preKubeadmCommands:
-    - hostname "{{ v1.local_hostname }}"
+    - hostname "{{ ds.meta_data.name }}"
     - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
     - echo "127.0.0.1   localhost" >>/etc/hosts
-    - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
-    - echo "{{ v1.local_hostname }}" >/etc/hostname
+    - echo "127.0.0.1   {{ ds.meta_data.name }}" >>/etc/hosts
+    - echo "{{ ds.meta_data.name }}" >/etc/hostname
   machineTemplate:
     spec:
       infrastructureRef:
@@ -193,13 +193,13 @@ spec:
             value: external
           - name: eviction-hard
             value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
-          name: '{{ v1.local_hostname }}'
+          name: '{{ ds.meta_data.name }}'
       preKubeadmCommands:
-      - hostname "{{ v1.local_hostname }}"
+      - hostname "{{ ds.meta_data.name }}"
       - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
       - echo "127.0.0.1   localhost" >>/etc/hosts
-      - echo "127.0.0.1   {{ v1.local_hostname }}" >>/etc/hosts
-      - echo "{{ v1.local_hostname }}" >/etc/hostname
+      - echo "127.0.0.1   {{ ds.meta_data.name }}" >>/etc/hosts
+      - echo "{{ ds.meta_data.name }}" >/etc/hostname
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSImage
