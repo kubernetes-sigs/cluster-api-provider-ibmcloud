@@ -302,13 +302,13 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.IBMPowerVSCluster.Status.Workspace.ID})
 
 	log.Info("Reconciling network")
-	if networkActive, err := clusterScope.ReconcileNetwork(ctx); err != nil {
+	if requeue, err := clusterScope.ReconcileNetwork(ctx); err != nil {
 		condition, legacyCondition := r.buildConditions(infrav1.NetworkReadyCondition, infrav1.NetworkReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.NetworkNotReadyReason, infrav1.NetworkReconciliationFailedV1Beta2Reason, err.Error())
 		res.conditions = append(res.conditions, condition)
 		res.legacy = append(res.legacy, legacyCondition)
 		res.err = fmt.Errorf("failed to reconcile network: %w", err)
 		return res
-	} else if !networkActive {
+	} else if requeue {
 		log.Info("PowerVS network creation is pending")
 	} else {
 		condition, legacyCondition = r.buildConditions(infrav1.NetworkReadyCondition, infrav1.NetworkReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.NetworkReadyReason, "", "")

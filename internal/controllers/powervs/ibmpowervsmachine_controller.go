@@ -83,7 +83,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log.Info("Reconciling IBMPowerVSMachine")
 	defer log.Info("Finished reconciling IBMPowerVSMachine")
 
-	// Fetch the IBMPowerVSMachine instance.
+	// 1. Fetch the IBMPowerVSMachine instance.
 	ibmPowerVSMachine := &infrav1.IBMPowerVSMachine{}
 	err := r.Client.Get(ctx, req.NamespacedName, ibmPowerVSMachine)
 	if err != nil {
@@ -94,12 +94,12 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("failed to get IBMPowerVSMachine: %w", err)
 	}
 
-	// Add finalizer first if not set to avoid the race condition between init and delete.
+	// 2. Add finalizer first if not set to avoid the race condition between init and delete.
 	if finalizerAdded, err := finalizers.EnsureFinalizer(ctx, r.Client, ibmPowerVSMachine, infrav1.IBMPowerVSMachineFinalizer); err != nil || finalizerAdded {
 		return ctrl.Result{}, err
 	}
 
-	// Fetch the Machine.
+	// 3. Fetch the Machine.
 	machine, err := util.GetOwnerMachine(ctx, r.Client, ibmPowerVSMachine.ObjectMeta)
 	if err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to get machine for IBMPowerVSMachine: %w", err)
@@ -108,16 +108,16 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		log.Info("Waiting for machine controller to set owner ref on IBMPowerVSMachine")
 		return ctrl.Result{}, nil
 	}
+
 	log = log.WithValues("Machine", klog.KObj(machine))
 	ctx = ctrl.LoggerInto(ctx, log)
 
 	// AddOwners adds the owners of IBMPowerVSMachine as k/v pairs to the logger.
-	// Specifically, it will add KubeadmControlPlane, MachineSet and MachineDeployment.
 	if ctx, log, err = clog.AddOwners(ctx, r.Client, ibmPowerVSMachine); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to add owners to log: %w", err)
 	}
 
-	// Fetch the Cluster.
+	// 4. Fetch the Cluster.
 	cluster, err := util.GetClusterFromMetadata(ctx, r.Client, machine.ObjectMeta)
 	if err != nil {
 		log.Info("IBMPowerVSMachine owner Machine is missing cluster label or cluster does not exist")
@@ -131,7 +131,18 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log = log.WithValues("Cluster", klog.KObj(cluster))
 	ctx = ctrl.LoggerInto(ctx, log)
 
-	// Fetch the IBMPowerVSCluster.
+	// 5. Ensure Infrastructure is defined.
+	if !cluster.Spec.InfrastructureRef.IsDefined() {
+		log.Info("Cluster infrastructureRef is not available yet")
+		return ctrl.Result{}, nil
+	}
+
+	// 6. Check if cluster is paused
+	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, r.Client, cluster, ibmPowerVSMachine); err != nil || isPaused || requeue {
+		return ctrl.Result{}, err
+	}
+
+	// 7. Fetch the IBMPowerVSCluster.
 	ibmPowerVSCluster := &infrav1.IBMPowerVSCluster{}
 	ibmPowerVSClusterName := client.ObjectKey{
 		Namespace: ibmPowerVSMachine.Namespace,
@@ -145,30 +156,21 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	log = log.WithValues(ibmPowerVSClusterKind, klog.KObj(ibmPowerVSCluster))
 	ctx = ctrl.LoggerInto(ctx, log)
 
-	// Fetch the IBMPowerVSImage.
+	// 8. Fetch the IBMPowerVSImage.
 	var ibmPowerVSImage *infrav1.IBMPowerVSImage
-	if ibmPowerVSMachine.Spec.ImageRef.Name != "" {
+	if ibmPowerVSMachine.Spec.Image.Type == infrav1.ImageSourceTypeImport && ibmPowerVSMachine.Spec.Image.Import.Name != "" {
 		ibmPowerVSImage = &infrav1.IBMPowerVSImage{}
 		ibmPowerVSImageName := client.ObjectKey{
 			Namespace: ibmPowerVSMachine.Namespace,
-			Name:      ibmPowerVSMachine.Spec.ImageRef.Name,
+			Name:      ibmPowerVSMachine.Spec.Image.Import.Name,
 		}
 		if err := r.Client.Get(ctx, ibmPowerVSImageName, ibmPowerVSImage); err != nil {
-			log.Info("IBMPowerVSImage is not available yet", "IBMPowerVSImage", klog.KObj(ibmPowerVSImage))
+			log.Info("IBMPowerVSImage is not available yet", "imageName", ibmPowerVSImageName.Name)
 			return ctrl.Result{}, nil
 		}
 	}
 
-	if isPaused, requeue, err := paused.EnsurePausedCondition(ctx, r.Client, cluster, ibmPowerVSMachine); err != nil || isPaused || requeue {
-		return ctrl.Result{}, err
-	}
-
-	if !cluster.Spec.InfrastructureRef.IsDefined() {
-		log.Info("Cluster infrastructureRef is not available yet")
-		return ctrl.Result{}, nil
-	}
-
-	// Create the machine scope.
+	// 9. Create the machine scope.
 	machineScope, err := powervsscope.NewMachineScope(powervsscope.MachineScopeParams{
 		Client:            r.Client,
 		Logger:            log,
@@ -184,7 +186,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVS machine scope: %w", err)
 	}
 
-	// Initialize the patch helper
+	// 10. Initialize the patch helper
 	patchHelper, err := patch.NewHelper(ibmPowerVSMachine, r.Client)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to init patch helper: %w", err)
@@ -197,57 +199,220 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		}
 	}()
 
-	// Handle deleted machines.
+	// 11. Handle deleted machines.
 	if !ibmPowerVSMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope)
 	}
 
-	// Handle non-deleted machines.
+	// 12. Handle non-deleted machines.
 	return r.reconcileNormal(ctx, machineScope)
 }
 
 func (r *IBMPowerVSMachineReconciler) reconcileDelete(ctx context.Context, scope *powervsscope.MachineScope) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	deprecatedv1beta1conditions.MarkFalse(scope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.DeletingV1Beta2Reason, clusterv1.ConditionSeverityInfo, "")
-	conditions.Set(scope.IBMPowerVSMachine, metav1.Condition{
-		Type:   infrav1.InstanceReadyCondition,
-		Status: metav1.ConditionFalse,
-		Reason: infrav1.InstanceDeletingReason,
-	})
+	// 1. Signal that deletion is in progress
+	r.markCondition(scope, metav1.ConditionFalse, infrav1.InstanceDeletingReason, "")
 
+	// 2. Ensure finalizer is removed only on complete success
 	defer func() {
 		if reterr == nil {
-			// PowerVS machine is deleted so remove the finalizer.
+			log.Info("PowerVS machine deleted, removing finalizer")
 			controllerutil.RemoveFinalizer(scope.IBMPowerVSMachine, infrav1.IBMPowerVSMachineFinalizer)
 		}
 	}()
 
+	// 3. Early exit if the instance was never actually provisioned in IBM Cloud
 	if scope.IBMPowerVSMachine.Status.InstanceID == "" {
-		log.Info("IBMPowerVSMachine instance id is not yet set, so not invoking the PowerVS API to delete the instance")
+		log.Info("IBMPowerVSMachine instance ID is not yet set, skipping PowerVS API deletion")
 		return ctrl.Result{}, nil
 	}
+
+	// 4. Delete the VM from PowerVS
 	if err := scope.DeleteMachine(); err != nil {
 		log.Error(err, "error deleting IBMPowerVSMachine")
-		deprecatedv1beta1conditions.MarkFalse(scope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InternalErrorV1Beta2Reason, clusterv1.ConditionSeverityWarning, "")
-		conditions.Set(scope.IBMPowerVSMachine, metav1.Condition{
-			Type:    infrav1.InstanceReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.InstanceDeletingReason,
-			Message: fmt.Sprintf("failed to delete IBMPowerVSMachine: %v", err),
-		})
+		r.markCondition(scope, metav1.ConditionFalse, infrav1.InstanceDeletingReason, fmt.Sprintf("failed to delete instance: %v", err))
 		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
 	}
+
+	// 5. Delete Ignition Bootstrap Data from COS (if applicable)
 	if err := scope.DeleteMachineIgnition(ctx); err != nil {
-		log.Info("error deleting IBMPowerVSMachine ignition")
+		log.Error(err, "error deleting IBMPowerVSMachine ignition data")
+		r.markCondition(scope, metav1.ConditionFalse, infrav1.InstanceDeletingReason, fmt.Sprintf("failed to delete ignition data: %v", err))
 		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine ignition %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
 	}
-	// Remove the cached VM IP
-	err := scope.DHCPIPCacheStore.Delete(powervs.VMip{Name: scope.IBMPowerVSMachine.Name})
-	if err != nil {
+
+	// 6. Cleanup local caches
+	if err := scope.DHCPIPCacheStore.Delete(powervs.VMip{Name: scope.IBMPowerVSMachine.Name}); err != nil {
+		// This is non-fatal. We just log it and move on so we don't block the finalizer removal.
 		log.Error(err, "failed to delete the machine entry from DHCP cache store")
 	}
+
 	return ctrl.Result{}, nil
+}
+
+func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *powervsscope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
+	log := ctrl.LoggerFrom(ctx)
+
+	// 1. Gate: Wait for Infrastructure
+	if machineScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*machineScope.Cluster.Status.Initialization.InfrastructureProvisioned {
+		log.Info("Cluster infrastructure is not ready yet, skipping reconciliation")
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceWaitingForClusterInfrastructureReadyReason, "")
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
+
+	// 2. Gate: Wait for Image Import
+	if machineScope.IBMPowerVSImage != nil && !machineScope.IBMPowerVSImage.Status.Ready {
+		log.Info("IBMPowerVSImage is not ready yet, skipping reconciliation")
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceWaitingForImageReason, "")
+		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	}
+
+	// 3. Gate: Wait for Bootstrap Data
+	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
+		if !util.IsControlPlaneMachine(machineScope.Machine) && !conditions.IsTrue(machineScope.Cluster, clusterv1.ClusterControlPlaneInitializedCondition) {
+			log.Info("Waiting for the control plane to be initialized, skipping reconciliation")
+			r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceWaitingForControlPlaneInitializedReason, "")
+			return ctrl.Result{}, nil
+		}
+		log.Info("Waiting for bootstrap data to be ready, skipping reconciliation")
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceWaitingForBootstrapDataReason, "")
+		return ctrl.Result{}, nil
+	}
+
+	// 4. Create or Get the Machine
+	machine, err := machineScope.CreateMachine(ctx)
+	if err != nil {
+		log.Error(err, "Unable to create PowerVS machine")
+		reason := infrav1.InstanceProvisionFailedReason
+		var configErr *powervsscope.ConfigurationError
+
+		if errors.As(err, &configErr) {
+			reason = infrav1.InvalidMachineConfigurationReason
+		}
+
+		r.markCondition(machineScope, metav1.ConditionFalse, reason, err.Error())
+		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVSMachine: %w", err)
+	}
+
+	if machine == nil {
+		machineScope.SetNotReady()
+		r.markCondition(machineScope, metav1.ConditionUnknown, infrav1.InstanceStateUnknownReason, "Machine creation returned nil without error")
+		return ctrl.Result{}, nil
+	}
+
+	// 5. Sync Cloud State to Kubernetes Status
+	instance, err := machineScope.IBMPowerVSClient.GetInstance(*machine.PvmInstanceID)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := machineScope.SetProviderID(*machine.PvmInstanceID); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to set provider ID: %w", err)
+	}
+
+	machineScope.SetInstanceID(instance.PvmInstanceID)
+	machineScope.SetAddresses(ctx, instance)
+	machineScope.SetHealth(instance.Health)
+	machineScope.SetInstanceState(instance.Status)
+
+	// 6. Evaluate PowerVS Instance Status
+	switch machineScope.GetInstanceState() {
+	case infrav1.PowerVSInstanceStateBUILD:
+		machineScope.SetNotReady()
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceNotReadyReason, "Instance is building")
+
+	case infrav1.PowerVSInstanceStateSHUTOFF:
+		machineScope.SetNotReady()
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceStoppedReason, "Instance is shutoff")
+		return ctrl.Result{}, nil
+
+	case infrav1.PowerVSInstanceStateACTIVE:
+		machineScope.SetReady()
+
+	case infrav1.PowerVSInstanceStateERROR:
+		msg := "Unknown error"
+		if instance.Fault != nil {
+			msg = instance.Fault.Details
+		}
+		machineScope.SetNotReady()
+		// Note: No more SetFailureMessage/Reason! It goes straight into the condition.
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceErroredReason, msg)
+		capibmrecord.Warnf(machineScope.IBMPowerVSMachine, "FailedBuildInstance", "Failed to build the instance: %s", msg)
+		return ctrl.Result{}, nil
+
+	default:
+		machineScope.SetNotReady()
+		log.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
+		r.markCondition(machineScope, metav1.ConditionUnknown, infrav1.InstanceStateUnknownReason, fmt.Sprintf("Unknown state: %s", *instance.Status))
+	}
+
+	// Requeue if instance is still booting up
+	if !machineScope.IsReady() {
+		log.Info("IBMPowerVSMachine instance is not ready, requeue", "state", *instance.Status)
+		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
+	}
+
+	// 7. Load Balancer Registration (If applicable)
+	if machineScope.IBMPowerVSCluster.Spec.VPC.Region == "" {
+		log.Info("Skipping configuring machine to load balancer as VPC is not set")
+		r.markCondition(machineScope, metav1.ConditionTrue, infrav1.InstanceReadyReason, "")
+		return ctrl.Result{}, nil
+	}
+
+	internalIP := machineScope.GetMachineInternalIP()
+	if internalIP == "" {
+		log.Info("Unable to update the load balancer, Machine internal IP not yet set")
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceWaitingForNetworkAddressReason, "Internal IP not yet set")
+		return ctrl.Result{}, nil
+	}
+
+	log.Info("Configuring load balancer for machine", "IP", internalIP)
+	result, err := r.handleLoadBalancerPoolMemberConfiguration(ctx, machineScope)
+	if err != nil {
+		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceLoadBalancerConfigurationFailedReason, fmt.Sprintf("Failed to configure load balancer: %v", err))
+		return result, fmt.Errorf("failed to configure load balancer: %w", err)
+	}
+
+	// 8. Mark conditions
+	r.markCondition(machineScope, metav1.ConditionTrue, infrav1.InstanceReadyReason, "")
+	return result, nil
+}
+
+// markCondition safely sets both the modern and legacy conditions for the machine.
+func (r *IBMPowerVSMachineReconciler) markCondition(machineScope *powervsscope.MachineScope, status metav1.ConditionStatus, reason, msg string) {
+	// v1beta3 Condition
+	conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
+		Type:    infrav1.InstanceReadyCondition,
+		Status:  status,
+		Reason:  reason,
+		Message: msg,
+	})
+
+	// Legacy v1beta2 mapping
+	legacySeverity := clusterv1.ConditionSeverityInfo
+	if status == metav1.ConditionFalse {
+		switch reason {
+		case infrav1.InstanceErroredReason, infrav1.InstanceProvisionFailedReason, infrav1.InstanceStoppedReason:
+			legacySeverity = clusterv1.ConditionSeverityError
+		case infrav1.InstanceWaitingForClusterInfrastructureReadyReason,
+			infrav1.InstanceWaitingForControlPlaneInitializedReason,
+			infrav1.InstanceWaitingForBootstrapDataReason,
+			infrav1.InstanceWaitingForImageReason:
+			legacySeverity = clusterv1.ConditionSeverityInfo
+		default:
+			legacySeverity = clusterv1.ConditionSeverityWarning
+		}
+	}
+
+	switch status {
+	case metav1.ConditionUnknown:
+		deprecatedv1beta1conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, reason, "%s", msg)
+	case metav1.ConditionTrue:
+		deprecatedv1beta1conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition)
+	default:
+		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, reason, legacySeverity, "%s", msg)
+	}
 }
 
 // handleLoadBalancerPoolMemberConfiguration handles load balancer pool member creation flow.
@@ -262,201 +427,58 @@ func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(
 	return ctrl.Result{}, nil
 }
 
-func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machineScope *powervsscope.MachineScope) (ctrl.Result, error) { //nolint:gocyclo
-	log := ctrl.LoggerFrom(ctx)
-
-	if machineScope.Cluster.Status.Initialization.InfrastructureProvisioned == nil || !*machineScope.Cluster.Status.Initialization.InfrastructureProvisioned {
-		log.Info("Cluster infrastructure is not ready yet, skipping reconciliation")
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceWaitingForClusterInfrastructureReadyV1Beta2Reason, clusterv1.ConditionSeverityInfo, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionFalse,
-			Reason: infrav1.InstanceWaitingForClusterInfrastructureReadyReason,
-		})
-		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
-	}
-
-	if machineScope.IBMPowerVSImage != nil {
-		if !machineScope.IBMPowerVSImage.Status.Ready {
-			log.Info("IBMPowerVSImage is not ready yet, skipping reconciliation")
-			deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceWaitingForImageV1Beta2Reason, clusterv1.ConditionSeverityInfo, "")
-			conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
+func patchIBMPowerVSMachine(ctx context.Context, patchHelper *patch.Helper, ibmPowerVSMachine *infrav1.IBMPowerVSMachine) error {
+	// Before computing ready condition, make sure that InstanceReady is always set.
+	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
+	// first reconcile.
+	if c := conditions.Get(ibmPowerVSMachine, infrav1.InstanceReadyCondition); c == nil {
+		if ptr.Deref(ibmPowerVSMachine.Status.Initialization.Provisioned, false) {
+			conditions.Set(ibmPowerVSMachine, metav1.Condition{
 				Type:   infrav1.InstanceReadyCondition,
-				Status: metav1.ConditionFalse,
-				Reason: infrav1.InstanceWaitingForImageReason,
+				Status: metav1.ConditionTrue,
+				Reason: infrav1.InstanceReadyReason,
 			})
-			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
-		}
-	}
-
-	// Make sure bootstrap data is available and populated.
-	if machineScope.Machine.Spec.Bootstrap.DataSecretName == nil {
-		if !util.IsControlPlaneMachine(machineScope.Machine) && !conditions.IsTrue(machineScope.Cluster, clusterv1.ClusterControlPlaneInitializedCondition) {
-			log.Info("Waiting for the control plane to be initialized, skipping reconciliation")
-			deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceWaitingForControlPlaneInitializedV1Beta2Reason, clusterv1.ConditionSeverityInfo, "")
-			conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-				Type:   infrav1.InstanceReadyCondition,
-				Status: metav1.ConditionFalse,
-				Reason: infrav1.InstanceWaitingForControlPlaneInitializedReason,
-			})
-			return ctrl.Result{}, nil
-		}
-
-		log.Info("Waiting for bootstrap data to be ready, skipping reconciliation")
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceWaitingForBootstrapDataV1Beta2Reason, clusterv1.ConditionSeverityInfo, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionFalse,
-			Reason: infrav1.InstanceWaitingForBootstrapDataReason,
-		})
-		return reconcile.Result{}, nil
-	}
-
-	machine, err := machineScope.CreateMachine(ctx)
-	if err != nil {
-		log.Error(err, "Unable to create PowerVS machine")
-
-		// Check if this is a configuration error
-		var configErr *powervsscope.ConfigurationError
-		var reason string
-		if errors.As(err, &configErr) {
-			// Use InvalidMachineConfigurationReason for configuration validation errors (v1beta3)
-			reason = infrav1.InvalidMachineConfigurationReason
 		} else {
-			reason = infrav1.InstanceProvisionFailedReason
+			conditions.Set(ibmPowerVSMachine, metav1.Condition{
+				Type:   infrav1.InstanceReadyCondition,
+				Status: metav1.ConditionFalse,
+				Reason: infrav1.InstanceNotReadyReason,
+			})
 		}
-		// For v1beta2, still use InstanceProvisionFailedReason as it doesn't have a specific config error reason
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceProvisionFailedV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", err.Error())
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:    infrav1.InstanceReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  reason,
-			Message: err.Error(),
-		})
-		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVSMachine: %w", err)
 	}
 
-	if machine == nil {
-		machineScope.SetNotReady()
-		deprecatedv1beta1conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceStateUnknownV1Beta2Reason, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionUnknown,
-			Reason: infrav1.InstanceStateUnknownReason,
-		})
-		return ctrl.Result{}, nil
+	// always update the readyCondition.
+	deprecatedv1beta1conditions.SetSummary(ibmPowerVSMachine,
+		deprecatedv1beta1conditions.WithConditions(
+			infrav1.InstanceReadyV1Beta2Condition,
+		),
+	)
+
+	if err := conditions.SetSummaryCondition(ibmPowerVSMachine, ibmPowerVSMachine, infrav1.IBMPowerVSMachineReadyCondition,
+		conditions.ForConditionTypes{
+			infrav1.InstanceReadyCondition,
+		},
+		// Using a custom merge strategy to override reasons applied during merge.
+		conditions.CustomMergeStrategy{
+			MergeStrategy: conditions.DefaultMergeStrategy(
+				// Use custom reasons.
+				conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
+					infrav1.IBMPowerVSMachineNotReadyReason,
+					infrav1.IBMPowerVSMachineReadyUnknownReason,
+					infrav1.IBMPowerVSMachineReadyReason,
+				)),
+			),
+		},
+	); err != nil {
+		return fmt.Errorf("failed to set %s condition: %w", infrav1.IBMPowerVSMachineReadyCondition, err)
 	}
 
-	instance, err := machineScope.IBMPowerVSClient.GetInstance(*machine.PvmInstanceID)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	if err := machineScope.SetProviderID(*machine.PvmInstanceID); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to set provider ID: %w", err)
-	}
-	machineScope.SetInstanceID(instance.PvmInstanceID)
-	machineScope.SetAddresses(ctx, instance)
-	machineScope.SetHealth(instance.Health)
-	machineScope.SetInstanceState(instance.Status)
-
-	switch machineScope.GetInstanceState() {
-	case infrav1.PowerVSInstanceStateBUILD:
-		machineScope.SetNotReady()
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceNotReadyV1Beta2Reason, clusterv1.ConditionSeverityWarning, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionFalse,
-			Reason: infrav1.InstanceNotReadyReason,
-		})
-	case infrav1.PowerVSInstanceStateSHUTOFF:
-		machineScope.SetNotReady()
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceStoppedV1Beta2Reason, clusterv1.ConditionSeverityError, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionFalse,
-			Reason: infrav1.InstanceStoppedReason,
-		})
-		return ctrl.Result{}, nil
-	case infrav1.PowerVSInstanceStateACTIVE:
-		machineScope.SetReady()
-	case infrav1.PowerVSInstanceStateERROR:
-		msg := ""
-		if instance.Fault != nil {
-			msg = instance.Fault.Details
-		}
-		machineScope.SetNotReady()
-		machineScope.SetFailureReason(infrav1.UpdateMachineError)
-		machineScope.SetFailureMessage(msg)
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceErroredV1Beta2Reason, clusterv1.ConditionSeverityError, "%s", msg)
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:    infrav1.InstanceReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.InstanceErroredReason,
-			Message: msg,
-		})
-		capibmrecord.Warnf(machineScope.IBMPowerVSMachine, "FailedBuildInstance", "Failed to build the instance %s", msg)
-		return ctrl.Result{}, nil
-	default:
-		machineScope.SetNotReady()
-		log.Info("PowerVS instance state is undefined", "state", *instance.Status, "instance-id", machineScope.GetInstanceID())
-		deprecatedv1beta1conditions.MarkUnknown(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, "", "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionUnknown,
-			Reason: infrav1.InstanceStateUnknownReason,
-		})
-	}
-
-	// Requeue after 2 minute if machine is not ready to update status of the machine properly.
-	if !machineScope.IsReady() {
-		log.Info("IBMPowerVSMachine instance is not ready, requeue", "state", *instance.Status)
-		return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
-	}
-
-	if machineScope.IBMPowerVSCluster.Spec.VPC.Region == "" {
-		log.Info("Skipping configuring machine to load balancer as VPC is not set")
-		deprecatedv1beta1conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition)
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:   infrav1.InstanceReadyCondition,
-			Status: metav1.ConditionTrue,
-			Reason: infrav1.InstanceReadyReason,
-		})
-		return ctrl.Result{}, nil
-	}
-
-	// Register instance with load balancer
-	log.Info("Updating load balancer for machine")
-	internalIP := machineScope.GetMachineInternalIP()
-	if internalIP == "" {
-		log.Info("Unable to update the load balancer, Machine internal IP not yet set")
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceWaitingForNetworkAddressV1Beta2Reason, clusterv1.ConditionSeverityWarning, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:    infrav1.InstanceReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.InstanceWaitingForNetworkAddressReason,
-			Message: "Internal IP not yet set",
-		})
-		return ctrl.Result{}, nil
-	}
-	log.Info("Configuring load balancer for machine", "IP", internalIP)
-	result, err := r.handleLoadBalancerPoolMemberConfiguration(ctx, machineScope)
-	if err != nil {
-		deprecatedv1beta1conditions.MarkFalse(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition, infrav1.InstanceLoadBalancerConfigurationFailedV1Beta2Reason, clusterv1.ConditionSeverityWarning, "")
-		conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-			Type:    infrav1.InstanceReadyCondition,
-			Status:  metav1.ConditionFalse,
-			Reason:  infrav1.InstanceLoadBalancerConfigurationFailedReason,
-			Message: fmt.Sprintf("Failed to configure load balancer: %v", err),
-		})
-		return result, fmt.Errorf("failed to configure load balancer: %w", err)
-	}
-	deprecatedv1beta1conditions.MarkTrue(machineScope.IBMPowerVSMachine, infrav1.InstanceReadyV1Beta2Condition)
-	conditions.Set(machineScope.IBMPowerVSMachine, metav1.Condition{
-		Type:   infrav1.InstanceReadyCondition,
-		Status: metav1.ConditionTrue,
-		Reason: infrav1.InstanceReadyReason,
-	})
-	return result, nil
+	// Patch the IBMPowerVSMachine resource.
+	return patchHelper.Patch(ctx, ibmPowerVSMachine, patch.WithOwnedConditions{Conditions: []string{
+		infrav1.IBMPowerVSMachineReadyCondition,
+		infrav1.InstanceReadyCondition,
+		clusterv1.PausedCondition,
+	}}, patch.Clusterv1ConditionsFieldPath{statusField, deprecatedStatus, v1beta2Version, deprecatedConditionsField})
 }
 
 // ibmPowerVSClusterToIBMPowerVSMachines is a handler.ToRequestsFunc to be used to enqueue requests for reconciliation
@@ -531,58 +553,4 @@ func (r *IBMPowerVSMachineReconciler) SetupWithManager(ctx context.Context, mgr 
 	}
 
 	return nil
-}
-
-func patchIBMPowerVSMachine(ctx context.Context, patchHelper *patch.Helper, ibmPowerVSMachine *infrav1.IBMPowerVSMachine) error {
-	// Before computing ready condition, make sure that InstanceReady is always set.
-	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
-	// first reconcile.
-	if c := conditions.Get(ibmPowerVSMachine, infrav1.InstanceReadyCondition); c == nil {
-		if ptr.Deref(ibmPowerVSMachine.Status.Initialization.Provisioned, false) {
-			conditions.Set(ibmPowerVSMachine, metav1.Condition{
-				Type:   infrav1.InstanceReadyCondition,
-				Status: metav1.ConditionTrue,
-				Reason: infrav1.InstanceReadyReason,
-			})
-		} else {
-			conditions.Set(ibmPowerVSMachine, metav1.Condition{
-				Type:   infrav1.InstanceReadyCondition,
-				Status: metav1.ConditionFalse,
-				Reason: infrav1.InstanceNotReadyReason,
-			})
-		}
-	}
-
-	// always update the readyCondition.
-	deprecatedv1beta1conditions.SetSummary(ibmPowerVSMachine,
-		deprecatedv1beta1conditions.WithConditions(
-			infrav1.InstanceReadyV1Beta2Condition,
-		),
-	)
-
-	if err := conditions.SetSummaryCondition(ibmPowerVSMachine, ibmPowerVSMachine, infrav1.IBMPowerVSMachineReadyCondition,
-		conditions.ForConditionTypes{
-			infrav1.InstanceReadyCondition,
-		},
-		// Using a custom merge strategy to override reasons applied during merge.
-		conditions.CustomMergeStrategy{
-			MergeStrategy: conditions.DefaultMergeStrategy(
-				// Use custom reasons.
-				conditions.ComputeReasonFunc(conditions.GetDefaultComputeMergeReasonFunc(
-					infrav1.IBMPowerVSMachineNotReadyReason,
-					infrav1.IBMPowerVSMachineReadyUnknownReason,
-					infrav1.IBMPowerVSMachineReadyReason,
-				)),
-			),
-		},
-	); err != nil {
-		return fmt.Errorf("failed to set %s condition: %w", infrav1.IBMPowerVSMachineReadyCondition, err)
-	}
-
-	// Patch the IBMPowerVSMachine resource.
-	return patchHelper.Patch(ctx, ibmPowerVSMachine, patch.WithOwnedConditions{Conditions: []string{
-		infrav1.IBMPowerVSMachineReadyCondition,
-		infrav1.InstanceReadyCondition,
-		clusterv1.PausedCondition,
-	}}, patch.Clusterv1ConditionsFieldPath{statusField, deprecatedStatus, v1beta2Version, deprecatedConditionsField})
 }

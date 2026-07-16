@@ -30,7 +30,9 @@ spec:
         id: "${IBMPOWERVS_WORKSPACE_ID}"
       sshKey: "${IBMPOWERVS_SSHKEY_NAME}"
       image:
-        name: "${IBMPOWERVS_IMAGE_NAME}"
+        type: Reference
+        reference:
+          name: "${IBMPOWERVS_IMAGE_NAME}"
       network:
         name: "${IBMPOWERVS_NETWORK_NAME}"
       memoryGiB: ${IBMPOWERVS_COMPUTE_MEMORY:=4}

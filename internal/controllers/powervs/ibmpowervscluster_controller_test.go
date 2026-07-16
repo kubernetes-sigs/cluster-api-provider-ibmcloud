@@ -706,6 +706,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 			expectedError: fmt.Errorf("failed to reconcile transit gateway: %w", fmt.Errorf("failed to fetch transit gateway (id: transitGatewayID) details: %w", errors.New("error getting transit gateway"))),
 			conditions: clusterv1.Conditions{
 				getVPCLBReadyCondition(),
+				getNetworkReadyCondition(),
 				getWorkspaceReadyCondition(),
 				clusterv1.Condition{
 					Type:               infrav1.TransitGatewayReadyCondition,
@@ -795,6 +796,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					Message:            "failed to resolve COS instance: failed checking for existing COS instance: error getting instance by name",
 				},
 				getVPCLBReadyCondition(),
+				getNetworkReadyCondition(),
 				getWorkspaceReadyCondition(),
 				getTGReadyCondition(),
 				getVPCReadyCondition(),
@@ -2019,6 +2021,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				return clusterScope
 			},
 			conditions: clusterv1.Conditions{
+				getNetworkReadyCondition(),
 				getWorkspaceReadyCondition(),
 			},
 		},
@@ -2081,6 +2084,13 @@ func getVPCSGReadyCondition() clusterv1.Condition {
 func getVPCLBReadyCondition() clusterv1.Condition {
 	return clusterv1.Condition{
 		Type:   infrav1.LoadBalancerReadyCondition,
+		Status: "True",
+	}
+}
+
+func getNetworkReadyCondition() clusterv1.Condition {
+	return clusterv1.Condition{
+		Type:   infrav1.NetworkReadyV1Beta2Condition,
 		Status: "True",
 	}
 }

@@ -284,7 +284,9 @@ spec:
   template:
     spec:
       image:
-        name: ${IBMPOWERVS_IMAGE_NAME}
+        reference:
+          name: ${IBMPOWERVS_IMAGE_NAME}
+        type: Reference
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
       network:
         name: ${IBMPOWERVS_NETWORK_NAME}
@@ -303,7 +305,9 @@ spec:
   template:
     spec:
       image:
-        name: ${IBMPOWERVS_IMAGE_NAME}
+        reference:
+          name: ${IBMPOWERVS_IMAGE_NAME}
+        type: Reference
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
       network:
         name: ${IBMPOWERVS_NETWORK_NAME}

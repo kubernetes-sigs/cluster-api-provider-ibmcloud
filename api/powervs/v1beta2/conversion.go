@@ -322,6 +322,13 @@ func Convert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineStatus(
 		clusterv1beta1.Convert_v1beta2_Deprecated_V1Beta1_Conditions_To_v1beta1_Conditions(&in.Deprecated.V1Beta2.Conditions, &out.Conditions)
 	}
 	out.Ready = ptr.Deref(in.Initialization.Provisioned, false)
+	// Normalize empty-string pointers back to nil (empty string in v1beta3 == absent in v1beta2)
+	if out.Region != nil && *out.Region == "" {
+		out.Region = nil
+	}
+	if out.Zone != nil && *out.Zone == "" {
+		out.Zone = nil
+	}
 	if in.Conditions == nil {
 		return nil
 	}
@@ -958,8 +965,20 @@ func Convert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(in *
 		return err
 	}
 
+	// v1beta2 ImageRef (LocalObjectReference → IBMPowerVSImage CRD) maps to v1beta3 Image.Type=Import
 	if in.ImageRef != nil && in.ImageRef.Name != "" {
-		out.ImageRef = infrav1.ImageReference{Name: in.ImageRef.Name}
+		out.Image.Type = infrav1.ImageSourceTypeImport
+		out.Image.Import = infrav1.ImageReference{Name: in.ImageRef.Name}
+	} else if in.Image != nil {
+		// v1beta2 Image (IBMPowerVSResourceReference → existing image) maps to v1beta3 Image.Type=Reference
+		out.Image.Type = infrav1.ImageSourceTypeReference
+		if in.Image.ID != nil {
+			out.Image.Reference.ID = *in.Image.ID
+		}
+		if in.Image.Name != nil {
+			out.Image.Reference.Name = *in.Image.Name
+		}
+		// RegEx is intentionally dropped — not preserved in v1beta3
 	}
 
 	// Machine uses ResourceIdentifier, NO Type/Provision fields!
@@ -982,9 +1001,27 @@ func Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 		return err
 	}
 
-	if in.ImageRef.Name != "" {
-		out.ImageRef = &corev1.LocalObjectReference{Name: in.ImageRef.Name}
-	} else {
+	switch in.Image.Type {
+	case infrav1.ImageSourceTypeImport:
+		// v1beta3 Import → v1beta2 ImageRef (IBMPowerVSImage CRD reference)
+		if in.Image.Import.Name != "" {
+			out.ImageRef = &corev1.LocalObjectReference{Name: in.Image.Import.Name}
+		} else {
+			out.ImageRef = nil
+		}
+		out.Image = nil
+	case infrav1.ImageSourceTypeReference:
+		// v1beta3 Reference → v1beta2 Image (existing PowerVS image)
+		out.Image = &IBMPowerVSResourceReference{}
+		if in.Image.Reference.ID != "" {
+			out.Image.ID = ptr.To(in.Image.Reference.ID)
+		}
+		if in.Image.Reference.Name != "" {
+			out.Image.Name = ptr.To(in.Image.Reference.Name)
+		}
+		out.ImageRef = nil
+	default:
+		out.Image = nil
 		out.ImageRef = nil
 	}
 
