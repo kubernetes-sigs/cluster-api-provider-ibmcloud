@@ -59,18 +59,25 @@ const (
 )
 
 func newPowerVSMachine(clusterName, machineName string, imageRef *string, networkRef *string, isID bool) *infrav1.IBMPowerVSMachine {
-	image := &infrav1.IBMPowerVSResourceReference{}
+	var image infrav1.IBMPowerVSMachineImage
 	network := infrav1.ResourceIdentifier{}
 
-	if !isID {
-		image.Name = imageRef
-		if networkRef != nil {
-			network.Name = *networkRef
-		}
+	if imageRef == nil {
+		// No image reference supplied — caller is expected to set IBMPowerVSImage (Import path).
+		image.Type = infrav1.ImageSourceTypeImport
+	} else if !isID {
+		image.Type = infrav1.ImageSourceTypeReference
+		image.Reference.Name = *imageRef
 	} else {
-		image.ID = imageRef
-		if networkRef != nil {
+		image.Type = infrav1.ImageSourceTypeReference
+		image.Reference.ID = *imageRef
+	}
+
+	if networkRef != nil {
+		if isID {
 			network.ID = *networkRef
+		} else {
+			network.Name = *networkRef
 		}
 	}
 
@@ -134,42 +141,6 @@ func newDHCPServer(serverID, networkID string) models.DHCPServers {
 				ID: ptr.To(networkID),
 			},
 		},
-	}
-}
-
-func TestAPIServerPort(t *testing.T) {
-	testcases := []struct {
-		name               string
-		expectedPortNumber int32
-		machineScope       MachineScope
-	}{
-		{
-			name:               "Returns assigned port number",
-			expectedPortNumber: int32(6445),
-			machineScope: MachineScope{
-				Cluster: &clusterv1.Cluster{
-					Spec: clusterv1.ClusterSpec{
-						ClusterNetwork: clusterv1.ClusterNetwork{
-							APIServerPort: int32(6445),
-						},
-					},
-				},
-			},
-		}, {
-			name:               "Returns DefaultAPIServerPort when machineScope.Cluster.Spec.ClusterNetwork is nil",
-			expectedPortNumber: infrav1.DefaultAPIServerPort,
-			machineScope: MachineScope{
-				Cluster: &clusterv1.Cluster{},
-			},
-		},
-	}
-
-	for _, tc := range testcases {
-		g := NewWithT(t)
-		t.Run(tc.name, func(_ *testing.T) {
-			port := tc.machineScope.APIServerPort()
-			g.Expect(port).To(Equal(tc.expectedPortNumber))
-		})
 	}
 }
 
@@ -425,7 +396,7 @@ func TestGetRegion(t *testing.T) {
 			scope: MachineScope{
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					Status: infrav1.IBMPowerVSMachineStatus{
-						Region: ptr.To(region),
+						Region: region,
 					},
 				},
 			},
@@ -434,9 +405,7 @@ func TestGetRegion(t *testing.T) {
 			name: "Return empty string when region is not set in spec",
 			scope: MachineScope{
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-					Status: infrav1.IBMPowerVSMachineStatus{
-						Region: nil,
-					},
+					Status: infrav1.IBMPowerVSMachineStatus{},
 				},
 			},
 		},
@@ -494,18 +463,16 @@ func TestGetZone(t *testing.T) {
 			scope: MachineScope{
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 					Status: infrav1.IBMPowerVSMachineStatus{
-						Zone: ptr.To("us-south-1"),
+						Zone: "us-south-1",
 					},
 				},
 			},
 			expectedZone: "us-south-1",
 		}, {
-			name: "Machine's zone is nil",
+			name: "Machine's zone is empty",
 			scope: MachineScope{
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-					Status: infrav1.IBMPowerVSMachineStatus{
-						Zone: nil,
-					},
+					Status: infrav1.IBMPowerVSMachineStatus{},
 				},
 			},
 		},
@@ -897,20 +864,6 @@ func TestSetInstanceID(t *testing.T) {
 	}
 }
 
-func TestSetFailureReason(t *testing.T) {
-	t.Run("Set failure reason to InvalidMachineConfiguration", func(t *testing.T) {
-		g := NewWithT(t)
-		scope := MachineScope{
-			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-				Status: infrav1.IBMPowerVSMachineStatus{},
-			},
-		}
-		scope.SetFailureReason(infrav1.UpdateMachineError)
-		//nolint:staticcheck
-		g.Expect(*scope.IBMPowerVSMachine.Status.FailureReason).To(Equal(infrav1.UpdateMachineError))
-	})
-}
-
 func TestSetHealth(t *testing.T) {
 	t.Run("Test SetHealth", func(t *testing.T) {
 		t.Run("Set PVMInstance status to healthy", func(t *testing.T) {
@@ -939,19 +892,6 @@ func TestSetHealth(t *testing.T) {
 	})
 }
 
-func TestSetFailureMessage(t *testing.T) {
-	t.Run("Set failure message for PowerVSMachine status", func(t *testing.T) {
-		g := NewWithT(t)
-		scope := MachineScope{
-			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
-				Status: infrav1.IBMPowerVSMachineStatus{},
-			},
-		}
-		failureMessage := "invalid configuration provided"
-		scope.SetFailureMessage(failureMessage)
-		g.Expect(*scope.IBMPowerVSMachine.Status.FailureMessage).To(Equal(failureMessage)) //nolint:staticcheck
-	})
-}
 func TestDeleteMachineIgnition(t *testing.T) {
 	t.Run("Delete machine ignition", func(t *testing.T) {
 		t.Run("Skips when COSInstance type is not set (Ignition not configured)", func(t *testing.T) {
@@ -1025,7 +965,8 @@ func TestCreateMachinePVS(t *testing.T) {
 		pvmInstances := &models.PVMInstances{
 			PvmInstances: []*models.PVMInstanceReference{
 				{
-					ServerName: ptr.To("foo-machine-1"),
+					ServerName:    ptr.To("foo-machine-1"),
+					PvmInstanceID: ptr.To("foo-machine-1-id"),
 				},
 			},
 		}

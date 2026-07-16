@@ -995,6 +995,39 @@ func hubIBMPowerVSMachineStatus(in *infrav1.IBMPowerVSMachineStatus, c randfill.
 
 func hubIBMPowerVSMachineSpec(in *infrav1.IBMPowerVSMachineSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
+
+	// Constrain Image.Type to valid values and enforce xvalidation rules:
+	// - Reference: must have Reference set, Import must be empty
+	// - Import: must have Import set, Reference must be empty
+	switch in.Image.Type {
+	case infrav1.ImageSourceTypeReference:
+		in.Image.Import = infrav1.ImageReference{}
+		// Ensure Reference has at least one identifier
+		if in.Image.Reference.ID == "" && in.Image.Reference.Name == "" {
+			in.Image.Reference.ID = "fuzzed-image-id"
+		}
+	case infrav1.ImageSourceTypeImport:
+		in.Image.Reference = infrav1.ResourceIdentifier{}
+		// Ensure Import has a name
+		if in.Image.Import.Name == "" {
+			in.Image.Import.Name = "fuzzed-image-ref"
+		}
+	default:
+		// Unknown type: pick Reference if there is reference data, Import if there is import data
+		if in.Image.Import.Name != "" {
+			in.Image.Type = infrav1.ImageSourceTypeImport
+			in.Image.Reference = infrav1.ResourceIdentifier{}
+		} else if in.Image.Reference.ID != "" || in.Image.Reference.Name != "" {
+			in.Image.Type = infrav1.ImageSourceTypeReference
+			in.Image.Import = infrav1.ImageReference{}
+		} else {
+			// Fall back to a minimal Reference image
+			in.Image = infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "fuzzed-image-id"},
+			}
+		}
+	}
 }
 
 func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) {
@@ -1002,8 +1035,32 @@ func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) 
 	if in.ProviderID != nil && *in.ProviderID == "" {
 		in.ProviderID = nil
 	}
-	if in.ImageRef != nil && in.ImageRef.Name == "" {
-		in.ImageRef = nil
+
+	// Image and ImageRef are mutually exclusive; ImageRef takes priority (maps to Import).
+	// RegEx on Image is dropped in v1beta3, so clear it.
+	if in.ImageRef != nil {
+		if in.ImageRef.Name == "" {
+			in.ImageRef = nil
+			// Fall through to handle in.Image below
+		} else {
+			// ImageRef set → Import path; Image must be nil
+			in.Image = nil
+		}
+	}
+	if in.Image != nil {
+		in.Image.RegEx = nil // RegEx not preserved in v1beta3
+		// Empty string ID should be nil
+		if in.Image.ID != nil && *in.Image.ID == "" {
+			in.Image.ID = nil
+		}
+		// Empty string Name should be nil
+		if in.Image.Name != nil && *in.Image.Name == "" {
+			in.Image.Name = nil
+		}
+		// If Image has no identifiers, set to nil
+		if in.Image.ID == nil && in.Image.Name == nil {
+			in.Image = nil
+		}
 	}
 
 	if in.ServiceInstance != nil {
@@ -1053,6 +1110,18 @@ func spokeIBMPowerVSMachineSpec(in *IBMPowerVSMachineSpec, c randfill.Continue) 
 
 func spokeIBMPowerVSMachineStatus(in *IBMPowerVSMachineStatus, c randfill.Continue) {
 	c.FillNoCustom(in)
+	// Fault and FailureReason have no v1beta3 equivalent; they are not preserved across round-trips.
+	in.Fault = ""
+	in.FailureReason = nil
+	in.FailureMessage = nil
+	// Region/Zone: nil pointer converts to empty string in v1beta3, then back to &"".
+	// Normalise nil to &"" to avoid false diff after round-trip, or clear both to nil.
+	if in.Region != nil && *in.Region == "" {
+		in.Region = nil
+	}
+	if in.Zone != nil && *in.Zone == "" {
+		in.Zone = nil
+	}
 	if in.V1Beta2 != nil {
 		if reflect.DeepEqual(in.V1Beta2, &IBMPowerVSMachineV1Beta2Status{}) {
 			in.V1Beta2 = nil
@@ -1075,6 +1144,7 @@ func spokeIBMPowerVSMachineTemplateResource(in *IBMPowerVSMachineTemplateResourc
 func hubIBMPowerVSMachineTemplateResource(in *infrav1.IBMPowerVSMachineTemplateResource, c randfill.Continue) {
 	c.FillNoCustom(in)
 	in.ObjectMeta = clusterv1.ObjectMeta{}
+	hubIBMPowerVSMachineSpec(&in.Spec, c)
 }
 
 func IBMPowerVSImageFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {

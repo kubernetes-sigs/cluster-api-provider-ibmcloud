@@ -1069,8 +1069,8 @@ func autoConvert_v1beta2_IBMPowerVSMachineSpec_To_v1beta3_IBMPowerVSMachineSpec(
 	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
 	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	out.SSHKey = in.SSHKey
-	out.Image = (*v1beta3.IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
-	// WARNING: in.ImageRef requires manual conversion: inconvertible types (*k8s.io/api/core/v1.LocalObjectReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ImageReference)
+	// WARNING: in.Image requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.IBMPowerVSResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.IBMPowerVSMachineImage)
+	// WARNING: in.ImageRef requires manual conversion: does not exist in peer-type
 	out.SystemType = in.SystemType
 	out.ProcessorType = v1beta3.PowerVSProcessorType(in.ProcessorType)
 	out.Processors = in.Processors
@@ -1089,9 +1089,8 @@ func autoConvert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(
 	if err := Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(&in.Network, &out.Network, s); err != nil {
 		return err
 	}
+	// WARNING: in.Image requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.IBMPowerVSMachineImage vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.IBMPowerVSResourceReference)
 	out.SSHKey = in.SSHKey
-	out.Image = (*IBMPowerVSResourceReference)(unsafe.Pointer(in.Image))
-	// WARNING: in.ImageRef requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ImageReference vs *k8s.io/api/core/v1.LocalObjectReference)
 	out.SystemType = in.SystemType
 	out.ProcessorType = PowerVSProcessorType(in.ProcessorType)
 	out.Processors = in.Processors
@@ -1108,9 +1107,9 @@ func autoConvert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineSta
 	out.Addresses = *(*[]corev1beta2.MachineAddress)(unsafe.Pointer(&in.Addresses))
 	out.Health = in.Health
 	out.InstanceState = v1beta3.PowerVSInstanceState(in.InstanceState)
-	out.Fault = in.Fault
-	out.FailureReason = (*string)(unsafe.Pointer(in.FailureReason))
-	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
+	// WARNING: in.Fault requires manual conversion: does not exist in peer-type
+	// WARNING: in.FailureReason requires manual conversion: does not exist in peer-type
+	// WARNING: in.FailureMessage requires manual conversion: does not exist in peer-type
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
 		*out = make([]v1.Condition, len(*in))
@@ -1122,8 +1121,12 @@ func autoConvert_v1beta2_IBMPowerVSMachineStatus_To_v1beta3_IBMPowerVSMachineSta
 	} else {
 		out.Conditions = nil
 	}
-	out.Region = (*string)(unsafe.Pointer(in.Region))
-	out.Zone = (*string)(unsafe.Pointer(in.Zone))
+	if err := v1.Convert_Pointer_string_To_string(&in.Region, &out.Region, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_string_To_string(&in.Zone, &out.Zone, s); err != nil {
+		return err
+	}
 	// WARNING: in.V1Beta2 requires manual conversion: does not exist in peer-type
 	return nil
 }
@@ -1145,11 +1148,12 @@ func autoConvert_v1beta3_IBMPowerVSMachineStatus_To_v1beta2_IBMPowerVSMachineSta
 	out.Addresses = *(*[]corev1.NodeAddress)(unsafe.Pointer(&in.Addresses))
 	out.Health = in.Health
 	out.InstanceState = PowerVSInstanceState(in.InstanceState)
-	out.Fault = in.Fault
-	out.FailureReason = (*string)(unsafe.Pointer(in.FailureReason))
-	out.FailureMessage = (*string)(unsafe.Pointer(in.FailureMessage))
-	out.Region = (*string)(unsafe.Pointer(in.Region))
-	out.Zone = (*string)(unsafe.Pointer(in.Zone))
+	if err := v1.Convert_string_To_Pointer_string(&in.Region, &out.Region, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_string_To_Pointer_string(&in.Zone, &out.Zone, s); err != nil {
+		return err
+	}
 	// WARNING: in.Deprecated requires manual conversion: does not exist in peer-type
 	return nil
 }

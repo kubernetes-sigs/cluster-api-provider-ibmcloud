@@ -74,7 +74,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					Name: "powervs-test-1"},
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
-					Image:     &infrav1.IBMPowerVSResourceReference{}}},
+					Image:     infrav1.IBMPowerVSMachineImage{Type: infrav1.ImageSourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "service-instance-1"}}}},
 			expectError: false,
 		},
 		{
@@ -94,7 +94,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
-					Image:     &infrav1.IBMPowerVSResourceReference{}},
+					Image:     infrav1.IBMPowerVSMachineImage{Type: infrav1.ImageSourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "service-instance-1"}}},
 			},
 			expectError: true,
 		},
@@ -113,7 +113,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
-					Image:     &infrav1.IBMPowerVSResourceReference{}},
+					Image:     infrav1.IBMPowerVSMachineImage{Type: infrav1.ImageSourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "service-instance-1"}}},
 			},
 			ownerMachine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{Name: "capi-test-machine"}},
@@ -143,7 +143,7 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
-					Image:     &infrav1.IBMPowerVSResourceReference{}},
+					Image:     infrav1.IBMPowerVSMachineImage{Type: infrav1.ImageSourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "service-instance-1"}}},
 			},
 			ownerMachine: &clusterv1.Machine{
 				ObjectMeta: metav1.ObjectMeta{Name: "capi-test-machine"}},
@@ -178,8 +178,9 @@ func TestIBMPowerVSMachineReconciler_Reconcile(t *testing.T) {
 					Finalizers: []string{infrav1.IBMPowerVSMachineFinalizer},
 				}, Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace: infrav1.ResourceIdentifier{ID: "service-instance-1"},
-					ImageRef: infrav1.ImageReference{
-						Name: "capi-image",
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:   infrav1.ImageSourceTypeImport,
+						Import: infrav1.ImageReference{Name: "capi-image"},
 					}},
 			},
 			ownerMachine: &clusterv1.Machine{
@@ -879,7 +880,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 				g.Expect(ptr.Deref(machineScope.IBMPowerVSMachine.Status.Initialization.Provisioned, false)).To(Equal(false))
 				g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1.IBMPowerVSMachineFinalizer))
-				expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{conditionType: infrav1.InstanceReadyCondition, status: corev1.ConditionUnknown}})
+				expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1.InstanceReadyCondition, corev1.ConditionUnknown, clusterv1.ConditionSeverityNone, infrav1.InstanceStateUnknownReason}})
 			})
 		})
 	})
@@ -1053,8 +1054,9 @@ func newIBMPowerVSMachine() *infrav1.IBMPowerVSMachine {
 		Spec: infrav1.IBMPowerVSMachineSpec{
 			MemoryGiB:  8,
 			Processors: intstr.FromString("0.5"),
-			Image: &infrav1.IBMPowerVSResourceReference{
-				ID: ptr.To("capi-image-id"),
+			Image: infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 			},
 			Network: infrav1.ResourceIdentifier{
 				ID: "capi-net-id",
@@ -1073,8 +1075,9 @@ func newIBMPowerVSMachineWithInvalidConfiguration() *infrav1.IBMPowerVSMachine {
 		Spec: infrav1.IBMPowerVSMachineSpec{
 			MemoryGiB:  8,
 			Processors: intstr.FromString("0.5"),
-			Image: &infrav1.IBMPowerVSResourceReference{
-				ID: ptr.To("capi-image-id-invalid-systype"),
+			Image: infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "capi-image-id-invalid-systype"},
 			},
 			SystemType: "Invalid",
 			Network: infrav1.ResourceIdentifier{

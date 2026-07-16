@@ -22,7 +22,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 
@@ -39,8 +38,9 @@ func TestIBMPowerVSMachine_default(t *testing.T) {
 		Spec: infrav1.IBMPowerVSMachineSpec{
 			MemoryGiB:  4,
 			Processors: intstr.FromString("0.5"),
-			Image: &infrav1.IBMPowerVSResourceReference{
-				ID: ptr.To("capi-image"),
+			Image: infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "capi-image"},
 			},
 		},
 	}
@@ -71,7 +71,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should fail to validate IBMPowerVSMachine - no Image or Imagref in Spec",
+			name: "Should fail to validate IBMPowerVSMachine - no Image type specified in Spec",
 			powerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
@@ -85,7 +85,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should fail to validate IBMPowerVSMachine - both Image and Imagref specified in Spec",
+			name: "Should fail to validate IBMPowerVSMachine - invalid Image type specified in Spec",
 			powerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
@@ -94,16 +94,15 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{},
-					ImageRef: infrav1.ImageReference{
-						Name: "test-image",
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type: "invalid",
 					},
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Should fail to validate IBMPowerVSMachine - Both Id and Name specified in Spec",
+			name: "Should fail to validate IBMPowerVSMachine - Both ID and Name specified in Image Reference",
 			powerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
@@ -112,9 +111,12 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID:   ptr.To("capi-image-id"),
-						Name: ptr.To("capi-image"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type: infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID:   "capi-image-id",
+							Name: "capi-image",
+						},
 					},
 				},
 			},
@@ -130,8 +132,9 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						Name: ptr.To("capi-image"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{Name: "capi-image"},
 					},
 					Processors: intstr.FromString("two"),
 					MemoryGiB:  int32(-4),
@@ -140,7 +143,7 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should successfully validate IBMPowerVSMachine - valid spec",
+			name: "Should successfully validate IBMPowerVSMachine - valid spec with Reference image",
 			powerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
@@ -149,8 +152,9 @@ func TestIBMPowerVSMachine_create(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 					Processors: intstr.FromString("0.25"),
 					MemoryGiB:  4,
@@ -193,8 +197,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -208,8 +213,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -227,8 +233,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -243,15 +250,16 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 						Name: "capi-net",
 						ID:   "capi-net-ID",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Should fail to update IBMPowerVSMachine with invalid Image",
+			name: "Should fail to update IBMPowerVSMachine with invalid Image - both ID and Name",
 			oldPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{
 					Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
@@ -262,8 +270,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -277,9 +286,12 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID:   ptr.To("capi-image-id"),
-						Name: ptr.To("capi-image"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type: infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID:   "capi-image-id",
+							Name: "capi-image",
+						},
 					},
 				},
 			},
@@ -297,8 +309,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -312,8 +325,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -331,8 +345,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -346,8 +361,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -365,8 +381,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					Image: &infrav1.IBMPowerVSResourceReference{
-						ID: ptr.To("capi-image-id"),
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
@@ -380,8 +397,9 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 					Network: infrav1.ResourceIdentifier{
 						Name: "capi-net",
 					},
-					ImageRef: infrav1.ImageReference{
-						Name: "capi-image",
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:   infrav1.ImageSourceTypeImport,
+						Import: infrav1.ImageReference{Name: "capi-image"},
 					},
 				},
 			},

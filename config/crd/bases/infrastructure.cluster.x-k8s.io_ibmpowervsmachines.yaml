@@ -504,38 +504,56 @@ spec:
             description: spec defines the desired state of IBMPowerVSMachine
             properties:
               image:
-                description: |-
-                  image the reference to the image which is used to create the instance.
-                  supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+                description: Image specifies how to resolve the OS image used to create
+                  the instance.
                 properties:
-                  id:
-                    description: id of resource
-                    minLength: 1
-                    type: string
-                  name:
-                    description: name of resource
-                    minLength: 1
-                    type: string
-                  regex:
+                  import:
+                    description: Import is a reference to an IBMPowerVSImage CRD,
+                      which manages importing an image from an IBM COS Bucket.
+                    properties:
+                      name:
+                        description: name of the IBMPowerVSImage resource.
+                        maxLength: 253
+                        minLength: 1
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  reference:
                     description: |-
-                      regex is the regular expression to match resource,
-                      In case of multiple resources matches the provided regular expression the first matched resource will be selected
-                    minLength: 1
-                    type: string
-                type: object
-              imageRef:
-                description: |-
-                  imageRef is a reference to a IBMPowerVSImage resource, which will be imported from IBM COS Bucket to PowerVS workspace.
-                  This is an alternative to the image field.
-                properties:
-                  name:
-                    description: name of the IBMPowerVSImage resource.
-                    maxLength: 253
-                    minLength: 1
+                      Reference contains the information to identify an existing image in the PowerVS workspace.
+                      Supported identifiers are Name, ID, and RegEx.
+                    properties:
+                      id:
+                        description: ID of the resource.
+                        minLength: 1
+                        type: string
+                      name:
+                        description: Name of the resource.
+                        minLength: 1
+                        type: string
+                    type: object
+                    x-kubernetes-validations:
+                    - message: exactly one of id or name must be specified
+                      rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) ==
+                        1'
+                  type:
+                    description: Type defines whether to use an existing image in
+                      IBM Cloud or import a new one via the IBMPowerVSImage CRD.
+                    enum:
+                    - Reference
+                    - Import
                     type: string
                 required:
-                - name
+                - type
                 type: object
+                x-kubernetes-validations:
+                - message: reference configuration is required when type is Reference,
+                    and forbidden otherwise
+                  rule: 'self.type == ''Reference'' ? has(self.reference) : !has(self.reference)'
+                - message: import configuration is required when type is Import, and
+                    forbidden otherwise
+                  rule: 'self.type == ''Import'' ? has(self.import) : !has(self.import)'
               memoryGiB:
                 description: |-
                   memoryGiB is the size of a virtual machine's memory, in GiB.
@@ -632,6 +650,8 @@ spec:
                 x-kubernetes-validations:
                 - message: exactly one of id or name must be specified
                   rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) == 1'
+            required:
+            - image
             type: object
           status:
             description: status defines the observed state of IBMPowerVSMachine
@@ -797,51 +817,6 @@ spec:
                         type: array
                     type: object
                 type: object
-              failureMessage:
-                description: |-
-                  failureMessage will be set in the event that there is a terminal problem
-                  reconciling the Machine and will contain a more verbose string suitable
-                  for logging and human consumption.
-
-                  This field should not be set for transitive errors that a controller
-                  faces that are expected to be fixed automatically over
-                  time (like service outages), but instead indicate that something is
-                  fundamentally wrong with the Machine's spec or the configuration of
-                  the controller, and that manual intervention is required. Examples
-                  of terminal errors would be invalid combinations of settings in the
-                  spec, values that are unsupported by the controller, or the
-                  responsible controller itself being critically misconfigured.
-
-                  Any transient errors that occur during the reconciliation of Machines
-                  can be added as events to the Machine object and/or logged in the
-                  controller's output.
-
-                  Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-                type: string
-              failureReason:
-                description: |-
-                  failureReason will be set in the event that there is a terminal problem
-                  reconciling the Machine and will contain a succinct value suitable
-                  for machine interpretation.
-
-                  This field should not be set for transitive errors that a controller
-                  faces that are expected to be fixed automatically over
-                  time (like service outages), but instead indicate that something is
-                  fundamentally wrong with the Machine's spec or the configuration of
-                  the controller, and that manual intervention is required. Examples
-                  of terminal errors would be invalid combinations of settings in the
-                  spec, values that are unsupported by the controller, or the
-                  responsible controller itself being critically misconfigured.
-
-                  Any transient errors that occur during the reconciliation of Machines
-                  can be added as events to the Machine object and/or logged in the
-                  controller's output.
-
-                  Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-                type: string
-              fault:
-                description: fault will report if any fault messages for the vsi.
-                type: string
               health:
                 description: health is the health of the vsi.
                 type: string
