@@ -147,14 +147,14 @@ following the steps below.
     IBMPOWERVS_SSHKEY_NAME="my-ssh-key" \
     COS_BUCKET_REGION="us-south" \
     COS_BUCKET_NAME="power-oss-bucket" \
-    COS_OBJECT_NAME=capibm-powervs-centos-streams8-1-28-4-1707287079.ova.gz \
+    COS_OBJECT_NAME=capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz \
     IBMACCOUNT_ID="<account_id>" \
     IBMPOWERVS_REGION="wdc" \
     IBMPOWERVS_ZONE="wdc06" \
     IBMVPC_REGION="us-east" \
     IBM_RESOURCE_GROUP="ibm-resource-group" \
     BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
-    clusterctl generate cluster capi-powervs --kubernetes-version v1.28.4 \
+    clusterctl generate cluster capi-powervs --kubernetes-version v1.34.7 \
     --target-namespace default \
     --control-plane-machine-count=3 \
     --worker-machine-count=1 \
