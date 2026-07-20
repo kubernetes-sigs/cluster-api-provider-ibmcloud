@@ -157,9 +157,9 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	LoadBalancers []LoadBalancerSource `json:"loadBalancers,omitempty"`
 
-	// vpcSecurityGroups to attach it to the VPC resource
+	// VPCSecurityGroups defines the VPC Security Groups that should exist or be created.
 	// +optional
-	VPCSecurityGroups []VPCSecurityGroup `json:"vpcSecurityGroups,omitempty"`
+	VPCSecurityGroups []VPCSecurityGroupSource `json:"vpcSecurityGroups,omitempty"`
 
 	// COSInstance contains options to configure a supporting IBM Cloud COS instance and bucket
 	// for this cluster. It is currently used for nodes requiring Ignition for bootstrapping.
@@ -216,8 +216,11 @@ type IBMPowerVSClusterStatus struct {
 	// +listMapKey=name
 	LoadBalancers []LoadBalancerStatus `json:"loadBalancers,omitempty"`
 
-	// vpcSecurityGroups is reference to IBM Cloud VPC security group.
-	VPCSecurityGroups map[string]VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
+	// VPCSecurityGroups tracks the live observed states of all managed or referenced VPC Security Groups.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	VPCSecurityGroups []VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
 
 	// COSInstance tracks the observed state of the provisioned or referenced IBM Cloud COS instance.
 	// +optional

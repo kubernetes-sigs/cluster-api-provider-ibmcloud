@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -368,45 +367,6 @@ func (s *ClusterScope) APIServerPort() int32 {
 		return s.Cluster.Spec.ClusterNetwork.APIServerPort
 	}
 	return infrav1.DefaultAPIServerPort
-}
-
-// GetVPCSecurityGroupByName returns the VPC security group id and its ruleIDs.
-func (s *ClusterScope) GetVPCSecurityGroupByName(name string) (*string, []*string, *bool) {
-	if s.IBMPowerVSCluster.Status.VPCSecurityGroups == nil {
-		return nil, nil, nil
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.VPCSecurityGroups[name]; ok {
-		return val.ID, val.RuleIDs, val.ControllerCreated
-	}
-	return nil, nil, nil
-}
-
-// GetVPCSecurityGroupByID returns the VPC security group's ruleIDs.
-func (s *ClusterScope) GetVPCSecurityGroupByID(securityGroupID string) (*string, []*string, *bool) {
-	if s.IBMPowerVSCluster.Status.VPCSecurityGroups == nil {
-		return nil, nil, nil
-	}
-	for _, sg := range s.IBMPowerVSCluster.Status.VPCSecurityGroups {
-		if *sg.ID == securityGroupID {
-			return sg.ID, sg.RuleIDs, sg.ControllerCreated
-		}
-	}
-	return nil, nil, nil
-}
-
-// SetVPCSecurityGroupStatus set the VPC security group id.
-func (s *ClusterScope) SetVPCSecurityGroupStatus(ctx context.Context, name string, resource infrav1.VPCSecurityGroupStatus) {
-	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Setting VPC security group status", "name", name, "resource", resource)
-	if s.IBMPowerVSCluster.Status.VPCSecurityGroups == nil {
-		s.IBMPowerVSCluster.Status.VPCSecurityGroups = make(map[string]infrav1.VPCSecurityGroupStatus)
-	}
-	if val, ok := s.IBMPowerVSCluster.Status.VPCSecurityGroups[name]; ok {
-		if val.ControllerCreated != nil && *val.ControllerCreated {
-			resource.ControllerCreated = val.ControllerCreated
-		}
-	}
-	s.IBMPowerVSCluster.Status.VPCSecurityGroups[name] = resource
 }
 
 // GetLoadBalancerID returns the cached load balancer ID from the status slice if it exists.
@@ -2036,216 +1996,121 @@ func (s *ClusterScope) checkLoadBalancerState(ctx context.Context, lb vpcv1.Load
 	return false
 }
 
-// ReconcileVPCSecurityGroups reconciles VPC security group.
+// ReconcileVPCSecurityGroups evaluates user intent and reconciles all VPC security groups.
 func (s *ClusterScope) ReconcileVPCSecurityGroups(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	for _, securityGroup := range s.IBMPowerVSCluster.Spec.VPCSecurityGroups {
-		var securityGroupID *string
-		var securityGroupRuleIDs []*string
+	var updatedStatus []infrav1.VPCSecurityGroupStatus
 
-		if securityGroup.Name != nil {
-			securityGroupID, securityGroupRuleIDs, _ = s.GetVPCSecurityGroupByName(*securityGroup.Name)
-		} else {
-			securityGroupID, securityGroupRuleIDs, _ = s.GetVPCSecurityGroupByID(*securityGroup.ID)
-		}
+	for _, sgSource := range s.IBMPowerVSCluster.Spec.VPCSecurityGroups {
+		var sgStatus *infrav1.VPCSecurityGroupStatus
+		var err error
 
-		if securityGroupID != nil && securityGroupRuleIDs != nil {
-			if _, _, err := s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{
-				ID: securityGroupID,
-			}); err != nil {
-				return fmt.Errorf("failed to fetch existing security group '%s': %w", *securityGroupID, err)
-			}
-			for _, rule := range securityGroupRuleIDs {
-				if _, _, err := s.IBMVPCClient.GetSecurityGroupRule(&vpcv1.GetSecurityGroupRuleOptions{
-					SecurityGroupID: securityGroupID,
-					ID:              rule,
-				}); err != nil {
-					return fmt.Errorf("failed to fetch rules of existing security group '%s': %w", *securityGroupID, err)
-				}
-			}
-			continue
-		}
-
-		sg, ruleIDs, err := s.validateVPCSecurityGroup(ctx, securityGroup)
-		if err != nil {
-			return fmt.Errorf("failed to validate existing security group: %w", err)
-		}
-		if sg != nil {
-			log.V(3).Info("VPC security group already exists", "name", *sg.Name)
-			s.SetVPCSecurityGroupStatus(ctx, *sg.Name, infrav1.VPCSecurityGroupStatus{
-				ID:                sg.ID,
-				RuleIDs:           ruleIDs,
-				ControllerCreated: ptr.To(false),
-			})
-			continue
-		}
-
-		securityGroupID, err = s.createVPCSecurityGroup(ctx, securityGroup)
-		if err != nil {
-			return fmt.Errorf("failed to create VPC security group: %w", err)
-		}
-		log.Info("VPC security group created", "securityGroupName", *securityGroup.Name)
-		s.SetVPCSecurityGroupStatus(ctx, *securityGroup.Name, infrav1.VPCSecurityGroupStatus{
-			ID:                securityGroupID,
-			ControllerCreated: ptr.To(true),
-		})
-
-		if err := s.createVPCSecurityGroupRulesAndSetStatus(ctx, securityGroup.Rules, securityGroupID, securityGroup.Name); err != nil {
-			return fmt.Errorf("failed to create VPC security group rules: %w", err)
-		}
-	}
-
-	return nil
-}
-
-// createVPCSecurityGroupRule creates a specific rule for a existing security group.
-func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityGroupID, direction, protocol *string, portMin, portMax *int64, remote infrav1.VPCSecurityGroupRuleRemote) (*string, error) {
-	log := ctrl.LoggerFrom(ctx)
-	setRemote := func(remote infrav1.VPCSecurityGroupRuleRemote, remoteOption *vpcv1.SecurityGroupRuleRemotePrototype) error {
-		switch remote.RemoteType {
-		case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
-			cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(*remote.CIDRSubnetName)
-			if err != nil {
-				return fmt.Errorf("failed to find VPC subnet by name '%s' for fetching CIDR block: %w", *remote.CIDRSubnetName, err)
-			}
-			if cidrSubnet == nil {
-				return fmt.Errorf("VPC subnet by name '%s' does not exist", *remote.CIDRSubnetName)
-			}
-			log.V(3).Info("Creating VPC security group rule", "securityGroupID", *securityGroupID, "direction", *direction, "protocol", *protocol, "cidrBlockSubnet", *remote.CIDRSubnetName, "cidr", *cidrSubnet.Ipv4CIDRBlock)
-			remoteOption.CIDRBlock = cidrSubnet.Ipv4CIDRBlock
-		case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
-			log.V(3).Info("Creating VPC security group rule", "securityGroupID", *securityGroupID, "direction", *direction, "protocol", *protocol, "ip", *remote.Address)
-			remoteOption.Address = remote.Address
-		case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
-			sg, err := s.IBMVPCClient.GetSecurityGroupByName(*remote.SecurityGroupName)
-			if err != nil {
-				return fmt.Errorf("failed to find VPC security group by name '%s', err: %w", *remote.SecurityGroupName, err)
-			}
-			if sg == nil {
-				return fmt.Errorf("VPC security group by name '%s' does not exist", *remote.SecurityGroupName)
-			}
-			log.V(3).Info("Creating VPC security group rule", "securityGroupID", *securityGroupID, "direction", *direction, "protocol", *protocol, "securityGroup", *remote.SecurityGroupName, "securityGroupCRN", *sg.CRN)
-			remoteOption.CRN = sg.CRN
+		switch sgSource.Type {
+		case infrav1.SourceTypeReference:
+			log.Info("Reconciling referenced VPC security group")
+			sgStatus, err = s.reconcileVPCSecurityGroupReference(ctx, sgSource.Reference)
+		case infrav1.SourceTypeProvision:
+			log.Info("Reconciling managed VPC security group", "name", sgSource.Provision.Name)
+			sgStatus, err = s.reconcileVPCSecurityGroupProvision(ctx, sgSource.Provision)
 		default:
-			log.V(3).Info("Creating VPC security group rule", "securityGroupID", *securityGroupID, "direction", *direction, "protocol", *protocol, "cidr", "0.0.0.0/0")
-			remoteOption.CIDRBlock = ptr.To("0.0.0.0/0")
+			err = fmt.Errorf("unknown security group source type: %s", sgSource.Type)
 		}
 
-		return nil
-	}
+		if err != nil {
+			return fmt.Errorf("failed to reconcile security group: %w", err)
+		}
 
-	remoteOption := &vpcv1.SecurityGroupRuleRemotePrototype{}
-	if err := setRemote(remote, remoteOption); err != nil {
-		return nil, fmt.Errorf("failed to set remote option while creating VPC security group rule: %w", err)
-	}
-
-	options := vpcv1.CreateSecurityGroupRuleOptions{
-		SecurityGroupID: securityGroupID,
-	}
-
-	options.SetSecurityGroupRulePrototype(&vpcv1.SecurityGroupRulePrototype{
-		Direction: direction,
-		Protocol:  protocol,
-		PortMin:   portMin,
-		PortMax:   portMax,
-		Remote:    remoteOption,
-	})
-
-	var ruleID *string
-	ruleIntf, _, err := s.IBMVPCClient.CreateSecurityGroupRule(&options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create VPC security group rule: %w", err)
-	}
-
-	switch reflect.TypeOf(ruleIntf).String() {
-	case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll":
-		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
-		ruleID = rule.ID
-	case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp":
-		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp)
-		ruleID = rule.ID
-	case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp":
-		rule := ruleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp)
-		ruleID = rule.ID
-	}
-	log.Info("Created VPC security group rule", "ruleID", *ruleID)
-	return ruleID, nil
-}
-
-// createVPCSecurityGroupRules creates rules for a security group.
-func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, ogSecurityGroupRules []*infrav1.VPCSecurityGroupRule, securityGroupID *string) ([]*string, error) {
-	log := ctrl.LoggerFrom(ctx)
-	var ruleIDs []*string
-	log.V(3).Info("Creating VPC security group rules")
-
-	for _, rule := range ogSecurityGroupRules {
-		var protocol *string
-		var portMax, portMin *int64
-
-		direction := ptr.To(string(rule.Direction))
-		switch rule.Direction {
-		case infrav1.VPCSecurityGroupRuleDirectionInbound:
-			protocol = ptr.To(string(rule.Source.Protocol))
-			if rule.Source.PortRange != nil {
-				portMin = ptr.To(rule.Source.PortRange.MinimumPort)
-				portMax = ptr.To(rule.Source.PortRange.MaximumPort)
-			}
-
-			for _, remote := range rule.Source.Remotes {
-				id, err := s.createVPCSecurityGroupRule(ctx, securityGroupID, direction, protocol, portMin, portMax, remote)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create VPC security group rule: %w", err)
-				}
-				ruleIDs = append(ruleIDs, id)
-			}
-		case infrav1.VPCSecurityGroupRuleDirectionOutbound:
-			protocol = ptr.To(string(rule.Destination.Protocol))
-			if rule.Destination.PortRange != nil {
-				portMin = ptr.To(rule.Destination.PortRange.MinimumPort)
-				portMax = ptr.To(rule.Destination.PortRange.MaximumPort)
-			}
-
-			for _, remote := range rule.Destination.Remotes {
-				id, err := s.createVPCSecurityGroupRule(ctx, securityGroupID, direction, protocol, portMin, portMax, remote)
-				if err != nil {
-					return nil, fmt.Errorf("failed to create VPC security group rule: %w", err)
-				}
-				ruleIDs = append(ruleIDs, id)
-			}
+		if sgStatus != nil {
+			updatedStatus = append(updatedStatus, *sgStatus)
 		}
 	}
 
-	return ruleIDs, nil
-}
-
-// createVPCSecurityGroupRulesAndSetStatus creates VPC security group rules and sets its status.
-func (s *ClusterScope) createVPCSecurityGroupRulesAndSetStatus(ctx context.Context, ogSecurityGroupRules []*infrav1.VPCSecurityGroupRule, securityGroupID, securityGroupName *string) error {
-	log := ctrl.LoggerFrom(ctx)
-	ruleIDs, err := s.createVPCSecurityGroupRules(ctx, ogSecurityGroupRules, securityGroupID)
-	if err != nil {
-		return fmt.Errorf("failed to create VPC security group rules: %w", err)
-	}
-	log.Info("VPC security group rules created", "securityGroupName", *securityGroupName)
-
-	s.SetVPCSecurityGroupStatus(ctx, *securityGroupName, infrav1.VPCSecurityGroupStatus{
-		ID:                securityGroupID,
-		RuleIDs:           ruleIDs,
-		ControllerCreated: ptr.To(true),
-	})
-
+	// Overwrite the status completely with the freshly validated state
+	s.IBMPowerVSCluster.Status.VPCSecurityGroups = updatedStatus
 	return nil
 }
 
-// createVPCSecurityGroup creates a VPC security group.
-func (s *ClusterScope) createVPCSecurityGroup(ctx context.Context, spec infrav1.VPCSecurityGroup) (*string, error) {
+// reconcileVPCSecurityGroupReference verifies an existing SG exists and returns its status.
+func (s *ClusterScope) reconcileVPCSecurityGroupReference(_ context.Context, ref infrav1.ResourceIdentifier) (*infrav1.VPCSecurityGroupStatus, error) {
+	var sg *vpcv1.SecurityGroup
+	var err error
+
+	if ref.ID != "" {
+		sg, _, err = s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{ID: ptr.To(ref.ID)})
+	} else if ref.Name != "" {
+		sg, err = s.IBMVPCClient.GetSecurityGroupByName(ref.Name)
+	} else {
+		return nil, fmt.Errorf("referenced security group must have either ID or Name specified")
+	}
+
+	if err != nil || sg == nil {
+		return nil, fmt.Errorf("failed to find referenced VPC security group: %w", err)
+	}
+
+	return &infrav1.VPCSecurityGroupStatus{
+		ID:   *sg.ID,
+		Name: *sg.Name,
+		// Note: We don't track rules for referenced SGs because CAPI shouldn't manage them.
+	}, nil
+}
+
+// reconcileVPCSecurityGroupProvision creates or updates a managed SG and its rules.
+func (s *ClusterScope) reconcileVPCSecurityGroupProvision(ctx context.Context, prov infrav1.VPCSecurityGroupProvision) (*infrav1.VPCSecurityGroupStatus, error) {
+	targetName := prov.Name
+	if targetName == "" {
+		targetName = fmt.Sprintf("%s-sg", s.IBMPowerVSCluster.Name)
+	}
+
+	// 1. Ensure the Security Group exists
+	sg, err := s.IBMVPCClient.GetSecurityGroupByName(targetName)
+	if err != nil {
+		// Ignore not found errors, return actual API errors
+		if _, ok := err.(*vpc.SecurityGroupByNameNotFound); !ok {
+			return nil, fmt.Errorf("failed to query VPC security group by name '%s': %w", targetName, err)
+		}
+	}
+
+	if sg == nil {
+		sgID, err := s.createVPCSecurityGroup(ctx, targetName)
+		if err != nil {
+			return nil, err
+		}
+		// Fetch the newly created SG object
+		sg, _, err = s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{ID: sgID})
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch newly created security group '%s': %w", targetName, err)
+		}
+	}
+
+	// 2. Reconcile Rules
+	ruleIDs, err := s.createVPCSecurityGroupRules(ctx, prov.Rules, *sg.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create VPC security group rules for '%s': %w", targetName, err)
+	}
+
+	// 3. Map rule string IDs to our new Status struct array
+	var ruleStatus []infrav1.VPCSecurityGroupRuleStatus
+	for _, id := range ruleIDs {
+		ruleStatus = append(ruleStatus, infrav1.VPCSecurityGroupRuleStatus{ID: id})
+	}
+
+	return &infrav1.VPCSecurityGroupStatus{
+		ID:    *sg.ID,
+		Name:  *sg.Name,
+		Rules: ruleStatus,
+	}, nil
+}
+
+// createVPCSecurityGroup creates a basic VPC security group without rules.
+func (s *ClusterScope) createVPCSecurityGroup(ctx context.Context, name string) (*string, error) {
 	log := ctrl.LoggerFrom(ctx)
-	log.V(3).Info("Creating VPC security group", "name", *spec.Name)
+	log.Info("Creating new VPC security group", "name", name)
 
 	options := &vpcv1.CreateSecurityGroupOptions{
 		VPC: &vpcv1.VPCIdentity{
 			ID: &s.IBMPowerVSCluster.Status.VPC.ID,
 		},
-		Name: spec.Name,
+		Name: ptr.To(name),
 		ResourceGroup: &vpcv1.ResourceGroupIdentity{
 			ID: ptr.To(s.GetResourceGroupID()),
 		},
@@ -2255,182 +2120,129 @@ func (s *ClusterScope) createVPCSecurityGroup(ctx context.Context, spec infrav1.
 	if err != nil {
 		return nil, fmt.Errorf("error creating VPC security group: %w", err)
 	}
-	// To-Do: Add tags to VPC security group, need to implement the client for "github.com/IBM/platform-services-go-sdk/globaltaggingv1".
 	return securityGroup.ID, nil
 }
 
-// validateVPCSecurityGroupRuleRemote compares a specific security group rule's remote with the spec and existing security group rule's remote.
-func (s *ClusterScope) validateVPCSecurityGroupRuleRemote(originalSGRemote *vpcv1.SecurityGroupRuleRemote, expectedSGRemote infrav1.VPCSecurityGroupRuleRemote) (bool, error) {
-	var match bool
+// createVPCSecurityGroupRules iterates through the provided rules and creates them in IBM Cloud.
+func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []infrav1.VPCSecurityGroupRule, securityGroupID string) ([]string, error) {
+	log := ctrl.LoggerFrom(ctx)
+	var ruleIDs []string
 
-	switch expectedSGRemote.RemoteType {
-	case infrav1.VPCSecurityGroupRuleRemoteTypeAny:
-		if originalSGRemote.CIDRBlock != nil && *originalSGRemote.CIDRBlock == "0.0.0.0/0" {
-			match = true
-		}
-	case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
-		if originalSGRemote.Address != nil && *originalSGRemote.Address == *expectedSGRemote.Address {
-			match = true
-		}
-	case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
-		cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(*expectedSGRemote.CIDRSubnetName)
-		if err != nil {
-			return false, fmt.Errorf("failed to find VPC subnet by name '%s' for fetching CIDR block: %w", *expectedSGRemote.CIDRSubnetName, err)
-		}
+	log.V(3).Info("Creating VPC security group rules", "securityGroupID", securityGroupID, "ruleCount", len(rules))
 
-		if originalSGRemote.CIDRBlock != nil && cidrSubnet != nil && *originalSGRemote.CIDRBlock == *cidrSubnet.Ipv4CIDRBlock {
-			match = true
-		}
-	case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
-		securityGroup, err := s.IBMVPCClient.GetSecurityGroupByName(*expectedSGRemote.SecurityGroupName)
-		if err != nil {
-			return false, fmt.Errorf("failed to find ID for resource group '%s': %w", *expectedSGRemote.SecurityGroupName, err)
-		}
+	for _, rule := range rules {
+		direction := string(rule.Direction)
 
-		if originalSGRemote.CRN != nil && securityGroup.Name != nil && *originalSGRemote.CRN == *securityGroup.CRN {
-			match = true
-		}
-	}
+		var protocol string
+		var portMin, portMax int64
+		var remotes []infrav1.VPCSecurityGroupRuleRemote
 
-	return match, nil
-}
-
-// validateSecurityGroupRule compares a specific security group's rule with the spec and existing security group's rule.
-func (s *ClusterScope) validateSecurityGroupRule(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, direction infrav1.VPCSecurityGroupRuleDirection, rule *infrav1.VPCSecurityGroupRulePrototype, remote infrav1.VPCSecurityGroupRuleRemote) (ruleID *string, match bool, err error) {
-	updateError := func(e error) {
-		err = fmt.Errorf("failed to validate VPC security group rule's remote: %w", e)
-	}
-
-	protocol := string(rule.Protocol)
-
-	for _, ogRuleIntf := range originalSecurityGroupRules {
-		switch reflect.TypeOf(ogRuleIntf).String() {
-		case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll":
-			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll)
-			ruleID = ogRule.ID
-
-			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol {
-				ogRemote := ogRule.Remote.(*vpcv1.SecurityGroupRuleRemote)
-				match, err = s.validateVPCSecurityGroupRuleRemote(ogRemote, remote)
-				if err != nil {
-					updateError(err)
-					return nil, false, err
-				}
-			}
-		case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp":
-			portMin := rule.PortRange.MinimumPort
-			portMax := rule.PortRange.MaximumPort
-			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp)
-			ruleID = ogRule.ID
-
-			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol && *ogRule.PortMax == portMax && *ogRule.PortMin == portMin {
-				ogRemote := ogRule.Remote.(*vpcv1.SecurityGroupRuleRemote)
-				match, err = s.validateVPCSecurityGroupRuleRemote(ogRemote, remote)
-				if err != nil {
-					updateError(err)
-					return nil, false, err
-				}
-			}
-		case "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp":
-			icmpCode := rule.ICMPCode
-			icmpType := rule.ICMPType
-			ogRule := ogRuleIntf.(*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp)
-			ruleID = ogRule.ID
-
-			if *ogRule.Direction == string(direction) && *ogRule.Protocol == protocol && *ogRule.Code == *icmpCode && *ogRule.Type == *icmpType {
-				ogRemote := ogRule.Remote.(*vpcv1.SecurityGroupRuleRemote)
-				match, err = s.validateVPCSecurityGroupRuleRemote(ogRemote, remote)
-				if err != nil {
-					updateError(err)
-					return nil, false, err
-				}
-			}
-		}
-		if match {
-			return ruleID, match, nil
-		}
-	}
-
-	return nil, false, nil
-}
-
-// validateVPCSecurityGroupRules compares a specific security group rules spec with the existing security group's rules.
-func (s *ClusterScope) validateVPCSecurityGroupRules(originalSecurityGroupRules []vpcv1.SecurityGroupRuleIntf, expectedSecurityGroupRules []*infrav1.VPCSecurityGroupRule) ([]*string, bool, error) {
-	ruleIDs := []*string{}
-	for _, expectedRule := range expectedSecurityGroupRules {
-		direction := expectedRule.Direction
-
-		switch direction {
+		// Route the extraction based on the direction of the rule
+		switch rule.Direction {
 		case infrav1.VPCSecurityGroupRuleDirectionInbound:
-			for _, remote := range expectedRule.Source.Remotes {
-				id, match, err := s.validateSecurityGroupRule(originalSecurityGroupRules, direction, expectedRule.Source, remote)
-				if err != nil {
-					return nil, false, fmt.Errorf("failed to validate VPC security group rule: %w", err)
-				}
-				if !match {
-					return nil, false, nil
-				}
-				ruleIDs = append(ruleIDs, id)
-			}
+			protocol = string(rule.Source.Protocol)
+			portMin = rule.Source.PortRange.MinimumPort
+			portMax = rule.Source.PortRange.MaximumPort
+			remotes = rule.Source.Remotes
+
 		case infrav1.VPCSecurityGroupRuleDirectionOutbound:
-			for _, remote := range expectedRule.Destination.Remotes {
-				id, match, err := s.validateSecurityGroupRule(originalSecurityGroupRules, direction, expectedRule.Destination, remote)
-				if err != nil {
-					return nil, false, fmt.Errorf("failed to validate VPC security group rule: %v", err)
-				}
-				if !match {
-					return nil, false, nil
-				}
-				ruleIDs = append(ruleIDs, id)
+			protocol = string(rule.Destination.Protocol)
+			portMin = rule.Destination.PortRange.MinimumPort
+			portMax = rule.Destination.PortRange.MaximumPort
+			remotes = rule.Destination.Remotes
+
+		default:
+			// Kubernetes CEL validation should prevent this, but it is good practice to catch it.
+			return nil, fmt.Errorf("invalid rule direction provided: %s", direction)
+		}
+
+		if protocol == "" {
+			return nil, fmt.Errorf("security group rule with direction %q has an empty protocol; source/destination must be fully specified", direction)
+		}
+		if len(remotes) == 0 {
+			return nil, fmt.Errorf("security group rule with direction %q has no remotes; at least one remote must be specified", direction)
+		}
+
+		// Create a distinct rule in IBM Cloud for every remote target specified
+		for _, remote := range remotes {
+			id, err := s.createVPCSecurityGroupRule(ctx, securityGroupID, direction, protocol, portMin, portMax, remote)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create %s VPC security group rule: %w", direction, err)
 			}
+			ruleIDs = append(ruleIDs, id)
 		}
 	}
 
-	return ruleIDs, true, nil
+	return ruleIDs, nil
 }
 
-// validateVPCSecurityGroup validates the security group and it's rules provided by user via spec.
-func (s *ClusterScope) validateVPCSecurityGroup(ctx context.Context, securityGroup infrav1.VPCSecurityGroup) (*vpcv1.SecurityGroup, []*string, error) {
-	var securityGroupDet *vpcv1.SecurityGroup
-	var err error
+// createVPCSecurityGroupRule safely maps pointer-free CRD values to the pointer-heavy IBM SDK.
+func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityGroupID string, direction string, protocol string, portMin, portMax int64, remote infrav1.VPCSecurityGroupRuleRemote) (string, error) {
+	log := ctrl.LoggerFrom(ctx)
+	remoteOption := &vpcv1.SecurityGroupRuleRemotePrototype{}
 
-	if securityGroup.ID != nil {
-		securityGroupDet, _, err = s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{
-			ID: securityGroup.ID,
-		})
-		if err != nil {
-			return nil, nil, err
+	// 1. Resolve Remote Target
+	switch remote.RemoteType {
+	case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
+		cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(remote.CIDRSubnetName)
+		if err != nil || cidrSubnet == nil {
+			return "", fmt.Errorf("failed to find VPC subnet by name '%s': %w", remote.CIDRSubnetName, err)
 		}
-		if securityGroupDet == nil {
-			return nil, nil, fmt.Errorf("failed to find VPC security group with provided ID '%v'", securityGroup.ID)
+		remoteOption.CIDRBlock = cidrSubnet.Ipv4CIDRBlock
+	case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
+		remoteOption.Address = ptr.To(remote.Address)
+	case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
+		sg, err := s.IBMVPCClient.GetSecurityGroupByName(remote.SecurityGroupName)
+		if err != nil || sg == nil {
+			return "", fmt.Errorf("failed to find VPC security group by name '%s': %w", remote.SecurityGroupName, err)
 		}
-	} else {
-		securityGroupDet, err = s.IBMVPCClient.GetSecurityGroupByName(*securityGroup.Name)
-		if err != nil {
-			if _, ok := err.(*vpc.SecurityGroupByNameNotFound); !ok {
-				return nil, nil, err
-			}
-		}
-		if securityGroupDet == nil {
-			return nil, nil, nil
-		}
-	}
-	if securityGroupDet.VPC == nil || securityGroupDet.VPC.ID == nil || *securityGroupDet.VPC.ID != s.IBMPowerVSCluster.Status.VPC.ID {
-		return nil, nil, fmt.Errorf("VPC security group by name exists but is not attached to VPC")
+		remoteOption.CRN = sg.CRN
+	default:
+		// Any/0.0.0.0 mapping
+		remoteOption.CIDRBlock = ptr.To("0.0.0.0/0")
 	}
 
-	ruleIDs, ok, err := s.validateVPCSecurityGroupRules(securityGroupDet.Rules, securityGroup.Rules)
+	// 2. Build Protocol Prototype (Injecting Pointers here for SDK)
+	prototype := &vpcv1.SecurityGroupRulePrototype{
+		Direction: ptr.To(direction),
+		Protocol:  ptr.To(protocol),
+		Remote:    remoteOption,
+	}
+
+	// Only attach port ranges if it's TCP/UDP and ports were explicitly provided
+	if (protocol == string(infrav1.VPCSecurityGroupRuleProtocolTCP) || protocol == string(infrav1.VPCSecurityGroupRuleProtocolUDP)) && portMin > 0 {
+		prototype.PortMin = ptr.To(portMin)
+		prototype.PortMax = ptr.To(portMax)
+	}
+
+	options := &vpcv1.CreateSecurityGroupRuleOptions{
+		SecurityGroupID:            ptr.To(securityGroupID),
+		SecurityGroupRulePrototype: prototype,
+	}
+
+	log.V(3).Info("Creating VPC security group rule", "securityGroupID", securityGroupID, "direction", direction, "protocol", protocol)
+
+	// 3. Execute API Call
+	ruleIntf, _, err := s.IBMVPCClient.CreateSecurityGroupRule(options)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to validate VPC security group rules: %v", err)
-	}
-	if !ok {
-		if _, _, controllerCreated := s.GetVPCSecurityGroupByName(*securityGroup.Name); controllerCreated != nil && !*controllerCreated {
-			return nil, nil, fmt.Errorf("VPC security group by name exists but rules are not matching")
-		}
-		return nil, nil, s.createVPCSecurityGroupRulesAndSetStatus(ctx, securityGroup.Rules, securityGroupDet.ID, securityGroupDet.Name)
+		return "", fmt.Errorf("failed to execute CreateSecurityGroupRule API: %w", err)
 	}
 
-	return securityGroupDet, ruleIDs, nil
+	// 4. Extract Rule ID based on returned interface type
+	var ruleID string
+	switch rule := ruleIntf.(type) {
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll:
+		ruleID = *rule.ID
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp:
+		ruleID = *rule.ID
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp:
+		ruleID = *rule.ID
+	default:
+		return "", fmt.Errorf("unrecognized rule type returned from API")
+	}
+
+	log.Info("Successfully created VPC security group rule", "ruleID", ruleID)
+	return ruleID, nil
 }
 
 // ReconcileCOSInstance evaluates the user's intent and reconciles the COS instance and bucket.
@@ -2719,33 +2531,53 @@ func (s *ClusterScope) fetchPowerVSWorkspaceCRN() (*string, error) {
 	return workspace.CRN, nil
 }
 
-// DeleteVPCSecurityGroups deletes VPC security group.
+// DeleteVPCSecurityGroups deletes managed VPC security groups provisioned by the controller.
 func (s *ClusterScope) DeleteVPCSecurityGroups(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	for _, securityGroup := range s.IBMPowerVSCluster.Status.VPCSecurityGroups {
-		if securityGroup.ControllerCreated == nil || !*securityGroup.ControllerCreated {
-			log.Info("Skipping VPC security group deletion as resource is not created by controller", "securityGroupID", *securityGroup.ID)
+
+	// Build a set of security group names that the controller provisioned.
+	managedSGs := make(map[string]bool)
+	for _, sgSource := range s.IBMPowerVSCluster.Spec.VPCSecurityGroups {
+		if sgSource.Type == infrav1.SourceTypeProvision {
+			name := sgSource.Provision.Name
+			if name == "" {
+				name = fmt.Sprintf("%s-sg", s.IBMPowerVSCluster.Name)
+			}
+			managedSGs[name] = true
+		}
+	}
+
+	// Iterate through the status entries. Skip any that are not in the managed set.
+	for _, sgStatus := range s.IBMPowerVSCluster.Status.VPCSecurityGroups {
+		if !managedSGs[sgStatus.Name] {
+			log.Info("Skipping VPC security group deletion as it is referenced, not managed by controller", "securityGroupName", sgStatus.Name)
 			continue
 		}
+
+		// 3. Verify existence before deletion
 		if _, resp, err := s.IBMVPCClient.GetSecurityGroup(&vpcv1.GetSecurityGroupOptions{
-			ID: securityGroup.ID,
+			ID: ptr.To(sgStatus.ID),
 		}); err != nil {
 			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
-				log.Info("VPC security group has been already deleted", "securityGroupID", *securityGroup.ID)
+				log.Info("VPC security group has already been deleted from cloud", "securityGroupID", sgStatus.ID)
 				continue
 			}
-			return fmt.Errorf("failed to fetch VPC security group '%s': %w", *securityGroup.ID, err)
+			return fmt.Errorf("failed to fetch VPC security group '%s' during deletion: %w", sgStatus.ID, err)
 		}
 
-		log.V(3).Info("Deleting VPC security group", "securityGroupID", *securityGroup.ID)
+		// 4. Execute Deletion
+		log.V(3).Info("Issuing delete command for VPC security group", "securityGroupID", sgStatus.ID)
 		options := &vpcv1.DeleteSecurityGroupOptions{
-			ID: securityGroup.ID,
+			ID: ptr.To(sgStatus.ID),
 		}
+
 		if _, err := s.IBMVPCClient.DeleteSecurityGroup(options); err != nil {
-			return fmt.Errorf("failed to delete VPC security group '%s': %w", *securityGroup.ID, err)
+			return fmt.Errorf("failed to execute DeleteSecurityGroup API for '%s': %w", sgStatus.ID, err)
 		}
-		log.Info("VPC security group successfully deleted", "securityGroupID", *securityGroup.ID)
+
+		log.Info("VPC security group successfully deleted", "securityGroupID", sgStatus.ID, "securityGroupName", sgStatus.Name)
 	}
+
 	return nil
 }
 

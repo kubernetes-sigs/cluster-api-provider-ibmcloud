@@ -174,17 +174,6 @@ const (
 	VPCSecurityGroupRuleProtocolTcpudpType = "*vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp"
 )
 
-// VPCSecurityGroupRuleAction represents the actions for a Security Group Rule.
-// +kubebuilder:validation:Enum=allow;deny
-type VPCSecurityGroupRuleAction string
-
-const (
-	// VPCSecurityGroupRuleActionAllow defines that the Rule should allow traffic.
-	VPCSecurityGroupRuleActionAllow VPCSecurityGroupRuleAction = vpcv1.NetworkACLRuleActionAllowConst
-	// VPCSecurityGroupRuleActionDeny defines that the Rule should deny traffic.
-	VPCSecurityGroupRuleActionDeny VPCSecurityGroupRuleAction = vpcv1.NetworkACLRuleActionDenyConst
-)
-
 // VPCSecurityGroupRuleDirection represents the directions for a Security Group Rule.
 // +kubebuilder:validation:Enum=inbound;outbound
 type VPCSecurityGroupRuleDirection string
@@ -346,10 +335,6 @@ type VPCSecurityGroup struct {
 // +kubebuilder:validation:XValidation:rule="self.direction == 'outbound' ? has(self.destination) : true",message="destination must be set for VPCSecurityGroupRuleDirectionOutbound direction"
 // +kubebuilder:validation:XValidation:rule="self.direction == 'outbound' ? !has(self.source) : true",message="source is not valid for VPCSecurityGroupRuleDirectionOutbound direction"
 type VPCSecurityGroupRule struct {
-	// action defines whether to allow or deny traffic defined by the Security Group Rule.
-	// +required
-	Action VPCSecurityGroupRuleAction `json:"action"`
-
 	// destination is a VPCSecurityGroupRulePrototype which defines the destination of outbound traffic for the Security Group Rule.
 	// Only used when direction is VPCSecurityGroupRuleDirectionOutbound.
 	// +optional
