@@ -832,10 +832,10 @@ mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15 h1:ssMzja7PDPJV8FStj7hq9IKiu
 mvdan.cc/unparam v0.0.0-20251027182757-5beb8c8f8f15/go.mod h1:4M5MMXl2kW6fivUT6yRGpLLPNfuGtU2Z0cPvFquGDYU=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 h1:jpcvIRr3GLoUoEKRkHKSmGjxb6lWwrBlJsXc+eUYQHM=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2/go.mod h1:Ve9uj1L+deCXFrPOk1LpFXqTg7LCFzFso6PA48q/XZw=
-sigs.k8s.io/cluster-api v1.12.9 h1:kbgiXkfoZZj/5XOiWadtLTFycC1oI65oAF8u2pzpf7U=
-sigs.k8s.io/cluster-api v1.12.9/go.mod h1:Xz6YnayDc2+/3OA1i6wlXrhmErV1KKJmyfs7JzMDn+k=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260617165044-85c17a5f1026 h1:J9iBS9SK64UGOLEN0VDnIGxniJKcCzK0Gur4kATLrXE=
-sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260617165044-85c17a5f1026/go.mod h1:N5GBcqSdmpL2uX+q99HMLB6hDp8xzjfsdUDt0fhgyfU=
+sigs.k8s.io/cluster-api v1.12.10 h1:hllwEOtVfotdi+i1/HnVO9B5CJLgr5SBBtBL9yRtFEs=
+sigs.k8s.io/cluster-api v1.12.10/go.mod h1:Xz6YnayDc2+/3OA1i6wlXrhmErV1KKJmyfs7JzMDn+k=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260714121324-ceeaa8c98ca2 h1:vR8GjIqDYGIbrU3OigxOw7cJd8Wnx+cTRFWm8k6VVro=
+sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260714121324-ceeaa8c98ca2/go.mod h1:N5GBcqSdmpL2uX+q99HMLB6hDp8xzjfsdUDt0fhgyfU=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387 h1:WVCytp5VYi3EbLI/tKmjQ3zgEWdQrMAARVUtmqAmf48=
 sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387/go.mod h1:IaDsO8xSPRxRG1/rm9CP7+jPmj0nMNAuNi/yiHnLX8k=
 sigs.k8s.io/controller-tools v0.19.0 h1:OU7jrPPiZusryu6YK0jYSjPqg8Vhf8cAzluP9XGI5uk=
