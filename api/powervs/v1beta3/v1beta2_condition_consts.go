@@ -121,6 +121,9 @@ const (
 
 	// ImageImportFailedV1Beta2Reason used when the image import is failed.
 	ImageImportFailedV1Beta2Reason = "ImageImportFailed"
+
+	// ImageStateUnknownV1Beta2Reason used when the image is in an unknown state.
+	ImageStateUnknownV1Beta2Reason = "ImageStateUnknown"
 )
 
 const (

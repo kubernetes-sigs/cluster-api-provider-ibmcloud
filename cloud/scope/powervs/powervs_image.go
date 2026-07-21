@@ -23,8 +23,9 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
-	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
+
+	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,8 +41,8 @@ import (
 const BucketAccess = "public"
 
 var (
-	// ErrServiceInsanceNotInActiveState indicates error if serviceInstance is inactive.
-	ErrServiceInsanceNotInActiveState = errors.New("service instance is not in active state")
+	// ErrWorkspaceNotInActiveState indicates error if workspace is inactive.
+	ErrWorkspaceNotInActiveState = errors.New("workspace is not in active state")
 )
 
 // ImageScopeParams defines the input parameters used to create a new ImageScope.
@@ -164,83 +165,84 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (scope *
 	return scope, nil
 }
 
-func (i *ImageScope) ensureImageUnique(imageName string) (*models.ImageReference, error) {
-	images, err := i.IBMPowerVSClient.GetAllImage()
-	if err != nil {
-		return nil, err
-	}
-	for _, img := range images.Images {
-		if *img.Name == imageName {
-			return img, nil
-		}
-	}
-	return nil, nil
-}
-
-// CreateImageCOSBucket creates a power vs image.
-func (i *ImageScope) CreateImageCOSBucket(ctx context.Context) (*models.ImageReference, *models.JobReference, error) {
+// GetOrImportImage verifies if the image exists, and if not, triggers a COS import job.
+func (i *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReference, *models.JobReference, error) {
 	log := ctrl.LoggerFrom(ctx)
 	imageSpec := i.IBMPowerVSImage.Spec
-	m := i.IBMPowerVSImage.ObjectMeta
+	imageName := i.IBMPowerVSImage.Name
 
-	imageReply, err := i.ensureImageUnique(m.Name)
+	// 1. Idempotency Check
+	imageReply, err := i.ensureImageUnique(imageName)
 	if err != nil {
-		record.Warnf(i.IBMPowerVSImage, "FailedRetrieveImage", "Failed to retrieve image %q", m.Name)
-		return nil, nil, err
+		record.Warnf(i.IBMPowerVSImage, "FailedRetrieveImage", "Failed to retrieve image %q", imageName)
+		return nil, nil, fmt.Errorf("failed to verify image uniqueness: %w", err)
 	} else if imageReply != nil {
-		log.Info("Image already exists", "imageName", m.Name)
+		log.Info("Image already exists", "imageName", imageName)
 		return imageReply, nil, nil
 	}
 
-	if lastJob, _ := i.GetImportJob(); lastJob != nil {
-		if *lastJob.Status.State != string(infrav1.PowerVSImageStateCompleted) && *lastJob.Status.State != string(infrav1.PowerVSImageStateFailed) {
-			log.Info("Previous import job not yet finished", "state", *lastJob.Status.State)
+	// 2. In-Progress Job Check
+	if lastJob, _ := i.getImportJob(); lastJob != nil && lastJob.Status != nil && lastJob.Status.State != nil {
+		state := *lastJob.Status.State
+		if state != string(infrav1.PowerVSImageStateCompleted) && state != string(infrav1.PowerVSImageStateFailed) {
+			log.Info("Previous import job not yet finished", "state", state)
 			return nil, nil, nil
 		}
 	}
 
+	// 3. Trigger New Import Job
 	body := &models.CreateCosImageImportJob{
-		ImageName:     &m.Name,
-		BucketName:    imageSpec.Bucket,
-		BucketAccess:  core.StringPtr(BucketAccess),
-		Region:        imageSpec.Region,
-		ImageFilename: imageSpec.Object,
-		StorageType:   imageSpec.StorageType,
+		ImageName:     ptr.To(imageName),
+		BucketName:    ptr.To(imageSpec.Bucket),
+		BucketAccess:  ptr.To(BucketAccess),
+		Region:        ptr.To(imageSpec.Region),
+		ImageFilename: ptr.To(imageSpec.Object),
+	}
+
+	if imageSpec.StorageType != "" {
+		body.StorageType = imageSpec.StorageType
 	}
 
 	jobRef, err := i.IBMPowerVSClient.CreateCosImage(body)
 	if err != nil {
-		log.Info("Unable to create new import job request")
-		record.Warnf(i.IBMPowerVSImage, "FailedCreateImageImportJob", "Failed image import job creation - %v", err)
-		return nil, nil, err
+		record.Warnf(i.IBMPowerVSImage, "FailedCreateImageImportJob", "Failed image import job creation: %v", err)
+		return nil, nil, fmt.Errorf("failed to create COS image import job: %w", err)
 	}
-	log.Info("New import job request created")
+
+	log.Info("New import job request created", "jobID", *jobRef.ID)
 	record.Eventf(i.IBMPowerVSImage, "SuccessfulCreateImageImportJob", "Created image import job %q", *jobRef.ID)
 	return nil, jobRef, nil
 }
 
 // DeleteImage will delete the image.
 func (i *ImageScope) DeleteImage() error {
-	if err := i.IBMPowerVSClient.DeleteImage(i.IBMPowerVSImage.Status.ImageID); err != nil {
-		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImage", "Failed image deletion - %v", err)
-		return err
+	imageID := i.GetImageID()
+	if imageID == "" {
+		return nil
 	}
-	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImage", "Deleted Image %q", i.IBMPowerVSImage.Status.ImageID)
-	return nil
-}
 
-// GetImportJob will get the image import job.
-func (i *ImageScope) GetImportJob() (*models.Job, error) {
-	return i.IBMPowerVSClient.GetCosImages(i.workspaceID)
+	if err := i.IBMPowerVSClient.DeleteImage(imageID); err != nil {
+		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImage", "Failed image deletion: %v", err)
+		return fmt.Errorf("failed to delete PowerVS image %s: %w", imageID, err)
+	}
+
+	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImage", "Deleted Image %q", imageID)
+	return nil
 }
 
 // DeleteImportJob will delete the image import job.
 func (i *ImageScope) DeleteImportJob() error {
-	if err := i.IBMPowerVSClient.DeleteJob(i.IBMPowerVSImage.Status.JobID); err != nil {
-		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImportJob", "Failed image import job deletion - %v", err)
-		return err
+	jobID := i.GetJobID()
+	if jobID == "" {
+		return nil
 	}
-	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImageImportJob", "Deleted image import job %q", i.IBMPowerVSImage.Status.JobID)
+
+	if err := i.IBMPowerVSClient.DeleteJob(jobID); err != nil {
+		record.Warnf(i.IBMPowerVSImage, "FailedDeleteImageImportJob", "Failed image import job deletion: %v", err)
+		return fmt.Errorf("failed to delete COS image import job %s: %w", jobID, err)
+	}
+
+	record.Eventf(i.IBMPowerVSImage, "SuccessfulDeleteImageImportJob", "Deleted image import job %q", jobID)
 	return nil
 }
 
@@ -289,4 +291,24 @@ func (i *ImageScope) SetJobID(id string) {
 // GetJobID will get the id for the import image job.
 func (i *ImageScope) GetJobID() string {
 	return i.IBMPowerVSImage.Status.JobID
+}
+
+// ensureImageUnique checks whether an image with the given name already exists
+// in the workspace. Returns the existing reference if found, nil otherwise.
+func (i *ImageScope) ensureImageUnique(imageName string) (*models.ImageReference, error) {
+	images, err := i.IBMPowerVSClient.GetAllImage()
+	if err != nil {
+		return nil, err
+	}
+	for _, img := range images.Images {
+		if *img.Name == imageName {
+			return img, nil
+		}
+	}
+	return nil, nil
+}
+
+// getImportJob returns the current COS image import job for the workspace.
+func (i *ImageScope) getImportJob() (*models.Job, error) {
+	return i.IBMPowerVSClient.GetCosImages(i.workspaceID)
 }
