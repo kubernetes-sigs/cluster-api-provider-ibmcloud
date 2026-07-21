@@ -44,13 +44,13 @@ type IBMPowerVSImageSpec struct {
 	Workspace ResourceIdentifier `json:"workspace,omitempty,omitzero"`
 
 	// bucket is the Cloud Object Storage bucket name; bucket-name[/optional/folder]
-	Bucket *string `json:"bucket"`
+	Bucket string `json:"bucket"`
 
 	// object is the Cloud Object Storage image filename.
-	Object *string `json:"object"`
+	Object string `json:"object"`
 
 	// region is the Cloud Object Storage region.
-	Region *string `json:"region"`
+	Region string `json:"region"`
 
 	// storageType is the type of storage, storage pool with the most available space will be selected.
 	// +kubebuilder:default=tier1
