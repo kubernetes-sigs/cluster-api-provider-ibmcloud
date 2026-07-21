@@ -1072,6 +1072,18 @@ func Convert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *infr
 		return err
 	}
 
+	// autoConvert uses Convert_string_To_Pointer_string which turns "" into &"".
+	// Preserve the v1beta2 convention that nil means "not set".
+	if out.Bucket != nil && *out.Bucket == "" {
+		out.Bucket = nil
+	}
+	if out.Object != nil && *out.Object == "" {
+		out.Object = nil
+	}
+	if out.Region != nil && *out.Region == "" {
+		out.Region = nil
+	}
+
 	if in.Workspace.ID != "" || in.Workspace.Name != "" {
 		out.ServiceInstance = &IBMPowerVSResourceReference{}
 		if in.Workspace.ID != "" {

@@ -48,9 +48,9 @@ func newPowervsImage(imageName string) *infrav1.IBMPowerVSImage {
 			ClusterName: "test-cluster",
 			Workspace:   infrav1.ResourceIdentifier{ID: "test-service-ID"},
 			StorageType: "foo-tier",
-			Object:      core.StringPtr("foo-obj"),
-			Bucket:      core.StringPtr("foo-bucket"),
-			Region:      core.StringPtr("foo-zone"),
+			Object:      "foo-obj",
+			Bucket:      "foo-bucket",
+			Region:      "foo-zone",
 		},
 	}
 }
@@ -104,7 +104,7 @@ func TestNewPowerVSImageScope(t *testing.T) {
 	}
 }
 
-func TestCreateImageCOSBucket(t *testing.T) {
+func TestGetOrImportImage(t *testing.T) {
 	var (
 		mockpowervs *mock.MockPowerVS
 		mockCtrl    *gomock.Controller
@@ -146,7 +146,7 @@ func TestCreateImageCOSBucket(t *testing.T) {
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
 			mockpowervs.EXPECT().CreateCosImage(gomock.AssignableToTypeOf(body)).Return(jobReference, nil)
-			_, out, err := scope.CreateImageCOSBucket(ctx)
+			_, out, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(BeNil())
 			require.Equal(t, jobReference, out)
 		})
@@ -160,7 +160,7 @@ func TestCreateImageCOSBucket(t *testing.T) {
 			}
 			scope := setupPowerVSImageScope("foo-image-1", mockpowervs)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			out, _, err := scope.CreateImageCOSBucket(ctx)
+			out, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(BeNil())
 			require.Equal(t, imageReference, out)
 		})
@@ -171,7 +171,7 @@ func TestCreateImageCOSBucket(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			mockpowervs.EXPECT().GetAllImage().Return(images, errors.New("Failed to list images"))
-			_, _, err := scope.CreateImageCOSBucket(ctx)
+			_, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 
@@ -187,7 +187,7 @@ func TestCreateImageCOSBucket(t *testing.T) {
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
-			_, _, err := scope.CreateImageCOSBucket(ctx)
+			_, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(BeNil())
 		})
 
@@ -199,7 +199,7 @@ func TestCreateImageCOSBucket(t *testing.T) {
 			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
 			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
 			mockpowervs.EXPECT().CreateCosImage(gomock.AssignableToTypeOf(body)).Return(jobReference, errors.New("Failed to create image import job"))
-			_, _, err := scope.CreateImageCOSBucket(ctx)
+			_, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To((Not(BeNil())))
 		})
 	})

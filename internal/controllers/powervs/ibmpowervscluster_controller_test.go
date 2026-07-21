@@ -1063,9 +1063,9 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      ptr.To("capi-image.ova.gz"),
-					Region:      ptr.To("us-south"),
-					Bucket:      ptr.To("capi-bucket"),
+					Object:      "capi-image.ova.gz",
+					Region:      "us-south",
+					Bucket:      "capi-bucket",
 				},
 			}
 			powervsImage2 := &infrav1.IBMPowerVSImage{
@@ -1083,9 +1083,9 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      ptr.To("capi-image2.ova.gz"),
-					Region:      ptr.To("us-south"),
-					Bucket:      ptr.To("capi-bucket"),
+					Object:      "capi-image2.ova.gz",
+					Region:      "us-south",
+					Bucket:      "capi-bucket",
 				},
 			}
 			createObject(g, powervsImage1, "default")

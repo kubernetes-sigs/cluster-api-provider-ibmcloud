@@ -932,9 +932,15 @@ func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *
 	out.ClusterName = in.ClusterName
 	// WARNING: in.ServiceInstanceID requires manual conversion: does not exist in peer-type
 	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
-	out.Bucket = (*string)(unsafe.Pointer(in.Bucket))
-	out.Object = (*string)(unsafe.Pointer(in.Object))
-	out.Region = (*string)(unsafe.Pointer(in.Region))
+	if err := v1.Convert_Pointer_string_To_string(&in.Bucket, &out.Bucket, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_string_To_string(&in.Object, &out.Object, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_Pointer_string_To_string(&in.Region, &out.Region, s); err != nil {
+		return err
+	}
 	out.StorageType = in.StorageType
 	out.DeletePolicy = in.DeletePolicy
 	return nil
@@ -943,9 +949,15 @@ func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *
 func autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *v1beta3.IBMPowerVSImageSpec, out *IBMPowerVSImageSpec, s conversion.Scope) error {
 	out.ClusterName = in.ClusterName
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
-	out.Bucket = (*string)(unsafe.Pointer(in.Bucket))
-	out.Object = (*string)(unsafe.Pointer(in.Object))
-	out.Region = (*string)(unsafe.Pointer(in.Region))
+	if err := v1.Convert_string_To_Pointer_string(&in.Bucket, &out.Bucket, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_string_To_Pointer_string(&in.Object, &out.Object, s); err != nil {
+		return err
+	}
+	if err := v1.Convert_string_To_Pointer_string(&in.Region, &out.Region, s); err != nil {
+		return err
+	}
 	out.StorageType = in.StorageType
 	out.DeletePolicy = in.DeletePolicy
 	return nil
