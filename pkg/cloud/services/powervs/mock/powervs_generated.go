@@ -187,6 +187,21 @@ func (mr *MockPowerVSMockRecorder) GetAllImage() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllImage", reflect.TypeOf((*MockPowerVS)(nil).GetAllImage))
 }
 
+// GetAllStockImages mocks base method.
+func (m *MockPowerVS) GetAllStockImages() (*models.Images, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAllStockImages")
+	ret0, _ := ret[0].(*models.Images)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAllStockImages indicates an expected call of GetAllStockImages.
+func (mr *MockPowerVSMockRecorder) GetAllStockImages() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllStockImages", reflect.TypeOf((*MockPowerVS)(nil).GetAllStockImages))
+}
+
 // GetAllInstance mocks base method.
 func (m *MockPowerVS) GetAllInstance() (*models.PVMInstances, error) {
 	m.ctrl.T.Helper()
