@@ -20,8 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 	"testing"
 	"time"
 

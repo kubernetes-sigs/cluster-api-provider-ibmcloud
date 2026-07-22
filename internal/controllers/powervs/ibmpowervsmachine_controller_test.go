@@ -40,13 +40,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	mockVPC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
@@ -324,7 +324,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 			}
-			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(errors.New("could not delete PowerVS instance"))
+			mockpowervs.EXPECT().DeleteInstance(gomock.Any(), machineScope.IBMPowerVSMachine.Status.InstanceID).Return(errors.New("could not delete PowerVS instance"))
 			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(Not(BeNil()))
 			g.Expect(machineScope.IBMPowerVSMachine.Finalizers).To(ContainElement(infrav1.IBMPowerVSMachineFinalizer))
@@ -353,7 +353,7 @@ func TestIBMPowerVSMachineReconciler_Delete(t *testing.T) {
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 				Machine:           machine,
 			}
-			mockpowervs.EXPECT().DeleteInstance(machineScope.IBMPowerVSMachine.Status.InstanceID).Return(nil)
+			mockpowervs.EXPECT().DeleteInstance(gomock.Any(), machineScope.IBMPowerVSMachine.Status.InstanceID).Return(nil)
 			_, err := reconciler.reconcileDelete(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(len(machineScope.IBMPowerVSMachine.Finalizers)).To(BeZero())
@@ -481,7 +481,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				},
 				IBMPowerVSClient: mockpowervs,
 			}
-			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instances, nil)
 
 			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(HaveOccurred())
@@ -520,10 +520,10 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			machineScope.SetZone("us-south")
 
 			// Mock GetAllInstance to return no existing instances
-			mockpowervs.EXPECT().GetAllInstance().Return(instances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instances, nil)
 
 			// Mock GetDatatcenterDetails to return valid system types (but not "Invalid")
-			mockpowervs.EXPECT().GetDatatcenterDetails("us-south").Return(&models.Datacenter{
+			mockpowervs.EXPECT().GetDatacenterDetails(gomock.Any(), "us-south").Return(&models.Datacenter{
 				CapabilitiesDetails: &models.CapabilitiesDetails{
 					SupportedSystems: &models.SupportedSystems{
 						General: []string{"e980", "s1022", "s922"},
@@ -635,8 +635,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				Name:               core.StringPtr("capi-test-lb-name"),
 			}
 
-			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+			mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).ToNot(BeNil())
@@ -759,8 +759,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				ProvisioningStatus: core.StringPtr("update-pending"),
 			}
 
-			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+			mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
@@ -828,8 +828,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				Status:        ptr.To("BUILD"),
 			}
 
-			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+			mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
@@ -839,8 +839,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 
 			t.Run("When PVM instance is in SHUTOFF state", func(_ *testing.T) {
 				instance.Status = ptr.To("SHUTOFF")
-				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+				mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+				mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
@@ -850,8 +850,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			})
 			t.Run("When PVM instance is in ACTIVE state", func(_ *testing.T) {
 				instance.Status = ptr.To("ACTIVE")
-				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+				mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+				mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
@@ -862,8 +862,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			t.Run("When PVM instance is in ERROR state", func(_ *testing.T) {
 				instance.Status = ptr.To("ERROR")
 				instance.Fault = &models.PVMInstanceFault{Details: "Timeout creating instance"}
-				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+				mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+				mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(BeZero())
@@ -873,8 +873,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			})
 			t.Run("When PVM instance is in unknown state", func(_ *testing.T) {
 				instance.Status = ptr.To("UNKNOWN")
-				mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-				mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+				mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+				mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 				result, err = reconciler.reconcileNormal(ctx, machineScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
@@ -970,8 +970,8 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			},
 		}
 
-		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
-		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+		mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(instanceReferences, nil)
+		mockpowervs.EXPECT().GetInstance(gomock.Any(), gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 		result, err := reconciler.reconcileNormal(ctx, machineScope)
 		g.Expect(err).To(BeNil())
 		g.Expect(result.RequeueAfter).To(BeZero())

@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 )
 
 // GetTransitGatewayLocationAndRouting returns appropriate location and routing suitable for transit gateway.

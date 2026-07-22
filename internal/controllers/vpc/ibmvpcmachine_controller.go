@@ -49,9 +49,9 @@ import (
 	"sigs.k8s.io/cluster-api/util/finalizers"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
+	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 // IBMVPCMachineReconciler reconciles a IBMVPCMachine object.

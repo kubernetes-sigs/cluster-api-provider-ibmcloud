@@ -37,7 +37,6 @@ RUN  --mount=type=cache,target=/root/.local/share/golang \
 COPY cmd/main.go cmd/main.go
 COPY api/ api/
 COPY controllers/ controllers/
-COPY cloud/ cloud/
 COPY pkg/ pkg/
 COPY internal/ internal/
 
