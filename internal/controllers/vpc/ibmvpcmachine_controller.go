@@ -426,6 +426,7 @@ func patchIBMVPCMachine(ctx context.Context, patchHelper *v1beta1patch.Helper, i
 		clusterv1beta1.PausedV1Beta2Condition,
 	}})
 }
+
 func (r *IBMVPCMachineReconciler) reconcileAdditionalVolumes(ctx context.Context, machineScope *vpc.MachineScope) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	// Return immediately if no additional volumes exist
@@ -483,12 +484,25 @@ func (r *IBMVPCMachineReconciler) reconcileAdditionalVolumes(ctx context.Context
 		} else {
 			// volume does not exist, create it and requeue so that it becomes available
 			volumeID, err := machineScope.CreateVolume(machineVolumes[v])
-			machineScope.IBMVPCMachine.Status.V1Beta2.AdditionalVolumeIDs[v] = volumeID
 			if err != nil {
-				log.Error(err, "Could not update Machine status. Created Volume needs to be cleaned up manually", "VolumeID", volumeID)
+				log.Error(err, "Could not create new Volume")
 				errList = append(errList, err)
+			} else {
+				machineScope.IBMVPCMachine.Status.V1Beta2.AdditionalVolumeIDs[v] = volumeID
+				err = r.Status().Update(ctx, machineScope.IBMVPCMachine)
+				if err != nil {
+					log.Error(err, "Could not update Machine status. trying to clean up volume manually", "VolumeID", volumeID)
+					errList = append(errList, err)
+					if deleteError := machineScope.DeleteVolume(volumeID); deleteError != nil {
+						log.Error(deleteError, "Could not delete volume. Created volume has to be cleaned up manually", "VolumeID", volumeID)
+						errList = append(errList, deleteError)
+					} else {
+						log.Info("Successfully cleaned up orphaned volume")
+					}
+				} else {
+					log.Info("Created new volume", "name", machineVolumes[v].Name, "VolumeID", volumeID)
+				}
 			}
-			log.Info("Created new volume", "name", machineVolumes[v].Name, "VolumeID", volumeID)
 			result = ctrl.Result{RequeueAfter: 10 * time.Second}
 		}
 	}
