@@ -54,9 +54,9 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/controllers"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	_ "k8s.io/component-base/logs/json/register"

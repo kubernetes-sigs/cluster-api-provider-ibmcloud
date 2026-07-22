@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/pointer"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/cmd/capibmadm/printer"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/pagingutils"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/pagingutils"
 )
 
 // ListCommand vpc key list command.

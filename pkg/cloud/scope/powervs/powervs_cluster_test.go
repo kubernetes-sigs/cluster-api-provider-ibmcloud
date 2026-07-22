@@ -17,6 +17,7 @@ limitations under the License.
 package powervs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -38,14 +39,9 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	mockP "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	mockRC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	tgmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway/mock"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
@@ -108,14 +104,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 							}}},
 					Spec: infrav1.IBMPowerVSClusterSpec{Zone: "zone"},
 				},
-				ClientFactory: ClientFactory{
-					AuthenticatorFactory: func() (core.Authenticator, error) {
-						return nil, nil
-					},
-					PowerVSClientFactory: func() (powervs.PowerVS, error) {
-						return nil, nil
-					},
-				},
+				ClientBuilder: stubClientBuilder{},
 			},
 			expectError: false,
 		},
@@ -144,26 +133,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 						},
 					},
 				},
-				ClientFactory: ClientFactory{
-					AuthenticatorFactory: func() (core.Authenticator, error) {
-						return nil, nil
-					},
-					PowerVSClientFactory: func() (powervs.PowerVS, error) {
-						return nil, nil
-					},
-					VPCClientFactory: func() (vpc.Vpc, error) {
-						return nil, nil
-					},
-					TransitGatewayFactory: func() (transitgateway.TransitGateway, error) {
-						return nil, nil
-					},
-					ResourceControllerFactory: func() (resourcecontroller.ResourceController, error) {
-						return nil, nil
-					},
-					ResourceManagerFactory: func() (resourcemanager.ResourceManager, error) {
-						return nil, nil
-					},
-				},
+				ClientBuilder: stubClientBuilder{},
 			},
 			expectError: false,
 		},
@@ -171,7 +141,7 @@ func TestNewPowerVSClusterScope(t *testing.T) {
 	for _, tc := range testCases {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
-			_, err := NewPowerVSClusterScope(tc.params)
+			_, err := NewPowerVSClusterScope(context.Background(), tc.params)
 			// Note: only error/failure cases covered
 			// TO-DO: cover success cases
 			if tc.expectError {
@@ -613,7 +583,7 @@ func TestIsDHCPServerActive(t *testing.T) {
 			IBMPowerVSClient:  mockPowerVS,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReferenceV1Beta3{ID: "dhcpID"}}}},
 		}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(nil, fmt.Errorf("GetDHCPServer returns error"))
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("GetDHCPServer returns error"))
 		isActive, err := clusterScope.isDHCPServerActive(ctx)
 		g.Expect(err).ToNot(BeNil())
 		g.Expect(isActive).To(BeFalse())
@@ -628,7 +598,7 @@ func TestIsDHCPServerActive(t *testing.T) {
 			IBMPowerVSClient:  mockPowerVS,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReferenceV1Beta3{ID: "dhcpID"}}}},
 		}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(dhcpServer, nil)
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
 
 		isActive, err := clusterScope.isDHCPServerActive(ctx)
 		g.Expect(err).ToNot(BeNil())
@@ -644,7 +614,7 @@ func TestIsDHCPServerActive(t *testing.T) {
 			IBMPowerVSClient:  mockPowerVS,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReferenceV1Beta3{ID: "dhcpID"}}}},
 		}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(dhcpServer, nil)
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
 
 		isActive, err := clusterScope.isDHCPServerActive(ctx)
 		g.Expect(err).To(BeNil())
@@ -1692,7 +1662,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 			},
 			IBMPowerVSClient: mockPowerVS,
 		}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(nil, fmt.Errorf("dhcp server does not exist"))
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("dhcp server does not exist"))
 		err := clusterScope.DeleteDHCPServer(ctx)
 		g.Expect(err).To(BeNil())
 	})
@@ -1721,7 +1691,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 			},
 			IBMPowerVSClient: mockPowerVS,
 		}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(nil, fmt.Errorf("error getting dhcp server"))
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error getting dhcp server"))
 		err := clusterScope.DeleteDHCPServer(ctx)
 		g.Expect(err).To(MatchError(ContainSubstring("error getting dhcp server")))
 	})
@@ -1751,8 +1721,8 @@ func TestDeleteDHCPServer(t *testing.T) {
 			IBMPowerVSClient: mockPowerVS,
 		}
 		dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpServerID")}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(dhcpServer, nil)
-		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any()).Return(fmt.Errorf("error deleting dhcp server"))
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
+		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any(), gomock.Any()).Return(fmt.Errorf("error deleting dhcp server"))
 		err := clusterScope.DeleteDHCPServer(ctx)
 		g.Expect(err.Error()).To(Equal("failed to delete DHCP server: error deleting dhcp server"))
 	})
@@ -1782,8 +1752,8 @@ func TestDeleteDHCPServer(t *testing.T) {
 			IBMPowerVSClient: mockPowerVS,
 		}
 		dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpServerID")}
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(dhcpServer, nil)
-		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any()).Return(nil)
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
+		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any(), gomock.Any()).Return(nil)
 		err := clusterScope.DeleteDHCPServer(ctx)
 		g.Expect(err).To(BeNil())
 	})

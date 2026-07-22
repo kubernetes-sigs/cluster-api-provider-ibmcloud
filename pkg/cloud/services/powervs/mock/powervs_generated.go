@@ -25,11 +25,11 @@ limitations under the License.
 package mock
 
 import (
+	context "context"
 	reflect "reflect"
 
 	models "github.com/IBM-Cloud/power-go-client/power/models"
 	gomock "go.uber.org/mock/gomock"
-	powervs "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 )
 
 // MockPowerVS is a mock of PowerVS interface.
@@ -57,296 +57,282 @@ func (m *MockPowerVS) EXPECT() *MockPowerVSMockRecorder {
 }
 
 // CreateCosImage mocks base method.
-func (m *MockPowerVS) CreateCosImage(body *models.CreateCosImageImportJob) (*models.JobReference, error) {
+func (m *MockPowerVS) CreateCosImage(ctx context.Context, body *models.CreateCosImageImportJob) (*models.JobReference, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateCosImage", body)
+	ret := m.ctrl.Call(m, "CreateCosImage", ctx, body)
 	ret0, _ := ret[0].(*models.JobReference)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateCosImage indicates an expected call of CreateCosImage.
-func (mr *MockPowerVSMockRecorder) CreateCosImage(body any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) CreateCosImage(ctx, body any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCosImage", reflect.TypeOf((*MockPowerVS)(nil).CreateCosImage), body)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCosImage", reflect.TypeOf((*MockPowerVS)(nil).CreateCosImage), ctx, body)
 }
 
 // CreateDHCPServer mocks base method.
-func (m *MockPowerVS) CreateDHCPServer(arg0 *models.DHCPServerCreate) (*models.DHCPServer, error) {
+func (m *MockPowerVS) CreateDHCPServer(ctx context.Context, body *models.DHCPServerCreate) (*models.DHCPServer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDHCPServer", arg0)
+	ret := m.ctrl.Call(m, "CreateDHCPServer", ctx, body)
 	ret0, _ := ret[0].(*models.DHCPServer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateDHCPServer indicates an expected call of CreateDHCPServer.
-func (mr *MockPowerVSMockRecorder) CreateDHCPServer(arg0 any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) CreateDHCPServer(ctx, body any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).CreateDHCPServer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).CreateDHCPServer), ctx, body)
 }
 
 // CreateInstance mocks base method.
-func (m *MockPowerVS) CreateInstance(body *models.PVMInstanceCreate) (*models.PVMInstanceList, error) {
+func (m *MockPowerVS) CreateInstance(ctx context.Context, body *models.PVMInstanceCreate) (*models.PVMInstanceList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateInstance", body)
+	ret := m.ctrl.Call(m, "CreateInstance", ctx, body)
 	ret0, _ := ret[0].(*models.PVMInstanceList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateInstance indicates an expected call of CreateInstance.
-func (mr *MockPowerVSMockRecorder) CreateInstance(body any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) CreateInstance(ctx, body any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockPowerVS)(nil).CreateInstance), body)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockPowerVS)(nil).CreateInstance), ctx, body)
 }
 
 // DeleteDHCPServer mocks base method.
-func (m *MockPowerVS) DeleteDHCPServer(id string) error {
+func (m *MockPowerVS) DeleteDHCPServer(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDHCPServer", id)
+	ret := m.ctrl.Call(m, "DeleteDHCPServer", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteDHCPServer indicates an expected call of DeleteDHCPServer.
-func (mr *MockPowerVSMockRecorder) DeleteDHCPServer(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) DeleteDHCPServer(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).DeleteDHCPServer), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).DeleteDHCPServer), ctx, id)
 }
 
 // DeleteImage mocks base method.
-func (m *MockPowerVS) DeleteImage(id string) error {
+func (m *MockPowerVS) DeleteImage(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteImage", id)
+	ret := m.ctrl.Call(m, "DeleteImage", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteImage indicates an expected call of DeleteImage.
-func (mr *MockPowerVSMockRecorder) DeleteImage(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) DeleteImage(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockPowerVS)(nil).DeleteImage), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockPowerVS)(nil).DeleteImage), ctx, id)
 }
 
 // DeleteInstance mocks base method.
-func (m *MockPowerVS) DeleteInstance(id string) error {
+func (m *MockPowerVS) DeleteInstance(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteInstance", id)
+	ret := m.ctrl.Call(m, "DeleteInstance", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteInstance indicates an expected call of DeleteInstance.
-func (mr *MockPowerVSMockRecorder) DeleteInstance(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) DeleteInstance(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstance", reflect.TypeOf((*MockPowerVS)(nil).DeleteInstance), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstance", reflect.TypeOf((*MockPowerVS)(nil).DeleteInstance), ctx, id)
 }
 
 // DeleteJob mocks base method.
-func (m *MockPowerVS) DeleteJob(id string) error {
+func (m *MockPowerVS) DeleteJob(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteJob", id)
+	ret := m.ctrl.Call(m, "DeleteJob", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteJob indicates an expected call of DeleteJob.
-func (mr *MockPowerVSMockRecorder) DeleteJob(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) DeleteJob(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJob", reflect.TypeOf((*MockPowerVS)(nil).DeleteJob), id)
-}
-
-// GetAllDHCPServers mocks base method.
-func (m *MockPowerVS) GetAllDHCPServers() (models.DHCPServers, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllDHCPServers")
-	ret0, _ := ret[0].(models.DHCPServers)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllDHCPServers indicates an expected call of GetAllDHCPServers.
-func (mr *MockPowerVSMockRecorder) GetAllDHCPServers() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllDHCPServers", reflect.TypeOf((*MockPowerVS)(nil).GetAllDHCPServers))
-}
-
-// GetAllImage mocks base method.
-func (m *MockPowerVS) GetAllImage() (*models.Images, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllImage")
-	ret0, _ := ret[0].(*models.Images)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllImage indicates an expected call of GetAllImage.
-func (mr *MockPowerVSMockRecorder) GetAllImage() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllImage", reflect.TypeOf((*MockPowerVS)(nil).GetAllImage))
-}
-
-// GetAllInstance mocks base method.
-func (m *MockPowerVS) GetAllInstance() (*models.PVMInstances, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllInstance")
-	ret0, _ := ret[0].(*models.PVMInstances)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllInstance indicates an expected call of GetAllInstance.
-func (mr *MockPowerVSMockRecorder) GetAllInstance() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllInstance", reflect.TypeOf((*MockPowerVS)(nil).GetAllInstance))
-}
-
-// GetAllNetwork mocks base method.
-func (m *MockPowerVS) GetAllNetwork() (*models.Networks, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllNetwork")
-	ret0, _ := ret[0].(*models.Networks)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAllNetwork indicates an expected call of GetAllNetwork.
-func (mr *MockPowerVSMockRecorder) GetAllNetwork() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllNetwork", reflect.TypeOf((*MockPowerVS)(nil).GetAllNetwork))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJob", reflect.TypeOf((*MockPowerVS)(nil).DeleteJob), ctx, id)
 }
 
 // GetCosImages mocks base method.
-func (m *MockPowerVS) GetCosImages(id string) (*models.Job, error) {
+func (m *MockPowerVS) GetCosImages(ctx context.Context, id string) (*models.Job, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCosImages", id)
+	ret := m.ctrl.Call(m, "GetCosImages", ctx, id)
 	ret0, _ := ret[0].(*models.Job)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCosImages indicates an expected call of GetCosImages.
-func (mr *MockPowerVSMockRecorder) GetCosImages(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetCosImages(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCosImages", reflect.TypeOf((*MockPowerVS)(nil).GetCosImages), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCosImages", reflect.TypeOf((*MockPowerVS)(nil).GetCosImages), ctx, id)
 }
 
 // GetDHCPServer mocks base method.
-func (m *MockPowerVS) GetDHCPServer(id string) (*models.DHCPServerDetail, error) {
+func (m *MockPowerVS) GetDHCPServer(ctx context.Context, id string) (*models.DHCPServerDetail, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDHCPServer", id)
+	ret := m.ctrl.Call(m, "GetDHCPServer", ctx, id)
 	ret0, _ := ret[0].(*models.DHCPServerDetail)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDHCPServer indicates an expected call of GetDHCPServer.
-func (mr *MockPowerVSMockRecorder) GetDHCPServer(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetDHCPServer(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).GetDHCPServer), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDHCPServer", reflect.TypeOf((*MockPowerVS)(nil).GetDHCPServer), ctx, id)
 }
 
-// GetDatatcenterDetails mocks base method.
-func (m *MockPowerVS) GetDatatcenterDetails(zone string) (*models.Datacenter, error) {
+// GetDatacenterDetails mocks base method.
+func (m *MockPowerVS) GetDatacenterDetails(ctx context.Context, zone string) (*models.Datacenter, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDatatcenterDetails", zone)
+	ret := m.ctrl.Call(m, "GetDatacenterDetails", ctx, zone)
 	ret0, _ := ret[0].(*models.Datacenter)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDatatcenterDetails indicates an expected call of GetDatatcenterDetails.
-func (mr *MockPowerVSMockRecorder) GetDatatcenterDetails(zone any) *gomock.Call {
+// GetDatacenterDetails indicates an expected call of GetDatacenterDetails.
+func (mr *MockPowerVSMockRecorder) GetDatacenterDetails(ctx, zone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDatatcenterDetails", reflect.TypeOf((*MockPowerVS)(nil).GetDatatcenterDetails), zone)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDatacenterDetails", reflect.TypeOf((*MockPowerVS)(nil).GetDatacenterDetails), ctx, zone)
 }
 
 // GetImage mocks base method.
-func (m *MockPowerVS) GetImage(id string) (*models.Image, error) {
+func (m *MockPowerVS) GetImage(ctx context.Context, id string) (*models.Image, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImage", id)
+	ret := m.ctrl.Call(m, "GetImage", ctx, id)
 	ret0, _ := ret[0].(*models.Image)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetImage indicates an expected call of GetImage.
-func (mr *MockPowerVSMockRecorder) GetImage(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetImage(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockPowerVS)(nil).GetImage), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImage", reflect.TypeOf((*MockPowerVS)(nil).GetImage), ctx, id)
 }
 
 // GetInstance mocks base method.
-func (m *MockPowerVS) GetInstance(id string) (*models.PVMInstance, error) {
+func (m *MockPowerVS) GetInstance(ctx context.Context, id string) (*models.PVMInstance, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetInstance", id)
+	ret := m.ctrl.Call(m, "GetInstance", ctx, id)
 	ret0, _ := ret[0].(*models.PVMInstance)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetInstance indicates an expected call of GetInstance.
-func (mr *MockPowerVSMockRecorder) GetInstance(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetInstance(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockPowerVS)(nil).GetInstance), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstance", reflect.TypeOf((*MockPowerVS)(nil).GetInstance), ctx, id)
 }
 
 // GetJob mocks base method.
-func (m *MockPowerVS) GetJob(id string) (*models.Job, error) {
+func (m *MockPowerVS) GetJob(ctx context.Context, id string) (*models.Job, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetJob", id)
+	ret := m.ctrl.Call(m, "GetJob", ctx, id)
 	ret0, _ := ret[0].(*models.Job)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetJob indicates an expected call of GetJob.
-func (mr *MockPowerVSMockRecorder) GetJob(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetJob(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJob", reflect.TypeOf((*MockPowerVS)(nil).GetJob), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJob", reflect.TypeOf((*MockPowerVS)(nil).GetJob), ctx, id)
 }
 
 // GetNetworkByID mocks base method.
-func (m *MockPowerVS) GetNetworkByID(id string) (*models.Network, error) {
+func (m *MockPowerVS) GetNetworkByID(ctx context.Context, id string) (*models.Network, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNetworkByID", id)
+	ret := m.ctrl.Call(m, "GetNetworkByID", ctx, id)
 	ret0, _ := ret[0].(*models.Network)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNetworkByID indicates an expected call of GetNetworkByID.
-func (mr *MockPowerVSMockRecorder) GetNetworkByID(id any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetNetworkByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByID", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByID), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByID", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByID), ctx, id)
 }
 
 // GetNetworkByName mocks base method.
-func (m *MockPowerVS) GetNetworkByName(networkName string) (*models.NetworkReference, error) {
+func (m *MockPowerVS) GetNetworkByName(ctx context.Context, networkName string) (*models.NetworkReference, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetNetworkByName", networkName)
+	ret := m.ctrl.Call(m, "GetNetworkByName", ctx, networkName)
 	ret0, _ := ret[0].(*models.NetworkReference)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetNetworkByName indicates an expected call of GetNetworkByName.
-func (mr *MockPowerVSMockRecorder) GetNetworkByName(networkName any) *gomock.Call {
+func (mr *MockPowerVSMockRecorder) GetNetworkByName(ctx, networkName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByName", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByName), networkName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNetworkByName", reflect.TypeOf((*MockPowerVS)(nil).GetNetworkByName), ctx, networkName)
 }
 
-// WithClients mocks base method.
-func (m *MockPowerVS) WithClients(options powervs.ServiceOptions) *powervs.Service {
+// ListDHCPServers mocks base method.
+func (m *MockPowerVS) ListDHCPServers(ctx context.Context) (models.DHCPServers, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WithClients", options)
-	ret0, _ := ret[0].(*powervs.Service)
-	return ret0
+	ret := m.ctrl.Call(m, "ListDHCPServers", ctx)
+	ret0, _ := ret[0].(models.DHCPServers)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// WithClients indicates an expected call of WithClients.
-func (mr *MockPowerVSMockRecorder) WithClients(options any) *gomock.Call {
+// ListDHCPServers indicates an expected call of ListDHCPServers.
+func (mr *MockPowerVSMockRecorder) ListDHCPServers(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithClients", reflect.TypeOf((*MockPowerVS)(nil).WithClients), options)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDHCPServers", reflect.TypeOf((*MockPowerVS)(nil).ListDHCPServers), ctx)
+}
+
+// ListImages mocks base method.
+func (m *MockPowerVS) ListImages(ctx context.Context) (*models.Images, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListImages", ctx)
+	ret0, _ := ret[0].(*models.Images)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListImages indicates an expected call of ListImages.
+func (mr *MockPowerVSMockRecorder) ListImages(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListImages", reflect.TypeOf((*MockPowerVS)(nil).ListImages), ctx)
+}
+
+// ListInstances mocks base method.
+func (m *MockPowerVS) ListInstances(ctx context.Context) (*models.PVMInstances, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListInstances", ctx)
+	ret0, _ := ret[0].(*models.PVMInstances)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListInstances indicates an expected call of ListInstances.
+func (mr *MockPowerVSMockRecorder) ListInstances(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListInstances", reflect.TypeOf((*MockPowerVS)(nil).ListInstances), ctx)
+}
+
+// ListNetworks mocks base method.
+func (m *MockPowerVS) ListNetworks(ctx context.Context) (*models.Networks, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListNetworks", ctx)
+	ret0, _ := ret[0].(*models.Networks)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListNetworks indicates an expected call of ListNetworks.
+func (mr *MockPowerVSMockRecorder) ListNetworks(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNetworks", reflect.TypeOf((*MockPowerVS)(nil).ListNetworks), ctx)
 }

@@ -143,9 +143,9 @@ func TestGetOrImportImage(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
-			mockpowervs.EXPECT().CreateCosImage(gomock.AssignableToTypeOf(body)).Return(jobReference, nil)
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
+			mockpowervs.EXPECT().GetCosImages(gomock.Any(), gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
+			mockpowervs.EXPECT().CreateCosImage(gomock.Any(), gomock.AssignableToTypeOf(body)).Return(jobReference, nil)
 			_, out, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(BeNil())
 			require.Equal(t, jobReference, out)
@@ -159,7 +159,7 @@ func TestGetOrImportImage(t *testing.T) {
 				Name: core.StringPtr("foo-image-1"),
 			}
 			scope := setupPowerVSImageScope("foo-image-1", mockpowervs)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
 			out, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(BeNil())
 			require.Equal(t, imageReference, out)
@@ -170,7 +170,7 @@ func TestGetOrImportImage(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-			mockpowervs.EXPECT().GetAllImage().Return(images, errors.New("Failed to list images"))
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, errors.New("Failed to list images"))
 			_, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -185,8 +185,8 @@ func TestGetOrImportImage(t *testing.T) {
 				},
 			}
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
+			mockpowervs.EXPECT().GetCosImages(gomock.Any(), gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
 			_, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To(BeNil())
 		})
@@ -196,9 +196,9 @@ func TestGetOrImportImage(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetCosImages(gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
-			mockpowervs.EXPECT().CreateCosImage(gomock.AssignableToTypeOf(body)).Return(jobReference, errors.New("Failed to create image import job"))
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
+			mockpowervs.EXPECT().GetCosImages(gomock.Any(), gomock.AssignableToTypeOf(serviceInstanceID)).Return(job, nil)
+			mockpowervs.EXPECT().CreateCosImage(gomock.Any(), gomock.AssignableToTypeOf(body)).Return(jobReference, errors.New("Failed to create image import job"))
 			_, _, err := scope.GetOrImportImage(ctx)
 			g.Expect(err).To((Not(BeNil())))
 		})
@@ -228,8 +228,8 @@ func TestDeleteImage(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.ImageID = pvsImage + idSuffix
-			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(nil)
-			err := scope.DeleteImage()
+			mockpowervs.EXPECT().DeleteImage(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(nil)
+			err := scope.DeleteImage(ctx)
 			g.Expect(err).To(BeNil())
 		})
 
@@ -239,8 +239,8 @@ func TestDeleteImage(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.ImageID = pvsImage + idSuffix
-			mockpowervs.EXPECT().DeleteImage(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image"))
-			err := scope.DeleteImage()
+			mockpowervs.EXPECT().DeleteImage(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image"))
+			err := scope.DeleteImage(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})
@@ -269,8 +269,8 @@ func TestDeleteImportJob(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
-			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf(id)).Return(nil)
-			err := scope.DeleteImportJob()
+			mockpowervs.EXPECT().DeleteJob(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(nil)
+			err := scope.DeleteImportJob(ctx)
 			g.Expect(err).To(BeNil())
 		})
 
@@ -280,8 +280,8 @@ func TestDeleteImportJob(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSImageScope(pvsImage, mockpowervs)
 			scope.IBMPowerVSImage.Status.JobID = "foo-job-id"
-			mockpowervs.EXPECT().DeleteJob(gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image import job"))
-			err := scope.DeleteImportJob()
+			mockpowervs.EXPECT().DeleteJob(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(errors.New("Failed to delete image import job"))
+			err := scope.DeleteImportJob(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})

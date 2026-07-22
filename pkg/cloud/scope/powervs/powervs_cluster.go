@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-logr/logr"
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
 	"github.com/IBM-Cloud/power-go-client/ibmpisession"
@@ -38,7 +37,6 @@ import (
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,6 +47,7 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/genutil"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
@@ -57,12 +56,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-)
-
-const (
-	// DEBUGLEVEL indicates the debug level of the logs.
-	DEBUGLEVEL = 5
 )
 
 // vpcSubnetIPVersion4 defines the IP v4 string used for VPC Subnet generation.
@@ -78,32 +71,32 @@ var (
 
 // powerEdgeRouter is identifier for PER.
 const (
+	// DEBUGLEVEL indicates the debug level of the logs.
+	DEBUGLEVEL = 5
+
 	powerEdgeRouter = "power-edge-router"
 	// vpcSubnetIPAddressCount is the total IP Addresses for the subnet.
 	// Support for custom address prefixes will be added at a later time. Currently, we use the ip count for subnet creation.
 	vpcSubnetIPAddressCount int64 = 256
 )
 
+// ClientOptions contains generic configurations required to build IBM Cloud clients.
+type ClientOptions struct {
+	Authenticator   core.Authenticator
+	Zone            string
+	WorkspaceID     string
+	VPCRegion       string
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Debug           bool
+}
+
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.
 type ClusterScopeParams struct {
 	Client            client.Client
-	Logger            logr.Logger
 	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
-
-	// ClientFactory contains collection of functions to override actual client, which helps in testing.
-	ClientFactory
-}
-
-// ClientFactory is collection of function used for overriding actual clients to help in testing.
-type ClientFactory struct {
-	AuthenticatorFactory      func() (core.Authenticator, error)
-	PowerVSClientFactory      func() (powervs.PowerVS, error)
-	VPCClientFactory          func() (vpc.Vpc, error)
-	TransitGatewayFactory     func() (transitgateway.TransitGateway, error)
-	ResourceControllerFactory func() (resourcecontroller.ResourceController, error)
-	ResourceManagerFactory    func() (resourcemanager.ResourceManager, error)
+	ClientBuilder     ClientBuilder
 }
 
 // ClusterScope defines a scope defined around a Power VS Cluster.
@@ -111,6 +104,7 @@ type ClusterScope struct {
 	Client      client.Client
 	patchHelper *patch.Helper
 
+	// IBM Cloud Clients
 	IBMPowerVSClient      powervs.PowerVS
 	IBMVPCClient          vpc.Vpc
 	TransitGatewayClient  transitgateway.TransitGateway
@@ -118,203 +112,224 @@ type ClusterScope struct {
 	COSClient             cos.Cos
 	ResourceManagerClient resourcemanager.ResourceManager
 
+	// Kubernetes Resources
 	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 }
 
-func getTGPowerVSConnectionName(tgName string) string { return fmt.Sprintf("%s-pvs-con", tgName) }
-
-func getTGVPCConnectionName(tgName string) string { return fmt.Sprintf("%s-vpc-con", tgName) }
-
-func dhcpNetworkName(dhcpServerName string) string {
-	return fmt.Sprintf("DHCPSERVER%s_Private", dhcpServerName)
+// ClientBuilder defines the contract for constructing IBM Cloud service clients.
+// This interface enables clean dependency injection and robust mocking for tests.
+type ClientBuilder interface {
+	GetAuthenticator(ctx context.Context) (core.Authenticator, error)
+	GetPowerVSClient(ctx context.Context, options ClientOptions) (powervs.PowerVS, error)
+	GetVPCClient(ctx context.Context, options ClientOptions) (vpc.Vpc, error)
+	GetTransitGatewayClient(ctx context.Context, options ClientOptions) (transitgateway.TransitGateway, error)
+	GetResourceControllerClient(ctx context.Context, options ClientOptions) (resourcecontroller.ResourceController, error)
+	GetResourceManagerClient(ctx context.Context, options ClientOptions) (resourcemanager.ResourceManager, error)
 }
 
-// NewPowerVSClusterScope creates a new ClusterScope from the supplied parameters.
-func NewPowerVSClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
-	if params.Client == nil {
-		err := errors.New("failed to generate new scope as client is nil")
-		return nil, err
-	}
-	if params.Cluster == nil {
-		err := errors.New("failed to generate new scope as cluster is nil")
-		return nil, err
-	}
-	if params.IBMPowerVSCluster == nil {
-		err := errors.New("failed to generate new scope IBMPowerVSCluster is nil")
-		return nil, err
-	}
-	if params.Logger == (logr.Logger{}) {
-		params.Logger = klog.Background()
-	}
+// ProdClientBuilder is the production implementation of the ClientBuilder interface.
+type ProdClientBuilder struct{}
 
-	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)
-	if err != nil {
-		err = fmt.Errorf("failed to init patch helper: %w", err)
-		return nil, err
-	}
-
-	// If the topology is not explicitly set to LoadBalancer, we only need the PowerVS client
-	if params.IBMPowerVSCluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
-		return &ClusterScope{
-			Client:            params.Client,
-			patchHelper:       helper,
-			Cluster:           params.Cluster,
-			IBMPowerVSCluster: params.IBMPowerVSCluster,
-			ServiceEndpoint:   params.ServiceEndpoint,
-		}, nil
-	}
-
-	// if powervs.cluster.x-k8s.io/create-infra=true annotation is set, create necessary clients.
-	piOptions := powervs.ServiceOptions{
-		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
-		},
-	}
-
-	// Use Spec.Zone for the PowerVS zone.
-	piOptions.Zone = params.IBMPowerVSCluster.Spec.Zone
-
-	// Get the authenticator.
-	auth, err := params.getAuthenticator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create authenticator %w", err)
-	}
-	piOptions.Authenticator = auth
-
-	// Create PowerVS client.
-	powerVSClient, err := params.getPowerVSClient(piOptions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create PowerVS client %w", err)
-	}
-
-	// Create VPC client.
-	vpcClient, err := params.getVPCClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create VPC client: %w", err)
-	}
-
-	// Create TransitGateway client.
-	tgOptions := &tgapiv1.TransitGatewayApisV1Options{
-		Authenticator: auth,
-	}
-
-	tgClient, err := params.getTransitGatewayClient(tgOptions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create tranist gateway client: %w", err)
-	}
-
-	// Create Resource Controller client.
-	serviceOption := resourcecontroller.ServiceOptions{
-		ResourceControllerV2Options: &resourcecontrollerv2.ResourceControllerV2Options{
-			Authenticator: auth,
-		},
-	}
-
-	resourceClient, err := params.getResourceControllerClient(serviceOption)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource controller client: %w", err)
-	}
-
-	// Create Resource Manager client.
-	rcManagerOptions := &resourcemanagerv2.ResourceManagerV2Options{
-		Authenticator: auth,
-	}
-
-	rmClient, err := params.getResourceManagerClient(rcManagerOptions)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create resource manager client: %w", err)
-	}
-
-	clusterScope := &ClusterScope{
-		Client:                params.Client,
-		patchHelper:           helper,
-		Cluster:               params.Cluster,
-		IBMPowerVSCluster:     params.IBMPowerVSCluster,
-		ServiceEndpoint:       params.ServiceEndpoint,
-		IBMPowerVSClient:      powerVSClient,
-		IBMVPCClient:          vpcClient,
-		TransitGatewayClient:  tgClient,
-		ResourceClient:        resourceClient,
-		ResourceManagerClient: rmClient,
-	}
-	return clusterScope, nil
-}
-
-func (params ClusterScopeParams) getAuthenticator() (core.Authenticator, error) {
-	if params.AuthenticatorFactory != nil {
-		return params.AuthenticatorFactory()
-	}
+// GetAuthenticator returns an IBM Cloud authenticator using default env/file credentials.
+func (b ProdClientBuilder) GetAuthenticator(_ context.Context) (core.Authenticator, error) {
 	return authenticator.GetAuthenticator()
 }
 
-func (params ClusterScopeParams) getPowerVSClient(options powervs.ServiceOptions) (powervs.PowerVS, error) {
-	if params.PowerVSClientFactory != nil {
-		return params.PowerVSClientFactory()
+// GetPowerVSClient constructs a production PowerVS client for the given options.
+func (b ProdClientBuilder) GetPowerVSClient(ctx context.Context, opts ClientOptions) (powervs.PowerVS, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	piOptions := powervs.ServiceOptions{
+		IBMPIOptions: &ibmpisession.IBMPIOptions{
+			Debug:         opts.Debug,
+			Zone:          opts.Zone,
+			Authenticator: opts.Authenticator,
+		},
+		WorkspaceID: opts.WorkspaceID,
 	}
 
-	// Fetch the PowerVS service endpoint.
-	powerVSServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), params.ServiceEndpoint)
+	powerVSServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), opts.ServiceEndpoint)
 	if powerVSServiceEndpoint != "" {
-		params.Logger.V(3).Info("Overriding the default PowerVS endpoint", "powerVSEndpoint", powerVSServiceEndpoint)
-		options.URL = powerVSServiceEndpoint
+		log.V(3).Info("Overriding the default PowerVS endpoint", "endpoint", powerVSServiceEndpoint)
+		piOptions.URL = powerVSServiceEndpoint
 	}
-	return powervs.NewService(options)
+
+	return powervs.NewService(ctx, piOptions)
 }
 
-func (params ClusterScopeParams) getVPCClient() (vpc.Vpc, error) {
-	if params.Logger.V(DEBUGLEVEL).Enabled() {
+// GetVPCClient constructs a production VPC client for the given options.
+func (b ProdClientBuilder) GetVPCClient(_ context.Context, opts ClientOptions) (vpc.Vpc, error) {
+	if opts.Debug {
 		core.SetLoggingLevel(core.LevelDebug)
 	}
-	if params.VPCClientFactory != nil {
-		return params.VPCClientFactory()
+
+	if opts.VPCRegion == "" {
+		return nil, fmt.Errorf("failed to create VPC client: VPC region is not set")
 	}
-	if params.IBMPowerVSCluster.Spec.VPC.Region == "" {
-		return nil, fmt.Errorf("failed to create VPC client as VPC region is not set")
-	}
-	// Fetch the VPC service endpoint.
-	svcEndpoint := endpoints.FetchVPCEndpoint(params.IBMPowerVSCluster.Spec.VPC.Region, params.ServiceEndpoint)
+
+	svcEndpoint := endpoints.FetchVPCEndpoint(opts.VPCRegion, opts.ServiceEndpoint)
 	return vpc.NewService(svcEndpoint)
 }
 
-func (params ClusterScopeParams) getTransitGatewayClient(options *tgapiv1.TransitGatewayApisV1Options) (transitgateway.TransitGateway, error) {
-	if params.TransitGatewayFactory != nil {
-		return params.TransitGatewayFactory()
+// GetTransitGatewayClient constructs a production Transit Gateway client for the given options.
+func (b ProdClientBuilder) GetTransitGatewayClient(ctx context.Context, opts ClientOptions) (transitgateway.TransitGateway, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	tgOptions := &tgapiv1.TransitGatewayApisV1Options{
+		Authenticator: opts.Authenticator,
 	}
-	// Fetch the TransitGateway service endpoint.
-	tgServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.TransitGateway), params.ServiceEndpoint)
+
+	tgServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.TransitGateway), opts.ServiceEndpoint)
 	if tgServiceEndpoint != "" {
-		params.Logger.V(3).Info("Overriding the default TransitGateway endpoint", "transitGatewayEndpoint", tgServiceEndpoint)
-		options.URL = tgServiceEndpoint
+		log.V(3).Info("Overriding the default TransitGateway endpoint", "endpoint", tgServiceEndpoint)
+		tgOptions.URL = tgServiceEndpoint
 	}
-	return transitgateway.NewService(options)
+
+	return transitgateway.NewService(tgOptions)
 }
 
-func (params ClusterScopeParams) getResourceControllerClient(options resourcecontroller.ServiceOptions) (resourcecontroller.ResourceController, error) {
-	if params.ResourceControllerFactory != nil {
-		return params.ResourceControllerFactory()
+// GetResourceControllerClient constructs a production Resource Controller client for the given options.
+func (b ProdClientBuilder) GetResourceControllerClient(ctx context.Context, opts ClientOptions) (resourcecontroller.ResourceController, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	rcOptions := resourcecontroller.ServiceOptions{
+		ResourceControllerV2Options: &resourcecontrollerv2.ResourceControllerV2Options{
+			Authenticator: opts.Authenticator,
+		},
 	}
-	// Fetch the resource controller endpoint.
-	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
+
+	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), opts.ServiceEndpoint)
 	if rcEndpoint != "" {
-		options.URL = rcEndpoint
-		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "ResourceControllerEndpoint", rcEndpoint)
+		log.V(3).Info("Overriding the default Resource Controller endpoint", "endpoint", rcEndpoint)
+		rcOptions.URL = rcEndpoint
 	}
-	return resourcecontroller.NewService(options)
+
+	return resourcecontroller.NewService(rcOptions)
 }
 
-func (params ClusterScopeParams) getResourceManagerClient(options *resourcemanagerv2.ResourceManagerV2Options) (resourcemanager.ResourceManager, error) {
-	if params.ResourceManagerFactory != nil {
-		return params.ResourceManagerFactory()
+// GetResourceManagerClient constructs a production Resource Manager client for the given options.
+func (b ProdClientBuilder) GetResourceManagerClient(ctx context.Context, opts ClientOptions) (resourcemanager.ResourceManager, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	rmOptions := &resourcemanagerv2.ResourceManagerV2Options{
+		Authenticator: opts.Authenticator,
 	}
-	// Fetch the resource manager endpoint.
-	rmEndpoint := endpoints.FetchEndpoints(string(endpoints.RM), params.ServiceEndpoint)
+
+	rmEndpoint := endpoints.FetchEndpoints(string(endpoints.RM), opts.ServiceEndpoint)
 	if rmEndpoint != "" {
-		options.URL = rmEndpoint
-		params.Logger.V(3).Info("Overriding the default resource manager endpoint", "ResourceManagerEndpoint", rmEndpoint)
+		log.Info("Overriding the default Resource Manager endpoint:", "endpoint", rmEndpoint)
+		rmOptions.URL = rmEndpoint
 	}
-	return resourcemanager.NewService(options)
+
+	return resourcemanager.NewService(rmOptions)
+}
+
+// NewPowerVSClusterScope creates a new ClusterScope from the supplied parameters.
+func NewPowerVSClusterScope(ctx context.Context, params ClusterScopeParams) (*ClusterScope, error) {
+	// 1. Validate inputs
+	if err := params.validate(); err != nil {
+		return nil, err
+	}
+
+	// 2. Initialize the patch helper
+	helper, err := patch.NewHelper(params.IBMPowerVSCluster, params.Client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to init patch helper: %w", err)
+	}
+
+	// 3. Construct the base scope
+	clusterScope := &ClusterScope{
+		Client:            params.Client,
+		patchHelper:       helper,
+		Cluster:           params.Cluster,
+		IBMPowerVSCluster: params.IBMPowerVSCluster,
+		ServiceEndpoint:   params.ServiceEndpoint,
+	}
+
+	// 4. Incase of VIP Topology we need not build clients
+	if params.IBMPowerVSCluster.Spec.Topology == infrav1.PowerVSVirtualIPTopology {
+		return clusterScope, nil
+	}
+
+	// 5. Initialize IBM Cloud Clients
+	if err := clusterScope.initClients(ctx, &params); err != nil {
+		return nil, fmt.Errorf("failed to initialize IBM Cloud clients: %w", err)
+	}
+
+	return clusterScope, nil
+}
+
+// Validate ensures all required fields are present before scope creation.
+func (p *ClusterScopeParams) validate() error {
+	if p.Client == nil {
+		return errors.New("failed to generate new scope: client is nil")
+	}
+	if p.Cluster == nil {
+		return errors.New("failed to generate new scope: cluster is nil")
+	}
+	if p.IBMPowerVSCluster == nil {
+		return errors.New("failed to generate new scope: IBMPowerVSCluster is nil")
+	}
+	if p.ClientBuilder == nil {
+		return errors.New("failed to generate new scope: ClientBuilder is nil")
+	}
+	return nil
+}
+
+// initClients bootstraps the required IBM Cloud clients based on the current cluster state and topology.
+func (s *ClusterScope) initClients(ctx context.Context, params *ClusterScopeParams) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	// Build the authenticator
+	auth, err := params.ClientBuilder.GetAuthenticator(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create authenticator: %w", err)
+	}
+
+	// Build the unified ClientOptions
+	opts := ClientOptions{
+		Authenticator:   auth,
+		Zone:            s.IBMPowerVSCluster.Spec.Zone,
+		VPCRegion:       s.IBMPowerVSCluster.Spec.VPC.Region,
+		WorkspaceID:     s.IBMPowerVSCluster.Status.Workspace.ID,
+		ServiceEndpoint: s.ServiceEndpoint,
+		Debug:           log.V(DEBUGLEVEL).Enabled(),
+	}
+
+	// 1. Build ResourceController & ResourceManager
+	s.ResourceClient, err = params.ClientBuilder.GetResourceControllerClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create Resource Controller client: %w", err)
+	}
+	s.ResourceManagerClient, err = params.ClientBuilder.GetResourceManagerClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create Resource Manager client: %w", err)
+	}
+
+	// 2. Only build PowerVS if the WorkspaceID is populated
+	if opts.WorkspaceID != "" {
+		s.IBMPowerVSClient, err = params.ClientBuilder.GetPowerVSClient(ctx, opts)
+		if err != nil {
+			return fmt.Errorf("failed to create PowerVS client: %w", err)
+		}
+	} else {
+		log.Info("Workspace ID not yet populated; skipping PowerVS client initialization for this loop")
+	}
+
+	// 3. Build VPC and TransitGateway client
+	s.IBMVPCClient, err = params.ClientBuilder.GetVPCClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create VPC client: %w", err)
+	}
+
+	s.TransitGatewayClient, err = params.ClientBuilder.GetTransitGatewayClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create Transit Gateway client: %w", err)
+	}
+
+	return nil
 }
 
 // PatchObject persists the cluster configuration and status.
@@ -449,7 +464,7 @@ func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 }
 
 // ValidateZoneSupportsPER checks whether PowerVS zone supports PER capabilities.
-func (s *ClusterScope) ValidateZoneSupportsPER() error {
+func (s *ClusterScope) ValidateZoneSupportsPER(ctx context.Context) error {
 	zone := s.IBMPowerVSCluster.Spec.Zone
 
 	if zone == "" {
@@ -457,7 +472,7 @@ func (s *ClusterScope) ValidateZoneSupportsPER() error {
 	}
 
 	// Fetch the datacenter details for the specified zone.
-	datacenterDetails, err := s.IBMPowerVSClient.GetDatatcenterDetails(zone)
+	datacenterDetails, err := s.IBMPowerVSClient.GetDatacenterDetails(ctx, zone)
 	if err != nil {
 		return fmt.Errorf("failed to get datacenter details: %w", err)
 	}
@@ -753,7 +768,7 @@ func (s *ClusterScope) ReconcileNetwork(ctx context.Context) (bool, error) {
 	networkID := cluster.Status.Network.ID
 	if networkID != "" {
 		log.V(3).Info("PowerVS network ID is set in status, verifying existence", "networkID", networkID)
-		if _, err := s.IBMPowerVSClient.GetNetworkByID(networkID); err != nil {
+		if _, err := s.IBMPowerVSClient.GetNetworkByID(ctx, networkID); err != nil {
 			return false, fmt.Errorf("failed to fetch network by ID: %w", err)
 		}
 
@@ -807,7 +822,7 @@ func (s *ClusterScope) reconcileNetworkReference(ctx context.Context) (bool, err
 	var networkID, networkName string
 
 	if ref.ID != "" {
-		network, err := s.IBMPowerVSClient.GetNetworkByID(ref.ID)
+		network, err := s.IBMPowerVSClient.GetNetworkByID(ctx, ref.ID)
 		if err != nil {
 			return false, fmt.Errorf("failed to fetch network by ID %q: %w", ref.ID, err)
 		}
@@ -817,7 +832,7 @@ func (s *ClusterScope) reconcileNetworkReference(ctx context.Context) (bool, err
 		networkID = *network.NetworkID
 		networkName = *network.Name
 	} else if ref.Name != "" {
-		network, err := s.IBMPowerVSClient.GetNetworkByName(ref.Name)
+		network, err := s.IBMPowerVSClient.GetNetworkByName(ctx, ref.Name)
 		if err != nil {
 			return false, fmt.Errorf("failed to fetch network by name %q: %w", ref.Name, err)
 		}
@@ -850,7 +865,7 @@ func (s *ClusterScope) reconcileNetworkProvision(ctx context.Context) (bool, err
 	}
 
 	// 2. Idempotency check: Did we already create this DHCP server, but crash before saving to Status?
-	dhcpServers, err := s.IBMPowerVSClient.GetAllDHCPServers()
+	dhcpServers, err := s.IBMPowerVSClient.ListDHCPServers(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to fetch existing DHCP servers for idempotency check: %w", err)
 	}
@@ -897,7 +912,7 @@ func (s *ClusterScope) reconcileNetworkProvision(ctx context.Context) (bool, err
 func (s *ClusterScope) isDHCPServerActive(ctx context.Context) (bool, error) {
 	dhcpID := s.IBMPowerVSCluster.Status.Network.DHCPServer.ID
 
-	dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(dhcpID)
+	dhcpServer, err := s.IBMPowerVSClient.GetDHCPServer(ctx, dhcpID)
 	if err != nil {
 		return false, err
 	}
@@ -953,7 +968,7 @@ func (s *ClusterScope) createDHCPServer(ctx context.Context, dhcpName string) (s
 	}
 	params.SnatEnabled = &snatEnabled
 
-	dhcpServer, err := s.IBMPowerVSClient.CreateDHCPServer(&params)
+	dhcpServer, err := s.IBMPowerVSClient.CreateDHCPServer(ctx, &params)
 	if err != nil {
 		return "", "", err
 	}
@@ -2986,7 +3001,7 @@ func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
 	}
 
 	// 4. Fetch the server to verify it exists
-	server, err := s.IBMPowerVSClient.GetDHCPServer(dhcpID)
+	server, err := s.IBMPowerVSClient.GetDHCPServer(ctx, dhcpID)
 	if err != nil {
 		// If it's a 404, we're already done!
 		if strings.Contains(err.Error(), string(DHCPServerNotFound)) {
@@ -2998,7 +3013,7 @@ func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
 
 	// 5. Issue the delete command
 	log.Info("Deleting provisioned DHCP server", "dhcpServerID", *server.ID)
-	if err = s.IBMPowerVSClient.DeleteDHCPServer(*server.ID); err != nil {
+	if err = s.IBMPowerVSClient.DeleteDHCPServer(ctx, *server.ID); err != nil {
 		return fmt.Errorf("failed to delete DHCP server: %w", err)
 	}
 
@@ -3101,4 +3116,12 @@ func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 
 	log.Info("COS service instance delete command accepted successfully")
 	return nil
+}
+
+func getTGPowerVSConnectionName(tgName string) string { return fmt.Sprintf("%s-pvs-con", tgName) }
+
+func getTGVPCConnectionName(tgName string) string { return fmt.Sprintf("%s-vpc-con", tgName) }
+
+func dhcpNetworkName(dhcpServerName string) string {
+	return fmt.Sprintf("DHCPSERVER%s_Private", dhcpServerName)
 }

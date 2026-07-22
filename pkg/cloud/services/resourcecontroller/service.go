@@ -24,8 +24,8 @@ import (
 
 	"k8s.io/utils/ptr"
 
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/pagingutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/pagingutils"
 )
 
 const (

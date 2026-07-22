@@ -47,8 +47,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
-	vpcscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	vpcscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 )
 
 // IBMVPCClusterReconciler reconciles a IBMVPCCluster object.

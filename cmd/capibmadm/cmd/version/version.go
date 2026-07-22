@@ -25,7 +25,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/version"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/version"
 )
 
 // Version provides the version information of capibmadm.

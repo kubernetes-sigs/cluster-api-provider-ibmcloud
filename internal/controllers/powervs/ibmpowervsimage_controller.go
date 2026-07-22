@@ -43,8 +43,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 )
 
 const (
@@ -57,6 +57,7 @@ type IBMPowerVSImageReconciler struct {
 	Recorder        record.EventRecorder
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	Scheme          *runtime.Scheme
+	ClientBuilder   powervsscope.ClientBuilder
 }
 
 //+kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsimages,verbs=get;list;watch;create;update;patch;delete
@@ -88,6 +89,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		Client:          r.Client,
 		IBMPowerVSImage: ibmPowerVSImage,
 		ServiceEndpoint: r.ServiceEndpoint,
+		ClientBuilder:   r.ClientBuilder,
 	}
 
 	// Externally managed clusters might not be available during image deletion. Get the cluster only when image is still not deleted.
@@ -97,7 +99,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		scopeParams.Zone = &cluster.Spec.Zone
+		scopeParams.Zone = cluster.Spec.Zone
 	}
 
 	// Initialize the patch helper
@@ -159,7 +161,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 
 	// 3. Import Job Polling Flow
 	if jobID := imageScope.GetJobID(); jobID != "" {
-		job, err := imageScope.IBMPowerVSClient.GetJob(jobID)
+		job, err := imageScope.IBMPowerVSClient.GetJob(ctx, jobID)
 		if err != nil {
 			log.Info("Unable to get job details", "jobID", jobID)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, err
@@ -206,7 +208,7 @@ func (r *IBMPowerVSImageReconciler) reconcileImage(ctx context.Context, img *mod
 	log := ctrl.LoggerFrom(ctx)
 
 	if img != nil {
-		image, err := imageScope.IBMPowerVSClient.GetImage(*img.ImageID)
+		image, err := imageScope.IBMPowerVSClient.GetImage(ctx, *img.ImageID)
 		if err != nil {
 			log.Info("Unable to get image details", "imageID", *img.ImageID)
 			return ctrl.Result{}, err
@@ -261,7 +263,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 		log.Info("IBMPowerVSImage ImageID is not yet set, skipping PowerVS API image deletion")
 
 		if scope.GetJobID() != "" {
-			if err := scope.DeleteImportJob(); err != nil {
+			if err := scope.DeleteImportJob(ctx); err != nil {
 				log.Error(err, "Error deleting IBMPowerVSImage Import Job")
 				r.markCondition(scope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.IBMPowerVSImageDeletingReason, clusterv1.ConditionSeverityWarning, fmt.Sprintf("Failed to delete import job: %v", err))
 				return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSImage Import Job: %w", err)
@@ -274,7 +276,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 
 	// 4. Handle actual Image deletion (respecting the DeletePolicy)
 	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1.DeletePolicyRetain) {
-		if err := scope.DeleteImage(); err != nil {
+		if err := scope.DeleteImage(ctx); err != nil {
 			log.Error(err, "Error deleting IBMPowerVSImage")
 
 			// Note: Replaced the accidental "InstanceDeletingReason" with the correct Image reason
@@ -291,6 +293,9 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *IBMPowerVSImageReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
+	if r.ClientBuilder == nil {
+		r.ClientBuilder = powervsscope.ProdClientBuilder{}
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.IBMPowerVSImage{}).
 		Complete(r)

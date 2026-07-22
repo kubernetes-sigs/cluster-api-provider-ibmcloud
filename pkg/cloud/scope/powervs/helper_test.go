@@ -17,6 +17,8 @@ limitations under the License.
 package powervs
 
 import (
+	"context"
+
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	corev1 "k8s.io/api/core/v1"
@@ -25,7 +27,41 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 )
+
+// stubClientBuilder is a test-only ClientBuilder that returns nil clients.
+// Use it when the test bypasses real IBM Cloud calls by injecting mocks directly into scope fields.
+type stubClientBuilder struct {
+	powerVSClient powervs.PowerVS
+	vpcClient     vpc.Vpc
+	tgClient      transitgateway.TransitGateway
+	rcClient      resourcecontroller.ResourceController
+	rmClient      resourcemanager.ResourceManager
+}
+
+func (s stubClientBuilder) GetAuthenticator(_ context.Context) (core.Authenticator, error) {
+	return nil, nil
+}
+func (s stubClientBuilder) GetPowerVSClient(_ context.Context, _ ClientOptions) (powervs.PowerVS, error) {
+	return s.powerVSClient, nil
+}
+func (s stubClientBuilder) GetVPCClient(_ context.Context, _ ClientOptions) (vpc.Vpc, error) {
+	return s.vpcClient, nil
+}
+func (s stubClientBuilder) GetTransitGatewayClient(_ context.Context, _ ClientOptions) (transitgateway.TransitGateway, error) {
+	return s.tgClient, nil
+}
+func (s stubClientBuilder) GetResourceControllerClient(_ context.Context, _ ClientOptions) (resourcecontroller.ResourceController, error) {
+	return s.rcClient, nil
+}
+func (s stubClientBuilder) GetResourceManagerClient(_ context.Context, _ ClientOptions) (resourcemanager.ResourceManager, error) {
+	return s.rmClient, nil
+}
 
 const (
 	clusterName      = "foo-cluster"

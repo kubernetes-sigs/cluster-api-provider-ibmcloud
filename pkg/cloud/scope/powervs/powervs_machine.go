@@ -34,12 +34,9 @@ import (
 
 	"github.com/blang/semver/v4"
 	ignV3Types "github.com/coreos/ignition/v2/config/v3_4/types"
-	"github.com/go-logr/logr"
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
-	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
-	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/ibm-cos-sdk-go/aws"
 	cosSession "github.com/IBM/ibm-cos-sdk-go/aws/session"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
@@ -51,7 +48,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -61,15 +57,15 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ignition"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/ignition"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 const cosURLDomain = "cloud-object-storage.appdomain.cloud"
@@ -109,24 +105,26 @@ func NewConfigurationError(message string) *ConfigurationError {
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	Logger            logr.Logger
 	Client            client.Client
 	Cluster           *clusterv1.Cluster
-	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
+	Machine           *clusterv1.Machine
 	IBMPowerVSMachine *infrav1.IBMPowerVSMachine
 	IBMPowerVSImage   *infrav1.IBMPowerVSImage
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 	DHCPIPCacheStore  cache.Store
+
+	ClientBuilder ClientBuilder
 }
 
 // MachineScope defines a scope defined around a Power VS Machine.
 type MachineScope struct {
 	Client client.Client
 
-	IBMPowerVSClient  powervs.PowerVS
-	IBMVPCClient      vpc.Vpc
-	ResourceClient    resourcecontroller.ResourceController
+	IBMPowerVSClient powervs.PowerVS
+	IBMVPCClient     vpc.Vpc
+	ResourceClient   resourcecontroller.ResourceController
+
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
@@ -137,150 +135,161 @@ type MachineScope struct {
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
-func NewMachineScope(params MachineScopeParams) (scope *MachineScope, err error) { //nolint:gocyclo
-	scope = &MachineScope{}
-
-	if params.Client == nil {
-		err = errors.New("client is required when creating a MachineScope")
+func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineScope, error) {
+	if err := params.validate(); err != nil {
 		return nil, err
 	}
-	scope.Client = params.Client
 
-	if params.Machine == nil {
-		err = errors.New("machine is required when creating a MachineScope")
-		return nil, err
-	}
-	scope.Machine = params.Machine
-
-	if params.Cluster == nil {
-		err = errors.New("cluster is required when creating a MachineScope")
-		return nil, err
-	}
-	scope.Cluster = params.Cluster
-
-	if params.IBMPowerVSMachine == nil {
-		err = errors.New("ibmPowerVSMachine machine is required when creating a MachineScope")
-		return nil, err
-	}
-	scope.IBMPowerVSMachine = params.IBMPowerVSMachine
-	scope.IBMPowerVSCluster = params.IBMPowerVSCluster
-	scope.IBMPowerVSImage = params.IBMPowerVSImage
-	scope.ServiceEndpoint = params.ServiceEndpoint
-
-	if params.Logger == (logr.Logger{}) {
-		params.Logger = klog.Background()
-	}
-	if params.Logger.V(DEBUGLEVEL).Enabled() {
-		core.SetLoggingLevel(core.LevelDebug)
+	scope := &MachineScope{
+		Client:            params.Client,
+		Cluster:           params.Cluster,
+		Machine:           params.Machine,
+		IBMPowerVSCluster: params.IBMPowerVSCluster,
+		IBMPowerVSMachine: params.IBMPowerVSMachine,
+		IBMPowerVSImage:   params.IBMPowerVSImage,
+		ServiceEndpoint:   params.ServiceEndpoint,
+		DHCPIPCacheStore:  params.DHCPIPCacheStore,
 	}
 
-	// Create Resource Controller client.
-	var serviceOption resourcecontroller.ServiceOptions
-	// Fetch the resource controller endpoint.
-	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), params.ServiceEndpoint)
-	if rcEndpoint != "" {
-		serviceOption.URL = rcEndpoint
-		params.Logger.V(3).Info("Overriding the default resource controller endpoint", "resourceControllerEndpoint", rcEndpoint)
+	if err := scope.initClients(ctx, &params); err != nil {
+		return nil, fmt.Errorf("failed to initialize IBM Cloud clients for machine: %w", err)
 	}
 
-	rc, err := resourcecontroller.NewService(serviceOption)
+	return scope, nil
+}
+
+// validate ensures all required fields are present before scope creation.
+func (p *MachineScopeParams) validate() error {
+	if p.Client == nil {
+		return errors.New("client is required when creating a MachineScope")
+	}
+	if p.Machine == nil {
+		return errors.New("machine is required when creating a MachineScope")
+	}
+	if p.Cluster == nil {
+		return errors.New("cluster is required when creating a MachineScope")
+	}
+	if p.IBMPowerVSMachine == nil {
+		return errors.New("ibmPowerVSMachine is required when creating a MachineScope")
+	}
+	if p.IBMPowerVSCluster == nil {
+		return errors.New("ibmPowerVSCluster is required when creating a MachineScope")
+	}
+	if p.ClientBuilder == nil {
+		return errors.New("ClientBuilder is required when creating a MachineScope")
+	}
+	return nil
+}
+
+func (s *MachineScope) initClients(ctx context.Context, params *MachineScopeParams) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	auth, err := params.ClientBuilder.GetAuthenticator(ctx)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to create authenticator: %w", err)
 	}
-	scope.ResourceClient = rc
 
+	// 1. Build Base Options
+	opts := ClientOptions{
+		Authenticator:   auth,
+		ServiceEndpoint: s.ServiceEndpoint,
+		Debug:           log.V(DEBUGLEVEL).Enabled(),
+	}
+
+	// 2. Build ResourceController
+	s.ResourceClient, err = params.ClientBuilder.GetResourceControllerClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create Resource Controller client: %w", err)
+	}
+
+	// 3. Resolve Workspace and Zone
+	workspaceID, workspaceZone, err := s.resolveWorkspace(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Set Scope Region/Zone from the resolved workspace
+	s.SetZone(workspaceZone)
+	s.SetRegion(endpoints.ConstructRegionFromZone(workspaceZone))
+
+	// 4. Build PowerVS Client with the resolved Workspace ID
+	opts.WorkspaceID = workspaceID
+	opts.Zone = workspaceZone
+
+	s.IBMPowerVSClient, err = params.ClientBuilder.GetPowerVSClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create PowerVS client: %w", err)
+	}
+
+	// 5. Build VPC Client
+	vpcRegion := s.IBMPowerVSCluster.Spec.VPC.Region
+	if vpcRegion == "" {
+		vpcRegion, err = regionUtil.VPCRegionForPowerVSRegion(s.GetRegion())
+		if err != nil {
+			return fmt.Errorf("failed to determine VPC region from PowerVS region: %w", err)
+		}
+	}
+	opts.VPCRegion = vpcRegion
+
+	s.IBMVPCClient, err = params.ClientBuilder.GetVPCClient(ctx, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create IBM VPC client: %w", err)
+	}
+
+	return nil
+}
+
+// resolveWorkspace figures out which workspace this machine should belong to, validates it, and returns the ID and Zone.
+func (s *MachineScope) resolveWorkspace(_ context.Context) (string, string, error) {
 	var workspaceID, workspaceName string
 
 	// 1. Check if the Machine explicitly overrides the Workspace
-	if params.IBMPowerVSMachine.Spec.Workspace.ID != "" {
-		workspaceID = params.IBMPowerVSMachine.Spec.Workspace.ID
-	} else if params.IBMPowerVSMachine.Spec.Workspace.Name != "" {
-		workspaceName = params.IBMPowerVSMachine.Spec.Workspace.Name
+	if s.IBMPowerVSMachine.Spec.Workspace.ID != "" {
+		workspaceID = s.IBMPowerVSMachine.Spec.Workspace.ID
+	} else if s.IBMPowerVSMachine.Spec.Workspace.Name != "" {
+		workspaceName = s.IBMPowerVSMachine.Spec.Workspace.Name
 	} else {
 		// 2. Inherit from the Cluster
-		if params.IBMPowerVSCluster.Status.Workspace.ID != "" {
-			workspaceID = params.IBMPowerVSCluster.Status.Workspace.ID
+		if s.IBMPowerVSCluster.Status.Workspace.ID != "" {
+			workspaceID = s.IBMPowerVSCluster.Status.Workspace.ID
 		} else {
-			return nil, errors.New("PowerVS workspace ID is not yet populated in the cluster status")
+			return "", "", errors.New("PowerVS workspace ID is not yet populated in the cluster status")
 		}
 	}
 
-	resourceInstance := resourcecontroller.InstanceFilter{
+	// 3. Validate against IBM Cloud
+	filter := resourcecontroller.InstanceFilter{
 		ID:             workspaceID,
 		Name:           workspaceName,
-		Zone:           &params.IBMPowerVSCluster.Spec.Zone,
+		Zone:           &s.IBMPowerVSCluster.Spec.Zone,
 		ResourceID:     resourcecontroller.PowerVSResourceID,
 		ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 	}
 
-	workspace, err := rc.GetResourceInstanceByFilter(resourceInstance)
+	workspace, err := s.ResourceClient.GetResourceInstanceByFilter(filter)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get PowerVS workspace details (workspaceName: %q, workspaceID: %q): %w", workspaceName, workspaceID, err)
+		return "", "", fmt.Errorf("failed to get PowerVS workspace details (name: %q, id: %q): %w", workspaceName, workspaceID, err)
 	}
 
 	if workspace == nil || workspace.GUID == nil || workspace.RegionID == nil {
-		return nil, fmt.Errorf("PowerVS workspace or GUID or RegionID is nil (name: %q, id: %q)", workspaceName, workspaceID)
+		return "", "", fmt.Errorf("PowerVS workspace or GUID or RegionID is nil (name: %q, id: %q)", workspaceName, workspaceID)
 	}
 	if workspace.State == nil || *workspace.State != string(infrav1.WorkspaceStateActive) {
-		return nil, fmt.Errorf("PowerVS workspace name: %s id: %s is not in active state", workspaceName, workspaceID)
-	}
-	workspaceID = *workspace.GUID
-
-	region := endpoints.ConstructRegionFromZone(*workspace.RegionID)
-	scope.SetRegion(region)
-	scope.SetZone(*workspace.RegionID)
-
-	serviceOptions := powervs.ServiceOptions{
-		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug: params.Logger.V(DEBUGLEVEL).Enabled(),
-			Zone:  *workspace.RegionID,
-		},
-		CloudInstanceID: workspaceID,
+		return "", "", fmt.Errorf("PowerVS workspace (name: %q, id: %q) is not in active state", workspaceName, workspaceID)
 	}
 
-	// Fetch the service endpoint.
-	if svcEndpoint := endpoints.FetchPVSEndpoint(region, params.ServiceEndpoint); svcEndpoint != "" {
-		serviceOptions.IBMPIOptions.URL = svcEndpoint
-		params.Logger.V(3).Info("Overriding the default PowerVS service endpoint", "serviceEndpoint", svcEndpoint)
-	}
-
-	c, err := powervs.NewService(serviceOptions)
-	if err != nil {
-		err = fmt.Errorf("failed to create PowerVS service")
-		return nil, err
-	}
-	c.WithClients(serviceOptions)
-
-	scope.IBMPowerVSClient = c
-	scope.DHCPIPCacheStore = params.DHCPIPCacheStore
-
-	var vpcRegion string
-	if params.IBMPowerVSCluster.Spec.VPC.Region == "" {
-		vpcRegion, err = regionUtil.VPCRegionForPowerVSRegion(scope.GetRegion())
-		if err != nil {
-			return nil, fmt.Errorf("failed to create VPC client, error getting VPC region %v", err)
-		}
-	} else {
-		vpcRegion = params.IBMPowerVSCluster.Spec.VPC.Region
-	}
-	svcEndpoint := endpoints.FetchVPCEndpoint(vpcRegion, params.ServiceEndpoint)
-	vpcClient, err := vpc.NewService(svcEndpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create IBM VPC client: %w", err)
-	}
-	scope.IBMVPCClient = vpcClient
-	return scope, nil
+	return *workspace.GUID, *workspace.RegionID, nil
 }
 
 // CreateMachine creates a PowerVS machine.
 //
 //nolint:gocyclo
-func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceReference, error) {
+func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceReference, error) {
 	log := ctrl.LoggerFrom(ctx)
-	machineSpec := m.IBMPowerVSMachine.Spec
+	machineSpec := s.IBMPowerVSMachine.Spec
 
 	// 1. Idempotency Check: check if the instance already exist
-	instanceReply, err := m.ensureInstanceUnique(m.IBMPowerVSMachine.Name)
+	instanceReply, err := s.ensureInstanceUnique(ctx, s.IBMPowerVSMachine.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify instance uniqueness: %w", err)
 	} else if instanceReply != nil {
@@ -290,7 +299,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 
 	// 2. Prevent Duplicate API Calls:
 	// If the creation request was just sent and K8s status is pending/unknown, wait.
-	for _, con := range m.IBMPowerVSMachine.Status.Conditions {
+	for _, con := range s.IBMPowerVSMachine.Status.Conditions {
 		if con.Type == infrav1.InstanceReadyCondition && con.Status == metav1.ConditionUnknown {
 			log.Info("Instance creation already triggered, waiting for cloud status update")
 			return nil, nil
@@ -299,7 +308,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 
 	// 3. Validate SystemType Capabilities
 	if machineSpec.SystemType != "" {
-		valid, supportedTypes, err := m.validateSystemType()
+		valid, supportedTypes, err := s.validateSystemType(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to validate systemType: %w", err)
 		}
@@ -309,7 +318,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	}
 
 	// 4. Resolve UserData (Ignition / Cloud-init)
-	userData, err := m.resolveUserData(ctx)
+	userData, err := s.resolveUserData(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve userdata: %w", err)
 	}
@@ -329,14 +338,14 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	// 6. Resolve Image ID
 	var imageID string
 	if machineSpec.Image.Type == infrav1.ImageSourceTypeImport {
-		if m.IBMPowerVSImage == nil || m.IBMPowerVSImage.Status.ImageID == "" {
+		if s.IBMPowerVSImage == nil || s.IBMPowerVSImage.Status.ImageID == "" {
 			return nil, fmt.Errorf("imported image is not ready yet")
 		}
-		imageID = m.IBMPowerVSImage.Status.ImageID
+		imageID = s.IBMPowerVSImage.Status.ImageID
 	} else {
-		imageID, err = m.getImageID(machineSpec.Image.Reference)
+		imageID, err = s.getImageID(ctx, machineSpec.Image.Reference)
 		if err != nil {
-			record.Warnf(m.IBMPowerVSMachine, "FailedRetrieveImage", "Failed image retrieval: %v", err)
+			record.Warnf(s.IBMPowerVSMachine, "FailedRetrieveImage", "Failed image retrieval: %v", err)
 			return nil, fmt.Errorf("error getting image ID from reference: %w", err)
 		}
 	}
@@ -347,16 +356,16 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 
 	// Fallback to cluster network if explicitly omitted on the machine
 	if network.ID == "" && network.Name == "" {
-		networkID := m.IBMPowerVSCluster.Status.Network.ID
+		networkID := s.IBMPowerVSCluster.Status.Network.ID
 		if networkID == "" {
 			return nil, fmt.Errorf("network ID is not yet resolved in cluster status and was not specified on machine")
 		}
 		network.ID = networkID
 	}
 
-	networkID, err := m.getNetworkID(network)
+	networkID, err := s.getNetworkID(ctx, network)
 	if err != nil {
-		record.Warnf(m.IBMPowerVSMachine, "FailedRetrieveNetwork", "Failed network retrieval: %v", err)
+		record.Warnf(s.IBMPowerVSMachine, "FailedRetrieveNetwork", "Failed network retrieval: %v", err)
 		return nil, fmt.Errorf("error getting network ID: %w", err)
 	}
 	log.V(3).Info("Retrieved network id", "networkID", *networkID)
@@ -365,7 +374,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	procType := strings.ToLower(string(machineSpec.ProcessorType))
 
 	payload := &models.PVMInstanceCreate{
-		ServerName: ptr.To(m.IBMPowerVSMachine.Name),
+		ServerName: ptr.To(s.IBMPowerVSMachine.Name),
 		ImageID:    ptr.To(imageID),
 		Memory:     ptr.To(float64(machineSpec.MemoryGiB)),
 		Processors: ptr.To(processors),
@@ -382,81 +391,81 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	}
 
 	// 9. Execute Instance Creation
-	log.Info("Triggering PowerVS instance creation", "machine", m.IBMPowerVSMachine.Name)
-	if _, err := m.IBMPowerVSClient.CreateInstance(payload); err != nil {
-		record.Warnf(m.IBMPowerVSMachine, "FailedCreateInstance", "Failed instance creation: %v", err)
+	log.Info("Triggering PowerVS instance creation", "machine", s.IBMPowerVSMachine.Name)
+	if _, err := s.IBMPowerVSClient.CreateInstance(ctx, payload); err != nil {
+		record.Warnf(s.IBMPowerVSMachine, "FailedCreateInstance", "Failed instance creation: %v", err)
 		return nil, fmt.Errorf("failed to create PowerVS instance via SDK: %w", err)
 	}
 
-	record.Eventf(m.IBMPowerVSMachine, "SuccessfulCreateInstance", "Successfully triggered creation for Instance %q", m.IBMPowerVSMachine.Name)
+	record.Eventf(s.IBMPowerVSMachine, "SuccessfulCreateInstance", "Successfully triggered creation for Instance %q", s.IBMPowerVSMachine.Name)
 
 	return nil, nil
 }
 
 // DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
-func (m *MachineScope) DeleteMachine() error {
-	if err := m.IBMPowerVSClient.DeleteInstance(m.IBMPowerVSMachine.Status.InstanceID); err != nil {
-		record.Warnf(m.IBMPowerVSMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
+func (s *MachineScope) DeleteMachine(ctx context.Context) error {
+	if err := s.IBMPowerVSClient.DeleteInstance(ctx, s.IBMPowerVSMachine.Status.InstanceID); err != nil {
+		record.Warnf(s.IBMPowerVSMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
 		return err
 	}
-	record.Eventf(m.IBMPowerVSMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMPowerVSMachine.Name)
+	record.Eventf(s.IBMPowerVSMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", s.IBMPowerVSMachine.Name)
 	return nil
 }
 
 // DeleteMachineIgnition deletes the ignition data associated with the machine.
-func (m *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
+func (s *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	// 1. Guard check: If the machine isn't using Ignition, skip teardown.
-	if !m.useIgnition() {
+	if !s.useIgnition() {
 		log.V(3).Info("Machine is not using user data of type ignition")
 		return nil
 	}
 
 	// 2. Fetch the bucket name strictly from the Status field
-	bucket := m.IBMPowerVSCluster.Status.COSInstance.BucketName
+	bucket := s.IBMPowerVSCluster.Status.COSInstance.BucketName
 	if bucket == "" {
 		log.Info("COS bucket name is not populated in cluster status, skipping ignition deletion")
 		return nil
 	}
 
-	cosClient, err := m.createCOSClient(ctx)
+	cosClient, err := s.createCOSClient(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create COS client: %w", err)
 	}
 
 	// 3. Delete the exact key, avoiding the strings.Contains partial match bug!
-	key := m.bootstrapDataKey()
+	key := s.bootstrapDataKey()
 
 	if _, err := cosClient.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: ptr.To(bucket),
 		Key:    ptr.To(key),
 	}); err != nil {
-		record.Warnf(m.IBMPowerVSMachine, "FailedDeleteMachineIgnition", "Failed machine ignition deletion - %v", err)
+		record.Warnf(s.IBMPowerVSMachine, "FailedDeleteMachineIgnition", "Failed machine ignition deletion - %v", err)
 		return fmt.Errorf("failed to delete COS object %s from bucket %s: %w", key, bucket, err)
 	}
 
-	record.Eventf(m.IBMPowerVSMachine, "SuccessfulDeleteMachineIgnition", "Deleted machine ignition %q", m.IBMPowerVSMachine.Name)
+	record.Eventf(s.IBMPowerVSMachine, "SuccessfulDeleteMachineIgnition", "Deleted machine ignition %q", s.IBMPowerVSMachine.Name)
 	return nil
 }
 
 // CreateVPCLoadBalancerPoolMember creates a member in load balancer pool.
-func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vpcv1.LoadBalancerPoolMember, error) { //nolint:gocyclo
+func (s *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vpcv1.LoadBalancerPoolMember, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
 	loadBalancers := make([]infrav1.LoadBalancerSource, 0)
-	if len(m.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
+	if len(s.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
 		loadBalancer := infrav1.LoadBalancerSource{
 			Type: infrav1.SourceTypeProvision,
 			Provision: infrav1.LoadBalancerProvision{
-				Name: fmt.Sprintf("%s-loadbalancer", m.IBMPowerVSCluster.Name),
+				Name: fmt.Sprintf("%s-loadbalancer", s.IBMPowerVSCluster.Name),
 				Type: infrav1.LoadBalancerTypePublic,
 			},
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
-	for index, loadBalancer := range m.IBMPowerVSCluster.Spec.LoadBalancers {
+	for index, loadBalancer := range s.IBMPowerVSCluster.Spec.LoadBalancers {
 		if loadBalancer.Type == infrav1.SourceTypeProvision && loadBalancer.Provision.Name == "" {
-			loadBalancer.Provision.Name = fmt.Sprintf("%s-loadbalancer-%d", m.IBMPowerVSCluster.Name, index)
+			loadBalancer.Provision.Name = fmt.Sprintf("%s-loadbalancer-%d", s.IBMPowerVSCluster.Name, index)
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
@@ -474,11 +483,11 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 		}
 
 		var lbID string
-		if len(m.IBMPowerVSCluster.Status.LoadBalancers) == 0 {
+		if len(s.IBMPowerVSCluster.Status.LoadBalancers) == 0 {
 			return nil, fmt.Errorf("failed to find VPC load balancer ID")
 		}
 		found := false
-		for _, val := range m.IBMPowerVSCluster.Status.LoadBalancers {
+		for _, val := range s.IBMPowerVSCluster.Status.LoadBalancers {
 			if val.Name == lbName {
 				lbID = val.ID
 				found = true
@@ -489,7 +498,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 			return nil, fmt.Errorf("failed to find VPC load balancer ID")
 		}
 
-		loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+		loadBalancer, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
 			ID: &lbID,
 		})
 		if err != nil {
@@ -502,7 +511,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 			return nil, fmt.Errorf("no pools exist for the VPC load balancer %s", lbName)
 		}
 
-		internalIP := m.GetMachineInternalIP()
+		internalIP := s.GetMachineInternalIP()
 
 		lbAdditionalListeners := map[string]infrav1.AdditionalListener{}
 		for _, additionalListener := range lb.Provision.AdditionalListeners {
@@ -518,7 +527,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 			listenerOptions := &vpcv1.GetLoadBalancerListenerOptions{}
 			listenerOptions.SetLoadBalancerID(*loadBalancer.ID)
 			listenerOptions.SetID(*listener.ID)
-			loadBalancerListener, _, err := m.IBMVPCClient.GetLoadBalancerListener(listenerOptions)
+			loadBalancerListener, _, err := s.IBMVPCClient.GetLoadBalancerListener(listenerOptions)
 			if err != nil {
 				return nil, fmt.Errorf("failed to list %s load balancer listener: %w", *listener.ID, err)
 			}
@@ -546,7 +555,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 			listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
 			listOptions.SetLoadBalancerID(*loadBalancer.ID)
 			listOptions.SetPoolID(*pool.ID)
-			listLoadBalancerPoolMembers, _, err := m.IBMVPCClient.ListLoadBalancerPoolMembers(listOptions)
+			listLoadBalancerPoolMembers, _, err := s.IBMVPCClient.ListLoadBalancerPoolMembers(listOptions)
 			if err != nil {
 				return nil, fmt.Errorf("failed to list %s VPC load balancer pool: %w", *pool.Name, err)
 			}
@@ -555,19 +564,19 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 
 			if loadBalancerListener, ok := loadBalancerListeners[*pool.Name]; ok {
 				targetPort = loadBalancerListener.Port
-				log.V(3).Info("Checking if machine label matches with the label selector in listener", "machineLabel", m.IBMPowerVSMachine.Labels, "labelSelector", loadBalancerListener.Selector)
+				log.V(3).Info("Checking if machine label matches with the label selector in listener", "machineLabel", s.IBMPowerVSMachine.Labels, "labelSelector", loadBalancerListener.Selector)
 				selector, err := metav1.LabelSelectorAsSelector(&loadBalancerListener.Selector)
 				if err != nil {
 					log.V(5).Error(err, "Skipping listener addition, failed to get label selector from spec selector")
 					continue
 				}
 
-				if selector.Empty() && !util.IsControlPlaneMachine(m.Machine) {
+				if selector.Empty() && !util.IsControlPlaneMachine(s.Machine) {
 					log.V(3).Info("Skipping listener addition as the selector is empty and not a control plane machine")
 					continue
 				}
 				// Skip adding the listener if the selector does not match
-				if !selector.Empty() && !selector.Matches(labels.Set(m.IBMPowerVSMachine.Labels)) {
+				if !selector.Empty() && !selector.Matches(labels.Set(s.IBMPowerVSMachine.Labels)) {
 					log.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "IP", internalIP)
 					continue
 				}
@@ -588,7 +597,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 			}
 
 			// make sure that LoadBalancer is in active state
-			loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+			loadBalancer, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
 				ID: loadBalancer.ID,
 			})
 			if err != nil {
@@ -607,7 +616,7 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 				Address: &internalIP,
 			})
 			log.V(3).Info("Creating VPC load balancer pool member", "options", options)
-			loadBalancerPoolMember, _, err := m.IBMVPCClient.CreateLoadBalancerPoolMember(options)
+			loadBalancerPoolMember, _, err := s.IBMVPCClient.CreateLoadBalancerPoolMember(options)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create VPC load balancer %s pool member %w", *loadBalancer.Name, err)
 			}
@@ -619,51 +628,51 @@ func (m *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 }
 
 // SetReady will set the status as ready for the machine.
-func (m *MachineScope) SetReady() {
-	m.IBMPowerVSMachine.Status.Initialization.Provisioned = ptr.To(true)
+func (s *MachineScope) SetReady() {
+	s.IBMPowerVSMachine.Status.Initialization.Provisioned = ptr.To(true)
 }
 
 // SetNotReady will set status as not ready for the machine.
-func (m *MachineScope) SetNotReady() {
-	m.IBMPowerVSMachine.Status.Initialization.Provisioned = ptr.To(false)
+func (s *MachineScope) SetNotReady() {
+	s.IBMPowerVSMachine.Status.Initialization.Provisioned = ptr.To(false)
 }
 
 // IsReady will return the status for the machine.
-func (m *MachineScope) IsReady() bool {
-	return ptr.Deref(m.IBMPowerVSMachine.Status.Initialization.Provisioned, false)
+func (s *MachineScope) IsReady() bool {
+	return ptr.Deref(s.IBMPowerVSMachine.Status.Initialization.Provisioned, false)
 }
 
 // SetInstanceID will set the instance id for the machine.
-func (m *MachineScope) SetInstanceID(id *string) {
+func (s *MachineScope) SetInstanceID(id *string) {
 	if id != nil {
-		m.IBMPowerVSMachine.Status.InstanceID = *id
+		s.IBMPowerVSMachine.Status.InstanceID = *id
 	}
 }
 
 // GetInstanceID will get the instance id for the machine.
-func (m *MachineScope) GetInstanceID() string {
-	return m.IBMPowerVSMachine.Status.InstanceID
+func (s *MachineScope) GetInstanceID() string {
+	return s.IBMPowerVSMachine.Status.InstanceID
 }
 
 // SetInstanceState will set the state for the machine.
-func (m *MachineScope) SetInstanceState(status *string) {
-	m.IBMPowerVSMachine.Status.InstanceState = infrav1.PowerVSInstanceState(*status)
+func (s *MachineScope) SetInstanceState(status *string) {
+	s.IBMPowerVSMachine.Status.InstanceState = infrav1.PowerVSInstanceState(*status)
 }
 
 // GetInstanceState will get the state for the machine.
-func (m *MachineScope) GetInstanceState() infrav1.PowerVSInstanceState {
-	return m.IBMPowerVSMachine.Status.InstanceState
+func (s *MachineScope) GetInstanceState() infrav1.PowerVSInstanceState {
+	return s.IBMPowerVSMachine.Status.InstanceState
 }
 
 // SetHealth will set the health status for the machine.
-func (m *MachineScope) SetHealth(health *models.PVMInstanceHealth) {
+func (s *MachineScope) SetHealth(health *models.PVMInstanceHealth) {
 	if health != nil {
-		m.IBMPowerVSMachine.Status.Health = health.Status
+		s.IBMPowerVSMachine.Status.Health = health.Status
 	}
 }
 
 // SetAddresses will set the addresses for the machine.
-func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMInstance) { //nolint:gocyclo
+func (s *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMInstance) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
 	var addresses []clusterv1.MachineAddress
 	// Setting the name of the vm to the InternalDNS and Hostname as the vm uses that as hostname.
@@ -689,7 +698,7 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 			})
 		}
 	}
-	m.IBMPowerVSMachine.Status.Addresses = addresses
+	s.IBMPowerVSMachine.Status.Addresses = addresses
 	if len(addresses) > 2 {
 		// If the address length is more than 2 means either MachineInternalIP or MachineExternalIP is updated so return
 		return
@@ -697,7 +706,7 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 	// In this case there is no IP found under instance.Networks, So try to fetch the IP from cache or DHCP server
 
 	// Look for DHCP IP from the cache
-	obj, exists, err := m.DHCPIPCacheStore.GetByKey(*instance.ServerName)
+	obj, exists, err := s.DHCPIPCacheStore.GetByKey(*instance.ServerName)
 	if err != nil {
 		log.Error(err, "failed to fetch the DHCP IP address from cache store")
 	} else if exists {
@@ -706,16 +715,16 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 			Type:    clusterv1.MachineInternalIP,
 			Address: obj.(powervs.VMip).IP,
 		})
-		m.IBMPowerVSMachine.Status.Addresses = addresses
+		s.IBMPowerVSMachine.Status.Addresses = addresses
 		return
 	}
 	// Fetch the VM network ID
-	network := m.IBMPowerVSMachine.Spec.Network
+	network := s.IBMPowerVSMachine.Spec.Network
 	if network.ID == "" && network.Name == "" {
 		// if the network is empty, Fetch from cluster, By this time the network ID should be present in cluster status.
-		network.ID = m.IBMPowerVSCluster.Status.Network.ID
+		network.ID = s.IBMPowerVSCluster.Status.Network.ID
 	}
-	networkID, err := m.getNetworkID(network)
+	networkID, err := s.getNetworkID(ctx, network)
 	if err != nil {
 		log.Error(err, "failed to fetch network id from network resource")
 		return
@@ -734,7 +743,7 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 		return
 	}
 	// Get all the DHCP servers
-	dhcpServer, err := m.IBMPowerVSClient.GetAllDHCPServers()
+	dhcpServer, err := s.IBMPowerVSClient.ListDHCPServers(ctx)
 	if err != nil {
 		log.Error(err, "failed to get DHCP server")
 		return
@@ -748,7 +757,7 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 		}
 		if *server.Network.ID == *networkID {
 			log.V(3).Info("Found DHCP server for network", "dhcpServerID", *server.ID, "networkID", *networkID)
-			dhcpServerDetails, err = m.IBMPowerVSClient.GetDHCPServer(*server.ID)
+			dhcpServerDetails, err = s.IBMPowerVSClient.GetDHCPServer(ctx, *server.ID)
 			if err != nil {
 				log.Error(err, "failed to get DHCP server details", "dhcpServerID", *server.ID)
 				return
@@ -783,58 +792,58 @@ func (m *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 		Address: *internalIP,
 	})
 	// Update the cache with the ip and VM name
-	err = m.DHCPIPCacheStore.Add(powervs.VMip{
+	err = s.DHCPIPCacheStore.Add(powervs.VMip{
 		Name: *instance.ServerName,
 		IP:   *internalIP,
 	})
 	if err != nil {
 		log.Error(err, "failed to update the DHCP cache store with the IP", "IP", *internalIP)
 	}
-	m.IBMPowerVSMachine.Status.Addresses = addresses
+	s.IBMPowerVSMachine.Status.Addresses = addresses
 }
 
 // SetRegion will set the region for the machine.
-func (m *MachineScope) SetRegion(region string) {
-	m.IBMPowerVSMachine.Status.Region = region
+func (s *MachineScope) SetRegion(region string) {
+	s.IBMPowerVSMachine.Status.Region = region
 }
 
 // GetRegion will get the region for the machine.
-func (m *MachineScope) GetRegion() string {
-	return m.IBMPowerVSMachine.Status.Region
+func (s *MachineScope) GetRegion() string {
+	return s.IBMPowerVSMachine.Status.Region
 }
 
 // SetZone will set the zone for the machine.
-func (m *MachineScope) SetZone(zone string) {
-	m.IBMPowerVSMachine.Status.Zone = zone
+func (s *MachineScope) SetZone(zone string) {
+	s.IBMPowerVSMachine.Status.Zone = zone
 }
 
 // GetZone will get the zone for the machine.
-func (m *MachineScope) GetZone() string {
-	return m.IBMPowerVSMachine.Status.Zone
+func (s *MachineScope) GetZone() string {
+	return s.IBMPowerVSMachine.Status.Zone
 }
 
 // GetWorkspaceID returns the PowerVS workspace ID, evaluating in the following order of precedence:
 // 1. Machine Spec explicitly sets Workspace ID
 // 2. Machine Spec explicitly sets Workspace Name (requires IBM Cloud lookup)
 // 3. Inherit resolved Workspace ID from the Cluster Status.
-func (m *MachineScope) GetWorkspaceID() (string, error) {
+func (s *MachineScope) GetWorkspaceID() (string, error) {
 	// 1. Precedence 1: Machine Spec Workspace ID
-	if m.IBMPowerVSMachine.Spec.Workspace.ID != "" {
-		return m.IBMPowerVSMachine.Spec.Workspace.ID, nil
+	if s.IBMPowerVSMachine.Spec.Workspace.ID != "" {
+		return s.IBMPowerVSMachine.Spec.Workspace.ID, nil
 	}
 
 	// 2. Precedence 2: Machine Spec Workspace Name (requires lookup)
-	if m.IBMPowerVSMachine.Spec.Workspace.Name != "" {
-		workspaceName := m.IBMPowerVSMachine.Spec.Workspace.Name
+	if s.IBMPowerVSMachine.Spec.Workspace.Name != "" {
+		workspaceName := s.IBMPowerVSMachine.Spec.Workspace.Name
 
 		resourceInstance := resourcecontroller.InstanceFilter{
 			Name:           workspaceName,
-			Zone:           &m.IBMPowerVSCluster.Spec.Zone,
+			Zone:           &s.IBMPowerVSCluster.Spec.Zone,
 			ResourceID:     resourcecontroller.PowerVSResourceID,
 			ResourcePlanID: resourcecontroller.PowerVSResourcePlanID,
 		}
 
-		workspace, err := m.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
+		workspace, err := s.ResourceClient.GetResourceInstanceByFilter(resourceInstance)
 		if err != nil {
 			return "", fmt.Errorf("failed to lookup PowerVS workspace by name %q: %w", workspaceName, err)
 		}
@@ -847,30 +856,30 @@ func (m *MachineScope) GetWorkspaceID() (string, error) {
 
 	// 3. Precedence 3: Inherit from Cluster Status
 	// In v1beta3, the Cluster controller guarantees this is populated during the cluster's reconciliation loop.
-	if m.IBMPowerVSCluster.Status.Workspace.ID != "" {
-		return m.IBMPowerVSCluster.Status.Workspace.ID, nil
+	if s.IBMPowerVSCluster.Status.Workspace.ID != "" {
+		return s.IBMPowerVSCluster.Status.Workspace.ID, nil
 	}
 
 	return "", errors.New("failed to find workspace ID: not specified in Machine spec and not yet populated in Cluster status")
 }
 
 // SetProviderID will set the provider id for the machine.
-func (m *MachineScope) SetProviderID(instanceID string) error {
+func (s *MachineScope) SetProviderID(instanceID string) error {
 	if options.ProviderIDFormatType(options.ProviderIDFormat) != options.ProviderIDFormatV2 {
 		return fmt.Errorf("invalid value for ProviderIDFormat")
 	}
 
-	workspaceID, err := m.GetWorkspaceID()
+	workspaceID, err := s.GetWorkspaceID()
 	if err != nil {
 		return err
 	}
-	m.IBMPowerVSMachine.Spec.ProviderID = fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", m.GetRegion(), m.GetZone(), workspaceID, instanceID)
+	s.IBMPowerVSMachine.Spec.ProviderID = fmt.Sprintf("ibmpowervs://%s/%s/%s/%s", s.GetRegion(), s.GetZone(), workspaceID, instanceID)
 	return nil
 }
 
 // GetMachineInternalIP returns the machine's internal IP.
-func (m *MachineScope) GetMachineInternalIP() string {
-	for _, address := range m.IBMPowerVSMachine.Status.Addresses {
+func (s *MachineScope) GetMachineInternalIP() string {
+	for _, address := range s.IBMPowerVSMachine.Status.Addresses {
 		if address.Type == clusterv1.MachineInternalIP {
 			return address.Address
 		}
@@ -881,14 +890,14 @@ func (m *MachineScope) GetMachineInternalIP() string {
 // resolveUserData fetches raw bootstrap data and, when Ignition is configured,
 // uploads it to COS and returns a base64-encoded ignition redirect document.
 // For plain cloud-init, it base64-encodes the raw secret value directly.
-func (m *MachineScope) resolveUserData(ctx context.Context) (string, error) {
-	userData, err := m.getRawBootstrapData()
+func (s *MachineScope) resolveUserData(ctx context.Context) (string, error) {
+	userData, err := s.getRawBootstrapData()
 	if err != nil {
 		return "", err
 	}
 
-	if m.useIgnition() {
-		data, err := m.ignitionUserData(ctx, userData)
+	if s.useIgnition() {
+		data, err := s.ignitionUserData(ctx, userData)
 		if err != nil {
 			return "", err
 		}
@@ -901,8 +910,8 @@ func (m *MachineScope) resolveUserData(ctx context.Context) (string, error) {
 
 // ignitionUserData uploads the raw bootstrap data to COS via createIgnitionData,
 // then wraps the resulting pre-signed URL in an Ignition v2 or v3 redirect document.
-func (m *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([]byte, error) {
-	objectURL, err := m.createIgnitionData(ctx, userData)
+func (s *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([]byte, error) {
+	objectURL, err := s.createIgnitionData(ctx, userData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user data object: %w", err)
 	}
@@ -921,7 +930,7 @@ func (m *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 	}
 	token := "Bearer " + iamtoken
 
-	ignVersion := m.getIgnitionVersion()
+	ignVersion := s.getIgnitionVersion()
 	semver, err := semver.ParseTolerant(ignVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse ignition version %q: %w", ignVersion, err)
@@ -971,23 +980,23 @@ func (m *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 
 // createIgnitionData uploads userData to the COS bucket and returns the HTTPS
 // object URL that Ignition will use to fetch the real bootstrap config.
-func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (string, error) {
+func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if len(data) == 0 {
 		return "", fmt.Errorf("user data is empty")
 	}
 
-	cosClient, err := m.createCOSClient(ctx)
+	cosClient, err := s.createCOSClient(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to create COS client: %w", err)
 	}
 
-	key := m.bootstrapDataKey()
+	key := s.bootstrapDataKey()
 	log.V(3).Info("Bootstrap data key name", "key", key)
 
 	// Fetch directly from the elevated Spec fields
-	bucket := m.IBMPowerVSCluster.Spec.COSInstance.BucketName
-	region := m.IBMPowerVSCluster.Spec.COSInstance.BucketRegion
+	bucket := s.IBMPowerVSCluster.Spec.COSInstance.BucketName
+	region := s.IBMPowerVSCluster.Spec.COSInstance.BucketRegion
 	if bucket == "" || region == "" {
 		return "", fmt.Errorf("cannot push ignition data: COS bucket name or region is not set in cluster spec")
 	}
@@ -1002,7 +1011,7 @@ func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 
 	objHost := fmt.Sprintf("%s.s3.%s.%s", bucket, region, cosURLDomain)
 
-	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), m.ServiceEndpoint)
+	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
 	if cosServiceEndpoint != "" {
 		log.V(3).Info("Overriding the default COS endpoint in ignition URL", "cosEndpoint", cosServiceEndpoint)
 		cosURL, _ := url.Parse(cosServiceEndpoint)
@@ -1024,17 +1033,17 @@ func (m *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 }
 
 // createCOSClient creates a new cosClient from the supplied parameters.
-func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
+func (s *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// 1. Get the ID from IBMPowerVSCluster status.
-	cosID := m.IBMPowerVSCluster.Status.COSInstance.ID
+	cosID := s.IBMPowerVSCluster.Status.COSInstance.ID
 	if cosID == "" {
 		return nil, fmt.Errorf("COS instance ID is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
 
 	// 2. Fetch the region directly from IBMPowerVSCluster status.
-	region := m.IBMPowerVSCluster.Status.COSInstance.BucketRegion
+	region := s.IBMPowerVSCluster.Status.COSInstance.BucketRegion
 	if region == "" {
 		return nil, fmt.Errorf("COS bucket region is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
@@ -1051,7 +1060,7 @@ func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	serviceEndpoint := fmt.Sprintf("s3.%s.%s", region, cosURLDomain)
 
 	// Fetch the custom COS service endpoint if provided
-	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), m.ServiceEndpoint)
+	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
 	if cosServiceEndpoint != "" {
 		log.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
 		serviceEndpoint = cosServiceEndpoint
@@ -1076,35 +1085,35 @@ func (m *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 }
 
 // bootstrapDataKey returns the COS object key for this machine's bootstrap data.
-func (m *MachineScope) bootstrapDataKey() string {
+func (s *MachineScope) bootstrapDataKey() string {
 	// Use machine name as object key.
-	return path.Join(m.role(), m.name())
+	return path.Join(s.role(), s.name())
 }
 
 // getIgnitionVersion returns the user-specified Ignition version,
 // or falls back to the default "2.3" if it was left unset.
-func (m *MachineScope) getIgnitionVersion() string {
-	if m.IBMPowerVSCluster.Spec.Ignition.Version == "" {
+func (s *MachineScope) getIgnitionVersion() string {
+	if s.IBMPowerVSCluster.Spec.Ignition.Version == "" {
 		return "2.3"
 	}
-	return m.IBMPowerVSCluster.Spec.Ignition.Version
+	return s.IBMPowerVSCluster.Spec.Ignition.Version
 }
 
 // useIgnition returns true if the user configured a COS Instance,
 // which acts as the master switch for the Ignition bootstrap workflow.
-func (m *MachineScope) useIgnition() bool {
-	return m.IBMPowerVSCluster.Spec.COSInstance.Type != ""
+func (s *MachineScope) useIgnition() bool {
+	return s.IBMPowerVSCluster.Spec.COSInstance.Type != ""
 }
 
 // getRawBootstrapData returns the bootstrap data if present.
-func (m *MachineScope) getRawBootstrapData() ([]byte, error) {
-	if m.Machine == nil || m.Machine.Spec.Bootstrap.DataSecretName == nil {
+func (s *MachineScope) getRawBootstrapData() ([]byte, error) {
+	if s.Machine == nil || s.Machine.Spec.Bootstrap.DataSecretName == nil {
 		return nil, errors.New("failed to retrieve bootstrap data: linked Machine's bootstrap.dataSecretName is nil")
 	}
 
 	secret := &corev1.Secret{}
-	key := types.NamespacedName{Namespace: m.Machine.Namespace, Name: *m.Machine.Spec.Bootstrap.DataSecretName}
-	if err := m.Client.Get(context.TODO(), key, secret); err != nil {
+	key := types.NamespacedName{Namespace: s.Machine.Namespace, Name: *s.Machine.Spec.Bootstrap.DataSecretName}
+	if err := s.Client.Get(context.TODO(), key, secret); err != nil {
 		return nil, fmt.Errorf("failed to retrieve bootstrap data secret: %v", err)
 	}
 
@@ -1117,13 +1126,13 @@ func (m *MachineScope) getRawBootstrapData() ([]byte, error) {
 }
 
 // getImageID resolves an image ResourceIdentifier to a concrete image ID string.
-func (m *MachineScope) getImageID(image infrav1.ResourceIdentifier) (string, error) {
+func (s *MachineScope) getImageID(ctx context.Context, image infrav1.ResourceIdentifier) (string, error) {
 	if image.ID != "" {
 		return image.ID, nil
 	}
 
 	if image.Name != "" {
-		images, err := m.getImages()
+		images, err := s.getImages(ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to get images from IBM Cloud: %w", err)
 		}
@@ -1141,13 +1150,13 @@ func (m *MachineScope) getImageID(image infrav1.ResourceIdentifier) (string, err
 }
 
 // getNetworkID resolves a network ResourceIdentifier to a concrete network ID pointer.
-func (m *MachineScope) getNetworkID(network infrav1.ResourceIdentifier) (*string, error) {
+func (s *MachineScope) getNetworkID(ctx context.Context, network infrav1.ResourceIdentifier) (*string, error) {
 	if network.ID != "" {
 		return ptr.To(network.ID), nil
 	}
 
 	if network.Name != "" {
-		net, err := m.IBMPowerVSClient.GetNetworkByName(network.Name)
+		net, err := s.IBMPowerVSClient.GetNetworkByName(ctx, network.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get network by name %q: %w", network.Name, err)
 		}
@@ -1161,8 +1170,8 @@ func (m *MachineScope) getNetworkID(network infrav1.ResourceIdentifier) (*string
 
 // ensureInstanceUnique returns the existing PVMInstanceReference if an instance
 // with the given name already exists, or nil if no such instance is found.
-func (m *MachineScope) ensureInstanceUnique(instanceName string) (*models.PVMInstanceReference, error) {
-	instances, err := m.IBMPowerVSClient.GetAllInstance()
+func (s *MachineScope) ensureInstanceUnique(ctx context.Context, instanceName string) (*models.PVMInstanceReference, error) {
+	instances, err := s.IBMPowerVSClient.ListInstances(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1177,14 +1186,14 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*models.PVMIns
 // validateSystemType checks whether the machine's configured SystemType is
 // supported by the target datacenter zone, using a TTL-backed in-memory cache
 // to avoid redundant API calls.
-func (m *MachineScope) validateSystemType() (bool, []string, error) {
-	systemType := m.IBMPowerVSMachine.Spec.SystemType
+func (s *MachineScope) validateSystemType(ctx context.Context) (bool, []string, error) {
+	systemType := s.IBMPowerVSMachine.Spec.SystemType
 
 	if systemType == "" {
 		return false, nil, fmt.Errorf("systemType is not set")
 	}
 
-	zone := m.GetZone()
+	zone := s.GetZone()
 
 	// Read from Cache
 	sysCache.mu.RLock()
@@ -1207,7 +1216,7 @@ func (m *MachineScope) validateSystemType() (bool, []string, error) {
 	}
 
 	// Fetch the specific datacenter capabilities.
-	datacenter, err := m.IBMPowerVSClient.GetDatatcenterDetails(zone)
+	datacenter, err := s.IBMPowerVSClient.GetDatacenterDetails(ctx, zone)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to get datacenter details for zone %s: %w", zone, err)
 	}
@@ -1237,19 +1246,19 @@ func (m *MachineScope) validateSystemType() (bool, []string, error) {
 }
 
 // role returns the machine role label ("control-plane" or "node").
-func (m *MachineScope) role() string {
-	if util.IsControlPlaneMachine(m.Machine) {
+func (s *MachineScope) role() string {
+	if util.IsControlPlaneMachine(s.Machine) {
 		return "control-plane"
 	}
 	return "node"
 }
 
 // name returns the IBMPowerVSMachine name.
-func (m *MachineScope) name() string {
-	return m.IBMPowerVSMachine.Name
+func (s *MachineScope) name() string {
+	return s.IBMPowerVSMachine.Name
 }
 
 // getImages will get list of images for the powervs service instance.
-func (m *MachineScope) getImages() (*models.Images, error) {
-	return m.IBMPowerVSClient.GetAllImage()
+func (s *MachineScope) getImages(ctx context.Context) (*models.Images, error) {
+	return s.IBMPowerVSClient.ListImages(ctx)
 }

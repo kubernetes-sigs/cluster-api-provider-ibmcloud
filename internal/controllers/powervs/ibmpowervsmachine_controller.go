@@ -49,10 +49,10 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
-	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/record"
+	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object.
@@ -64,6 +64,8 @@ type IBMPowerVSMachineReconciler struct {
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
+
+	ClientBuilder powervsscope.ClientBuilder
 }
 
 // dhcpCacheStore is a cache store to hold the Power VS VM DHCP IP.
@@ -171,9 +173,8 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// 9. Create the machine scope.
-	machineScope, err := powervsscope.NewMachineScope(powervsscope.MachineScopeParams{
+	machineScope, err := powervsscope.NewMachineScope(ctx, powervsscope.MachineScopeParams{
 		Client:            r.Client,
-		Logger:            log,
 		Cluster:           cluster,
 		IBMPowerVSCluster: ibmPowerVSCluster,
 		Machine:           machine,
@@ -181,6 +182,7 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		IBMPowerVSImage:   ibmPowerVSImage,
 		ServiceEndpoint:   r.ServiceEndpoint,
 		DHCPIPCacheStore:  dhcpCacheStore,
+		ClientBuilder:     r.ClientBuilder,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVS machine scope: %w", err)
@@ -229,7 +231,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(ctx context.Context, scope
 	}
 
 	// 4. Delete the VM from PowerVS
-	if err := scope.DeleteMachine(); err != nil {
+	if err := scope.DeleteMachine(ctx); err != nil {
 		log.Error(err, "error deleting IBMPowerVSMachine")
 		r.markCondition(scope, metav1.ConditionFalse, infrav1.InstanceDeletingReason, fmt.Sprintf("failed to delete instance: %v", err))
 		return ctrl.Result{}, fmt.Errorf("error deleting IBMPowerVSMachine %v: %w", klog.KObj(scope.IBMPowerVSMachine), err)
@@ -302,7 +304,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	}
 
 	// 5. Sync Cloud State to Kubernetes Status
-	instance, err := machineScope.IBMPowerVSClient.GetInstance(*machine.PvmInstanceID)
+	instance, err := machineScope.IBMPowerVSClient.GetInstance(ctx, *machine.PvmInstanceID)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -520,6 +522,9 @@ func (r *IBMPowerVSMachineReconciler) ibmPowerVSClusterToIBMPowerVSMachines(ctx 
 
 // SetupWithManager creates a new IBMVPCMachine controller for a manager.
 func (r *IBMPowerVSMachineReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	if r.ClientBuilder == nil {
+		r.ClientBuilder = powervsscope.ProdClientBuilder{}
+	}
 	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "ibmpowervsmachine")
 	clusterToIBMPowerVSMachines, err := util.ClusterToTypedObjectsMapper(mgr.GetClient(), &infrav1.IBMPowerVSMachineList{}, mgr.GetScheme())
 	if err != nil {

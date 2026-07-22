@@ -18,6 +18,7 @@ package powervs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -50,9 +51,8 @@ import (
 	"sigs.k8s.io/cluster-api/util/predicates"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/endpoints"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 )
 
 const (
@@ -72,7 +72,7 @@ type IBMPowerVSClusterReconciler struct {
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
 
-	ClientFactory powervsscope.ClientFactory
+	ClientBuilder powervsscope.ClientBuilder
 }
 
 // componentResult holds the outcome of a concurrent component reconciliation.
@@ -126,12 +126,12 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	// Create the scope.
-	clusterScope, err := powervsscope.NewPowerVSClusterScope(powervsscope.ClusterScopeParams{
+	clusterScope, err := powervsscope.NewPowerVSClusterScope(ctx, powervsscope.ClusterScopeParams{
 		Client:            r.Client,
 		Cluster:           cluster,
 		IBMPowerVSCluster: ibmPowerVSCluster,
 		ServiceEndpoint:   r.ServiceEndpoint,
-		ClientFactory:     r.ClientFactory,
+		ClientBuilder:     r.ClientBuilder,
 	})
 
 	if err != nil {
@@ -176,7 +176,7 @@ func (r *IBMPowerVSClusterReconciler) reconcile(ctx context.Context, clusterScop
 
 	// validate PER availability for the PowerVS zone, proceed further only if PowerVS zone support PER.
 	// more information about PER can be found here: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-per
-	if err := clusterScope.ValidateZoneSupportsPER(); err != nil {
+	if err := clusterScope.ValidateZoneSupportsPER(ctx); err != nil {
 		return reconcile.Result{}, fmt.Errorf("failed to validate PER capability for PowerVS zone: %w", err)
 	}
 
@@ -303,7 +303,11 @@ func (r *IBMPowerVSClusterReconciler) reconcilePowerVSResources(ctx context.Cont
 	res.conditions = append(res.conditions, c)
 	res.legacy = append(res.legacy, l)
 
-	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.IBMPowerVSCluster.Status.Workspace.ID})
+	// At this point, the Workspace ID must exist, so the PowerVS client must be initialized.
+	if clusterScope.IBMPowerVSClient == nil {
+		res.err = errors.New("fatal: PowerVS client is nil but workspace is ready")
+		return res
+	}
 
 	log.Info("Reconciling network")
 	if networkActive, err := clusterScope.ReconcileNetwork(ctx); err != nil {
@@ -413,7 +417,6 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 	}
 
 	var allErrs []error
-	clusterScope.IBMPowerVSClient.WithClients(powervs.ServiceOptions{CloudInstanceID: clusterScope.IBMPowerVSCluster.Status.Workspace.ID})
 
 	log.Info("Deleting transit gateway")
 	conditions.Set(clusterScope.IBMPowerVSCluster, metav1.Condition{
@@ -724,6 +727,9 @@ func patchIBMPowerVSCluster(ctx context.Context, patchHelper *patch.Helper, ibmP
 
 // SetupWithManager creates a new IBMPowerVSCluster controller for a manager.
 func (r *IBMPowerVSClusterReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	if r.ClientBuilder == nil {
+		r.ClientBuilder = powervsscope.ProdClientBuilder{}
+	}
 	predicateLog := ctrl.LoggerFrom(ctx).WithValues("controller", "ibmpowervscluster")
 	err := ctrl.NewControllerManagedBy(mgr).
 		For(&infrav1.IBMPowerVSCluster{}).

@@ -45,11 +45,11 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/options"
 
 	. "github.com/onsi/gomega"
 )
@@ -192,7 +192,7 @@ func TestNewPowerVSMachineScope(t *testing.T) {
 	for _, tc := range testCases {
 		g := NewWithT(t)
 		t.Run(tc.name, func(_ *testing.T) {
-			_, err := NewMachineScope(tc.params)
+			_, err := NewMachineScope(context.Background(), tc.params)
 			// Note: only error/failure cases covered
 			// TO-DO: cover success cases
 			g.Expect(err).To(Not(BeNil()))
@@ -634,7 +634,7 @@ func TestGetNetworkID(t *testing.T) {
 			networkResource := infrav1.ResourceIdentifier{
 				ID: expectedNetworkID,
 			}
-			networkID, err := scope.getNetworkID(networkResource)
+			networkID, err := scope.getNetworkID(context.Background(), networkResource)
 			g.Expect(*networkID).To(Equal(expectedNetworkID))
 			g.Expect(err).To(BeNil())
 		})
@@ -648,14 +648,14 @@ func TestGetNetworkID(t *testing.T) {
 				Name: networkName,
 			}
 
-			mockpowervs.EXPECT().GetNetworkByName(networkName).Return(&models.NetworkReference{
+			mockpowervs.EXPECT().GetNetworkByName(gomock.Any(), networkName).Return(&models.NetworkReference{
 				NetworkID: ptr.To(expectedNetworkID),
 				Name:      ptr.To(networkName),
 			}, nil)
 			scope := MachineScope{
 				IBMPowerVSClient: mockpowervs,
 			}
-			networkID, err := scope.getNetworkID(networkResource)
+			networkID, err := scope.getNetworkID(context.Background(), networkResource)
 			g.Expect(*networkID).To(Equal(expectedNetworkID))
 			g.Expect(err).To(BeNil())
 		})
@@ -670,11 +670,11 @@ func TestGetNetworkID(t *testing.T) {
 				Name: expectedNetworkIName,
 			}
 
-			mockpowervs.EXPECT().GetNetworkByName(expectedNetworkIName).Return(nil, nil)
+			mockpowervs.EXPECT().GetNetworkByName(gomock.Any(), expectedNetworkIName).Return(nil, nil)
 			scope := MachineScope{
 				IBMPowerVSClient: mockpowervs,
 			}
-			networkID, err := scope.getNetworkID(networkResource)
+			networkID, err := scope.getNetworkID(context.Background(), networkResource)
 			g.Expect(networkID).To(BeNil())
 			g.Expect(err.Error()).To(Equal(fmt.Sprintf("network with name %q not found", expectedNetworkIName)))
 		})
@@ -683,7 +683,7 @@ func TestGetNetworkID(t *testing.T) {
 			g := NewWithT(t)
 			networkResource := infrav1.ResourceIdentifier{}
 			scope := MachineScope{}
-			networkID, err := scope.getNetworkID(networkResource)
+			networkID, err := scope.getNetworkID(context.Background(), networkResource)
 			g.Expect(networkID).To(BeNil())
 			g.Expect(err.Error()).To(Equal("network identifier must contain either an ID or a Name"))
 		})
@@ -986,8 +986,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
+			mockpowervs.EXPECT().CreateInstance(gomock.Any(), gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 		})
@@ -1000,7 +1000,7 @@ func TestCreateMachinePVS(t *testing.T) {
 				ServerName: ptr.To("foo-machine-1"),
 			}
 			scope := setupPowerVSMachineScope(clusterName, "foo-machine-1", ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			out, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 			g.Expect(out.ServerName).To(Equal(expectedOutput.ServerName))
@@ -1016,7 +1016,7 @@ func TestCreateMachinePVS(t *testing.T) {
 				Type:   infrav1.InstanceReadyCondition,
 				Status: metav1.ConditionUnknown,
 			})
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			out, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 			g.Expect(out).To(Equal(expectedOutput))
@@ -1027,7 +1027,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, errors.New("error when getting list of instances"))
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, errors.New("error when getting list of instances"))
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1038,7 +1038,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = nil
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1049,7 +1049,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.Machine.Spec.Bootstrap.DataSecretName = ptr.To("foo-secret-temp")
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1071,7 +1071,7 @@ func TestCreateMachinePVS(t *testing.T) {
 					"val": []byte("user data"),
 				}}
 			g.Expect(scope.Client.Update(context.Background(), secret)).To(Succeed())
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1082,7 +1082,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Spec.Processors = intstr.FromString("invalid")
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1097,8 +1097,8 @@ func TestCreateMachinePVS(t *testing.T) {
 					ImageID: "foo-image",
 				},
 			}
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
+			mockpowervs.EXPECT().CreateInstance(gomock.Any(), gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 		})
@@ -1108,13 +1108,13 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), false, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetNetworkByName(pvsNetwork).Return(&models.NetworkReference{
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
+			mockpowervs.EXPECT().GetNetworkByName(gomock.Any(), pvsNetwork).Return(&models.NetworkReference{
 				NetworkID: ptr.To(pvsNetwork + "-id"),
 				Name:      ptr.To(pvsNetwork),
 			}, nil)
-			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
+			mockpowervs.EXPECT().CreateInstance(gomock.Any(), gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(BeNil())
 		})
@@ -1124,7 +1124,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, nil, ptr.To(pvsNetwork), true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1134,8 +1134,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage+"-temp"), ptr.To(pvsNetwork), false, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1145,9 +1145,9 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork+"-temp"), false, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().GetAllImage().Return(images, nil)
-			mockpowervs.EXPECT().GetNetworkByName(pvsNetwork+"-temp").Return(nil, nil)
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
+			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
+			mockpowervs.EXPECT().GetNetworkByName(gomock.Any(), pvsNetwork+"-temp").Return(nil, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1157,8 +1157,8 @@ func TestCreateMachinePVS(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
-			mockpowervs.EXPECT().GetAllInstance().Return(pvmInstances, nil)
-			mockpowervs.EXPECT().CreateInstance(gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, errors.New("failed to create machine"))
+			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
+			mockpowervs.EXPECT().CreateInstance(gomock.Any(), gomock.AssignableToTypeOf(pvmInstanceCreate)).Return(pvmInstanceList, errors.New("failed to create machine"))
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
@@ -1857,8 +1857,8 @@ func TestDeleteMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Status.InstanceID = machineName + idSuffix
-			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(id)).Return(nil)
-			err := scope.DeleteMachine()
+			mockpowervs.EXPECT().DeleteInstance(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(nil)
+			err := scope.DeleteMachine(ctx)
 			g.Expect(err).To(BeNil())
 		})
 
@@ -1868,8 +1868,8 @@ func TestDeleteMachinePVS(t *testing.T) {
 			t.Cleanup(teardown)
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
 			scope.IBMPowerVSMachine.Status.InstanceID = machineName + idSuffix
-			mockpowervs.EXPECT().DeleteInstance(gomock.AssignableToTypeOf(id)).Return(errors.New("failed to delete machine"))
-			err := scope.DeleteMachine()
+			mockpowervs.EXPECT().DeleteInstance(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(errors.New("failed to delete machine"))
+			err := scope.DeleteMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
 	})
@@ -1976,7 +1976,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "error while getting network id",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetNetworkByName("test-net-ID").Return(nil, fmt.Errorf("intentional error"))
+				mockPowerVSClient.EXPECT().GetNetworkByName(gomock.Any(), "test-net-ID").Return(nil, fmt.Errorf("intentional error"))
 				return mockPowerVSClient
 			},
 			pvmInstance: &models.PVMInstance{
@@ -1989,7 +1989,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "no network id associated with network name",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetNetworkByName("test-net-ID").Return(nil, nil)
+				mockPowerVSClient.EXPECT().GetNetworkByName(gomock.Any(), "test-net-ID").Return(nil, nil)
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2011,7 +2011,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "error while getting DHCP servers",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(nil, fmt.Errorf("intentional error"))
+				mockPowerVSClient.EXPECT().ListDHCPServers(gomock.Any()).Return(nil, fmt.Errorf("intentional error"))
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2023,7 +2023,7 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "dhcp server details not found associated to network id",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, "test-network"), nil)
+				mockPowerVSClient.EXPECT().ListDHCPServers(gomock.Any()).Return(newDHCPServer(dhcpServerID, "test-network"), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2035,8 +2035,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "error on getting DHCP server details",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(nil, fmt.Errorf("intentnional error"))
+				mockPowerVSClient.EXPECT().ListDHCPServers(gomock.Any()).Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(gomock.Any(), dhcpServerID).Return(nil, fmt.Errorf("intentnional error"))
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2048,8 +2048,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "dhcp server lease does not have lease for instance",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, "ff:11:33:dd:00:33"), nil)
+				mockPowerVSClient.EXPECT().ListDHCPServers(gomock.Any()).Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(gomock.Any(), dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, "ff:11:33:dd:00:33"), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance:         newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2061,8 +2061,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "success in getting ip address from dhcp server",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
+				mockPowerVSClient.EXPECT().ListDHCPServers(gomock.Any()).Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(gomock.Any(), dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2077,8 +2077,8 @@ func TestSetAddresses(t *testing.T) {
 			testcase: "ip stored in cache expired, fetch from dhcp server",
 			powerVSClientFunc: func(ctrl *gomock.Controller) *mock.MockPowerVS {
 				mockPowerVSClient := mock.NewMockPowerVS(ctrl)
-				mockPowerVSClient.EXPECT().GetAllDHCPServers().Return(newDHCPServer(dhcpServerID, networkID), nil)
-				mockPowerVSClient.EXPECT().GetDHCPServer(dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
+				mockPowerVSClient.EXPECT().ListDHCPServers(gomock.Any()).Return(newDHCPServer(dhcpServerID, networkID), nil)
+				mockPowerVSClient.EXPECT().GetDHCPServer(gomock.Any(), dhcpServerID).Return(newDHCPServerDetails(dhcpServerID, leaseIP, instanceMac), nil)
 				return mockPowerVSClient
 			},
 			pvmInstance: newPowerVSInstance(instanceName, networkID, instanceMac),
@@ -2204,7 +2204,7 @@ func TestValidateSystemType(t *testing.T) {
 				}
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("us-east").Return(&models.Datacenter{
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "us-east").Return(&models.Datacenter{
 					CapabilitiesDetails: &models.CapabilitiesDetails{
 						SupportedSystems: &models.SupportedSystems{
 							General: []string{"e1080", "s1022", "s922"},
@@ -2226,7 +2226,7 @@ func TestValidateSystemType(t *testing.T) {
 				delete(sysCache.zonesMap, "eu-de")
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("eu-de").Return(&models.Datacenter{
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "eu-de").Return(&models.Datacenter{
 					CapabilitiesDetails: &models.CapabilitiesDetails{
 						SupportedSystems: &models.SupportedSystems{
 							General: []string{"e1050", "e1080", "s922"},
@@ -2248,7 +2248,7 @@ func TestValidateSystemType(t *testing.T) {
 				delete(sysCache.zonesMap, "jp-tok")
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("jp-tok").Return(nil, errors.New("API error"))
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "jp-tok").Return(nil, errors.New("API error"))
 			},
 			expectError:   true,
 			errorContains: "failed to get datacenter details",
@@ -2263,7 +2263,7 @@ func TestValidateSystemType(t *testing.T) {
 				delete(sysCache.zonesMap, "ca-tor")
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("ca-tor").Return(nil, nil)
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "ca-tor").Return(nil, nil)
 			},
 			expectError:   true,
 			errorContains: "system capabilities details are missing",
@@ -2278,7 +2278,7 @@ func TestValidateSystemType(t *testing.T) {
 				delete(sysCache.zonesMap, "br-sao")
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("br-sao").Return(&models.Datacenter{
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "br-sao").Return(&models.Datacenter{
 					CapabilitiesDetails: nil,
 				}, nil)
 			},
@@ -2295,7 +2295,7 @@ func TestValidateSystemType(t *testing.T) {
 				delete(sysCache.zonesMap, "au-syd")
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("au-syd").Return(&models.Datacenter{
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "au-syd").Return(&models.Datacenter{
 					CapabilitiesDetails: &models.CapabilitiesDetails{
 						SupportedSystems: &models.SupportedSystems{
 							General: []string{},
@@ -2316,7 +2316,7 @@ func TestValidateSystemType(t *testing.T) {
 				delete(sysCache.zonesMap, "test-zone")
 			},
 			mockSetup: func(m *mock.MockPowerVS) {
-				m.EXPECT().GetDatatcenterDetails("test-zone").Return(&models.Datacenter{
+				m.EXPECT().GetDatacenterDetails(gomock.Any(), "test-zone").Return(&models.Datacenter{
 					CapabilitiesDetails: &models.CapabilitiesDetails{
 						SupportedSystems: &models.SupportedSystems{
 							General: []string{"s922", "e980", "s1022", "e1050"}, // Unsorted
@@ -2353,7 +2353,7 @@ func TestValidateSystemType(t *testing.T) {
 			scope.SetZone(tc.zone)
 
 			// Execute validation
-			valid, supportedTypes, err := scope.validateSystemType()
+			valid, supportedTypes, err := scope.validateSystemType(context.Background())
 
 			// Assertions
 			if tc.expectError {

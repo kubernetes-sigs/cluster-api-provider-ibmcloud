@@ -49,8 +49,7 @@ import (
 	deprecatedv1beta1conditions "sigs.k8s.io/cluster-api/util/conditions/deprecated/v1beta1"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/powervs"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
+	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 	powervsmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	resourceclientmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
 	resourcemanagermock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager/mock"
@@ -323,15 +322,8 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		defer cleanupCluster(g, powerVSCluster, ns)
 
 		reconciler := &IBMPowerVSClusterReconciler{
-			Client: testEnv.Client,
-			ClientFactory: powervsscope.ClientFactory{
-				PowerVSClientFactory: func() (powervs.PowerVS, error) {
-					return nil, nil
-				},
-				AuthenticatorFactory: func() (core.Authenticator, error) {
-					return nil, nil
-				},
-			},
+			Client:        testEnv.Client,
+			ClientBuilder: stubClientBuilder{},
 		}
 		_, err = reconciler.Reconcile(ctx, ctrl.Request{
 			NamespacedName: client.ObjectKey{
@@ -414,15 +406,8 @@ func TestIBMPowerVSClusterReconciler_Reconcile(t *testing.T) {
 		}, 10*time.Second).Should(BeTrue(), "Eventually failed while checking delete timestamp")
 
 		reconciler := &IBMPowerVSClusterReconciler{
-			Client: testEnv.Client,
-			ClientFactory: powervsscope.ClientFactory{
-				PowerVSClientFactory: func() (powervs.PowerVS, error) {
-					return nil, nil
-				},
-				AuthenticatorFactory: func() (core.Authenticator, error) {
-					return nil, nil
-				},
-			},
+			Client:        testEnv.Client,
+			ClientBuilder: stubClientBuilder{},
 		}
 		_, err = reconciler.Reconcile(ctx, ctrl.Request{
 			NamespacedName: client.ObjectKey{
@@ -491,7 +476,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+				mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 					Capabilities: map[string]bool{"power-edge-router": false},
 				}, nil)
 				clusterScope.IBMPowerVSClient = mockPowerVS
@@ -515,7 +500,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+				mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 					Capabilities: map[string]bool{"power-edge-router": true},
 				}, nil)
 				clusterScope.IBMPowerVSClient = mockPowerVS
@@ -550,7 +535,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+				mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 					Capabilities: map[string]bool{"power-edge-router": true},
 				}, nil)
 				clusterScope.IBMPowerVSClient = mockPowerVS
@@ -601,7 +586,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+				mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 					Capabilities: map[string]bool{"power-edge-router": true},
 				}, nil)
 				clusterScope.IBMPowerVSClient = mockPowerVS
@@ -647,7 +632,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+				mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 					Capabilities: map[string]bool{"power-edge-router": true},
 				}, nil)
 				clusterScope.IBMPowerVSClient = mockPowerVS
@@ -809,11 +794,10 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 					IBMPowerVSCluster: getPowerVSClusterWithSpecAndStatus(),
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+				mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 					Capabilities: map[string]bool{"power-edge-router": true},
 				}, nil)
-				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(nil, errors.New("error get networkByID"))
-				mockPowerVS.EXPECT().WithClients(gomock.Any())
+				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), gomock.Any()).Return(nil, errors.New("error get networkByID"))
 				clusterScope.IBMPowerVSClient = mockPowerVS
 
 				// getMockResourceController expects Times(2); only called once here since TG is not reached.
@@ -1129,7 +1113,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			ID:     ptr.To("transitGatewayID"),
 			Status: ptr.To(string(infrav1.TransitGatewayStateAvailable))}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1164,7 +1147,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			ID:     ptr.To("transitGatewayID"),
 			Status: ptr.To(string(infrav1.TransitGatewayStateDeletePending))}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1197,7 +1179,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1235,7 +1216,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1264,7 +1244,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			{ID: "sc-id", Name: "sc"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1294,7 +1273,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1321,7 +1299,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1347,7 +1324,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			Name: "vpcName",
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1375,7 +1351,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			Name: "vpcName",
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1420,12 +1395,11 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
-		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any()).Return(&models.DHCPServerDetail{
+		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(&models.DHCPServerDetail{
 			ID:     ptr.To("dhcpID"),
 			Status: ptr.To(string(infrav1.DHCPServerStateActive)),
 		}, nil)
-		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any()).Return(errors.New("failed to delete DHCP server"))
+		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any(), gomock.Any()).Return(errors.New("failed to delete DHCP server"))
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1449,7 +1423,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
@@ -1481,7 +1454,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
@@ -1522,7 +1494,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			ID: "CosInstanceID",
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		mockResourceClient.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{
@@ -1563,7 +1534,6 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			Ignition:      infrav1.Ignition{Version: "3.4"},
 		}
 		mockPowerVS = powervsmock.NewMockPowerVS(gomock.NewController(t))
-		mockPowerVS.EXPECT().WithClients(gomock.Any())
 		clusterScope.IBMPowerVSClient = mockPowerVS
 		mockResourceClient = resourceclientmock.NewMockResourceController(gomock.NewController(t))
 		clusterScope.ResourceClient = mockResourceClient
@@ -1958,8 +1928,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(nil, errors.New("error getting network"))
-				mockPowerVS.EXPECT().WithClients(gomock.Any())
+				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), gomock.Any()).Return(nil, errors.New("error getting network"))
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
 				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.WorkspaceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
@@ -2010,8 +1979,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 					},
 				}
 				mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(&models.Network{NetworkID: ptr.To("netID")}, nil)
-				mockPowerVS.EXPECT().WithClients(gomock.Any())
+				mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), gomock.Any()).Return(&models.Network{NetworkID: ptr.To("netID")}, nil)
 				mockResourceController := resourceclientmock.NewMockResourceController(gomock.NewController(t))
 				mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(&resourcecontrollerv2.ResourceInstance{State: ptr.To(string(infrav1.WorkspaceStateActive)), Name: ptr.To("serviceInstanceName")}, nil, nil)
 				clusterScope.ResourceClient = mockResourceController
@@ -2159,12 +2127,11 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 func getMockPowerVS(t *testing.T) *powervsmock.MockPowerVS {
 	t.Helper()
 	mockPowerVS := powervsmock.NewMockPowerVS(gomock.NewController(t))
-	mockPowerVS.EXPECT().GetDatatcenterDetails(gomock.Any()).Return(&models.Datacenter{
+	mockPowerVS.EXPECT().GetDatacenterDetails(gomock.Any(), gomock.Any()).Return(&models.Datacenter{
 		Capabilities: map[string]bool{"power-edge-router": true},
 	}, nil)
 	network := &models.Network{NetworkID: ptr.To("netID")}
-	mockPowerVS.EXPECT().GetNetworkByID(gomock.Any()).Return(network, nil)
-	mockPowerVS.EXPECT().WithClients(gomock.Any())
+	mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), gomock.Any()).Return(network, nil)
 	return mockPowerVS
 }
 

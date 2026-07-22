@@ -19,7 +19,7 @@ package vpc
 import (
 	"errors"
 	"fmt"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/cloud/scope/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 	"testing"
 	"time"
 
