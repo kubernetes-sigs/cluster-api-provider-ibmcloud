@@ -100,22 +100,25 @@ func validateIBMPowerVSMachineTemplateNetwork(machineTemplate *infrav1.IBMPowerV
 }
 
 func validateIBMPowerVSMachineTemplateImage(machineTemplate *infrav1.IBMPowerVSMachineTemplate) *field.Error {
-	mt := machineTemplate.Spec.Template
-
-	if mt.Spec.Image == nil && mt.Spec.ImageRef.Name == "" {
-		return field.Invalid(field.NewPath(""), "", "One of - Image or ImageRef must be specified")
+	img := machineTemplate.Spec.Template.Spec.Image
+	if img.Type == "" {
+		return field.Invalid(field.NewPath("spec", "template", "spec", "image", "type"), img.Type, "Image type must be specified")
 	}
-
-	if mt.Spec.Image != nil && mt.Spec.ImageRef.Name != "" {
-		return field.Invalid(field.NewPath(""), "", "Only one of - Image or ImageRef maybe be specified")
-	}
-
-	if mt.Spec.Image != nil {
-		if res, err := validateIBMPowerVSResourceReference(*mt.Spec.Image, "Image"); !res {
-			return err
+	switch img.Type {
+	case infrav1.ImageSourceTypeReference:
+		if img.Reference.ID == "" && img.Reference.Name == "" {
+			return field.Invalid(field.NewPath("spec", "template", "spec", "image", "reference"), img.Reference, "Image reference must specify at least one of ID or Name")
 		}
+		if img.Reference.ID != "" && img.Reference.Name != "" {
+			return field.Invalid(field.NewPath("spec", "template", "spec", "image", "reference"), img.Reference, "Only one of Image reference - ID or Name may be specified")
+		}
+	case infrav1.ImageSourceTypeImport:
+		if img.Import.Name == "" {
+			return field.Invalid(field.NewPath("spec", "template", "spec", "image", "import"), img.Import, "Image import must specify a name")
+		}
+	default:
+		return field.Invalid(field.NewPath("spec", "template", "spec", "image", "type"), img.Type, "Image type must be Reference or Import")
 	}
-
 	return nil
 }
 

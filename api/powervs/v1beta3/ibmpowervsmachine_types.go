@@ -23,6 +23,10 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
+func init() {
+	objectTypes = append(objectTypes, &IBMPowerVSMachine{}, &IBMPowerVSMachineList{})
+}
+
 // PowerVSProcessorType enum attribute to identify the PowerVS instance processor type.
 type PowerVSProcessorType string
 
@@ -40,9 +44,17 @@ const (
 	DefaultIgnitionVersion = "2.3"
 )
 
-func init() {
-	objectTypes = append(objectTypes, &IBMPowerVSMachine{}, &IBMPowerVSMachineList{})
-}
+// ImageSourceType defines the method used to resolve the machine image.
+// +kubebuilder:validation:Enum=Reference;Import
+type ImageSourceType string
+
+const (
+	// ImageSourceTypeReference specifies that the machine should use an existing image already available in PowerVS.
+	ImageSourceTypeReference ImageSourceType = "Reference"
+
+	// ImageSourceTypeImport specifies that the machine should use an IBMPowerVSImage CRD to import an image from COS.
+	ImageSourceTypeImport ImageSourceType = "Import"
+)
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
 type IBMPowerVSMachineSpec struct {
@@ -55,20 +67,16 @@ type IBMPowerVSMachineSpec struct {
 
 	// network is the reference to the Network to use for this instance.
 	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+	// +optional
 	Network ResourceIdentifier `json:"network,omitempty,omitzero"`
 
+	// Image specifies how to resolve the OS image used to create the instance.
+	// +required
+	Image IBMPowerVSMachineImage `json:"image,omitempty,omitzero"`
+
 	// sshKey is the name of the SSH key pair provided to the vsi for authenticating users.
+	// +optional
 	SSHKey string `json:"sshKey,omitempty"`
-
-	// image the reference to the image which is used to create the instance.
-	// supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
-	// +optional
-	Image *IBMPowerVSResourceReference `json:"image,omitempty"`
-
-	// imageRef is a reference to a IBMPowerVSImage resource, which will be imported from IBM COS Bucket to PowerVS workspace.
-	// This is an alternative to the image field.
-	// +optional
-	ImageRef ImageReference `json:"imageRef,omitempty,omitzero"`
 
 	// systemType is the System type used to host the instance.
 	// systemType determines the number of cores and memory that is available.
@@ -156,59 +164,11 @@ type IBMPowerVSMachineStatus struct {
 	// +optional
 	InstanceState PowerVSInstanceState `json:"instanceState,omitempty"`
 
-	// fault will report if any fault messages for the vsi.
-	// +optional
-	Fault string `json:"fault,omitempty"`
-
-	// failureReason will be set in the event that there is a terminal problem
-	// reconciling the Machine and will contain a succinct value suitable
-	// for machine interpretation.
-	//
-	// This field should not be set for transitive errors that a controller
-	// faces that are expected to be fixed automatically over
-	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the Machine's spec or the configuration of
-	// the controller, and that manual intervention is required. Examples
-	// of terminal errors would be invalid combinations of settings in the
-	// spec, values that are unsupported by the controller, or the
-	// responsible controller itself being critically misconfigured.
-	//
-	// Any transient errors that occur during the reconciliation of Machines
-	// can be added as events to the Machine object and/or logged in the
-	// controller's output.
-	//
-	// Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-	//
-	// +optional
-	FailureReason *string `json:"failureReason,omitempty"`
-
-	// failureMessage will be set in the event that there is a terminal problem
-	// reconciling the Machine and will contain a more verbose string suitable
-	// for logging and human consumption.
-	//
-	// This field should not be set for transitive errors that a controller
-	// faces that are expected to be fixed automatically over
-	// time (like service outages), but instead indicate that something is
-	// fundamentally wrong with the Machine's spec or the configuration of
-	// the controller, and that manual intervention is required. Examples
-	// of terminal errors would be invalid combinations of settings in the
-	// spec, values that are unsupported by the controller, or the
-	// responsible controller itself being critically misconfigured.
-	//
-	// Any transient errors that occur during the reconciliation of Machines
-	// can be added as events to the Machine object and/or logged in the
-	// controller's output.
-	//
-	// Deprecated: This field is deprecated and is going to be removed in the next apiVersion. Please see https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more details.
-	//
-	// +optional
-	FailureMessage *string `json:"failureMessage,omitempty"`
-
 	// region specifies the Power VS Service instance region.
-	Region *string `json:"region,omitempty"`
+	Region string `json:"region,omitempty"`
 
 	// zone specifies the Power VS Service instance zone.
-	Zone *string `json:"zone,omitempty"`
+	Zone string `json:"zone,omitempty"`
 
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
 	// +optional
@@ -283,6 +243,24 @@ type IBMPowerVSMachineV1Beta2DeprecatedStatus struct {
 	//
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+}
+
+// IBMPowerVSMachineImage defines how to resolve the image for the machine.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Import' ? has(self.import) : !has(self.import)",message="import configuration is required when type is Import, and forbidden otherwise"
+type IBMPowerVSMachineImage struct {
+	// Type defines whether to use an existing image in IBM Cloud or import a new one via the IBMPowerVSImage CRD.
+	// +required
+	Type ImageSourceType `json:"type,omitempty"`
+
+	// Reference contains the information to identify an existing image in the PowerVS workspace.
+	// Supported identifiers are Name, ID, and RegEx.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// Import is a reference to an IBMPowerVSImage CRD, which manages importing an image from an IBM COS Bucket.
+	// +optional
+	Import ImageReference `json:"import,omitempty,omitzero"`
 }
 
 // ImageReference is a reference to an IBMPowerVSImage resource.

@@ -44,13 +44,6 @@ func defaultIBMPowerVSMachineSpec(spec *infrav1.IBMPowerVSMachineSpec) {
 	}
 }
 
-func validateIBMPowerVSResourceReference(res infrav1.IBMPowerVSResourceReference, resType string) (bool, *field.Error) {
-	if res.ID != nil && res.Name != nil {
-		return false, field.Invalid(field.NewPath("spec", resType), res, "Only one of "+resType+" - ID or Name may be specified")
-	}
-	return true, nil
-}
-
 func validateIBMPowerVSNetworkReference(res infrav1.ResourceIdentifier) (bool, *field.Error) {
 	count := 0
 	if res.ID != "" {

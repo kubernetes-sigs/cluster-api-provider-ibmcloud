@@ -291,38 +291,59 @@ spec:
                     description: spec is the IBMPowerVSMachineSpec.
                     properties:
                       image:
-                        description: |-
-                          image the reference to the image which is used to create the instance.
-                          supported image identifier in IBMPowerVSResourceReference are Name and ID and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+                        description: Image specifies how to resolve the OS image used
+                          to create the instance.
                         properties:
-                          id:
-                            description: id of resource
-                            minLength: 1
-                            type: string
-                          name:
-                            description: name of resource
-                            minLength: 1
-                            type: string
-                          regex:
+                          import:
+                            description: Import is a reference to an IBMPowerVSImage
+                              CRD, which manages importing an image from an IBM COS
+                              Bucket.
+                            properties:
+                              name:
+                                description: name of the IBMPowerVSImage resource.
+                                maxLength: 253
+                                minLength: 1
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          reference:
                             description: |-
-                              regex is the regular expression to match resource,
-                              In case of multiple resources matches the provided regular expression the first matched resource will be selected
-                            minLength: 1
-                            type: string
-                        type: object
-                      imageRef:
-                        description: |-
-                          imageRef is a reference to a IBMPowerVSImage resource, which will be imported from IBM COS Bucket to PowerVS workspace.
-                          This is an alternative to the image field.
-                        properties:
-                          name:
-                            description: name of the IBMPowerVSImage resource.
-                            maxLength: 253
-                            minLength: 1
+                              Reference contains the information to identify an existing image in the PowerVS workspace.
+                              Supported identifiers are Name, ID, and RegEx.
+                            properties:
+                              id:
+                                description: ID of the resource.
+                                minLength: 1
+                                type: string
+                              name:
+                                description: Name of the resource.
+                                minLength: 1
+                                type: string
+                            type: object
+                            x-kubernetes-validations:
+                            - message: exactly one of id or name must be specified
+                              rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1
+                                : 0) == 1'
+                          type:
+                            description: Type defines whether to use an existing image
+                              in IBM Cloud or import a new one via the IBMPowerVSImage
+                              CRD.
+                            enum:
+                            - Reference
+                            - Import
                             type: string
                         required:
-                        - name
+                        - type
                         type: object
+                        x-kubernetes-validations:
+                        - message: reference configuration is required when type is
+                            Reference, and forbidden otherwise
+                          rule: 'self.type == ''Reference'' ? has(self.reference)
+                            : !has(self.reference)'
+                        - message: import configuration is required when type is Import,
+                            and forbidden otherwise
+                          rule: 'self.type == ''Import'' ? has(self.import) : !has(self.import)'
                       memoryGiB:
                         description: |-
                           memoryGiB is the size of a virtual machine's memory, in GiB.
@@ -421,6 +442,8 @@ spec:
                         - message: exactly one of id or name must be specified
                           rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0)
                             == 1'
+                    required:
+                    - image
                     type: object
                 required:
                 - spec

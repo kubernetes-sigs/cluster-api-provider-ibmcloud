@@ -124,8 +124,10 @@ metadata:
 spec:
   template:
     spec:
-      imageRef:
-        name: ${CLUSTER_NAME}-image
+      image:
+        type: Import
+        import:
+          name: ${CLUSTER_NAME}-image
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
@@ -164,8 +166,10 @@ metadata:
 spec:
   template:
     spec:
-      imageRef:
-        name: ${CLUSTER_NAME}-image
+      image:
+        type: Import
+        import:
+          name: ${CLUSTER_NAME}-image
       memoryGiB: ${IBMPOWERVS_COMPUTE_MEMORY:=4}
       processorType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
