@@ -447,6 +447,10 @@ func (m *MachineScope) volumeToVPCVolumeAttachment(ctx context.Context, volume *
 		bootVolume.Volume.Iops = core.Int64Ptr(volume.Iops)
 	}
 
+	if volume.Bandwidth != 0 {
+		bootVolume.Volume.Bandwidth = core.Int64Ptr(volume.Bandwidth)
+	}
+
 	if volume.EncryptionKeyCRN != "" {
 		bootVolume.Volume.EncryptionKey = &vpcv1.EncryptionKeyIdentity{
 			CRN: core.StringPtr(volume.EncryptionKeyCRN),
@@ -1212,6 +1216,15 @@ func (m *MachineScope) CreateVolume(vpcVolume *infrav1.VPCVolume) (string, error
 
 	if vpcVolume.Profile == "custom" {
 		volumeOptions.VolumePrototype.(*vpcv1.VolumePrototype).Iops = &vpcVolume.Iops
+	}
+
+	if vpcVolume.Profile == "sdp" {
+		if vpcVolume.Iops != 0 {
+			volumeOptions.VolumePrototype.(*vpcv1.VolumePrototype).Iops = &vpcVolume.Iops
+		}
+		if vpcVolume.Bandwidth != 0 {
+			volumeOptions.VolumePrototype.(*vpcv1.VolumePrototype).Bandwidth = &vpcVolume.Bandwidth
+		}
 	}
 
 	volumeResult, _, err := m.IBMVPCClient.CreateVolume(&volumeOptions)

@@ -71,6 +71,62 @@ func Test_validateVolumes(t *testing.T) {
 			wantError: false,
 		},
 		{
+			name: "Valid iops and bandwidth for sdp profile for Boot Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "sdp", SizeGiB: 20, Iops: 4000, Bandwidth: 2000},
+			},
+			wantError: false,
+		},
+		{
+			name: "Valid sizeGiB above first-generation limit for sdp profile for Boot Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "sdp", SizeGiB: 4000},
+			},
+			wantError: false,
+		},
+		{
+			name: "Invalid sizeGiB above first-generation limit for general-purpose profile for Boot Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "general-purpose", SizeGiB: 4000},
+			},
+			wantError: true,
+		},
+		{
+			name: "Invalid sizeGiB above second-generation limit for sdp profile for Boot Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "sdp", SizeGiB: 64000},
+			},
+			wantError: true,
+		},
+		{
+			name: "Invalid iops for general-purpose profile for Boot Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "general-purpose", SizeGiB: 20, Iops: 4000},
+			},
+			wantError: true,
+		},
+		{
+			name: "Invalid bandwidth for custom profile for Boot Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				BootVolume: &infrav1.VPCVolume{Profile: "custom", SizeGiB: 20, Iops: 4000, Bandwidth: 2000},
+			},
+			wantError: true,
+		},
+		{
+			name: "Valid iops and bandwidth for sdp profile for Additional Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				AdditionalVolumes: []*infrav1.VPCVolume{{Profile: "sdp", SizeGiB: 25, Iops: 4000, Bandwidth: 2000}},
+			},
+			wantError: false,
+		},
+		{
+			name: "Invalid bandwidth for general-purpose profile for Additional Volume",
+			spec: infrav1.IBMVPCMachineSpec{
+				AdditionalVolumes: []*infrav1.VPCVolume{{Profile: "general-purpose", SizeGiB: 25, Bandwidth: 2000}},
+			},
+			wantError: true,
+		},
+		{
 			name: "Valid encryptionKeyCRN",
 			spec: infrav1.IBMVPCMachineSpec{
 				BootVolume: &infrav1.VPCVolume{SizeGiB: 20, EncryptionKeyCRN: "crn:v1:bluemix:public:kms:us-south:a/aa2432b1fa4d4ace891e9b80fc104e34:e4a29d1a-2ef0-42a6-8fd2-350deb1c647e:key:5437653b-c4b1-447f-9646-b2a2a4cd6179"},

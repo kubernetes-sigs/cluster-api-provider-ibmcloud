@@ -124,16 +124,21 @@ type VPCVolume struct {
 	// Profile is the volume profile for the disk, refer https://cloud.ibm.com/docs/vpc?topic=vpc-block-storage-profiles
 	// for more information.
 	// Default to general-purpose
-	// NOTE: If a profile other than custom is specified, the Iops and SizeGiB fields will be ignored
-	// +kubebuilder:validation:Enum="general-purpose";"5iops-tier";"10iops-tier";"custom"
+	// NOTE: Iops is only configurable for the `custom` and `sdp` profiles
+	// +kubebuilder:validation:Enum="general-purpose";"5iops-tier";"10iops-tier";"custom";"sdp"
 	// +kubebuilder:default=general-purpose
 	// +optional
 	Profile string `json:"profile,omitempty"`
 
-	// Iops is the maximum I/O operations per second (IOPS) to use for the volume. Applicable only to volumes using a profile
-	// family of `custom`.
+	// Iops is the maximum I/O operations per second (IOPS) to use for the volume. Applicable only to volumes using the
+	// `custom` profile or the second-generation `sdp` profile.
 	// +optional
 	Iops int64 `json:"iops,omitempty"`
+
+	// Bandwidth is the maximum bandwidth (in megabits per second) for the volume. Applicable only to volumes using the
+	// second-generation `sdp` profile. If unspecified, it will be computed from the volume's iops and capacity.
+	// +optional
+	Bandwidth int64 `json:"bandwidth,omitempty"`
 
 	// EncryptionKey is the root key to use to wrap the data encryption key for the volume and this points to the CRN
 	// and possible values are as follows.
