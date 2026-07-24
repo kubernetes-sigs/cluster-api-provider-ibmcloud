@@ -1149,9 +1149,18 @@ func hubIBMPowerVSMachineTemplateResource(in *infrav1.IBMPowerVSMachineTemplateR
 
 func IBMPowerVSImageFuzzFuncs(_ runtimeserializer.CodecFactory) []interface{} {
 	return []interface{}{
+		hubIBMPowerVSImage,
 		hubIBMPowerVSImageStatus,
 		spokeIBMPowerVSImageStatus,
 		spokeIBMPowerVSImageSpec,
+	}
+}
+
+func hubIBMPowerVSImage(in *infrav1.IBMPowerVSImage, c randfill.Continue) {
+	c.FillNoCustom(in)
+	// Annotations will have conversion-data added during ConvertFrom, so we can't compare them.
+	if len(in.Annotations) == 0 {
+		in.Annotations = nil
 	}
 }
 
@@ -1166,6 +1175,17 @@ func hubIBMPowerVSImageStatus(in *infrav1.IBMPowerVSImageStatus, c randfill.Cont
 
 func spokeIBMPowerVSImageSpec(in *IBMPowerVSImageSpec, c randfill.Continue) {
 	c.FillNoCustom(in)
+
+	// v1beta3 Bucket/Object/Region are plain strings; an empty pointer cannot round-trip.
+	if in.Bucket != nil && *in.Bucket == "" {
+		in.Bucket = nil
+	}
+	if in.Object != nil && *in.Object == "" {
+		in.Object = nil
+	}
+	if in.Region != nil && *in.Region == "" {
+		in.Region = nil
+	}
 
 	if in.ServiceInstance != nil {
 		in.ServiceInstance.RegEx = nil // Tell fuzzer we intentionally drop RegEx in v1beta3
