@@ -960,6 +960,7 @@ spec:
             properties:
               template:
                 description: template is the IBMPowerVSClusterTemplateResource.
+                minProperties: 1
                 properties:
                   metadata:
                     description: |-
@@ -1010,26 +1011,29 @@ spec:
                         type: object
                       cosInstance:
                         description: |-
-                          COSInstance contains options to configure a supporting IBM Cloud COS instance and bucket
+                          cosInstance contains options to configure a supporting IBM Cloud COS instance and bucket
                           for this cluster. It is currently used for nodes requiring Ignition for bootstrapping.
                         properties:
                           bucketName:
-                            description: BucketName is the name of the IBM Cloud COS
+                            description: bucketName is the name of the IBM Cloud COS
                               bucket used for Ignition bootstrapping.
+                            maxLength: 63
                             minLength: 1
                             type: string
                           bucketRegion:
-                            description: BucketRegion is the IBM Cloud region where
+                            description: bucketRegion is the IBM Cloud region where
                               the COS bucket resides or will be created.
+                            maxLength: 32
                             minLength: 1
                             type: string
                           provision:
-                            description: Provision contains the configuration for
+                            description: provision contains the configuration for
                               provisioning a new COS instance and bucket.
+                            minProperties: 1
                             properties:
                               name:
                                 description: |-
-                                  Name defines the explicit name of the IBM Cloud COS instance to be created.
+                                  name defines the explicit name of the IBM Cloud COS instance to be created.
                                   If omitted, the system will dynamically create it using the cluster name.
                                 maxLength: 63
                                 minLength: 3
@@ -1037,15 +1041,18 @@ spec:
                                 type: string
                             type: object
                           reference:
-                            description: Reference contains the information to identify
+                            description: reference contains the information to identify
                               an existing COS instance.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -1054,7 +1061,7 @@ spec:
                               rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1
                                 : 0) == 1'
                           type:
-                            description: Type defines whether to use an existing COS
+                            description: type defines whether to use an existing COS
                               instance or provision a new one.
                             enum:
                             - Reference
@@ -1076,8 +1083,9 @@ spec:
                           rule: 'self.type == ''Provision'' ? has(self.provision)
                             : !has(self.provision)'
                       ignition:
-                        description: Ignition defines options related to the bootstrapping
+                        description: ignition defines options related to the bootstrapping
                           systems where Ignition is used.
+                        minProperties: 1
                         properties:
                           version:
                             description: version defines which version of Ignition
@@ -1101,11 +1109,12 @@ spec:
                             VPC Load Balancer is sourced.
                           properties:
                             provision:
-                              description: Provision contains the configuration for
+                              description: provision contains the configuration for
                                 provisioning a new Load Balancer.
+                              minProperties: 1
                               properties:
                                 additionalListeners:
-                                  description: AdditionalListeners sets the additional
+                                  description: additionalListeners sets the additional
                                     listeners for the load balancer.
                                   items:
                                     description: |-
@@ -1189,12 +1198,13 @@ spec:
                                     required:
                                     - port
                                     type: object
+                                  maxItems: 10
                                   type: array
                                   x-kubernetes-list-map-keys:
                                   - port
                                   x-kubernetes-list-type: map
                                 backendPools:
-                                  description: BackendPools defines the load balancer's
+                                  description: backendPools defines the load balancer's
                                     backend pools.
                                   items:
                                     description: LoadBalancerBackendPool defines the
@@ -1252,6 +1262,8 @@ spec:
                                           urlPath:
                                             description: urlPath defines the URL to
                                               use for health monitoring.
+                                            maxLength: 8192
+                                            minLength: 1
                                             pattern: ^\/(([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})+(\/([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})*)*)?(\\?([a-zA-Z0-9-._~!$&'()*+,;=:@\/?]|%[a-fA-F0-9]{2})*)?$
                                             type: string
                                         required:
@@ -1285,28 +1297,33 @@ spec:
                                     - healthMonitor
                                     - protocol
                                     type: object
+                                  maxItems: 10
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 name:
                                   description: |-
-                                    Name sets the name of the VPC load balancer.
+                                    name sets the name of the VPC load balancer.
                                     If omitted, the system will dynamically create it.
                                   maxLength: 63
                                   minLength: 1
                                   pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                   type: string
                                 securityGroups:
-                                  description: SecurityGroups defines the Security
+                                  description: securityGroups defines the Security
                                     Groups to attach to the load balancer.
                                   items:
                                     description: ResourceIdentifier defines the identification
                                       of a specific PowerVS resource by ID or Name.
+                                    minProperties: 1
                                     properties:
                                       id:
-                                        description: ID of the resource.
+                                        description: id of the resource.
+                                        maxLength: 64
                                         minLength: 1
                                         type: string
                                       name:
-                                        description: Name of the resource.
+                                        description: name of the resource.
+                                        maxLength: 128
                                         minLength: 1
                                         type: string
                                     type: object
@@ -1314,20 +1331,25 @@ spec:
                                     - message: exactly one of id or name must be specified
                                       rule: '(has(self.id) ? 1 : 0) + (has(self.name)
                                         ? 1 : 0) == 1'
+                                  maxItems: 5
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 subnets:
-                                  description: Subnets defines the VPC Subnets to
+                                  description: subnets defines the VPC Subnets to
                                     attach to the load balancer.
                                   items:
                                     description: ResourceIdentifier defines the identification
                                       of a specific PowerVS resource by ID or Name.
+                                    minProperties: 1
                                     properties:
                                       id:
-                                        description: ID of the resource.
+                                        description: id of the resource.
+                                        maxLength: 64
                                         minLength: 1
                                         type: string
                                       name:
-                                        description: Name of the resource.
+                                        description: name of the resource.
+                                        maxLength: 128
                                         minLength: 1
                                         type: string
                                     type: object
@@ -1335,26 +1357,32 @@ spec:
                                     - message: exactly one of id or name must be specified
                                       rule: '(has(self.id) ? 1 : 0) + (has(self.name)
                                         ? 1 : 0) == 1'
+                                  maxItems: 15
+                                  minItems: 1
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 type:
-                                  default: Public
-                                  description: Type indicates whether the load balancer
-                                    is public or private.
+                                  description: |-
+                                    type indicates whether the load balancer is public or private.
+                                    When omitted, defaults to Public.
                                   enum:
                                   - Public
                                   - Private
                                   type: string
                               type: object
                             reference:
-                              description: Reference contains the information to identify
+                              description: reference contains the information to identify
                                 an existing Load Balancer.
+                              minProperties: 1
                               properties:
                                 id:
-                                  description: ID of the resource.
+                                  description: id of the resource.
+                                  maxLength: 64
                                   minLength: 1
                                   type: string
                                 name:
-                                  description: Name of the resource.
+                                  description: name of the resource.
+                                  maxLength: 128
                                   minLength: 1
                                   type: string
                               type: object
@@ -1363,7 +1391,7 @@ spec:
                                 rule: '(has(self.id) ? 1 : 0) + (has(self.name) ?
                                   1 : 0) == 1'
                             type:
-                              description: Type defines whether to use an existing
+                              description: type defines whether to use an existing
                                 Load Balancer or provision a new one.
                               enum:
                               - Reference
@@ -1381,7 +1409,9 @@ spec:
                               is not Provision
                             rule: 'self.type != ''Provision'' ? !has(self.provision)
                               : true'
+                        maxItems: 50
                         type: array
+                        x-kubernetes-list-type: atomic
                       network:
                         description: network specifies how the PowerVS network should
                           be sourced.
@@ -1389,24 +1419,31 @@ spec:
                           provision:
                             description: provision provides the configuration for
                               the controller to CREATE a new Network and DHCP Server.
+                            minProperties: 1
                             properties:
                               dhcpServer:
                                 description: dhcpServer contains the configuration
                                   for the DHCP server that will be created.
+                                minProperties: 1
                                 properties:
                                   cidr:
-                                    description: CIDR is the CIDR for the DHCP private
+                                    description: cidr is the CIDR for the DHCP private
                                       network.
+                                    maxLength: 49
+                                    minLength: 1
                                     pattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$
                                     type: string
                                   dnsServer:
-                                    description: DNSServer is the DNS Server for the
+                                    description: dnsServer is the DNS Server for the
                                       DHCP service.
+                                    maxLength: 45
+                                    minLength: 1
                                     type: string
                                   name:
                                     description: |-
                                       name is the name of the DHCP Service to be created. Only alphanumeric characters and dashes are allowed.
                                       If omitted, the name will default to DHCPSERVER<CLUSTER_NAME>_Private.
+                                    maxLength: 128
                                     minLength: 1
                                     type: string
                                   snat:
@@ -1423,13 +1460,16 @@ spec:
                           reference:
                             description: reference tells the controller to look up
                               an EXISTING PowerVS network.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -1459,19 +1499,22 @@ spec:
                           rule: 'self.type == ''Provision'' ? has(self.provision)
                             : !has(self.provision)'
                       resourceGroup:
-                        description: ResourceGroup defines the IBM Cloud Resource
+                        description: resourceGroup defines the IBM Cloud Resource
                           Group for the cluster.
                         properties:
                           reference:
-                            description: Reference specifies the existing Resource
+                            description: reference specifies the existing Resource
                               Group to use by Name or ID.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -1481,9 +1524,13 @@ spec:
                                 : 0) == 1'
                           type:
                             description: |-
-                              Type defines the intended action for the Resource Group.
+                              type defines the intended action for the Resource Group.
                               Currently, only "Reference" is supported.
+                            maxLength: 32
+                            minLength: 1
                             type: string
+                        required:
+                        - type
                         type: object
                         x-kubernetes-validations:
                         - message: reference configuration is required when type is
@@ -1494,19 +1541,20 @@ spec:
                             in this API version
                           rule: self.type != 'Provision'
                       subnets:
-                        description: Subnets configures the VPC Subnets bound to this
+                        description: subnets configures the VPC Subnets bound to this
                           cluster environment.
                         items:
                           description: VPCSubnetSource defines how the IBM Cloud VPC
                             Subnet is sourced.
                           properties:
                             provision:
-                              description: Provision contains the configuration for
+                              description: provision contains the configuration for
                                 provisioning a new VPC Subnet.
+                              minProperties: 1
                               properties:
                                 name:
                                   description: |-
-                                    Name of the VPC Subnet to be created.
+                                    name of the VPC Subnet to be created.
                                     If omitted, the system will dynamically create the VPC subnet with name <CLUSTER_NAME>-vpcsubnet-<INDEX>.
                                   maxLength: 63
                                   minLength: 1
@@ -1514,15 +1562,18 @@ spec:
                                   type: string
                               type: object
                             reference:
-                              description: Reference contains the information to identify
+                              description: reference contains the information to identify
                                 an existing VPC Subnet.
+                              minProperties: 1
                               properties:
                                 id:
-                                  description: ID of the resource.
+                                  description: id of the resource.
+                                  maxLength: 64
                                   minLength: 1
                                   type: string
                                 name:
-                                  description: Name of the resource.
+                                  description: name of the resource.
+                                  maxLength: 128
                                   minLength: 1
                                   type: string
                               type: object
@@ -1531,7 +1582,7 @@ spec:
                                 rule: '(has(self.id) ? 1 : 0) + (has(self.name) ?
                                   1 : 0) == 1'
                             type:
-                              description: Type defines whether to use an existing
+                              description: type defines whether to use an existing
                                 VPC Subnet or provision a new one.
                               enum:
                               - Reference
@@ -1539,8 +1590,10 @@ spec:
                               type: string
                             zone:
                               description: |-
-                                Zone of the IBM Cloud VPC Subnet.
+                                zone of the IBM Cloud VPC Subnet.
                                 When provisioning, if omitted, a random zone is picked from available zones of the VPC.Region.
+                              maxLength: 63
+                              minLength: 1
                               type: string
                           required:
                           - type
@@ -1554,9 +1607,11 @@ spec:
                               is not Provision
                             rule: 'self.type != ''Provision'' ? !has(self.provision)
                               : true'
+                        maxItems: 15
                         type: array
+                        x-kubernetes-list-type: atomic
                       topology:
-                        description: Topology defines the architectural mode for external
+                        description: topology defines the architectural mode for external
                           cluster access.
                         enum:
                         - VirtualIP
@@ -1564,34 +1619,40 @@ spec:
                         type: string
                       transitGateway:
                         description: |-
-                          TransitGateway contains information about the IBM Cloud TransitGateway.
+                          transitGateway contains information about the IBM Cloud TransitGateway.
                           IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud PowerVS and VPC infrastructure.
                           This field is rejected by the API if the Topology is set to VirtualIP.
                         properties:
                           powerVSConnection:
-                            description: PowerVSConnection defines how the PowerVS
+                            description: powerVSConnection defines how the PowerVS
                               connection to the Transit Gateway is sourced.
                             properties:
                               provision:
-                                description: Provision contains the configuration
+                                description: provision contains the configuration
                                   for provisioning a new connection.
+                                minProperties: 1
                                 properties:
                                   name:
                                     description: |-
-                                      Name of the connection to be created.
+                                      name of the connection to be created.
                                       If omitted, the system will dynamically create the connection with a default name.
+                                    maxLength: 63
+                                    minLength: 1
                                     type: string
                                 type: object
                               reference:
-                                description: Reference contains the information to
+                                description: reference contains the information to
                                   identify an existing connection.
+                                minProperties: 1
                                 properties:
                                   id:
-                                    description: ID of the resource.
+                                    description: id of the resource.
+                                    maxLength: 64
                                     minLength: 1
                                     type: string
                                   name:
-                                    description: Name of the resource.
+                                    description: name of the resource.
+                                    maxLength: 128
                                     minLength: 1
                                     type: string
                                 type: object
@@ -1600,7 +1661,7 @@ spec:
                                   rule: '(has(self.id) ? 1 : 0) + (has(self.name)
                                     ? 1 : 0) == 1'
                               type:
-                                description: Type defines whether to use an existing
+                                description: type defines whether to use an existing
                                   connection or provision a new one.
                                 enum:
                                 - Reference
@@ -1619,34 +1680,38 @@ spec:
                               rule: 'self.type != ''Provision'' ? !has(self.provision)
                                 : true'
                           provision:
-                            description: Provision contains the configuration for
+                            description: provision contains the configuration for
                               provisioning a new Transit Gateway.
+                            minProperties: 1
                             properties:
                               globalRouting:
                                 description: |-
-                                  GlobalRouting indicates whether to use Local or Global routing.
+                                  globalRouting indicates whether to use Local or Global routing.
                                   If omitted, the system will automatically decide based on the PowerVS and VPC regions.
                                 enum:
                                 - Local
                                 - Global
                                 type: string
                               name:
-                                description: Name of the transit gateway to be created.
+                                description: name of the transit gateway to be created.
                                 maxLength: 63
                                 minLength: 1
                                 pattern: ^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$
                                 type: string
                             type: object
                           reference:
-                            description: Reference contains the information to identify
+                            description: reference contains the information to identify
                               an existing Transit Gateway.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -1655,36 +1720,42 @@ spec:
                               rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1
                                 : 0) == 1'
                           type:
-                            description: Type defines whether to use an existing Transit
+                            description: type defines whether to use an existing Transit
                               Gateway or provision a new one.
                             enum:
                             - Reference
                             - Provision
                             type: string
                           vpcConnection:
-                            description: VPCConnection defines how the VPC connection
+                            description: vpcConnection defines how the VPC connection
                               to the Transit Gateway is sourced.
                             properties:
                               provision:
-                                description: Provision contains the configuration
+                                description: provision contains the configuration
                                   for provisioning a new connection.
+                                minProperties: 1
                                 properties:
                                   name:
                                     description: |-
-                                      Name of the connection to be created.
+                                      name of the connection to be created.
                                       If omitted, the system will dynamically create the connection with a default name.
+                                    maxLength: 63
+                                    minLength: 1
                                     type: string
                                 type: object
                               reference:
-                                description: Reference contains the information to
+                                description: reference contains the information to
                                   identify an existing connection.
+                                minProperties: 1
                                 properties:
                                   id:
-                                    description: ID of the resource.
+                                    description: id of the resource.
+                                    maxLength: 64
                                     minLength: 1
                                     type: string
                                   name:
-                                    description: Name of the resource.
+                                    description: name of the resource.
+                                    maxLength: 128
                                     minLength: 1
                                     type: string
                                 type: object
@@ -1693,7 +1764,7 @@ spec:
                                   rule: '(has(self.id) ? 1 : 0) + (has(self.name)
                                     ? 1 : 0) == 1'
                               type:
-                                description: Type defines whether to use an existing
+                                description: type defines whether to use an existing
                                   connection or provision a new one.
                                 enum:
                                 - Reference
@@ -1728,12 +1799,13 @@ spec:
                           sourced.
                         properties:
                           provision:
-                            description: Provision contains the configuration for
+                            description: provision contains the configuration for
                               provisioning a new VPC.
+                            minProperties: 1
                             properties:
                               name:
                                 description: |-
-                                  Name of the VPC to be created.
+                                  name of the VPC to be created.
                                   If omitted, the system will dynamically create the VPC with the name <CLUSTER_NAME>-vpc.
                                 maxLength: 63
                                 minLength: 1
@@ -1741,15 +1813,18 @@ spec:
                                 type: string
                             type: object
                           reference:
-                            description: Reference contains the information to identify
+                            description: reference contains the information to identify
                               an existing VPC.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -1758,12 +1833,13 @@ spec:
                               rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1
                                 : 0) == 1'
                           region:
-                            description: Region is the IBM Cloud region where the
+                            description: region is the IBM Cloud region where the
                               VPC is or will be located.
+                            maxLength: 32
                             minLength: 1
                             type: string
                           type:
-                            description: Type defines whether to use an existing VPC
+                            description: type defines whether to use an existing VPC
                               or provision a new one.
                             enum:
                             - Reference
@@ -1786,21 +1862,25 @@ spec:
                           rule: 'self.type == ''Provision'' ? has(self.provision)
                             : !has(self.provision)'
                       vpcSecurityGroups:
-                        description: VPCSecurityGroups defines the VPC Security Groups
+                        description: vpcSecurityGroups defines the VPC Security Groups
                           that should exist or be created.
                         items:
                           description: VPCSecurityGroupSource defines a VPC Security
                             Group that should exist or be created.
                           properties:
                             provision:
-                              description: Provision contains the configuration for
+                              description: provision contains the configuration for
                                 provisioning a new Security Group.
+                              minProperties: 1
                               properties:
                                 name:
-                                  description: Name of the Security Group.
+                                  description: name of the Security Group.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^-?([a-z]|[a-z][-a-z0-9]*[a-z0-9]|[0-9][-a-z0-9]*([a-z]|[-a-z][-a-z0-9]*[a-z0-9]))$
                                   type: string
                                 rules:
-                                  description: Rules are the Security Group Rules
+                                  description: rules are the Security Group Rules
                                     for the Security Group.
                                   items:
                                     description: VPCSecurityGroupRule defines a VPC
@@ -1809,44 +1889,53 @@ spec:
                                     properties:
                                       destination:
                                         description: |-
-                                          Destination defines the destination of outbound traffic for the Security Group Rule.
+                                          destination defines the destination of outbound traffic for the Security Group Rule.
                                           Only used when direction is VPCSecurityGroupRuleDirectionOutbound.
                                         properties:
                                           icmpCode:
-                                            description: ICMPCode is the ICMP code
+                                            description: icmpCode is the ICMP code
                                               for the Rule.
                                             format: int64
+                                            maximum: 255
+                                            minimum: 0
                                             type: integer
                                           icmpType:
-                                            description: ICMPType is the ICMP type
+                                            description: icmpType is the ICMP type
                                               for the Rule.
                                             format: int64
+                                            maximum: 254
+                                            minimum: 0
                                             type: integer
                                           portRange:
-                                            description: PortRange is a range of ports
-                                              allowed for the Rule's remote.
+                                            description: |-
+                                              portRange is a range of ports allowed for the Rule's remote.
+                                              If specified, both minimumPort and maximumPort must be specified.
+                                              If unspecified, traffic on all destination ports is allowed.
                                             properties:
                                               maximumPort:
-                                                description: MaximumPort is the inclusive
+                                                description: maximumPort is the inclusive
                                                   upper range of ports.
                                                 format: int64
                                                 maximum: 65535
                                                 minimum: 1
                                                 type: integer
                                               minimumPort:
-                                                description: MinimumPort is the inclusive
+                                                description: minimumPort is the inclusive
                                                   lower range of ports.
                                                 format: int64
                                                 maximum: 65535
                                                 minimum: 1
                                                 type: integer
+                                            required:
+                                            - maximumPort
+                                            - minimumPort
                                             type: object
                                             x-kubernetes-validations:
                                             - message: maximum port must be greater
                                                 than or equal to minimum port
                                               rule: self.maximumPort >= self.minimumPort
                                           protocol:
-                                            description: Protocol defines the traffic
+                                            description: protocol defines the traffic
                                               protocol used for the Security Group
                                               Rule.
                                             enum:
@@ -1854,9 +1943,12 @@ spec:
                                             - icmp
                                             - tcp
                                             - udp
+                                            maxLength: 128
+                                            minLength: 1
+                                            pattern: ^[a-z][a-z0-9]*(_[a-z0-9]+)*$
                                             type: string
                                           remotes:
-                                            description: Remotes is a set of VPCSecurityGroupRuleRemote's
+                                            description: remotes is a set of VPCSecurityGroupRuleRemote's
                                               that define the traffic allowed.
                                             items:
                                               description: VPCSecurityGroupRuleRemote
@@ -1864,16 +1956,22 @@ spec:
                                                 remote details.
                                               properties:
                                                 address:
-                                                  description: Address is the address
+                                                  description: address is the address
                                                     to use for the remote's destination/source.
+                                                  maxLength: 15
+                                                  minLength: 7
+                                                  pattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$
                                                   type: string
                                                 cidrSubnetName:
-                                                  description: CIDRSubnetName is the
+                                                  description: cidrSubnetName is the
                                                     name of the VPC Subnet to retrieve
                                                     the CIDR from.
+                                                  maxLength: 63
+                                                  minLength: 1
+                                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                                   type: string
                                                 remoteType:
-                                                  description: RemoteType defines
+                                                  description: remoteType defines
                                                     the type of filter to define for
                                                     the remote's destination/source.
                                                   enum:
@@ -1883,9 +1981,12 @@ spec:
                                                   - sg
                                                   type: string
                                                 securityGroupName:
-                                                  description: SecurityGroupName is
+                                                  description: securityGroupName is
                                                     the name of the VPC Security Group
                                                     to use for the remote.
+                                                  maxLength: 63
+                                                  minLength: 1
+                                                  pattern: ^-?([a-z]|[a-z][-a-z0-9]*[a-z0-9]|[0-9][-a-z0-9]*([a-z]|[-a-z][-a-z0-9]*[a-z0-9]))$
                                                   type: string
                                               required:
                                               - remoteType
@@ -1920,7 +2021,9 @@ spec:
                                                   (has(self.securityGroupName) &&
                                                   !has(self.cidrSubnetName) && !has(self.address))
                                                   : true'
+                                            maxItems: 25
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                         required:
                                         - protocol
                                         type: object
@@ -1939,58 +2042,73 @@ spec:
                                           rule: 'self.protocol == ''icmp'' ? !has(self.portRange)
                                             : true'
                                       direction:
-                                        description: Direction defines whether the
-                                          traffic is inbound or outbound for the Security
-                                          Group Rule.
+                                        description: |-
+                                          direction is the direction of traffic to allow.
+                                          Allowable values: inbound, outbound.
                                         enum:
                                         - inbound
                                         - outbound
+                                        maxLength: 128
+                                        minLength: 1
+                                        pattern: ^[a-z][a-z0-9]*(_[a-z0-9]+)*$
                                         type: string
                                       securityGroupID:
-                                        description: SecurityGroupID is the ID of
+                                        description: securityGroupID is the ID of
                                           the Security Group for the Security Group
                                           Rule.
+                                        maxLength: 64
+                                        minLength: 1
+                                        pattern: ^[-0-9a-z_]+$
                                         type: string
                                       source:
                                         description: |-
-                                          Source defines the source of inbound traffic for the Security Group Rule.
+                                          source defines the source of inbound traffic for the Security Group Rule.
                                           Only used when direction is VPCSecurityGroupRuleDirectionInbound.
                                         properties:
                                           icmpCode:
-                                            description: ICMPCode is the ICMP code
+                                            description: icmpCode is the ICMP code
                                               for the Rule.
                                             format: int64
+                                            maximum: 255
+                                            minimum: 0
                                             type: integer
                                           icmpType:
-                                            description: ICMPType is the ICMP type
+                                            description: icmpType is the ICMP type
                                               for the Rule.
                                             format: int64
+                                            maximum: 254
+                                            minimum: 0
                                             type: integer
                                           portRange:
-                                            description: PortRange is a range of ports
-                                              allowed for the Rule's remote.
+                                            description: |-
+                                              portRange is a range of ports allowed for the Rule's remote.
+                                              If specified, both minimumPort and maximumPort must be specified.
+                                              If unspecified, traffic on all destination ports is allowed.
                                             properties:
                                               maximumPort:
-                                                description: MaximumPort is the inclusive
+                                                description: maximumPort is the inclusive
                                                   upper range of ports.
                                                 format: int64
                                                 maximum: 65535
                                                 minimum: 1
                                                 type: integer
                                               minimumPort:
-                                                description: MinimumPort is the inclusive
+                                                description: minimumPort is the inclusive
                                                   lower range of ports.
                                                 format: int64
                                                 maximum: 65535
                                                 minimum: 1
                                                 type: integer
+                                            required:
+                                            - maximumPort
+                                            - minimumPort
                                             type: object
                                             x-kubernetes-validations:
                                             - message: maximum port must be greater
                                                 than or equal to minimum port
                                               rule: self.maximumPort >= self.minimumPort
                                           protocol:
-                                            description: Protocol defines the traffic
+                                            description: protocol defines the traffic
                                               protocol used for the Security Group
                                               Rule.
                                             enum:
@@ -1998,9 +2116,12 @@ spec:
                                             - icmp
                                             - tcp
                                             - udp
+                                            maxLength: 128
+                                            minLength: 1
+                                            pattern: ^[a-z][a-z0-9]*(_[a-z0-9]+)*$
                                             type: string
                                           remotes:
-                                            description: Remotes is a set of VPCSecurityGroupRuleRemote's
+                                            description: remotes is a set of VPCSecurityGroupRuleRemote's
                                               that define the traffic allowed.
                                             items:
                                               description: VPCSecurityGroupRuleRemote
@@ -2008,16 +2129,22 @@ spec:
                                                 remote details.
                                               properties:
                                                 address:
-                                                  description: Address is the address
+                                                  description: address is the address
                                                     to use for the remote's destination/source.
+                                                  maxLength: 15
+                                                  minLength: 7
+                                                  pattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$
                                                   type: string
                                                 cidrSubnetName:
-                                                  description: CIDRSubnetName is the
+                                                  description: cidrSubnetName is the
                                                     name of the VPC Subnet to retrieve
                                                     the CIDR from.
+                                                  maxLength: 63
+                                                  minLength: 1
+                                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                                   type: string
                                                 remoteType:
-                                                  description: RemoteType defines
+                                                  description: remoteType defines
                                                     the type of filter to define for
                                                     the remote's destination/source.
                                                   enum:
@@ -2027,9 +2154,12 @@ spec:
                                                   - sg
                                                   type: string
                                                 securityGroupName:
-                                                  description: SecurityGroupName is
+                                                  description: securityGroupName is
                                                     the name of the VPC Security Group
                                                     to use for the remote.
+                                                  maxLength: 63
+                                                  minLength: 1
+                                                  pattern: ^-?([a-z]|[a-z][-a-z0-9]*[a-z0-9]|[0-9][-a-z0-9]*([a-z]|[-a-z][-a-z0-9]*[a-z0-9]))$
                                                   type: string
                                               required:
                                               - remoteType
@@ -2064,7 +2194,9 @@ spec:
                                                   (has(self.securityGroupName) &&
                                                   !has(self.cidrSubnetName) && !has(self.address))
                                                   : true'
+                                            maxItems: 25
                                             type: array
+                                            x-kubernetes-list-type: atomic
                                         required:
                                         - protocol
                                         type: object
@@ -2112,25 +2244,35 @@ spec:
                                     - message: protocol is required in destination
                                       rule: 'has(self.destination) ? has(self.destination.protocol)
                                         : true'
+                                  maxItems: 250
                                   type: array
+                                  x-kubernetes-list-type: atomic
                                 tags:
-                                  description: Tags are tags to add to the Security
-                                    Group.
+                                  description: tags are tag names to create for the
+                                    Security Group.
                                   items:
+                                    maxLength: 128
+                                    pattern: ^[ ]*[A-Za-z0-9:_.\-][A-Za-z0-9 :_.\-]*$
                                     type: string
+                                  maxItems: 100
+                                  minItems: 1
                                   type: array
+                                  x-kubernetes-list-type: set
                               type: object
                             reference:
                               description: |-
-                                Reference contains the information to identify an existing Security Group.
+                                reference contains the information to identify an existing Security Group.
                                 CAPI will not manage rules for referenced Security Groups.
+                              minProperties: 1
                               properties:
                                 id:
-                                  description: ID of the resource.
+                                  description: id of the resource.
+                                  maxLength: 64
                                   minLength: 1
                                   type: string
                                 name:
-                                  description: Name of the resource.
+                                  description: name of the resource.
+                                  maxLength: 128
                                   minLength: 1
                                   type: string
                               type: object
@@ -2139,7 +2281,7 @@ spec:
                                 rule: '(has(self.id) ? 1 : 0) + (has(self.name) ?
                                   1 : 0) == 1'
                             type:
-                              description: Type defines whether to use an existing
+                              description: type defines whether to use an existing
                                 Security Group or provision a new one.
                               enum:
                               - Reference
@@ -2157,7 +2299,9 @@ spec:
                               is Provision, and forbidden otherwise
                             rule: 'self.type == ''Provision'' ? has(self.provision)
                               : !has(self.provision)'
+                        maxItems: 25
                         type: array
+                        x-kubernetes-list-type: atomic
                       workspace:
                         description: |-
                           workspace specifies how the PowerVS workspace is sourced.
@@ -2167,11 +2311,13 @@ spec:
                           provision:
                             description: provision defines the configuration for creating
                               a new PowerVS workspace.
+                            minProperties: 1
                             properties:
                               name:
                                 description: |-
                                   name is the explicit name of the workspace to be created.
                                   If omitted, the system will dynamically create the workspace with the name <CLUSTER_NAME>-workspace.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -2180,13 +2326,16 @@ spec:
                               reference tells the controller to use an existing PowerVS workspace.
                               Supported identifiers are name and id.
                               If more than one workspace has the same name, use id.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -2219,7 +2368,9 @@ spec:
                         description: |-
                           zone is the name of PowerVS zone where the cluster will be created
                           possible values can be found here https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server.
+                        maxLength: 32
                         minLength: 1
+                        pattern: ^[a-zA-Z0-9\-_]+$
                         type: string
                         x-kubernetes-validations:
                         - message: zone is immutable

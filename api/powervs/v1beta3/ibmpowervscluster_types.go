@@ -114,7 +114,7 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	ControlPlaneEndpoint APIEndpoint `json:"controlPlaneEndpoint,omitempty,omitzero"`
 
-	// Topology defines the architectural mode for external cluster access.
+	// topology defines the architectural mode for external cluster access.
 	// +required
 	// +kubebuilder:validation:Enum=VirtualIP;LoadBalancer
 	Topology ClusterTopology `json:"topology,omitempty"`
@@ -134,13 +134,15 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="zone is immutable"
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=^[a-zA-Z0-9\-_]+$
 	Zone string `json:"zone,omitempty"`
 
-	// ResourceGroup defines the IBM Cloud Resource Group for the cluster.
+	// resourceGroup defines the IBM Cloud Resource Group for the cluster.
 	// +optional
 	ResourceGroup ResourceGroupSource `json:"resourceGroup,omitempty,omitzero"`
 
-	// TransitGateway contains information about the IBM Cloud TransitGateway.
+	// transitGateway contains information about the IBM Cloud TransitGateway.
 	// IBM Cloud TransitGateway helps in establishing network connectivity between IBM Cloud PowerVS and VPC infrastructure.
 	// This field is rejected by the API if the Topology is set to VirtualIP.
 	// +optional
@@ -150,30 +152,37 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	VPC VPCSource `json:"vpc,omitempty,omitzero"`
 
-	// Subnets configures the VPC Subnets bound to this cluster environment.
+	// subnets configures the VPC Subnets bound to this cluster environment.
 	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=15
 	VPCSubnets []VPCSubnetSource `json:"subnets,omitempty"`
 
 	// loadBalancers contains information about IBM Cloud VPC Load Balancer resources.
 	// This field is rejected by the API if the Topology is set to VirtualIP.
 	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=50
 	LoadBalancers []LoadBalancerSource `json:"loadBalancers,omitempty"`
 
-	// VPCSecurityGroups defines the VPC Security Groups that should exist or be created.
+	// vpcSecurityGroups defines the VPC Security Groups that should exist or be created.
 	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=25
 	VPCSecurityGroups []VPCSecurityGroupSource `json:"vpcSecurityGroups,omitempty"`
 
-	// COSInstance contains options to configure a supporting IBM Cloud COS instance and bucket
+	// cosInstance contains options to configure a supporting IBM Cloud COS instance and bucket
 	// for this cluster. It is currently used for nodes requiring Ignition for bootstrapping.
 	// +optional
 	COSInstance COSInstanceSource `json:"cosInstance,omitempty,omitzero"`
 
-	// Ignition defines options related to the bootstrapping systems where Ignition is used.
+	// ignition defines options related to the bootstrapping systems where Ignition is used.
 	// +optional
 	Ignition Ignition `json:"ignition,omitempty,omitzero"`
 }
 
 // IBMPowerVSClusterStatus defines the observed state of IBMPowerVSCluster.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSClusterStatus struct {
 	// conditions represents the observations of a IBMPowerVSCluster's current state.
 	// +optional
@@ -195,36 +204,40 @@ type IBMPowerVSClusterStatus struct {
 	// +optional
 	Network NetworkStatus `json:"network,omitempty,omitzero"`
 
-	// ResourceGroup is the reference to the IBM Cloud Resource Group where the cluster resources are provisioned.
+	// resourceGroup is the reference to the IBM Cloud Resource Group where the cluster resources are provisioned.
 	// +optional
 	ResourceGroup ResourceReference `json:"resourceGroup,omitempty,omitzero"`
 
 	// transitGateway is reference to IBM Cloud TransitGateway.
+	// +optional
 	TransitGateway TransitGatewayStatus `json:"transitGateway,omitempty,omitzero"`
 
-	// VPC tracks the observed state of the provisioned or referenced IBM Cloud VPC.
+	// vpc tracks the observed state of the provisioned or referenced IBM Cloud VPC.
 	// +optional
 	VPC VPCStatus `json:"vpc,omitempty,omitzero"`
 
-	// VPCSubnets tracks the current status of the VPC subnets.
+	// vpcSubnets tracks the current status of the VPC subnets.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=15
 	VPCSubnets []VPCSubnetStatus `json:"vpcSubnets,omitempty"`
 
 	// loadBalancers tracks the status of the IBM Cloud VPC Load Balancers.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=50
 	LoadBalancers []LoadBalancerStatus `json:"loadBalancers,omitempty"`
 
-	// VPCSecurityGroups tracks the live observed states of all managed or referenced VPC Security Groups.
+	// vpcSecurityGroups tracks the live observed states of all managed or referenced VPC Security Groups.
 	// +optional
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=25
 	VPCSecurityGroups []VPCSecurityGroupStatus `json:"vpcSecurityGroups,omitempty"`
 
-	// COSInstance tracks the observed state of the provisioned or referenced IBM Cloud COS instance.
+	// cosInstance tracks the observed state of the provisioned or referenced IBM Cloud COS instance.
 	// +optional
 	COSInstance COSInstanceStatus `json:"cosInstance,omitempty,omitzero"`
 
@@ -252,11 +265,11 @@ type IBMPowerVSCluster struct {
 
 	// spec defines the desired state of IBMPowerVSCluster
 	// +required
-	Spec IBMPowerVSClusterSpec `json:"spec"`
+	Spec IBMPowerVSClusterSpec `json:"spec,omitempty,omitzero"`
 
 	// status defines the observed state of IBMPowerVSCluster
 	// +optional
-	Status IBMPowerVSClusterStatus `json:"status,omitzero"`
+	Status IBMPowerVSClusterStatus `json:"status,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -297,38 +310,39 @@ type IBMPowerVSClusterInitializationStatus struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
 type TransitGatewaySource struct {
-	// Type defines whether to use an existing Transit Gateway or provision a new one.
+	// type defines whether to use an existing Transit Gateway or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	Type SourceType `json:"type,omitempty"`
 
-	// Reference contains the information to identify an existing Transit Gateway.
+	// reference contains the information to identify an existing Transit Gateway.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new Transit Gateway.
+	// provision contains the configuration for provisioning a new Transit Gateway.
 	// +optional
-	Provision TransitGatewayProvision `json:"provision,omitempty"`
+	Provision TransitGatewayProvision `json:"provision,omitempty,omitzero"`
 
-	// VPCConnection defines how the VPC connection to the Transit Gateway is sourced.
+	// vpcConnection defines how the VPC connection to the Transit Gateway is sourced.
 	// +optional
 	VPCConnection TransitGatewayConnectionSource `json:"vpcConnection,omitempty,omitzero"`
 
-	// PowerVSConnection defines how the PowerVS connection to the Transit Gateway is sourced.
+	// powerVSConnection defines how the PowerVS connection to the Transit Gateway is sourced.
 	// +optional
 	PowerVSConnection TransitGatewayConnectionSource `json:"powerVSConnection,omitempty,omitzero"`
 }
 
 // TransitGatewayProvision holds the configuration for a new Transit Gateway.
+// +kubebuilder:validation:MinProperties=1
 type TransitGatewayProvision struct {
-	// Name of the transit gateway to be created.
+	// name of the transit gateway to be created.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern=`^([a-zA-Z]|[a-zA-Z][-_a-zA-Z0-9]*[a-zA-Z0-9])$`
 	// +optional
 	Name string `json:"name,omitempty"`
 
-	// GlobalRouting indicates whether to use Local or Global routing.
+	// globalRouting indicates whether to use Local or Global routing.
 	// If omitted, the system will automatically decide based on the PowerVS and VPC regions.
 	// +kubebuilder:validation:Enum=Local;Global
 	// +optional
@@ -339,63 +353,79 @@ type TransitGatewayProvision struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
 type TransitGatewayConnectionSource struct {
-	// Type defines whether to use an existing connection or provision a new one.
+	// type defines whether to use an existing connection or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	Type SourceType `json:"type,omitempty"`
 
-	// Reference contains the information to identify an existing connection.
+	// reference contains the information to identify an existing connection.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new connection.
+	// provision contains the configuration for provisioning a new connection.
 	// +optional
 	Provision TransitGatewayConnectionProvision `json:"provision,omitempty,omitzero"`
 }
 
 // TransitGatewayConnectionProvision holds the configuration for a new Transit Gateway connection.
+// +kubebuilder:validation:MinProperties=1
 type TransitGatewayConnectionProvision struct {
-	// Name of the connection to be created.
+	// name of the connection to be created.
 	// If omitted, the system will dynamically create the connection with a default name.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Name string `json:"name,omitempty"`
 }
 
 // TransitGatewayStatus defines the status of the transit gateway as well as its connections.
+// +kubebuilder:validation:MinProperties=1
 type TransitGatewayStatus struct {
-	// ID represents the id of the resource.
+	// id represents the id of the resource.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ID string `json:"id,omitempty"`
 
-	// Name represents the name of the resource.
+	// name represents the name of the resource.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Name string `json:"name,omitempty"`
 
-	// VPCConnection defines the vpc connection status in the transit gateway.
+	// vpcConnection defines the vpc connection status in the transit gateway.
 	// +optional
 	VPCConnection ResourceConnectionStatus `json:"vpcConnection,omitempty,omitzero"`
 
-	// PowerVSConnection defines the powervs connection status in the transit gateway.
+	// powerVSConnection defines the powervs connection status in the transit gateway.
 	// +optional
 	PowerVSConnection ResourceConnectionStatus `json:"powerVSConnection,omitempty,omitzero"`
 }
 
 // ResourceConnectionStatus identifies a connection resource.
+// +kubebuilder:validation:MinProperties=1
 type ResourceConnectionStatus struct {
-	// ID represents the id of the connection resource.
+	// id represents the id of the connection resource.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ID string `json:"id,omitempty"`
 
-	// Name represents the name of the connection resource.
+	// name represents the name of the connection resource.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Name string `json:"name,omitempty"`
 
-	// State indicates the current state of the connection (e.g., pending, attached).
+	// state indicates the current state of the connection (e.g., pending, attached).
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	State string `json:"state,omitempty"`
 }
 
 // Ignition defines options related to the bootstrapping systems where Ignition is used.
+// +kubebuilder:validation:MinProperties=1
 type Ignition struct {
 	// version defines which version of Ignition will be used to generate bootstrap data.
 	//
@@ -424,15 +454,20 @@ type IBMPowerVSClusterV1Beta2DeprecatedStatus struct {
 }
 
 // ResourceReference identifies a resource with id and name.
+// +kubebuilder:validation:MinProperties=1
 type ResourceReference struct {
 	// id represents the id of the resource.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ID string `json:"id,omitempty"`
 
 	// name is the name of the resource.
 	// When used in a list, this field acts as the unique correlation key (listMapKey)
 	// to map the Status object back to its corresponding Spec definition.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	Name string `json:"name,omitempty"`
 }
 
@@ -458,25 +493,30 @@ type WorkspaceSource struct {
 }
 
 // WorkspaceProvisionConfig defines the parameters for creating a new workspace.
+// +kubebuilder:validation:MinProperties=1
 type WorkspaceProvisionConfig struct {
 	// name is the explicit name of the workspace to be created.
 	// If omitted, the system will dynamically create the workspace with the name <CLUSTER_NAME>-workspace.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	Name string `json:"name,omitempty"`
 }
 
 // ResourceIdentifier defines the identification of a specific PowerVS resource by ID or Name.
+// +kubebuilder:validation:MinProperties=1
 // +kubebuilder:validation:XValidation:rule="(has(self.id) ? 1 : 0) + (has(self.name) ? 1 : 0) == 1",message="exactly one of id or name must be specified"
 type ResourceIdentifier struct {
-	// ID of the resource.
+	// id of the resource.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ID string `json:"id,omitempty"`
 
-	// Name of the resource.
+	// name of the resource.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	Name string `json:"name,omitempty"`
 }
 
@@ -500,6 +540,7 @@ type NetworkSource struct {
 }
 
 // NetworkProvisionConfig defines the parameters for creating a new PowerVS Network.
+// +kubebuilder:validation:MinProperties=1
 type NetworkProvisionConfig struct {
 	// dhcpServer contains the configuration for the DHCP server that will be created.
 	// +optional
@@ -507,20 +548,26 @@ type NetworkProvisionConfig struct {
 }
 
 // DHCPServer contains the configuration for a NEW DHCP server.
+// +kubebuilder:validation:MinProperties=1
 type DHCPServer struct {
 	// name is the name of the DHCP Service to be created. Only alphanumeric characters and dashes are allowed.
 	// If omitted, the name will default to DHCPSERVER<CLUSTER_NAME>_Private.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	Name string `json:"name,omitempty"`
 
-	// CIDR is the CIDR for the DHCP private network.
+	// cidr is the CIDR for the DHCP private network.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=49
 	// +kubebuilder:validation:Pattern=`^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$`
 	CIDR string `json:"cidr,omitempty"`
 
-	// DNSServer is the DNS Server for the DHCP service.
+	// dnsServer is the DNS Server for the DHCP service.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=45
 	DNSServer string `json:"dnsServer,omitempty"`
 
 	// snat indicates the SNAT policy for the DHCP service.
@@ -532,13 +579,18 @@ type DHCPServer struct {
 }
 
 // NetworkStatus defines the observed state of the PowerVS network and its associated components.
+// +kubebuilder:validation:MinProperties=1
 type NetworkStatus struct {
 	// id is the unique identifier of the network.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ID string `json:"id,omitempty"`
 
 	// name is the name of the network.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	Name string `json:"name,omitempty"`
 
 	// dhcpServer tracks the provisioned DHCP server identity, if one was created.
@@ -550,11 +602,14 @@ type NetworkStatus struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : true",message="reference configuration is required when type is Reference"
 // +kubebuilder:validation:XValidation:rule="self.type != 'Provision'",message="Provisioning a Resource Group is not yet supported in this API version"
 type ResourceGroupSource struct {
-	// Type defines the intended action for the Resource Group.
+	// type defines the intended action for the Resource Group.
 	// Currently, only "Reference" is supported.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
 	Type SourceType `json:"type,omitempty"`
 
-	// Reference specifies the existing Resource Group to use by Name or ID.
+	// reference specifies the existing Resource Group to use by Name or ID.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 }
@@ -563,29 +618,31 @@ type ResourceGroupSource struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
 type VPCSource struct {
-	// Type defines whether to use an existing VPC or provision a new one.
+	// type defines whether to use an existing VPC or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="VPC type is immutable once set"
-	Type SourceType `json:"type"`
+	Type SourceType `json:"type,omitempty"`
 
-	// Region is the IBM Cloud region where the VPC is or will be located.
+	// region is the IBM Cloud region where the VPC is or will be located.
 	// +required
 	// +kubebuilder:validation:MinLength=1
-	Region string `json:"region"`
+	// +kubebuilder:validation:MaxLength=32
+	Region string `json:"region,omitempty"`
 
-	// Reference contains the information to identify an existing VPC.
+	// reference contains the information to identify an existing VPC.
 	// +optional
-	Reference ResourceIdentifier `json:"reference,omitempty"`
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new VPC.
+	// provision contains the configuration for provisioning a new VPC.
 	// +optional
-	Provision VPCProvision `json:"provision,omitempty"`
+	Provision VPCProvision `json:"provision,omitempty,omitzero"`
 }
 
 // VPCProvision holds the configuration for creating a new VPC.
+// +kubebuilder:validation:MinProperties=1
 type VPCProvision struct {
-	// Name of the VPC to be created.
+	// name of the VPC to be created.
 	// If omitted, the system will dynamically create the VPC with the name <CLUSTER_NAME>-vpc.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
@@ -596,16 +653,22 @@ type VPCProvision struct {
 
 // VPCStatus tracks the live observed state of the IBM Cloud VPC.
 type VPCStatus struct {
-	// ID is the validated string identifier returned by the IBM Cloud API.
-	// +kubebuilder:validation:Required
-	ID string `json:"id"`
+	// id is the validated string identifier returned by the IBM Cloud API.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	ID string `json:"id,omitempty"`
 
-	// Name is the unique name identifying the VPC in the cloud.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+	// name is the unique name identifying the VPC in the cloud.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Name string `json:"name,omitempty"`
 
-	// Region is the IBM Cloud region where the VPC resides.
+	// region is the IBM Cloud region where the VPC resides.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
 	Region string `json:"region,omitempty"`
 }
 
@@ -613,28 +676,31 @@ type VPCStatus struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
 type VPCSubnetSource struct {
-	// Type defines whether to use an existing VPC Subnet or provision a new one.
+	// type defines whether to use an existing VPC Subnet or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
-	Type SourceType `json:"type"`
+	Type SourceType `json:"type,omitempty"`
 
-	// Zone of the IBM Cloud VPC Subnet.
+	// zone of the IBM Cloud VPC Subnet.
 	// When provisioning, if omitted, a random zone is picked from available zones of the VPC.Region.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Zone string `json:"zone,omitempty"`
 
-	// Reference contains the information to identify an existing VPC Subnet.
+	// reference contains the information to identify an existing VPC Subnet.
 	// +optional
-	Reference ResourceIdentifier `json:"reference,omitempty"`
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new VPC Subnet.
+	// provision contains the configuration for provisioning a new VPC Subnet.
 	// +optional
-	Provision VPCSubnetProvision `json:"provision,omitempty"`
+	Provision VPCSubnetProvision `json:"provision,omitempty,omitzero"`
 }
 
 // VPCSubnetProvision holds the configuration for a new VPC Subnet.
+// +kubebuilder:validation:MinProperties=1
 type VPCSubnetProvision struct {
-	// Name of the VPC Subnet to be created.
+	// name of the VPC Subnet to be created.
 	// If omitted, the system will dynamically create the VPC subnet with name <CLUSTER_NAME>-vpcsubnet-<INDEX>.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
@@ -645,16 +711,22 @@ type VPCSubnetProvision struct {
 
 // VPCSubnetStatus defines the observed state of an IBM Cloud VPC Subnet.
 type VPCSubnetStatus struct {
-	// ID is the validated string identifier returned by the IBM Cloud API.
-	// +kubebuilder:validation:Required
-	ID string `json:"id"`
+	// id is the validated string identifier returned by the IBM Cloud API.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	ID string `json:"id,omitempty"`
 
-	// Name is the unique name identifying the subnet in the cloud.
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+	// name is the unique name identifying the subnet in the cloud.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Name string `json:"name,omitempty"`
 
-	// Zone is the actual IBM Cloud zone where the subnet resides.
+	// zone is the actual IBM Cloud zone where the subnet resides.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Zone string `json:"zone,omitempty"`
 }
 
@@ -662,23 +734,24 @@ type VPCSubnetStatus struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision"
 type LoadBalancerSource struct {
-	// Type defines whether to use an existing Load Balancer or provision a new one.
+	// type defines whether to use an existing Load Balancer or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	Type SourceType `json:"type,omitempty"`
 
-	// Reference contains the information to identify an existing Load Balancer.
+	// reference contains the information to identify an existing Load Balancer.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new Load Balancer.
+	// provision contains the configuration for provisioning a new Load Balancer.
 	// +optional
 	Provision LoadBalancerProvision `json:"provision,omitempty,omitzero"`
 }
 
 // LoadBalancerProvision holds the configuration for a new VPC Load Balancer.
+// +kubebuilder:validation:MinProperties=1
 type LoadBalancerProvision struct {
-	// Name sets the name of the VPC load balancer.
+	// name sets the name of the VPC load balancer.
 	// If omitted, the system will dynamically create it.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
@@ -686,27 +759,35 @@ type LoadBalancerProvision struct {
 	// +optional
 	Name string `json:"name,omitempty"`
 
-	// Type indicates whether the load balancer is public or private.
-	// +kubebuilder:default=Public
+	// type indicates whether the load balancer is public or private.
+	// When omitted, defaults to Public.
 	// +optional
 	Type LoadBalancerType `json:"type,omitempty"`
 
-	// AdditionalListeners sets the additional listeners for the load balancer.
+	// additionalListeners sets the additional listeners for the load balancer.
 	// +listType=map
 	// +listMapKey=port
 	// +optional
+	// +kubebuilder:validation:MaxItems=10
 	AdditionalListeners []AdditionalListener `json:"additionalListeners,omitempty"`
 
-	// BackendPools defines the load balancer's backend pools.
+	// backendPools defines the load balancer's backend pools.
 	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
 	BackendPools []LoadBalancerBackendPool `json:"backendPools,omitempty"`
 
-	// SecurityGroups defines the Security Groups to attach to the load balancer.
+	// securityGroups defines the Security Groups to attach to the load balancer.
 	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=5
 	SecurityGroups []ResourceIdentifier `json:"securityGroups,omitempty"`
 
-	// Subnets defines the VPC Subnets to attach to the load balancer.
+	// subnets defines the VPC Subnets to attach to the load balancer.
 	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=15
 	Subnets []ResourceIdentifier `json:"subnets,omitempty"`
 }
 
@@ -752,7 +833,7 @@ type LoadBalancerBackendPool struct {
 
 	// healthMonitor defines the backend pool's health monitor.
 	// +required
-	HealthMonitor LoadBalancerHealthMonitor `json:"healthMonitor,omitempty"`
+	HealthMonitor LoadBalancerHealthMonitor `json:"healthMonitor,omitempty,omitzero"`
 
 	// protocol defines the protocol to use for the Backend Pool.
 	// +required
@@ -793,25 +874,35 @@ type LoadBalancerHealthMonitor struct {
 	// urlPath defines the URL to use for health monitoring.
 	// +kubebuilder:validation:Pattern=`^\/(([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})+(\/([a-zA-Z0-9-._~!$&'()*+,;=:@]|%[a-fA-F0-9]{2})*)*)?(\\?([a-zA-Z0-9-._~!$&'()*+,;=:@\/?]|%[a-fA-F0-9]{2})*)?$`
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=8192
 	URLPath string `json:"urlPath,omitempty"`
 }
 
 // LoadBalancerStatus defines the status of a VPC load balancer.
 type LoadBalancerStatus struct {
-	// Name is the unique identifier for the load balancer configuration.
+	// name is the unique identifier for the load balancer configuration.
 	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Name string `json:"name,omitempty"`
 
-	// ID of the VPC load balancer.
+	// id of the VPC load balancer.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ID string `json:"id,omitempty"`
 
-	// State is the status of the load balancer.
+	// state is the status of the load balancer.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	State LoadBalancerState `json:"state,omitempty"`
 
-	// Hostname is the hostname of load balancer.
+	// hostname is the hostname of load balancer.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
 	Hostname string `json:"hostname,omitempty"`
 }
 
@@ -819,34 +910,37 @@ type LoadBalancerStatus struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
 type COSInstanceSource struct {
-	// Type defines whether to use an existing COS instance or provision a new one.
+	// type defines whether to use an existing COS instance or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="COS instance type is immutable once set"
 	Type SourceType `json:"type,omitempty"`
 
-	// BucketName is the name of the IBM Cloud COS bucket used for Ignition bootstrapping.
+	// bucketName is the name of the IBM Cloud COS bucket used for Ignition bootstrapping.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	BucketName string `json:"bucketName,omitempty"`
 
-	// BucketRegion is the IBM Cloud region where the COS bucket resides or will be created.
+	// bucketRegion is the IBM Cloud region where the COS bucket resides or will be created.
 	// +optional
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
 	BucketRegion string `json:"bucketRegion,omitempty"`
 
-	// Reference contains the information to identify an existing COS instance.
+	// reference contains the information to identify an existing COS instance.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new COS instance and bucket.
+	// provision contains the configuration for provisioning a new COS instance and bucket.
 	// +optional
 	Provision COSInstanceProvision `json:"provision,omitempty,omitzero"`
 }
 
 // COSInstanceProvision holds the configuration for creating a new COS instance.
+// +kubebuilder:validation:MinProperties=1
 type COSInstanceProvision struct {
-	// Name defines the explicit name of the IBM Cloud COS instance to be created.
+	// name defines the explicit name of the IBM Cloud COS instance to be created.
 	// If omitted, the system will dynamically create it using the cluster name.
 	// +kubebuilder:validation:MinLength=3
 	// +kubebuilder:validation:MaxLength=63
@@ -857,20 +951,28 @@ type COSInstanceProvision struct {
 
 // COSInstanceStatus tracks the live observed state of the IBM Cloud COS instance.
 type COSInstanceStatus struct {
-	// ID is the validated string identifier (CRN or GUID) returned by the IBM Cloud API.
-	// +kubebuilder:validation:Required
+	// id is the validated string identifier (CRN or GUID) returned by the IBM Cloud API.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=512
 	ID string `json:"id,omitempty"`
 
-	// Name is the unique name identifying the COS instance in the cloud.
-	// +kubebuilder:validation:Required
+	// name is the unique name identifying the COS instance in the cloud.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	Name string `json:"name,omitempty"`
 
-	// BucketName tracks the confirmed bucket used for bootstrapping.
+	// bucketName tracks the confirmed bucket used for bootstrapping.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	BucketName string `json:"bucketName,omitempty"`
 
-	// BucketRegion tracks the confirmed region where the bucket resides.
+	// bucketRegion tracks the confirmed region where the bucket resides.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
 	BucketRegion string `json:"bucketRegion,omitempty"`
 }
 
@@ -936,33 +1038,44 @@ const (
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
 type VPCSecurityGroupSource struct {
-	// Type defines whether to use an existing Security Group or provision a new one.
+	// type defines whether to use an existing Security Group or provision a new one.
 	// +required
 	// +kubebuilder:validation:Enum=Reference;Provision
 	Type SourceType `json:"type,omitempty"`
 
-	// Reference contains the information to identify an existing Security Group.
+	// reference contains the information to identify an existing Security Group.
 	// CAPI will not manage rules for referenced Security Groups.
 	// +optional
-	Reference ResourceIdentifier `json:"reference,omitempty"`
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Provision contains the configuration for provisioning a new Security Group.
+	// provision contains the configuration for provisioning a new Security Group.
 	// +optional
-	Provision VPCSecurityGroupProvision `json:"provision,omitempty"`
+	Provision VPCSecurityGroupProvision `json:"provision,omitempty,omitzero"`
 }
 
 // VPCSecurityGroupProvision holds the configuration for creating a new Security Group.
+// +kubebuilder:validation:MinProperties=1
 type VPCSecurityGroupProvision struct {
-	// Name of the Security Group.
+	// name of the Security Group.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=^-?([a-z]|[a-z][-a-z0-9]*[a-z0-9]|[0-9][-a-z0-9]*([a-z]|[-a-z][-a-z0-9]*[a-z0-9]))$
 	Name string `json:"name,omitempty"`
 
-	// Rules are the Security Group Rules for the Security Group.
+	// rules are the Security Group Rules for the Security Group.
 	// +optional
+	// +kubebuilder:validation:MaxItems=250
+	// +listType=atomic
 	Rules []VPCSecurityGroupRule `json:"rules,omitempty"`
 
-	// Tags are tags to add to the Security Group.
+	// tags are tag names to create for the Security Group.
 	// +optional
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=100
+	// +kubebuilder:validation:items:MaxLength=128
+	// +kubebuilder:validation:items:Pattern=`^[ ]*[A-Za-z0-9:_.\-][A-Za-z0-9 :_.\-]*$`
+	// +listType=set
 	Tags []string `json:"tags,omitempty"`
 }
 
@@ -975,20 +1088,27 @@ type VPCSecurityGroupProvision struct {
 // +kubebuilder:validation:XValidation:rule="has(self.source) ? has(self.source.protocol) : true",message="protocol is required in source"
 // +kubebuilder:validation:XValidation:rule="has(self.destination) ? has(self.destination.protocol) : true",message="protocol is required in destination"
 type VPCSecurityGroupRule struct {
-	// Destination defines the destination of outbound traffic for the Security Group Rule.
+	// destination defines the destination of outbound traffic for the Security Group Rule.
 	// Only used when direction is VPCSecurityGroupRuleDirectionOutbound.
 	// +optional
 	Destination VPCSecurityGroupRulePrototype `json:"destination,omitempty,omitzero"`
 
-	// Direction defines whether the traffic is inbound or outbound for the Security Group Rule.
+	// direction is the direction of traffic to allow.
+	// Allowable values: inbound, outbound.
 	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern=^[a-z][a-z0-9]*(_[a-z0-9]+)*$
 	Direction VPCSecurityGroupRuleDirection `json:"direction,omitempty"`
 
-	// SecurityGroupID is the ID of the Security Group for the Security Group Rule.
+	// securityGroupID is the ID of the Security Group for the Security Group Rule.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:Pattern=^[-0-9a-z_]+$
 	SecurityGroupID string `json:"securityGroupID,omitempty"`
 
-	// Source defines the source of inbound traffic for the Security Group Rule.
+	// source defines the source of inbound traffic for the Security Group Rule.
 	// Only used when direction is VPCSecurityGroupRuleDirectionInbound.
 	// +optional
 	Source VPCSecurityGroupRulePrototype `json:"source,omitempty,omitzero"`
@@ -1000,32 +1120,43 @@ type VPCSecurityGroupRule struct {
 // +kubebuilder:validation:XValidation:rule="self.remoteType == 'address' ? (has(self.address) && !has(self.cidrSubnetName) && !has(self.securityGroupName)) : true",message="only address is valid for VPCSecurityGroupRuleRemoteTypeAddress remoteType"
 // +kubebuilder:validation:XValidation:rule="self.remoteType == 'sg' ? (has(self.securityGroupName) && !has(self.cidrSubnetName) && !has(self.address)) : true",message="only securityGroupName is valid for VPCSecurityGroupRuleRemoteTypeSG remoteType"
 type VPCSecurityGroupRuleRemote struct {
-	// CIDRSubnetName is the name of the VPC Subnet to retrieve the CIDR from.
+	// cidrSubnetName is the name of the VPC Subnet to retrieve the CIDR from.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
 	CIDRSubnetName string `json:"cidrSubnetName,omitempty"`
 
-	// Address is the address to use for the remote's destination/source.
+	// address is the address to use for the remote's destination/source.
 	// +optional
+	// +kubebuilder:validation:MinLength=7
+	// +kubebuilder:validation:MaxLength=15
+	// +kubebuilder:validation:Pattern=`^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
 	Address string `json:"address,omitempty"`
 
-	// RemoteType defines the type of filter to define for the remote's destination/source.
+	// remoteType defines the type of filter to define for the remote's destination/source.
 	// +required
 	RemoteType VPCSecurityGroupRuleRemoteType `json:"remoteType,omitempty"`
 
-	// SecurityGroupName is the name of the VPC Security Group to use for the remote.
+	// securityGroupName is the name of the VPC Security Group to use for the remote.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=^-?([a-z]|[a-z][-a-z0-9]*[a-z0-9]|[0-9][-a-z0-9]*([a-z]|[-a-z][-a-z0-9]*[a-z0-9]))$
 	SecurityGroupName string `json:"securityGroupName,omitempty"`
 }
 
 // VPCSecurityGroupPortRange represents a range of ports, minimum to maximum.
 // +kubebuilder:validation:XValidation:rule="self.maximumPort >= self.minimumPort",message="maximum port must be greater than or equal to minimum port"
 type VPCSecurityGroupPortRange struct {
-	// MaximumPort is the inclusive upper range of ports.
+	// maximumPort is the inclusive upper range of ports.
+	// +required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	MaximumPort int64 `json:"maximumPort,omitempty"`
 
-	// MinimumPort is the inclusive lower range of ports.
+	// minimumPort is the inclusive lower range of ports.
+	// +required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=65535
 	MinimumPort int64 `json:"minimumPort,omitempty"`
@@ -1036,47 +1167,71 @@ type VPCSecurityGroupPortRange struct {
 // +kubebuilder:validation:XValidation:rule="self.protocol == 'all' ? !has(self.portRange) : true",message="portRange is not valid for VPCSecurityGroupRuleProtocolAll protocol"
 // +kubebuilder:validation:XValidation:rule="self.protocol == 'icmp' ? !has(self.portRange) : true",message="portRange is not valid for VPCSecurityGroupRuleProtocolIcmp protocol"
 type VPCSecurityGroupRulePrototype struct {
-	// ICMPCode is the ICMP code for the Rule.
+	// icmpCode is the ICMP code for the Rule.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=255
 	ICMPCode *int64 `json:"icmpCode,omitempty"`
 
-	// ICMPType is the ICMP type for the Rule.
+	// icmpType is the ICMP type for the Rule.
 	// +optional
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=254
 	ICMPType *int64 `json:"icmpType,omitempty"`
 
-	// PortRange is a range of ports allowed for the Rule's remote.
+	// portRange is a range of ports allowed for the Rule's remote.
+	// If specified, both minimumPort and maximumPort must be specified.
+	// If unspecified, traffic on all destination ports is allowed.
 	// +optional
 	PortRange VPCSecurityGroupPortRange `json:"portRange,omitempty,omitzero"`
 
-	// Protocol defines the traffic protocol used for the Security Group Rule.
+	// protocol defines the traffic protocol used for the Security Group Rule.
 	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern=^[a-z][a-z0-9]*(_[a-z0-9]+)*$
 	Protocol VPCSecurityGroupRuleProtocol `json:"protocol,omitempty"`
 
-	// Remotes is a set of VPCSecurityGroupRuleRemote's that define the traffic allowed.
+	// remotes is a set of VPCSecurityGroupRuleRemote's that define the traffic allowed.
 	// +optional
+	// +kubebuilder:validation:MaxItems=25
+	// +listType=atomic
 	Remotes []VPCSecurityGroupRuleRemote `json:"remotes,omitempty"`
 }
 
 // VPCSecurityGroupStatus tracks the observed state of an individual VPC security group.
 type VPCSecurityGroupStatus struct {
-	// ID is the unique cloud identifier (GUID) generated by IBM Cloud for this Security Group.
-	// +kubebuilder:validation:Required
+	// id is the unique cloud identifier generated by IBM Cloud for this Security Group.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:Pattern=^[-0-9a-z_]+$
 	ID string `json:"id,omitempty"`
 
-	// Name is the human-readable unique identifier assigned to the Security Group.
-	// +kubebuilder:validation:Required
+	// name is the name for this security group.
+	// The name is unique across all security groups for the VPC.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=^-?([a-z]|[a-z][-a-z0-9]*[a-z0-9]|[0-9][-a-z0-9]*([a-z]|[-a-z][-a-z0-9]*[a-z0-9]))$
 	Name string `json:"name,omitempty"`
 
-	// Rules tracks the synchronized IDs of the rules belonging to this security group.
+	// rules tracks the synchronized IDs of the rules belonging to this security group.
 	// Tracking rule IDs ensures we can cleanly reconcile, update, or remove rules later.
 	// +optional
+	// +kubebuilder:validation:MaxItems=250
+	// +listType=map
+	// +listMapKey=id
 	Rules []VPCSecurityGroupRuleStatus `json:"rules,omitempty"`
 }
 
 // VPCSecurityGroupRuleStatus tracks individual security group rule identifiers returned by the API.
 type VPCSecurityGroupRuleStatus struct {
-	// ID is the unique string identifier generated by IBM Cloud for this specific rule.
-	// +kubebuilder:validation:Required
+	// id is the unique string identifier generated by IBM Cloud for this specific rule.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	// +kubebuilder:validation:Pattern=^[-0-9a-z_]+$
 	ID string `json:"id,omitempty"`
 }
 
