@@ -1252,3 +1252,11 @@ func (m *MachineScope) AttachVolume(deleteOnInstanceDelete bool, volumeID, volum
 	}
 	return err
 }
+
+func (m *MachineScope) DeleteVolume(volumeID string) error {
+	deletionOptions := vpcv1.DeleteVolumeOptions{
+		ID: &volumeID,
+	}
+	_, err := m.IBMVPCClient.DeleteVolume(&deletionOptions)
+	return err
+}
