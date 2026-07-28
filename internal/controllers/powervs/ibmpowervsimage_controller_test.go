@@ -66,9 +66,9 @@ func TestIBMPowerVSImageReconciler_Reconcile(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      ptr.To("capi-image.ova.gz"),
-					Region:      ptr.To("us-south"),
-					Bucket:      ptr.To("capi-bucket"),
+					Object:      "capi-image.ova.gz",
+					Region:      "us-south",
+					Bucket:      "capi-bucket",
 				},
 			},
 			expectError: true,
@@ -160,9 +160,9 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 					},
 					Spec: infrav1.IBMPowerVSImageSpec{
 						ClusterName: "capi-powervs-cluster",
-						Object:      ptr.To("capi-image.ova.gz"),
-						Region:      ptr.To("us-south"),
-						Bucket:      ptr.To("capi-bucket"),
+						Object:      "capi-image.ova.gz",
+						Region:      "us-south",
+						Bucket:      "capi-bucket",
 					},
 				},
 			}
@@ -204,9 +204,9 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      ptr.To("capi-image.ova.gz"),
-					Region:      ptr.To("us-south"),
-					Bucket:      ptr.To("capi-bucket"),
+					Object:      "capi-image.ova.gz",
+					Region:      "us-south",
+					Bucket:      "capi-bucket",
 				},
 			}
 
@@ -249,7 +249,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1.IBMPowerVSImageFinalizer))
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
 				g.Expect(imageScope.IBMPowerVSImage.Status.ImageState).To(BeEquivalentTo(infrav1.PowerVSImageStateImporting))
-				expectImageConditionsV1beta2(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1.ImageImportedV1Beta2Condition, corev1.ConditionFalse, clusterv1.ConditionSeverityInfo, *job.Status.State}})
+				expectImageConditionsV1beta2(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1.ImageImportedV1Beta2Condition, corev1.ConditionFalse, clusterv1.ConditionSeverityInfo, infrav1.ImageNotReadyV1Beta2Reason}})
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
 			t.Run("When import job status is failed", func(_ *testing.T) {
@@ -306,7 +306,7 @@ func TestIBMPowerVSImageReconciler_reconcile(t *testing.T) {
 				result, err := reconciler.reconcile(ctx, powervsCluster, imageScope)
 				g.Expect(err).To(BeNil())
 				g.Expect(imageScope.IBMPowerVSImage.Finalizers).To(ContainElement(infrav1.IBMPowerVSImageFinalizer))
-				expectImageConditionsV1beta2(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1.ImageReadyV1Beta2Condition, corev1.ConditionUnknown, "", ""}})
+				expectImageConditionsV1beta2(g, imageScope.IBMPowerVSImage, []conditionAssertion{{infrav1.ImageReadyV1Beta2Condition, corev1.ConditionUnknown, clusterv1.ConditionSeverityNone, infrav1.ImageStateUnknownV1Beta2Reason}})
 				g.Expect(imageScope.IBMPowerVSImage.Status.Ready).To(Equal(false))
 				g.Expect(result.RequeueAfter).To(Not(BeZero()))
 			})
@@ -445,9 +445,9 @@ func TestIBMPowerVSImageReconciler_Reconcile_Conditions(t *testing.T) {
 				},
 				Spec: infrav1.IBMPowerVSImageSpec{
 					ClusterName: "capi-powervs-cluster",
-					Object:      ptr.To("capi-image.ova.gz"),
-					Region:      ptr.To("us-south"),
-					Bucket:      ptr.To("capi-bucket"),
+					Object:      "capi-image.ova.gz",
+					Region:      "us-south",
+					Bucket:      "capi-bucket",
 				},
 			},
 			expectError: true,
