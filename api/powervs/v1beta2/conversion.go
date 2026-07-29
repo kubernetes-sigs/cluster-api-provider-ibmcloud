@@ -1397,6 +1397,24 @@ func Convert_v1beta3_VPCSource_To_v1beta2_VPCResourceReference(in *infrav1.VPCSo
 	return nil
 }
 
+// Convert_v1beta2_ResourceReference_To_v1beta3_ResourceReference converts a v1beta2 ResourceReference to a v1beta3 ResourceReference.
+// ControllerCreated is dropped as it does not exist in v1beta3.
+func Convert_v1beta2_ResourceReference_To_v1beta3_ResourceReference(in *ResourceReference, out *infrav1.ResourceReference, _ apimachineryconversion.Scope) error {
+	if in.ID != nil {
+		out.ID = *in.ID
+	}
+	return nil
+}
+
+// Convert_v1beta3_ResourceReference_To_v1beta2_ResourceReference converts a v1beta3 ResourceReference to a v1beta2 ResourceReference.
+// Name is dropped as it does not exist in v1beta2.
+func Convert_v1beta3_ResourceReference_To_v1beta2_ResourceReference(in *infrav1.ResourceReference, out *ResourceReference, _ apimachineryconversion.Scope) error {
+	if in.ID != "" {
+		out.ID = ptr.To(in.ID)
+	}
+	return nil
+}
+
 func Convert_v1beta2_ResourceReference_To_v1beta3_VPCStatus(in *ResourceReference, out *infrav1.VPCStatus, _ apimachineryconversion.Scope) error {
 	if in == nil {
 		return nil

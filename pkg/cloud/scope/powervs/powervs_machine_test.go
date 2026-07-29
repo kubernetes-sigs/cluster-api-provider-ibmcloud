@@ -216,7 +216,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						Workspace: infrav1.ResourceReferenceV1Beta3{
+						Workspace: infrav1.ResourceReference{
 							ID: "service-instance-0",
 						},
 					},
@@ -231,7 +231,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						Workspace: infrav1.ResourceReferenceV1Beta3{
+						Workspace: infrav1.ResourceReference{
 							ID: "service-instance-1",
 						},
 					},
@@ -246,7 +246,7 @@ func TestGetServiceInstanceIDForMachineScope(t *testing.T) {
 				},
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						Workspace: infrav1.ResourceReferenceV1Beta3{
+						Workspace: infrav1.ResourceReference{
 							ID: "service-instance-0",
 						},
 					},
@@ -756,7 +756,7 @@ func TestSetProviderID(t *testing.T) {
 			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{},
+					Workspace: infrav1.ResourceReference{},
 				},
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Workspace: infrav1.WorkspaceSource{
@@ -775,7 +775,7 @@ func TestSetProviderID(t *testing.T) {
 		scope := MachineScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "foo-service-instance-id",
 					},
 				},

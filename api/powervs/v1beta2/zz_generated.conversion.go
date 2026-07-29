@@ -205,16 +205,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*ResourceReference)(nil), (*v1beta3.ResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_ResourceReference_To_v1beta3_ResourceReference(a.(*ResourceReference), b.(*v1beta3.ResourceReference), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1beta3.ResourceReference)(nil), (*ResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_ResourceReference_To_v1beta2_ResourceReference(a.(*v1beta3.ResourceReference), b.(*ResourceReference), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*VPCSecurityGroupPortRange)(nil), (*v1beta3.VPCSecurityGroupPortRange)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_VPCSecurityGroupPortRange_To_v1beta3_VPCSecurityGroupPortRange(a.(*VPCSecurityGroupPortRange), b.(*v1beta3.VPCSecurityGroupPortRange), scope)
 	}); err != nil {
@@ -302,6 +292,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*corev1beta2.ObjectMeta)(nil), (*v1beta1.ObjectMeta)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_ObjectMeta_To_v1beta1_ObjectMeta(a.(*corev1beta2.ObjectMeta), b.(*v1beta1.ObjectMeta), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*ResourceReference)(nil), (*v1beta3.ResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta2_ResourceReference_To_v1beta3_ResourceReference(a.(*ResourceReference), b.(*v1beta3.ResourceReference), scope)
 	}); err != nil {
 		return err
 	}
@@ -422,6 +417,11 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta3.ResourceIdentifier)(nil), (*IBMPowerVSResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_ResourceIdentifier_To_v1beta2_IBMPowerVSResourceReference(a.(*v1beta3.ResourceIdentifier), b.(*IBMPowerVSResourceReference), scope)
+	}); err != nil {
+		return err
+	}
+	if err := s.AddConversionFunc((*v1beta3.ResourceReference)(nil), (*ResourceReference)(nil), func(a, b interface{}, scope conversion.Scope) error {
+		return Convert_v1beta3_ResourceReference_To_v1beta2_ResourceReference(a.(*v1beta3.ResourceReference), b.(*ResourceReference), scope)
 	}); err != nil {
 		return err
 	}
@@ -681,7 +681,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 
 func autoConvert_v1beta2_IBMPowerVSClusterStatus_To_v1beta3_IBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, out *v1beta3.IBMPowerVSClusterStatus, s conversion.Scope) error {
 	// WARNING: in.Ready requires manual conversion: does not exist in peer-type
-	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReferenceV1Beta3)
+	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReference)
 	// WARNING: in.ServiceInstance requires manual conversion: does not exist in peer-type
 	// WARNING: in.Network requires manual conversion: inconvertible types (*sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference vs sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus)
 	// WARNING: in.DHCPServer requires manual conversion: does not exist in peer-type
@@ -721,7 +721,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 	// WARNING: in.Initialization requires manual conversion: does not exist in peer-type
 	// WARNING: in.Workspace requires manual conversion: does not exist in peer-type
 	// WARNING: in.Network requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.NetworkStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
-	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReferenceV1Beta3 vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
+	// WARNING: in.ResourceGroup requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.ResourceReference vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	// WARNING: in.TransitGateway requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.TransitGatewayStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.TransitGatewayStatus)
 	// WARNING: in.VPC requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.VPCStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	// WARNING: in.VPCSubnets requires manual conversion: does not exist in peer-type
@@ -1353,25 +1353,19 @@ func Convert_v1beta3_Ignition_To_v1beta2_Ignition(in *v1beta3.Ignition, out *Ign
 }
 
 func autoConvert_v1beta2_ResourceReference_To_v1beta3_ResourceReference(in *ResourceReference, out *v1beta3.ResourceReference, s conversion.Scope) error {
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.ControllerCreated = (*bool)(unsafe.Pointer(in.ControllerCreated))
+	if err := v1.Convert_Pointer_string_To_string(&in.ID, &out.ID, s); err != nil {
+		return err
+	}
+	// WARNING: in.ControllerCreated requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta2_ResourceReference_To_v1beta3_ResourceReference is an autogenerated conversion function.
-func Convert_v1beta2_ResourceReference_To_v1beta3_ResourceReference(in *ResourceReference, out *v1beta3.ResourceReference, s conversion.Scope) error {
-	return autoConvert_v1beta2_ResourceReference_To_v1beta3_ResourceReference(in, out, s)
 }
 
 func autoConvert_v1beta3_ResourceReference_To_v1beta2_ResourceReference(in *v1beta3.ResourceReference, out *ResourceReference, s conversion.Scope) error {
-	out.ID = (*string)(unsafe.Pointer(in.ID))
-	out.ControllerCreated = (*bool)(unsafe.Pointer(in.ControllerCreated))
+	if err := v1.Convert_string_To_Pointer_string(&in.ID, &out.ID, s); err != nil {
+		return err
+	}
+	// WARNING: in.Name requires manual conversion: does not exist in peer-type
 	return nil
-}
-
-// Convert_v1beta3_ResourceReference_To_v1beta2_ResourceReference is an autogenerated conversion function.
-func Convert_v1beta3_ResourceReference_To_v1beta2_ResourceReference(in *v1beta3.ResourceReference, out *ResourceReference, s conversion.Scope) error {
-	return autoConvert_v1beta3_ResourceReference_To_v1beta2_ResourceReference(in, out, s)
 }
 
 func autoConvert_v1beta2_TransitGatewayStatus_To_v1beta3_TransitGatewayStatus(in *TransitGatewayStatus, out *v1beta3.TransitGatewayStatus, s conversion.Scope) error {

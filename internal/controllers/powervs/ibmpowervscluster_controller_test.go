@@ -524,7 +524,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeProvision, Region: "us-south"},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 							VPC: infrav1.VPCStatus{
@@ -575,7 +575,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeProvision, Region: "us-south"},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 							VPC: infrav1.VPCStatus{
@@ -625,7 +625,7 @@ func TestIBMPowerVSClusterReconciler_reconcile(t *testing.T) {
 							VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{Name: "vpc-name"}, Region: "us-south"},
 						},
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 						},
@@ -973,7 +973,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 					Topology: infrav1.PowerVSVirtualIPTopology,
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 				},
@@ -1387,11 +1387,11 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 			},
 		}
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			Workspace: infrav1.ResourceReferenceV1Beta3{
+			Workspace: infrav1.ResourceReference{
 				ID: "serviceInstanceID",
 			},
 			Network: infrav1.NetworkStatus{
-				DHCPServer: infrav1.ResourceReferenceV1Beta3{
+				DHCPServer: infrav1.ResourceReference{
 					ID: "DHCPServerID",
 				},
 			},
@@ -1420,7 +1420,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Spec.Workspace.Type = infrav1.SourceTypeProvision
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			Workspace: infrav1.ResourceReferenceV1Beta3{
+			Workspace: infrav1.ResourceReference{
 				ID: "serviceInstanceID",
 			},
 		}
@@ -1451,7 +1451,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Spec.Workspace.Type = infrav1.SourceTypeProvision
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			Workspace: infrav1.ResourceReferenceV1Beta3{
+			Workspace: infrav1.ResourceReference{
 				ID: "serviceInstanceID",
 			},
 		}
@@ -1520,7 +1520,7 @@ func TestIBMPowerVSClusterReconciler_delete(t *testing.T) {
 		clusterScope = powervsClusterScope()
 		clusterScope.IBMPowerVSCluster.Spec.Topology = infrav1.PowerVSLoadBalancerTopology
 		clusterScope.IBMPowerVSCluster.Status = infrav1.IBMPowerVSClusterStatus{
-			Workspace: infrav1.ResourceReferenceV1Beta3{
+			Workspace: infrav1.ResourceReference{
 				ID: "serviceInstanceID",
 			},
 		}
@@ -1862,7 +1862,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 						},
@@ -1892,7 +1892,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 				clusterScope := &powervsscope.ClusterScope{
 					IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 						Status: infrav1.IBMPowerVSClusterStatus{
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 						},
@@ -1923,7 +1923,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 							Network: infrav1.NetworkStatus{
 								ID: "NetworkID",
 							},
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 						},
@@ -1974,7 +1974,7 @@ func TestReconcilePowerVSResources(t *testing.T) {
 							Network: infrav1.NetworkStatus{
 								ID: "netID",
 							},
-							Workspace: infrav1.ResourceReferenceV1Beta3{
+							Workspace: infrav1.ResourceReference{
 								ID: "serviceInstanceID",
 							},
 						},
@@ -2114,7 +2114,7 @@ func getPowerVSClusterWithSpecAndStatus() *infrav1.IBMPowerVSCluster {
 			},
 		},
 		Status: infrav1.IBMPowerVSClusterStatus{
-			Workspace: infrav1.ResourceReferenceV1Beta3{
+			Workspace: infrav1.ResourceReference{
 				ID: "serviceInstanceID",
 			},
 			Network: infrav1.NetworkStatus{

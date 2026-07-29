@@ -172,7 +172,7 @@ func TestGetDHCPServerID(t *testing.T) {
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
 						Network: infrav1.NetworkStatus{
-							DHCPServer: infrav1.ResourceReferenceV1Beta3{
+							DHCPServer: infrav1.ResourceReference{
 								ID: "dhcpserverid",
 							},
 						},
@@ -520,7 +520,7 @@ func TestGetResourceGroupID(t *testing.T) {
 			clusterScope: ClusterScope{
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 					Status: infrav1.IBMPowerVSClusterStatus{
-						ResourceGroup: infrav1.ResourceReferenceV1Beta3{
+						ResourceGroup: infrav1.ResourceReference{
 							ID: "rgID",
 						},
 					},
@@ -541,7 +541,7 @@ func TestGetResourceGroupID(t *testing.T) {
 						},
 					},
 					Status: infrav1.IBMPowerVSClusterStatus{
-						ResourceGroup: infrav1.ResourceReferenceV1Beta3{
+						ResourceGroup: infrav1.ResourceReference{
 							ID: "rgID1",
 						},
 					},
@@ -581,7 +581,7 @@ func TestIsDHCPServerActive(t *testing.T) {
 		t.Cleanup(teardown)
 		clusterScope := ClusterScope{
 			IBMPowerVSClient:  mockPowerVS,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReferenceV1Beta3{ID: "dhcpID"}}}},
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReference{ID: "dhcpID"}}}},
 		}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("GetDHCPServer returns error"))
 		isActive, err := clusterScope.isDHCPServerActive(ctx)
@@ -596,7 +596,7 @@ func TestIsDHCPServerActive(t *testing.T) {
 		dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpID"), Status: ptr.To(string(infrav1.DHCPServerStateError))}
 		clusterScope := ClusterScope{
 			IBMPowerVSClient:  mockPowerVS,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReferenceV1Beta3{ID: "dhcpID"}}}},
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReference{ID: "dhcpID"}}}},
 		}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
 
@@ -612,7 +612,7 @@ func TestIsDHCPServerActive(t *testing.T) {
 		dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpID"), Status: ptr.To(string(infrav1.DHCPServerStateActive))}
 		clusterScope := ClusterScope{
 			IBMPowerVSClient:  mockPowerVS,
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReferenceV1Beta3{ID: "dhcpID"}}}},
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{Status: infrav1.IBMPowerVSClusterStatus{Network: infrav1.NetworkStatus{DHCPServer: infrav1.ResourceReference{ID: "dhcpID"}}}},
 		}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
 
@@ -681,7 +681,7 @@ func TestPowerVSDeleteLoadBalancer(t *testing.T) {
 					Name: "capi-powervs-cluster",
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					LoadBalancers: []infrav1.LoadBalancerStatus{
@@ -1614,7 +1614,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 			},
 			Status: infrav1.IBMPowerVSClusterStatus{
 				Network: infrav1.NetworkStatus{
-					DHCPServer: infrav1.ResourceReferenceV1Beta3{
+					DHCPServer: infrav1.ResourceReference{
 						ID: "dhcpServerID",
 					},
 				},
@@ -1654,7 +1654,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Network: infrav1.NetworkStatus{
-						DHCPServer: infrav1.ResourceReferenceV1Beta3{
+						DHCPServer: infrav1.ResourceReference{
 							ID: "dhcpServerID",
 						},
 					},
@@ -1683,7 +1683,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Network: infrav1.NetworkStatus{
-						DHCPServer: infrav1.ResourceReferenceV1Beta3{
+						DHCPServer: infrav1.ResourceReference{
 							ID: "dhcpServerID",
 						},
 					},
@@ -1712,7 +1712,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Network: infrav1.NetworkStatus{
-						DHCPServer: infrav1.ResourceReferenceV1Beta3{
+						DHCPServer: infrav1.ResourceReference{
 							ID: "dhcpServerID",
 						},
 					},
@@ -1743,7 +1743,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Network: infrav1.NetworkStatus{
-						DHCPServer: infrav1.ResourceReferenceV1Beta3{
+						DHCPServer: infrav1.ResourceReference{
 							ID: "dhcpServerID",
 						},
 					},
@@ -2533,7 +2533,7 @@ func TestReconcileTransitGateway(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "workspaceID",
 					},
 					VPC: infrav1.VPCStatus{
@@ -2651,7 +2651,7 @@ func TestReconcileTransitGateway(t *testing.T) {
 					VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: "region"},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},
@@ -3002,7 +3002,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 				},
@@ -3035,7 +3035,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName", Region: "region"},
@@ -3070,7 +3070,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},
@@ -3106,7 +3106,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},
@@ -3142,7 +3142,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},
@@ -3180,7 +3180,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: "region"},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},
@@ -3217,7 +3217,7 @@ func TestCreateTransitGateway(t *testing.T) {
 					VPC:           infrav1.VPCSource{Type: infrav1.SourceTypeReference, Region: "region"},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{
-					Workspace: infrav1.ResourceReferenceV1Beta3{
+					Workspace: infrav1.ResourceReference{
 						ID: "serviceInstanceID",
 					},
 					VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},
@@ -3254,7 +3254,7 @@ func makePowerVSClusterScope(mockTransitGateway *tgmock.MockTransitGateway, mock
 				TransitGateway: infrav1.TransitGatewayStatus{
 					ID: "transitGatewayID",
 				},
-				Workspace: infrav1.ResourceReferenceV1Beta3{
+				Workspace: infrav1.ResourceReference{
 					ID: "serviceInstanceID",
 				},
 				VPC: infrav1.VPCStatus{ID: "vpcID", Name: "vpcName"},

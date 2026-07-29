@@ -649,7 +649,7 @@ func (s *ClusterScope) reconcileWorkspaceReference(ctx context.Context) (bool, e
 
 	log.Info("Successfully verified existing workspace", "workspaceID", *workspace.GUID, "name", workspace.Name)
 
-	s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReferenceV1Beta3{ID: *workspace.GUID, Name: *workspace.Name}
+	s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReference{ID: *workspace.GUID, Name: *workspace.Name}
 
 	return true, nil // requeue so that the state of worksapce will be checked in the next reconcile
 }
@@ -680,7 +680,7 @@ func (s *ClusterScope) reconcileWorkspaceProvision(ctx context.Context) (bool, e
 
 	if workspace != nil && workspace.GUID != nil {
 		log.Info("Recovered previously provisioned workspace", "workspaceID", workspace.GUID)
-		s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReferenceV1Beta3{
+		s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReference{
 			ID:   *workspace.GUID,
 			Name: workspaceName,
 		}
@@ -701,7 +701,7 @@ func (s *ClusterScope) reconcileWorkspaceProvision(ctx context.Context) (bool, e
 	log.Info("Successfully provisioned workspace", "workspaceID", *workspace.GUID)
 
 	// 4. Save to Status.
-	s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReferenceV1Beta3{
+	s.IBMPowerVSCluster.Status.Workspace = infrav1.ResourceReference{
 		ID:   *workspace.GUID,
 		Name: workspaceName,
 	}
