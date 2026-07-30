@@ -28,6 +28,33 @@ const (
 	IBMPowerVSImageFinalizer = "ibmpowervsimage.infrastructure.cluster.x-k8s.io"
 )
 
+// PowerVSStorageType defines the storage tier for the IBM PowerVS instance.
+// +kubebuilder:validation:Enum=tier0;tier1;tier3
+type PowerVSStorageType string
+
+const (
+	// PowerVSStorageTypeTier0 represents tier 0 storage.
+	PowerVSStorageTypeTier0 PowerVSStorageType = "tier0"
+
+	// PowerVSStorageTypeTier1 represents tier 1 storage.
+	PowerVSStorageTypeTier1 PowerVSStorageType = "tier1"
+
+	// PowerVSStorageTypeTier3 represents tier 3 storage.
+	PowerVSStorageTypeTier3 PowerVSStorageType = "tier3"
+)
+
+// PowerVSImageDeletePolicy defines the policy for image retention.
+// +kubebuilder:validation:Enum=delete;retain
+type PowerVSImageDeletePolicy string
+
+const (
+	// PowerVSImageDeletePolicyDelete indicates the image will be deleted when the resource is deleted.
+	PowerVSImageDeletePolicyDelete PowerVSImageDeletePolicy = "delete"
+
+	// PowerVSImageDeletePolicyRetain indicates the image will be preserved when the resource is deleted.
+	PowerVSImageDeletePolicyRetain PowerVSImageDeletePolicy = "retain"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSImage{}, &IBMPowerVSImageList{})
 }
@@ -53,16 +80,12 @@ type IBMPowerVSImageSpec struct {
 	Region string `json:"region"`
 
 	// storageType is the type of storage, storage pool with the most available space will be selected.
-	// +kubebuilder:default=tier1
-	// +kubebuilder:validation:Enum=tier0;tier1;tier3
 	// +optional
-	StorageType string `json:"storageType,omitempty"`
+	StorageType PowerVSStorageType `json:"storageType,omitempty"`
 
 	// deletePolicy defines the policy used to identify images to be preserved beyond the lifecycle of associated cluster.
-	// +kubebuilder:default=delete
-	// +kubebuilder:validation:Enum=delete;retain
 	// +optional
-	DeletePolicy string `json:"deletePolicy,omitempty"`
+	DeletePolicy PowerVSImageDeletePolicy `json:"deletePolicy,omitempty"`
 }
 
 // IBMPowerVSImageStatus defines the observed state of IBMPowerVSImage.
@@ -73,10 +96,6 @@ type IBMPowerVSImageStatus struct {
 	// +listMapKey=type
 	// +kubebuilder:validation:MaxItems=32
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// ready is true when the provider resource is ready.
-	// +optional
-	Ready bool `json:"ready"`
 
 	// imageID is the id of the imported image.
 	ImageID string `json:"imageID,omitempty"`
@@ -99,7 +118,6 @@ type IBMPowerVSImageStatus struct {
 // +kubebuilder:storageversion
 // +kubebuilder:resource:path=ibmpowervsimages,scope=Namespaced,categories=cluster-api
 // +kubebuilder:printcolumn:name="State",type="string",JSONPath=".status.imageState",description="PowerVS image state"
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Image is ready for IBM PowerVS instances"
 
 // IBMPowerVSImage is the Schema for the ibmpowervsimages API.
 type IBMPowerVSImage struct {

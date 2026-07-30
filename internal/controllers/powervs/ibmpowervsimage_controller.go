@@ -167,6 +167,11 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, err
 		}
 
+		if job.Status == nil || job.Status.State == nil {
+			log.Info("Job status or state is currently nil, requeuing", "jobID", jobID)
+			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+		}
+
 		imageScope.SetImageState(*job.Status.State)
 
 		switch imageScope.GetImageState() {
@@ -174,17 +179,14 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageImportedV1Beta2Condition, metav1.ConditionTrue, infrav1.IBMPowerVSImageReadyReason, clusterv1.ConditionSeverityInfo, "")
 
 		case infrav1.PowerVSImageStateFailed:
-			imageScope.SetNotReady()
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageImportedV1Beta2Condition, metav1.ConditionFalse, infrav1.IBMPowerVSImageImportFailedReason, clusterv1.ConditionSeverityError, job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, fmt.Errorf("failed to import image: %s", job.Status.Message)
 
 		case infrav1.PowerVSImageStateQueued:
-			imageScope.SetNotReady()
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageImportedV1Beta2Condition, metav1.ConditionFalse, infrav1.IBMPowerVSImageQueuedReason, clusterv1.ConditionSeverityInfo, job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
 
 		default: // Importing
-			imageScope.SetNotReady()
 			imageScope.SetImageState(string(infrav1.PowerVSImageStateImporting))
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageImportedV1Beta2Condition, metav1.ConditionFalse, infrav1.IBMPowerVSImageNotReadyReason, clusterv1.ConditionSeverityInfo, job.Status.Message)
 			return ctrl.Result{RequeueAfter: 2 * time.Minute}, nil
@@ -198,7 +200,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile Image for %s/%s: %w", imageScope.IBMPowerVSImage.Namespace, imageScope.IBMPowerVSImage.Name, err)
 	}
 
-	if jobRef != nil {
+	if jobRef != nil && jobRef.ID != nil {
 		imageScope.SetJobID(*jobRef.ID)
 	}
 	return r.reconcileImage(ctx, img, imageScope)
@@ -207,7 +209,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 func (r *IBMPowerVSImageReconciler) reconcileImage(ctx context.Context, img *models.ImageReference, imageScope *powervsscope.ImageScope) (_ ctrl.Result, reterr error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	if img != nil {
+	if img != nil && img.ImageID != nil {
 		image, err := imageScope.IBMPowerVSClient.GetImage(ctx, *img.ImageID)
 		if err != nil {
 			log.Info("Unable to get image details", "imageID", *img.ImageID)
@@ -220,22 +222,20 @@ func (r *IBMPowerVSImageReconciler) reconcileImage(ctx context.Context, img *mod
 
 		switch imageScope.GetImageState() {
 		case infrav1.PowerVSImageStateQueued:
-			imageScope.SetNotReady()
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.IBMPowerVSImageNotReadyReason, clusterv1.ConditionSeverityWarning, "Image is queued")
 			return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 
 		case infrav1.PowerVSImageStateACTIVE:
-			imageScope.SetReady()
+			imageScope.SetImageActive()
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.IBMPowerVSImageReadyReason, clusterv1.ConditionSeverityInfo, "")
 
 		default:
-			imageScope.SetNotReady()
 			log.Info("PowerVS image state is undefined", "state", image.State, "imageID", imageScope.GetImageID())
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageReadyV1Beta2Condition, metav1.ConditionUnknown, infrav1.IBMPowerVSImageReadyUnknownReason, clusterv1.ConditionSeverityInfo, fmt.Sprintf("Unknown state: %s", image.State))
 		}
 	}
 
-	if !imageScope.IsReady() {
+	if !imageScope.IsImageActive() {
 		log.Info("Image is not yet ready, requeue", "state", imageScope.GetImageState())
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}
@@ -275,7 +275,7 @@ func (r *IBMPowerVSImageReconciler) reconcileDelete(ctx context.Context, scope *
 	}
 
 	// 4. Handle actual Image deletion (respecting the DeletePolicy)
-	if scope.IBMPowerVSImage.Spec.DeletePolicy != string(infrav1.DeletePolicyRetain) {
+	if scope.IBMPowerVSImage.Spec.DeletePolicy != infrav1.PowerVSImageDeletePolicyRetain {
 		if err := scope.DeleteImage(ctx); err != nil {
 			log.Error(err, "Error deleting IBMPowerVSImage")
 
@@ -310,7 +310,7 @@ func patchIBMPowerVSImage(ctx context.Context, patchHelper *patch.Helper, ibmPow
 	// NOTE: This is required because v1beta2 conditions comply to guideline requiring conditions to be set at the
 	// first reconcile.
 	if c := conditions.Get(ibmPowerVSImage, infrav1.IBMPowerVSImageReadyCondition); c == nil {
-		if ibmPowerVSImage.Status.Ready {
+		if ibmPowerVSImage.Status.ImageState == infrav1.PowerVSImageStateACTIVE {
 			conditions.Set(ibmPowerVSImage, metav1.Condition{
 				Type:   infrav1.IBMPowerVSImageReadyCondition,
 				Status: metav1.ConditionTrue,

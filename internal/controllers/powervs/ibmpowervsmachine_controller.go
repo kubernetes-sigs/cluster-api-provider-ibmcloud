@@ -264,8 +264,8 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 	}
 
 	// 2. Gate: Wait for Image Import
-	if machineScope.IBMPowerVSImage != nil && !machineScope.IBMPowerVSImage.Status.Ready {
-		log.Info("IBMPowerVSImage is not ready yet, skipping reconciliation")
+	if machineScope.IBMPowerVSImage != nil && machineScope.IBMPowerVSImage.Status.ImageState != infrav1.PowerVSImageStateACTIVE {
+		log.Info("IBMPowerVSImage is not active yet, skipping reconciliation", "imageState", machineScope.IBMPowerVSImage.Status.ImageState)
 		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceWaitingForImageReason, "")
 		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
 	}

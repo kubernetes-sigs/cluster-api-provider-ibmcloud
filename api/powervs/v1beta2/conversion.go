@@ -712,6 +712,8 @@ func (dst *IBMPowerVSImage) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta3_IBMPowerVSImage_To_v1beta2_IBMPowerVSImage(src, dst, nil); err != nil {
 		return err
 	}
+	// Ready is derived from ImageState: active → true.
+	dst.Status.Ready = src.Status.ImageState == infrav1.PowerVSImageStateACTIVE
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}

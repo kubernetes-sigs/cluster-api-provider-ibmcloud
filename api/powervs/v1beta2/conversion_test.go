@@ -1227,4 +1227,7 @@ func spokeIBMPowerVSImageStatus(in *IBMPowerVSImageStatus, c randfill.Continue) 
 			in.V1Beta2 = nil
 		}
 	}
+	// Ready is derived from ImageState in v1beta3 (active → true).
+	// Align the fuzzed value so the round-trip stays consistent.
+	in.Ready = in.ImageState == PowerVSImageStateACTIVE
 }

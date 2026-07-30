@@ -417,11 +417,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 					},
 				},
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
-				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
-					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: false,
-					},
-				},
+				IBMPowerVSImage:   &infrav1.IBMPowerVSImage{},
 			}
 			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
@@ -445,7 +441,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: true,
+						ImageState: infrav1.PowerVSImageStateACTIVE,
 					},
 				},
 			}
@@ -476,7 +472,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				IBMPowerVSMachine: pvsMachine,
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: true,
+						ImageState: infrav1.PowerVSImageStateACTIVE,
 					},
 				},
 				IBMPowerVSClient: mockpowervs,
@@ -512,7 +508,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				IBMPowerVSMachine: pvsMachine,
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: true,
+						ImageState: infrav1.PowerVSImageStateACTIVE,
 					},
 				},
 				IBMPowerVSClient: mockpowervs,
@@ -566,7 +562,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				IBMPowerVSMachine: pvsmachine,
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: true,
+						ImageState: infrav1.PowerVSImageStateACTIVE,
 					},
 				},
 				IBMVPCClient:     mockvpc,
@@ -671,7 +667,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				IBMPowerVSMachine: pvsmachine,
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: true,
+						ImageState: infrav1.PowerVSImageStateACTIVE,
 					},
 				},
 				IBMVPCClient:     mockvpc,
@@ -796,7 +792,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				IBMPowerVSMachine: pvsmachine,
 				IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 					Status: infrav1.IBMPowerVSImageStatus{
-						Ready: true,
+						ImageState: infrav1.PowerVSImageStateACTIVE,
 					},
 				},
 				IBMPowerVSClient: mockpowervs,
@@ -912,7 +908,7 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 			IBMPowerVSMachine: pvsmachine,
 			IBMPowerVSImage: &infrav1.IBMPowerVSImage{
 				Status: infrav1.IBMPowerVSImageStatus{
-					Ready: true,
+					ImageState: infrav1.PowerVSImageStateACTIVE,
 				},
 			},
 			IBMPowerVSClient: mockpowervs,
