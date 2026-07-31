@@ -941,8 +941,8 @@ func autoConvert_v1beta2_IBMPowerVSImageSpec_To_v1beta3_IBMPowerVSImageSpec(in *
 	if err := v1.Convert_Pointer_string_To_string(&in.Region, &out.Region, s); err != nil {
 		return err
 	}
-	out.StorageType = in.StorageType
-	out.DeletePolicy = in.DeletePolicy
+	out.StorageType = v1beta3.PowerVSStorageType(in.StorageType)
+	out.DeletePolicy = v1beta3.PowerVSImageDeletePolicy(in.DeletePolicy)
 	return nil
 }
 
@@ -958,13 +958,13 @@ func autoConvert_v1beta3_IBMPowerVSImageSpec_To_v1beta2_IBMPowerVSImageSpec(in *
 	if err := v1.Convert_string_To_Pointer_string(&in.Region, &out.Region, s); err != nil {
 		return err
 	}
-	out.StorageType = in.StorageType
-	out.DeletePolicy = in.DeletePolicy
+	out.StorageType = string(in.StorageType)
+	out.DeletePolicy = string(in.DeletePolicy)
 	return nil
 }
 
 func autoConvert_v1beta2_IBMPowerVSImageStatus_To_v1beta3_IBMPowerVSImageStatus(in *IBMPowerVSImageStatus, out *v1beta3.IBMPowerVSImageStatus, s conversion.Scope) error {
-	out.Ready = in.Ready
+	// WARNING: in.Ready requires manual conversion: does not exist in peer-type
 	out.ImageID = in.ImageID
 	out.ImageState = v1beta3.PowerVSImageState(in.ImageState)
 	out.JobID = in.JobID
@@ -995,7 +995,6 @@ func autoConvert_v1beta3_IBMPowerVSImageStatus_To_v1beta2_IBMPowerVSImageStatus(
 	} else {
 		out.Conditions = nil
 	}
-	out.Ready = in.Ready
 	out.ImageID = in.ImageID
 	out.ImageState = PowerVSImageState(in.ImageState)
 	out.JobID = in.JobID

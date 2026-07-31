@@ -202,7 +202,12 @@ func (s *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReferen
 	}
 
 	// 2. In-Progress Job Check
-	if lastJob, _ := s.getImportJob(ctx); lastJob != nil && lastJob.Status != nil && lastJob.Status.State != nil {
+	lastJob, err := s.getImportJob(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to check for existing import job: %w", err)
+	}
+
+	if lastJob != nil && lastJob.Status != nil && lastJob.Status.State != nil {
 		state := *lastJob.Status.State
 		if state != string(infrav1.PowerVSImageStateCompleted) && state != string(infrav1.PowerVSImageStateFailed) {
 			log.Info("Previous import job not yet finished", "state", state)
@@ -220,7 +225,7 @@ func (s *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReferen
 	}
 
 	if imageSpec.StorageType != "" {
-		body.StorageType = imageSpec.StorageType
+		body.StorageType = string(imageSpec.StorageType)
 	}
 
 	jobRef, err := s.IBMPowerVSClient.CreateCosImage(ctx, body)
@@ -266,19 +271,14 @@ func (s *ImageScope) DeleteImportJob(ctx context.Context) error {
 	return nil
 }
 
-// SetReady will set the status as ready for the image.
-func (s *ImageScope) SetReady() {
-	s.IBMPowerVSImage.Status.Ready = true
+// SetImageActive sets the image state to active.
+func (s *ImageScope) SetImageActive() {
+	s.IBMPowerVSImage.Status.ImageState = infrav1.PowerVSImageStateACTIVE
 }
 
-// SetNotReady will set the status as not ready for the image.
-func (s *ImageScope) SetNotReady() {
-	s.IBMPowerVSImage.Status.Ready = false
-}
-
-// IsReady will return the status for the image.
-func (s *ImageScope) IsReady() bool {
-	return s.IBMPowerVSImage.Status.Ready
+// IsImageActive returns true when the image state is active.
+func (s *ImageScope) IsImageActive() bool {
+	return s.IBMPowerVSImage.Status.ImageState == infrav1.PowerVSImageStateACTIVE
 }
 
 // SetImageID will set the id for the image.

@@ -266,10 +266,6 @@ spec:
       jsonPath: .status.imageState
       name: State
       type: string
-    - description: Image is ready for IBM PowerVS instances
-      jsonPath: .status.ready
-      name: Ready
-      type: string
     name: v1beta3
     schema:
       openAPIV3Schema:
@@ -304,7 +300,6 @@ spec:
                 minLength: 1
                 type: string
               deletePolicy:
-                default: delete
                 description: deletePolicy defines the policy used to identify images
                   to be preserved beyond the lifecycle of associated cluster.
                 enum:
@@ -318,7 +313,6 @@ spec:
                 description: region is the Cloud Object Storage region.
                 type: string
               storageType:
-                default: tier1
                 description: storageType is the type of storage, storage pool with
                   the most available space will be selected.
                 enum:
@@ -493,9 +487,6 @@ spec:
               jobID:
                 description: jobID is the job ID of an import operation.
                 type: string
-              ready:
-                description: ready is true when the provider resource is ready.
-                type: boolean
             type: object
         required:
         - spec
