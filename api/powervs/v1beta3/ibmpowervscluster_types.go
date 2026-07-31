@@ -187,7 +187,7 @@ type IBMPowerVSClusterStatus struct {
 
 	// workspace is the reference to the PowerVS workspace.
 	// +optional
-	Workspace ResourceReferenceV1Beta3 `json:"workspace,omitempty,omitzero"`
+	Workspace ResourceReference `json:"workspace,omitempty,omitzero"`
 
 	// network tracks the status of the PowerVS network and its associated resources.
 	// +optional
@@ -195,7 +195,7 @@ type IBMPowerVSClusterStatus struct {
 
 	// ResourceGroup is the reference to the IBM Cloud Resource Group where the cluster resources are provisioned.
 	// +optional
-	ResourceGroup ResourceReferenceV1Beta3 `json:"resourceGroup,omitempty,omitzero"`
+	ResourceGroup ResourceReference `json:"resourceGroup,omitempty,omitzero"`
 
 	// transitGateway is reference to IBM Cloud TransitGateway.
 	TransitGateway TransitGatewayStatus `json:"transitGateway,omitempty,omitzero"`
@@ -402,15 +402,6 @@ type Ignition struct {
 	Version string `json:"version,omitempty"`
 }
 
-// ResourceReference identifies a resource with id.
-type ResourceReference struct {
-	// id represents the id of the resource.
-	ID *string `json:"id,omitempty"`
-	// controllerCreated indicates whether the resource is created by the controller.
-	// +kubebuilder:default=false
-	ControllerCreated *bool `json:"controllerCreated,omitempty"`
-}
-
 // IBMPowerVSClusterDeprecatedStatus groups all the status fields that are deprecated and will be removed in a future version.
 // See https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20240916-improve-status-in-CAPI-resources.md for more context.
 type IBMPowerVSClusterDeprecatedStatus struct {
@@ -459,19 +450,10 @@ func (r *IBMPowerVSCluster) SetV1Beta1Conditions(conditions clusterv1.Conditions
 	r.Status.Deprecated.V1Beta2.Conditions = conditions
 }
 
-// Set sets the details of the resource.
-func (rf *ResourceReference) Set(resource ResourceReference) {
-	rf.ID = resource.ID
-	if !*rf.ControllerCreated {
-		rf.ControllerCreated = resource.ControllerCreated
-	}
-}
-
 // All the new v1beta3 types are defined here.
 
-// ResourceReferenceV1Beta3 identifies a resource with id and name.
-// TODO: Rename it to ResourceReference when we migrate all the types.
-type ResourceReferenceV1Beta3 struct {
+// ResourceReference identifies a resource with id and name.
+type ResourceReference struct {
 	// id represents the id of the resource.
 	// +optional
 	ID string `json:"id,omitempty"`
@@ -590,7 +572,7 @@ type NetworkStatus struct {
 
 	// dhcpServer tracks the provisioned DHCP server identity, if one was created.
 	// +optional
-	DHCPServer ResourceReferenceV1Beta3 `json:"dhcpServer,omitempty,omitzero"`
+	DHCPServer ResourceReference `json:"dhcpServer,omitempty,omitzero"`
 }
 
 // ResourceGroupSource represents the source of an IBM Cloud Resource Group.
