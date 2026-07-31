@@ -43,7 +43,7 @@ const (
 	IBMPowerVSMachineReadyUnknownReason = clusterv1.ReadyUnknownReason
 )
 
-// Power VS instance related conditions and corresponding reasons (virtual machines).
+// PowerVS instance related conditions and corresponding reasons (virtual machines).
 const (
 	// InstanceReadyCondition documents the status of the instance that is controlled
 	// by the IBMPowerVSMachine.

@@ -66,7 +66,7 @@ type IBMPowerVSMachineSpec struct {
 	Workspace ResourceIdentifier `json:"workspace,omitempty,omitzero"`
 
 	// network is the reference to the Network to use for this instance.
-	// supported network identifier in IBMPowerVSResourceReference are Name, ID and RegEx and that can be obtained from IBM Cloud UI or IBM Cloud cli.
+	// Supported identifiers in ResourceIdentifier are Name, ID, and RegEx and can be obtained from IBM Cloud UI or IBM Cloud CLI.
 	// +optional
 	Network ResourceIdentifier `json:"network,omitempty,omitzero"`
 

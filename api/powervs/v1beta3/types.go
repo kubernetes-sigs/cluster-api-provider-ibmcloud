@@ -19,14 +19,8 @@ package v1beta3
 import "github.com/IBM/vpc-go-sdk/vpcv1"
 
 const (
-	// CIDRBlockAny is the CIDRBlock representing any allowable destination/source IP.
-	CIDRBlockAny string = "0.0.0.0/0"
-
-	// DefaultAPIServerPort is defuault API server port number.
+	// DefaultAPIServerPort is default API server port number.
 	DefaultAPIServerPort int32 = 6443
-
-	// UpdateMachineError indicates an error while trying to update a machine.
-	UpdateMachineError string = "UpdateError"
 )
 
 // PowerVSInstanceState describes the state of an IBM Power VS instance.
@@ -237,58 +231,3 @@ var (
 	// DHCPServerStateError indicates the error state of DHCP server.
 	DHCPServerStateError = DHCPServerState("ERROR")
 )
-
-// DeletePolicy defines the policy used to identify images to be preserved.
-type DeletePolicy string
-
-var (
-	// DeletePolicyRetain is the string representing an image to be retained.
-	DeletePolicyRetain = DeletePolicy("retain")
-)
-
-// ResourceType describes IBM Cloud resource name.
-type ResourceType string
-
-var (
-	// ResourceTypeLoadBalancer VPC loadBalancer resource.
-	ResourceTypeLoadBalancer = ResourceType("loadBalancer")
-	// ResourceTypeLoadBalancerPool is a Load Balancer Pool resource.
-	ResourceTypeLoadBalancerPool = ResourceType("loadBalancerPool")
-	// ResourceTypeSubnet is VPC subnet resource.
-	ResourceTypeSubnet = ResourceType("subnet")
-	// ResourceTypeControlPlaneSubnet is a VPC subnet resource designated for the Control Plane.
-	ResourceTypeControlPlaneSubnet = ResourceType("controlPlaneSubnet")
-	// ResourceTypeWorkerSubnet is a VPC subnet resource designated for the Worker (Data) Plane.
-	ResourceTypeWorkerSubnet = ResourceType("workerSubnet")
-	// ResourceTypeSecurityGroup is a VPC Security Group resource.
-	ResourceTypeSecurityGroup = ResourceType("securityGroup")
-	// ResourceTypeCOSInstance is IBM COS instance resource.
-	ResourceTypeCOSInstance = ResourceType("cosInstance")
-	// ResourceTypeCOSBucket is IBM COS bucket resource.
-	ResourceTypeCOSBucket = ResourceType("cosBucket")
-	// ResourceTypePublicGateway is a VPC Public Gatway.
-	ResourceTypePublicGateway = ResourceType("publicGateway")
-	// ResourceTypeCustomImage is a VPC Custom Image.
-	ResourceTypeCustomImage = ResourceType("customImage")
-)
-
-// IBMPowerVSResourceReference is a reference to a specific PowerVS resource by ID, Name or RegEx
-// Only one of ID, Name or RegEx may be specified. Specifying more than one will result in
-// a validation error.
-type IBMPowerVSResourceReference struct {
-	// id of resource
-	// +kubebuilder:validation:MinLength=1
-	// +optional
-	ID *string `json:"id,omitempty"`
-
-	// name of resource
-	// +kubebuilder:validation:MinLength=1
-	// +optional
-	Name *string `json:"name,omitempty"`
-
-	// regex is the regular expression to match resource,
-	// In case of multiple resources matches the provided regular expression the first matched resource will be selected
-	// +kubebuilder:validation:MinLength=1
-	// +optional
-	RegEx *string `json:"regex,omitempty"`
-}
