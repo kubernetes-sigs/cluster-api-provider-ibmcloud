@@ -250,14 +250,20 @@ func (r *IBMPowerVSMachineReconciler) reconcileDelete(ctx context.Context, scope
 	return ctrl.Result{}, nil
 }
 
+// lbSettleRequeue is the poll interval while waiting for a VPC load balancer pool update to leave
+// the update_pending state. IBM VPC load balancers typically settle in 10–30 s; 15 s avoids
+// hammering the API while still reacting promptly. The IBM VPC team confirmed that polling at this
+// rate does not extend the update_pending window.
+const lbSettleRequeue = 15 * time.Second
+
 // handleLoadBalancerPoolMemberConfiguration handles load balancer pool member creation flow.
 func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(ctx context.Context, machineScope *scope.PowerVSMachineScope) (ctrl.Result, error) {
-	poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(ctx)
+	pending, err := machineScope.CreateVPCLoadBalancerPoolMember(ctx)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create VPC load balancer pool member: %w", err)
+		return ctrl.Result{}, fmt.Errorf("failed to configure VPC load balancer pool member: %w", err)
 	}
-	if poolMember != nil && *poolMember.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
-		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	if pending {
+		return ctrl.Result{RequeueAfter: lbSettleRequeue}, nil
 	}
 	return ctrl.Result{}, nil
 }
