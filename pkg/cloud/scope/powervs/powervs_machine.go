@@ -353,12 +353,19 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 
 	// 6. Resolve Image ID
 	var imageID string
-	if machineSpec.Image.Type == infrav1.ImageSourceTypeImport {
+	switch machineSpec.Image.Type {
+	case infrav1.ImageSourceTypeImport:
 		if s.IBMPowerVSImage == nil || s.IBMPowerVSImage.Status.ImageID == "" {
 			return nil, fmt.Errorf("imported image is not ready yet")
 		}
 		imageID = s.IBMPowerVSImage.Status.ImageID
-	} else {
+	case infrav1.ImageSourceTypeStockImage:
+		imageID, err = s.getStockImageID(ctx, machineSpec.Image.StockImage)
+		if err != nil {
+			s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedRetrieveImage", "Failed stock image retrieval: %v", err)
+			return nil, fmt.Errorf("error getting image ID from stock image: %w", err)
+		}
+	default:
 		imageID, err = s.getImageID(ctx, machineSpec.Image.Reference)
 		if err != nil {
 			s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedRetrieveImage", "Failed image retrieval: %v", err)
@@ -1007,28 +1014,46 @@ func (s *MachineScope) getRawBootstrapData() ([]byte, error) {
 	return value, nil
 }
 
-// getImageID resolves an image ResourceIdentifier to a concrete image ID string.
+// getImageID resolves a Reference image ResourceIdentifier to a concrete image ID string
+// by searching the workspace's own image catalog.
 func (s *MachineScope) getImageID(ctx context.Context, image infrav1.ResourceIdentifier) (string, error) {
 	if image.ID != "" {
 		return image.ID, nil
 	}
-
-	if image.Name != "" {
-		images, err := s.getImages(ctx)
-		if err != nil {
-			return "", fmt.Errorf("failed to get images from IBM Cloud: %w", err)
-		}
-
-		for _, img := range images.Images {
-			if image.Name == *img.Name {
-				return *img.ImageID, nil
-			}
-		}
-
-		return "", fmt.Errorf("image with name %q not found", image.Name)
+	if image.Name == "" {
+		return "", fmt.Errorf("image reference must contain either an ID or a Name")
 	}
+	images, err := s.IBMPowerVSClient.ListImages(ctx)
+	if images == nil || err != nil {
+		return "", fmt.Errorf("failed to get images from IBM Cloud: %w", err)
+	}
+	for _, img := range images.Images {
+		if img.Name != nil && img.ImageID != nil && image.Name == *img.Name {
+			return *img.ImageID, nil
+		}
+	}
+	return "", fmt.Errorf("image with name %q not found", image.Name)
+}
 
-	return "", fmt.Errorf("image reference must contain either an ID or a Name")
+// getStockImageID resolves a StockImage ResourceIdentifier to a concrete image ID string
+// by searching the IBM-provided stock catalog images.
+func (s *MachineScope) getStockImageID(ctx context.Context, image infrav1.ResourceIdentifier) (string, error) {
+	if image.ID != "" {
+		return image.ID, nil
+	}
+	if image.Name == "" {
+		return "", fmt.Errorf("stock image reference must contain either an ID or a Name")
+	}
+	stockImages, err := s.IBMPowerVSClient.ListStockImages(ctx)
+	if stockImages == nil || err != nil {
+		return "", fmt.Errorf("failed to get stock images from IBM Cloud: %w", err)
+	}
+	for _, img := range stockImages.Images {
+		if img.Name != nil && img.ImageID != nil && image.Name == *img.Name {
+			return *img.ImageID, nil
+		}
+	}
+	return "", fmt.Errorf("stock image with name %q not found", image.Name)
 }
 
 // getNetworkID resolves a network ResourceIdentifier to a concrete network ID pointer.
@@ -1138,11 +1163,6 @@ func (s *MachineScope) role() string {
 // name returns the IBMPowerVSMachine name.
 func (s *MachineScope) name() string {
 	return s.IBMPowerVSMachine.Name
-}
-
-// getImages will get list of images for the powervs service instance.
-func (s *MachineScope) getImages(ctx context.Context) (*models.Images, error) {
-	return s.IBMPowerVSClient.ListImages(ctx)
 }
 
 // extractIPsFromInstance parses the raw instance data for assigned IP addresses.

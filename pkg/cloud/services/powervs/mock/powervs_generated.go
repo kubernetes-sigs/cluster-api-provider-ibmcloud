@@ -336,3 +336,18 @@ func (mr *MockPowerVSMockRecorder) ListNetworks(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListNetworks", reflect.TypeOf((*MockPowerVS)(nil).ListNetworks), ctx)
 }
+
+// ListStockImages mocks base method.
+func (m *MockPowerVS) ListStockImages(ctx context.Context) (*models.Images, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListStockImages", ctx)
+	ret0, _ := ret[0].(*models.Images)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListStockImages indicates an expected call of ListStockImages.
+func (mr *MockPowerVSMockRecorder) ListStockImages(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListStockImages", reflect.TypeOf((*MockPowerVS)(nil).ListStockImages), ctx)
+}

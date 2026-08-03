@@ -45,7 +45,7 @@ const (
 )
 
 // ImageSourceType defines the method used to resolve the machine image.
-// +kubebuilder:validation:Enum=Reference;Import
+// +kubebuilder:validation:Enum=Reference;Import;StockImage
 type ImageSourceType string
 
 const (
@@ -54,6 +54,10 @@ const (
 
 	// ImageSourceTypeImport specifies that the machine should use an IBMPowerVSImage CRD to import an image from COS.
 	ImageSourceTypeImport ImageSourceType = "Import"
+
+	// ImageSourceTypeStockImage specifies that the machine should use an IBM-provided stock catalog image.
+	// The stockImage field must identify the image by Name or ID from the PowerVS stock catalog.
+	ImageSourceTypeStockImage ImageSourceType = "StockImage"
 )
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
@@ -270,8 +274,10 @@ type IBMPowerVSMachineV1Beta2DeprecatedStatus struct {
 // IBMPowerVSMachineImage defines how to resolve the image for the machine.
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type == 'Import' ? has(self.import) : !has(self.import)",message="import configuration is required when type is Import, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'StockImage' ? has(self.stockImage) : !has(self.stockImage)",message="stockImage configuration is required when type is StockImage, and forbidden otherwise"
 type IBMPowerVSMachineImage struct {
-	// type defines whether to use an existing image in IBM Cloud or import a new one via the IBMPowerVSImage CRD.
+	// type defines whether to use an existing image in IBM Cloud, import a new one via the IBMPowerVSImage CRD,
+	// or use an IBM-provided stock catalog image.
 	// +required
 	Type ImageSourceType `json:"type,omitempty"`
 
@@ -283,6 +289,10 @@ type IBMPowerVSMachineImage struct {
 	// import is a reference to an IBMPowerVSImage CRD, which manages importing an image from an IBM COS Bucket.
 	// +optional
 	Import ImageReference `json:"import,omitempty,omitzero"`
+
+	// stockImage identifies an IBM-provided stock catalog image by Name or ID.
+	// +optional
+	StockImage ResourceIdentifier `json:"stockImage,omitempty,omitzero"`
 }
 
 // ImageReference is a reference to an IBMPowerVSImage resource.
