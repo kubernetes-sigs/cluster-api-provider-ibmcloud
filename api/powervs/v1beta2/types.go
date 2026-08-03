@@ -22,7 +22,7 @@ const (
 	// CIDRBlockAny is the CIDRBlock representing any allowable destination/source IP.
 	CIDRBlockAny string = "0.0.0.0/0"
 
-	// DefaultAPIServerPort is defuault API server port number.
+	// DefaultAPIServerPort is default API server port number.
 	DefaultAPIServerPort int32 = 6443
 
 	// UpdateMachineError indicates an error while trying to update a machine.
