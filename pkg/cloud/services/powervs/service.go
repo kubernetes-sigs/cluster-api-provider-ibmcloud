@@ -117,6 +117,11 @@ func (s *Service) ListImages(_ context.Context) (*models.Images, error) {
 	return s.imageClient.GetAll()
 }
 
+// ListStockImages returns all the stock images available for the Power VS service instance.
+func (s *Service) ListStockImages(_ context.Context) (*models.Images, error) {
+	return s.imageClient.GetAllStockImages(false, false)
+}
+
 // GetJob returns the import job to in the Power VS service instance.
 func (s *Service) GetJob(_ context.Context, id string) (*models.Job, error) {
 	return s.jobClient.Get(id)
