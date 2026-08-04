@@ -60,10 +60,13 @@ func init() {
 }
 
 // IBMPowerVSImageSpec defines the desired state of IBMPowerVSImage.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSImageSpec struct {
 	// clusterName is the name of the Cluster this object belongs to.
+	// +required
 	// +kubebuilder:validation:MinLength=1
-	ClusterName string `json:"clusterName"`
+	// +kubebuilder:validation:MaxLength=63
+	ClusterName string `json:"clusterName,omitempty"`
 
 	// workspace identifies the PowerVS workspace into which the image will be imported.
 	// If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
@@ -71,13 +74,22 @@ type IBMPowerVSImageSpec struct {
 	Workspace ResourceIdentifier `json:"workspace,omitempty,omitzero"`
 
 	// bucket is the Cloud Object Storage bucket name; bucket-name[/optional/folder]
-	Bucket string `json:"bucket"`
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Bucket string `json:"bucket,omitempty"`
 
 	// object is the Cloud Object Storage image filename.
-	Object string `json:"object"`
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=1024
+	Object string `json:"object,omitempty"`
 
 	// region is the Cloud Object Storage region.
-	Region string `json:"region"`
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	Region string `json:"region,omitempty"`
 
 	// storageType is the type of storage, storage pool with the most available space will be selected.
 	// +optional
@@ -89,6 +101,7 @@ type IBMPowerVSImageSpec struct {
 }
 
 // IBMPowerVSImageStatus defines the observed state of IBMPowerVSImage.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSImageStatus struct {
 	// conditions represents the observations of a IBMPowerVSImage's current state.
 	// +optional
@@ -98,14 +111,21 @@ type IBMPowerVSImageStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// imageID is the id of the imported image.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	ImageID string `json:"imageID,omitempty"`
 
 	// imageState is the status of the imported image.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	ImageState PowerVSImageState `json:"imageState,omitempty"`
 
 	// jobID is the job ID of an import operation.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	JobID string `json:"jobID,omitempty"`
 
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
@@ -129,11 +149,11 @@ type IBMPowerVSImage struct {
 
 	// spec defines the desired state of IBMPowerVSImage
 	// +required
-	Spec IBMPowerVSImageSpec `json:"spec"`
+	Spec IBMPowerVSImageSpec `json:"spec,omitempty,omitzero"`
 
 	// status defines the observed state of IBMPowerVSImage
 	// +optional
-	Status IBMPowerVSImageStatus `json:"status,omitzero"`
+	Status IBMPowerVSImageStatus `json:"status,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true

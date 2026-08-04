@@ -57,6 +57,7 @@ const (
 )
 
 // IBMPowerVSMachineSpec defines the desired state of IBMPowerVSMachine.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSMachineSpec struct {
 	// workspace identifies the PowerVS workspace where the instance will be created.
 	// If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
@@ -70,12 +71,14 @@ type IBMPowerVSMachineSpec struct {
 	// +optional
 	Network ResourceIdentifier `json:"network,omitempty,omitzero"`
 
-	// Image specifies how to resolve the OS image used to create the instance.
+	// image specifies how to resolve the OS image used to create the instance.
 	// +required
 	Image IBMPowerVSMachineImage `json:"image,omitempty,omitzero"`
 
-	// sshKey is the name of the SSH key pair provided to the vsi for authenticating users.
+	// sshKey is the name of the SSH key pair provided to the VM for authenticating users.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
 	SSHKey string `json:"sshKey,omitempty"`
 
 	// systemType is the System type used to host the instance.
@@ -88,8 +91,10 @@ type IBMPowerVSMachineSpec struct {
 	// + Dynamic validation against PowerVS API is performed by the controller during reconciliation.
 	// + The controller validates the systemType against current PowerVS datacenter capabilities.
 	// + If the systemType is not supported, the machine will be marked with InvalidMachineConfiguration condition.
-	// +kubebuilder:validation:Pattern=`^[a-z][0-9]+$|^$`
+	// +kubebuilder:validation:Pattern=`^[a-z][0-9]+$`
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=16
 	SystemType string `json:"systemType,omitempty"`
 
 	// processorType is the VM instance processor type.
@@ -123,6 +128,7 @@ type IBMPowerVSMachineSpec struct {
 	// When omitted, this means the user has no opinion and the platform is left to choose a reasonable
 	// default, which is subject to change over time. The current default is 2.
 	// +optional
+	// +kubebuilder:validation:Minimum=2
 	MemoryGiB int32 `json:"memoryGiB,omitempty"`
 
 	// providerID is the unique identifier as specified by the cloud provider.
@@ -133,6 +139,7 @@ type IBMPowerVSMachineSpec struct {
 }
 
 // IBMPowerVSMachineStatus defines the observed state of IBMPowerVSMachine.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSMachineStatus struct {
 	// conditions represents the observations of a IBMPowerVSMachine's current state.
 	// +optional
@@ -147,6 +154,9 @@ type IBMPowerVSMachineStatus struct {
 	Initialization IBMPowerVSMachineInitializationStatus `json:"initialization,omitempty,omitzero"`
 
 	// instanceID is the instance ID.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
 	InstanceID string `json:"instanceID,omitempty"`
 
 	// addresses contains the instance associated addresses.
@@ -156,18 +166,30 @@ type IBMPowerVSMachineStatus struct {
 	// +optional
 	Addresses []clusterv1.MachineAddress `json:"addresses,omitempty"`
 
-	// health is the health of the vsi.
+	// health is the health of the VM.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
 	Health string `json:"health,omitempty"`
 
-	// instanceState is the status of the vsi.
+	// instanceState is the status of the VM.
 	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
 	InstanceState PowerVSInstanceState `json:"instanceState,omitempty"`
 
 	// region specifies the Power VS Service instance region.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=^[a-zA-Z0-9\-_]+$
 	Region string `json:"region,omitempty"`
 
 	// zone specifies the Power VS Service instance zone.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=32
+	// +kubebuilder:validation:Pattern=^[a-zA-Z0-9\-_]+$
 	Zone string `json:"zone,omitempty"`
 
 	// deprecated groups all the status fields that are deprecated and will be removed when all the nested field are removed.
@@ -198,11 +220,11 @@ type IBMPowerVSMachine struct {
 
 	// spec defines the desired state of IBMPowerVSMachine
 	// +required
-	Spec IBMPowerVSMachineSpec `json:"spec"`
+	Spec IBMPowerVSMachineSpec `json:"spec,omitempty,omitzero"`
 
 	// status defines the observed state of IBMPowerVSMachine
 	// +optional
-	Status IBMPowerVSMachineStatus `json:"status,omitzero"`
+	Status IBMPowerVSMachineStatus `json:"status,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -249,16 +271,16 @@ type IBMPowerVSMachineV1Beta2DeprecatedStatus struct {
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
 // +kubebuilder:validation:XValidation:rule="self.type == 'Import' ? has(self.import) : !has(self.import)",message="import configuration is required when type is Import, and forbidden otherwise"
 type IBMPowerVSMachineImage struct {
-	// Type defines whether to use an existing image in IBM Cloud or import a new one via the IBMPowerVSImage CRD.
+	// type defines whether to use an existing image in IBM Cloud or import a new one via the IBMPowerVSImage CRD.
 	// +required
 	Type ImageSourceType `json:"type,omitempty"`
 
-	// Reference contains the information to identify an existing image in the PowerVS workspace.
+	// reference contains the information to identify an existing image in the PowerVS workspace.
 	// Supported identifiers are Name, ID, and RegEx.
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// Import is a reference to an IBMPowerVSImage CRD, which manages importing an image from an IBM COS Bucket.
+	// import is a reference to an IBMPowerVSImage CRD, which manages importing an image from an IBM COS Bucket.
 	// +optional
 	Import ImageReference `json:"import,omitempty,omitzero"`
 }

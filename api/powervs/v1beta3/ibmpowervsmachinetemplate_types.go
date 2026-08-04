@@ -30,10 +30,12 @@ func init() {
 // IBMPowerVSMachineTemplateSpec defines the desired state of IBMPowerVSMachineTemplate.
 type IBMPowerVSMachineTemplateSpec struct {
 	// template is the IBMPowerVSMachineTemplateResource.
-	Template IBMPowerVSMachineTemplateResource `json:"template"`
+	// +required
+	Template IBMPowerVSMachineTemplateResource `json:"template,omitempty,omitzero"`
 }
 
 // IBMPowerVSMachineTemplateStatus defines the observed state of IBMPowerVSMachineTemplate.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSMachineTemplateStatus struct {
 	// capacity defines the resource capacity for this machine.
 	// This value is used for autoscaling from zero operations as defined in:
@@ -56,11 +58,11 @@ type IBMPowerVSMachineTemplate struct {
 
 	// spec defines the desired state of IBMPowerVSMachineTemplate
 	// +required
-	Spec IBMPowerVSMachineTemplateSpec `json:"spec"`
+	Spec IBMPowerVSMachineTemplateSpec `json:"spec,omitempty,omitzero"`
 
 	// status defines the observed state of IBMPowerVSMachineTemplate
 	// +optional
-	Status IBMPowerVSMachineTemplateStatus `json:"status,omitzero"`
+	Status IBMPowerVSMachineTemplateStatus `json:"status,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -73,11 +75,13 @@ type IBMPowerVSMachineTemplateList struct {
 }
 
 // IBMPowerVSMachineTemplateResource holds the IBMPowerVSMachine spec.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSMachineTemplateResource struct {
 	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 	// spec is the IBMPowerVSMachineSpec.
-	Spec IBMPowerVSMachineSpec `json:"spec"`
+	// +optional
+	Spec IBMPowerVSMachineSpec `json:"spec,omitempty,omitzero"`
 }

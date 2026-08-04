@@ -29,7 +29,8 @@ func init() {
 // IBMPowerVSClusterTemplateSpec defines the desired state of IBMPowerVSClusterTemplate.
 type IBMPowerVSClusterTemplateSpec struct {
 	// template is the IBMPowerVSClusterTemplateResource.
-	Template IBMPowerVSClusterTemplateResource `json:"template"`
+	// +required
+	Template IBMPowerVSClusterTemplateResource `json:"template,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -47,7 +48,7 @@ type IBMPowerVSClusterTemplate struct {
 
 	// spec defines the desired state of IBMPowerVSClusterTemplate
 	// +required
-	Spec IBMPowerVSClusterTemplateSpec `json:"spec"`
+	Spec IBMPowerVSClusterTemplateSpec `json:"spec,omitempty,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -60,11 +61,13 @@ type IBMPowerVSClusterTemplateList struct {
 }
 
 // IBMPowerVSClusterTemplateResource describes the data needed to create an IBMPowerVSCluster from a template.
+// +kubebuilder:validation:MinProperties=1
 type IBMPowerVSClusterTemplateResource struct {
 	// metadata is the standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	// +optional
 	ObjectMeta clusterv1.ObjectMeta `json:"metadata,omitempty,omitzero"`
 	// spec is the IBMPowerVSClusterSpec.
-	Spec IBMPowerVSClusterSpec `json:"spec"`
+	// +required
+	Spec IBMPowerVSClusterSpec `json:"spec,omitempty,omitzero"`
 }

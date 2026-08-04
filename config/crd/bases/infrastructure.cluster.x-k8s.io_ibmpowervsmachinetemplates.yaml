@@ -261,6 +261,7 @@ spec:
             properties:
               template:
                 description: template is the IBMPowerVSMachineTemplateResource.
+                minProperties: 1
                 properties:
                   metadata:
                     description: |-
@@ -289,13 +290,14 @@ spec:
                     type: object
                   spec:
                     description: spec is the IBMPowerVSMachineSpec.
+                    minProperties: 1
                     properties:
                       image:
-                        description: Image specifies how to resolve the OS image used
+                        description: image specifies how to resolve the OS image used
                           to create the instance.
                         properties:
                           import:
-                            description: Import is a reference to an IBMPowerVSImage
+                            description: import is a reference to an IBMPowerVSImage
                               CRD, which manages importing an image from an IBM COS
                               Bucket.
                             properties:
@@ -309,15 +311,18 @@ spec:
                             type: object
                           reference:
                             description: |-
-                              Reference contains the information to identify an existing image in the PowerVS workspace.
+                              reference contains the information to identify an existing image in the PowerVS workspace.
                               Supported identifiers are Name, ID, and RegEx.
+                            minProperties: 1
                             properties:
                               id:
-                                description: ID of the resource.
+                                description: id of the resource.
+                                maxLength: 64
                                 minLength: 1
                                 type: string
                               name:
-                                description: Name of the resource.
+                                description: name of the resource.
+                                maxLength: 128
                                 minLength: 1
                                 type: string
                             type: object
@@ -326,7 +331,7 @@ spec:
                               rule: '(has(self.id) ? 1 : 0) + (has(self.name) ? 1
                                 : 0) == 1'
                           type:
-                            description: Type defines whether to use an existing image
+                            description: type defines whether to use an existing image
                               in IBM Cloud or import a new one via the IBMPowerVSImage
                               CRD.
                             enum:
@@ -352,18 +357,22 @@ spec:
                           When omitted, this means the user has no opinion and the platform is left to choose a reasonable
                           default, which is subject to change over time. The current default is 2.
                         format: int32
+                        minimum: 2
                         type: integer
                       network:
                         description: |-
                           network is the reference to the Network to use for this instance.
                           Supported identifiers in ResourceIdentifier are Name, ID, and RegEx and can be obtained from IBM Cloud UI or IBM Cloud CLI.
+                        minProperties: 1
                         properties:
                           id:
-                            description: ID of the resource.
+                            description: id of the resource.
+                            maxLength: 64
                             minLength: 1
                             type: string
                           name:
-                            description: Name of the resource.
+                            description: name of the resource.
+                            maxLength: 128
                             minLength: 1
                             type: string
                         type: object
@@ -411,7 +420,9 @@ spec:
                         type: string
                       sshKey:
                         description: sshKey is the name of the SSH key pair provided
-                          to the vsi for authenticating users.
+                          to the VM for authenticating users.
+                        maxLength: 128
+                        minLength: 1
                         type: string
                       systemType:
                         description: |-
@@ -420,7 +431,9 @@ spec:
                           Few of the supported SystemTypes are s922,e980,s1022,s1122,e1050,e1080.
                           When omitted, this means that the user has no opinion and the platform is left to choose a
                           reasonable default, which is subject to change over time. The current default is s922 which is generally available.
-                        pattern: ^[a-z][0-9]+$|^$
+                        maxLength: 16
+                        minLength: 1
+                        pattern: ^[a-z][0-9]+$
                         type: string
                       workspace:
                         description: |-
@@ -428,13 +441,16 @@ spec:
                           If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
                           Supported identifiers are name and id.
                           More details: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-creating-power-virtual-server
+                        minProperties: 1
                         properties:
                           id:
-                            description: ID of the resource.
+                            description: id of the resource.
+                            maxLength: 64
                             minLength: 1
                             type: string
                           name:
-                            description: Name of the resource.
+                            description: name of the resource.
+                            maxLength: 128
                             minLength: 1
                             type: string
                         type: object
@@ -445,14 +461,13 @@ spec:
                     required:
                     - image
                     type: object
-                required:
-                - spec
                 type: object
             required:
             - template
             type: object
           status:
             description: status defines the observed state of IBMPowerVSMachineTemplate
+            minProperties: 1
             properties:
               capacity:
                 additionalProperties:

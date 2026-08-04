@@ -1846,7 +1846,7 @@ func Convert_v1beta3_VPCSecurityGroupRule_To_v1beta2_VPCSecurityGroupRule(in *in
 }
 
 // Convert_v1beta2_VPCSecurityGroupRulePrototype_To_v1beta3_VPCSecurityGroupRulePrototype converts v1beta2 VPCSecurityGroupRulePrototype to v1beta3.
-// The key difference is that v1beta2 PortRange is a pointer while v1beta3 uses a value type.
+// The key difference is that v1beta2 PortRange is a pointer while v1beta3 uses a value type with omitzero.
 func Convert_v1beta2_VPCSecurityGroupRulePrototype_To_v1beta3_VPCSecurityGroupRulePrototype(in *VPCSecurityGroupRulePrototype, out *infrav1.VPCSecurityGroupRulePrototype, _ apimachineryconversion.Scope) error {
 	out.ICMPCode = in.ICMPCode
 	out.ICMPType = in.ICMPType

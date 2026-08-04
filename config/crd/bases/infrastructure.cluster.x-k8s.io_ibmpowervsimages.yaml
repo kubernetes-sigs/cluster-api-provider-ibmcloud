@@ -290,13 +290,17 @@ spec:
             type: object
           spec:
             description: spec defines the desired state of IBMPowerVSImage
+            minProperties: 1
             properties:
               bucket:
                 description: bucket is the Cloud Object Storage bucket name; bucket-name[/optional/folder]
+                maxLength: 63
+                minLength: 1
                 type: string
               clusterName:
                 description: clusterName is the name of the Cluster this object belongs
                   to.
+                maxLength: 63
                 minLength: 1
                 type: string
               deletePolicy:
@@ -308,9 +312,13 @@ spec:
                 type: string
               object:
                 description: object is the Cloud Object Storage image filename.
+                maxLength: 1024
+                minLength: 1
                 type: string
               region:
                 description: region is the Cloud Object Storage region.
+                maxLength: 32
+                minLength: 1
                 type: string
               storageType:
                 description: storageType is the type of storage, storage pool with
@@ -324,13 +332,16 @@ spec:
                 description: |-
                   workspace identifies the PowerVS workspace into which the image will be imported.
                   If omitted, the workspace is inherited from the associated IBMPowerVSCluster.
+                minProperties: 1
                 properties:
                   id:
-                    description: ID of the resource.
+                    description: id of the resource.
+                    maxLength: 64
                     minLength: 1
                     type: string
                   name:
-                    description: Name of the resource.
+                    description: name of the resource.
+                    maxLength: 128
                     minLength: 1
                     type: string
                 type: object
@@ -345,6 +356,7 @@ spec:
             type: object
           status:
             description: status defines the observed state of IBMPowerVSImage
+            minProperties: 1
             properties:
               conditions:
                 description: conditions represents the observations of a IBMPowerVSImage's
@@ -480,12 +492,18 @@ spec:
                 type: object
               imageID:
                 description: imageID is the id of the imported image.
+                maxLength: 64
+                minLength: 1
                 type: string
               imageState:
                 description: imageState is the status of the imported image.
+                maxLength: 128
+                minLength: 1
                 type: string
               jobID:
                 description: jobID is the job ID of an import operation.
+                maxLength: 64
+                minLength: 1
                 type: string
             type: object
         required:
