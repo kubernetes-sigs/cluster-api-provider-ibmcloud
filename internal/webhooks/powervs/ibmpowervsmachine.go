@@ -70,68 +70,19 @@ func (r *IBMPowerVSMachine) ValidateDelete(_ context.Context, _ *infrav1.IBMPowe
 }
 
 func validateIBMPowerVSMachine(machine *infrav1.IBMPowerVSMachine) (admission.Warnings, error) {
-	var allErrs field.ErrorList
-	if err := validateIBMPowerVSMachineNetwork(machine); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if err := validateIBMPowerVSMachineImage(machine); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if err := validateIBMPowerVSMachineMemory(machine); err != nil {
-		allErrs = append(allErrs, err)
-	}
+	// Network: CRD CEL on ResourceIdentifier enforces exactly-one of ID/Name.
+	// Image:   CRD CEL on IBMPowerVSMachineImage enforces type↔reference/import mutual exclusion;
+	//          Enum marker rejects invalid type; MinLength=1 on ImageReference.Name rejects empty import name.
+	// Memory:  +kubebuilder:validation:Minimum=2 on MemoryGiB enforces the minimum at the CRD level.
+	// Processors: intstr.IntOrString has no CRD-expressible minimum, so the webhook is the right layer.
 	if err := validateIBMPowerVSMachineProcessors(machine); err != nil {
-		allErrs = append(allErrs, err)
+		return nil, apierrors.NewInvalid(
+			schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSMachine"},
+			machine.Name, field.ErrorList{err})
 	}
-	if len(allErrs) == 0 {
-		return nil, nil
-	}
-
-	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSMachine"},
-		machine.Name, allErrs)
-}
-
-func validateIBMPowerVSMachineNetwork(machine *infrav1.IBMPowerVSMachine) *field.Error {
-	if res, err := validateIBMPowerVSNetworkReference(machine.Spec.Network); !res {
-		return err
-	}
-	return nil
-}
-
-func validateIBMPowerVSMachineImage(machine *infrav1.IBMPowerVSMachine) *field.Error {
-	img := machine.Spec.Image
-	if img.Type == "" {
-		return field.Invalid(field.NewPath("spec", "image", "type"), img.Type, "Image type must be specified")
-	}
-	switch img.Type {
-	case infrav1.ImageSourceTypeReference:
-		if img.Reference.ID == "" && img.Reference.Name == "" {
-			return field.Invalid(field.NewPath("spec", "image", "reference"), img.Reference, "Image reference must specify at least one of ID or Name")
-		}
-		if img.Reference.ID != "" && img.Reference.Name != "" {
-			return field.Invalid(field.NewPath("spec", "image", "reference"), img.Reference, "Only one of Image reference - ID or Name may be specified")
-		}
-	case infrav1.ImageSourceTypeImport:
-		if img.Import.Name == "" {
-			return field.Invalid(field.NewPath("spec", "image", "import"), img.Import, "Image import must specify a name")
-		}
-	default:
-		return field.Invalid(field.NewPath("spec", "image", "type"), img.Type, "Image type must be Reference or Import")
-	}
-	return nil
-}
-
-func validateIBMPowerVSMachineMemory(machine *infrav1.IBMPowerVSMachine) *field.Error {
-	if res := validateIBMPowerVSMemoryValues(machine.Spec.MemoryGiB); !res {
-		return field.Invalid(field.NewPath("spec", "memoryGiB"), machine.Spec.MemoryGiB, "Invalid Memory value - must a positive integer no lesser than 2")
-	}
-	return nil
+	return nil, nil
 }
 
 func validateIBMPowerVSMachineProcessors(machine *infrav1.IBMPowerVSMachine) *field.Error {
-	if res := validateIBMPowerVSProcessorValues(machine.Spec.Processors); !res {
-		return field.Invalid(field.NewPath("spec", "processors"), machine.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
-	}
-	return nil
+	return validateIBMPowerVSProcessorValues(machine.Spec.ProcessorType, machine.Spec.Processors)
 }

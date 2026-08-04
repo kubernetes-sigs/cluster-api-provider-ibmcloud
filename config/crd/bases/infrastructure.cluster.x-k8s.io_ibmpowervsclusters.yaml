@@ -1849,6 +1849,9 @@ spec:
                 - VirtualIP
                 - LoadBalancer
                 type: string
+                x-kubernetes-validations:
+                - message: topology is immutable once set
+                  rule: self == oldSelf
               transitGateway:
                 description: |-
                   transitGateway contains information about the IBM Cloud TransitGateway.
