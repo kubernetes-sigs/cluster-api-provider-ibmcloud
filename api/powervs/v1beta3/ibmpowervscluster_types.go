@@ -117,6 +117,7 @@ type IBMPowerVSClusterSpec struct {
 	// topology defines the architectural mode for external cluster access.
 	// +required
 	// +kubebuilder:validation:Enum=VirtualIP;LoadBalancer
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="topology is immutable once set"
 	Topology ClusterTopology `json:"topology,omitempty"`
 
 	// workspace specifies how the PowerVS workspace is sourced.

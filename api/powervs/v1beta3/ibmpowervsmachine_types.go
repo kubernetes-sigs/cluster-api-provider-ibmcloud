@@ -69,10 +69,12 @@ type IBMPowerVSMachineSpec struct {
 	// network is the reference to the Network to use for this instance.
 	// Supported identifiers in ResourceIdentifier are Name, ID, and RegEx and can be obtained from IBM Cloud UI or IBM Cloud CLI.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="network is immutable"
 	Network ResourceIdentifier `json:"network,omitempty,omitzero"`
 
 	// image specifies how to resolve the OS image used to create the instance.
 	// +required
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="image is immutable"
 	Image IBMPowerVSMachineImage `json:"image,omitempty,omitzero"`
 
 	// sshKey is the name of the SSH key pair provided to the VM for authenticating users.

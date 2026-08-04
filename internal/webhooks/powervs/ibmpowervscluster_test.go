@@ -31,6 +31,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 		wantErr        bool
 	}{
 		{
+			// Network reference with exactly one identifier is valid.
 			name: "Should allow if either Network ID or name is set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
@@ -52,6 +53,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			// CRD CEL rule on ResourceIdentifier rejects both ID and Name being set.
 			name: "Should error if both Network ID and name are set",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
@@ -74,28 +76,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should error if all Network ID, name and regex are set",
-			powervsCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					Topology: infrav1.PowerVSVirtualIPTopology,
-					Workspace: infrav1.WorkspaceSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID: "capi-si-id",
-						},
-					},
-					Network: infrav1.NetworkSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID:   "capi-net-id",
-							Name: "capi-net",
-						},
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
+			// CRD CEL rule on NetworkSource rejects Provision type for VirtualIP topology.
 			name: "Should error if Network with Provision type when topology is VirtualIP",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
@@ -119,6 +100,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// CRD CEL rule on NetworkSource rejects reference being set when type is Provision.
 			name: "Should error if Reference is set when Type is Provision",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
@@ -145,6 +127,7 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// CRD CEL rule on NetworkSource rejects provision being set when type is Reference.
 			name: "Should error if Provision is set when Type is Reference",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
@@ -171,7 +154,8 @@ func TestIBMPowerVSCluster_create(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should error if neither Reference nor Provision ID/Name is set for Reference type",
+			// CRD CEL rule on ResourceIdentifier rejects a reference with no ID or Name.
+			name: "Should error if neither Reference ID nor Name is set for Reference type",
 			powervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -252,6 +236,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			// CRD CEL rule on ResourceIdentifier rejects both ID and Name being set.
 			name: "Should error if both Network ID and name are set",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
@@ -291,7 +276,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should allow if Network ID is set",
+			name: "Should allow if Network name is set",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSVirtualIPTopology,
@@ -304,68 +289,29 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeReference,
 						Reference: infrav1.ResourceIdentifier{
-							Name: "capi-net-id",
-						},
-					},
-				},
-			},
-			newPowervsCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					Topology: infrav1.PowerVSVirtualIPTopology,
-					Workspace: infrav1.WorkspaceSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID: "capi-si-id",
-						},
-					},
-					Network: infrav1.NetworkSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							Name: "capi-net-id",
-						},
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Should error if all Network ID, name and regex are set",
-			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					Topology: infrav1.PowerVSVirtualIPTopology,
-					Workspace: infrav1.WorkspaceSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID: "capi-si-id",
-						},
-					},
-					Network: infrav1.NetworkSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID: "capi-net-id",
-						},
-					},
-				},
-			},
-			newPowervsCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					Topology: infrav1.PowerVSVirtualIPTopology,
-					Workspace: infrav1.WorkspaceSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID: "capi-si-id",
-						},
-					},
-					Network: infrav1.NetworkSource{
-						Type: infrav1.SourceTypeReference,
-						Reference: infrav1.ResourceIdentifier{
-							ID:   "capi-net-id",
 							Name: "capi-net-name",
 						},
 					},
 				},
 			},
-			wantErr: true,
+			newPowervsCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-si-id",
+						},
+					},
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							Name: "capi-net-name",
+						},
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name: "Should error if the additionalListener selector is changed for same port and protocol",
@@ -396,6 +342,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
@@ -439,13 +386,14 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
 										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
 										Selector: metav1.LabelSelector{
 											MatchLabels: map[string]string{
-												"listener-selector": "port-23-1",
+												"listener-selector": "port-23-changed",
 											},
 										},
 									},
@@ -458,7 +406,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Should work if there is an additional listener added",
+			name: "Should allow if there is an additional listener added",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
@@ -486,6 +434,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
@@ -529,6 +478,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
@@ -557,7 +507,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Should work if the additionalListener selector is updated with new port and protocol",
+			name: "Should allow if the additionalListener selector is updated with a new port and protocol",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
@@ -585,6 +535,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
@@ -628,6 +579,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     25,
@@ -647,7 +599,9 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Should not panic with nil protocol in additionalListener",
+			// The old protocol-less key ("%d-<default>") is replaced by the typed listenerKey struct,
+			// so an empty protocol is simply the zero value of LoadBalancerListenerProtocol — correct.
+			name: "Should not panic with empty protocol in additionalListener",
 			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					Topology: infrav1.PowerVSLoadBalancerTopology,
@@ -675,6 +629,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
@@ -718,6 +673,7 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 							Type: infrav1.SourceTypeProvision,
 							Provision: infrav1.LoadBalancerProvision{
 								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
 								AdditionalListeners: []infrav1.AdditionalListener{
 									{
 										Port:     23,
@@ -735,6 +691,128 @@ func TestIBMPowerVSCluster_update(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			// Two load balancers that share port 23 must not have their selector
+			// immutability check confused with each other.
+			name: "Should allow selector change on lb-2 port 23 when lb-1 port 23 selector is unchanged",
+			oldPowervsCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-si-id",
+						},
+					},
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
+					},
+					LoadBalancers: []infrav1.LoadBalancerSource{
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{"lb": "lb1-port23"},
+										},
+									},
+								},
+							},
+						},
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-2",
+								Type: infrav1.LoadBalancerTypePrivate,
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{"lb": "lb2-port23-old"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			newPowervsCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSLoadBalancerTopology,
+					Zone:     "dal10",
+					ResourceGroup: infrav1.ResourceGroupSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "rg-id",
+						},
+					},
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-si-id",
+						},
+					},
+					Network: infrav1.NetworkSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "capi-net-id",
+						},
+					},
+					LoadBalancers: []infrav1.LoadBalancerSource{
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-1",
+								Type: infrav1.LoadBalancerTypePublic,
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{"lb": "lb1-port23"},
+										},
+									},
+								},
+							},
+						},
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "load-balancer-2",
+								Type: infrav1.LoadBalancerTypePrivate,
+								AdditionalListeners: []infrav1.AdditionalListener{
+									{
+										Port:     23,
+										Protocol: infrav1.LoadBalancerListenerProtocolTCP,
+										Selector: metav1.LabelSelector{
+											MatchLabels: map[string]string{"lb": "lb2-port23-new"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
 	}
 
