@@ -20,7 +20,7 @@ To create an account, go to: [cloud.ibm.com](https://cloud.ibm.com).
 
 ###	Create an IBM Cloud account API key
 
-Please refer to the following [documentation](https://cloud.ibm.com/docs/account?topic=account-userapikey) to create an API key.
+Please refer to the following [documentation](https://cloud.ibm.com/docs/iam?topic=iam-userapikey) to create an API key.
 
 
 ### Create Power Systems Virtual Server Service Instance
