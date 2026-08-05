@@ -306,7 +306,7 @@ func TestGetPublicLoadBalancerHostName(t *testing.T) {
 				Spec:       infrav1.IBMPowerVSClusterSpec{},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					LoadBalancers: []infrav1.LoadBalancerStatus{
-						{Name: "-loadbalancer", Hostname: "lb-hostname"},
+						{Name: "-lb-public", Hostname: "lb-hostname"},
 					},
 				},
 			},

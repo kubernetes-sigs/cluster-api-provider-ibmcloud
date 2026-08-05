@@ -20,91 +20,99 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 )
 
-func TestValidateIBMPowerVSMemoryValues(t *testing.T) {
-	type args struct {
-		n int32
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		{
-			name: "N is 4",
-			args: args{n: 4},
-			want: true,
-		},
-		{
-			name: "N is 10",
-			args: args{n: 10},
-			want: true,
-		},
-		{
-			name: "N is 1",
-			args: args{n: 1},
-			want: false,
-		},
-		{
-			name: "N is -2",
-			args: args{n: -2},
-			want: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := validateIBMPowerVSMemoryValues(tt.args.n); got != tt.want {
-				t.Errorf("validateIBMPowerVSMemoryValues() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestValidateIBMPowerVSProcessorValues(t *testing.T) {
-	type args struct {
-		n intstr.IntOrString
-	}
 	tests := []struct {
-		name string
-		args args
-		want bool
+		name       string
+		procType   infrav1.PowerVSProcessorType
+		processors intstr.IntOrString
+		wantErr    bool
 	}{
+		// Shared / Capped valid cases
 		{
-			name: "N is 0.25",
-			args: args{n: intstr.FromString("0.25")},
-			want: true,
+			name:       "Shared: 0.25 is the minimum and valid",
+			procType:   infrav1.PowerVSProcessorTypeShared,
+			processors: intstr.FromString("0.25"),
+			wantErr:    false,
 		},
 		{
-			name: "N is 0.5",
-			args: args{n: intstr.FromString("0.5")},
-			want: true,
+			name:       "Shared: 0.5 is valid",
+			procType:   infrav1.PowerVSProcessorTypeShared,
+			processors: intstr.FromString("0.5"),
+			wantErr:    false,
 		},
 		{
-			name: "N is 1",
-			args: args{n: intstr.FromInt(1)},
-			want: true,
+			name:       "Shared: integer 1 is valid",
+			procType:   infrav1.PowerVSProcessorTypeShared,
+			processors: intstr.FromInt32(1),
+			wantErr:    false,
 		},
 		{
-			name: "N is 10",
-			args: args{n: intstr.FromInt(10)},
-			want: true,
+			name:       "Capped: 0.25 is valid",
+			procType:   infrav1.PowerVSProcessorTypeCapped,
+			processors: intstr.FromString("0.25"),
+			wantErr:    false,
+		},
+		// Shared / Capped invalid cases
+		{
+			name:       "Shared: 0.2 is below the 0.25 minimum",
+			procType:   infrav1.PowerVSProcessorTypeShared,
+			processors: intstr.FromString("0.2"),
+			wantErr:    true,
 		},
 		{
-			name: "N is 0.2",
-			args: args{n: intstr.FromString("0.2")},
-			want: false,
+			name:       "Shared: non-numeric string is invalid",
+			procType:   infrav1.PowerVSProcessorTypeShared,
+			processors: intstr.FromString("abc"),
+			wantErr:    true,
+		},
+		// Dedicated valid cases
+		{
+			name:       "Dedicated: 1 is the minimum and valid",
+			procType:   infrav1.PowerVSProcessorTypeDedicated,
+			processors: intstr.FromInt32(1),
+			wantErr:    false,
 		},
 		{
-			name: "N is abc",
-			args: args{n: intstr.FromString("abc")},
-			want: false,
+			name:       "Dedicated: 4 is valid",
+			procType:   infrav1.PowerVSProcessorTypeDedicated,
+			processors: intstr.FromInt32(4),
+			wantErr:    false,
+		},
+		{
+			name:       "Dedicated: whole number as string is valid",
+			procType:   infrav1.PowerVSProcessorTypeDedicated,
+			processors: intstr.FromString("2"),
+			wantErr:    false,
+		},
+		// Dedicated invalid cases
+		{
+			name:       "Dedicated: 0.25 is below the minimum of 1",
+			procType:   infrav1.PowerVSProcessorTypeDedicated,
+			processors: intstr.FromString("0.25"),
+			wantErr:    true,
+		},
+		{
+			name:       "Dedicated: 1.5 is fractional and not allowed",
+			procType:   infrav1.PowerVSProcessorTypeDedicated,
+			processors: intstr.FromString("1.5"),
+			wantErr:    true,
+		},
+		{
+			name:       "Dedicated: non-numeric string is invalid",
+			procType:   infrav1.PowerVSProcessorTypeDedicated,
+			processors: intstr.FromString("abc"),
+			wantErr:    true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := validateIBMPowerVSProcessorValues(tt.args.n); got != tt.want {
-				t.Errorf("validateIBMPowerVSProcessorValues() = %v, want %v", got, tt.want)
+			err := validateIBMPowerVSProcessorValues(tt.procType, tt.processors)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("validateIBMPowerVSProcessorValues() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

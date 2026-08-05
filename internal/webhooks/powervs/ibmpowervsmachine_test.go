@@ -398,8 +398,8 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 						Name: "capi-net",
 					},
 					Image: infrav1.IBMPowerVSMachineImage{
-						Type:   infrav1.ImageSourceTypeImport,
-						Import: infrav1.ImageReference{Name: "capi-image"},
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
 					},
 				},
 			},
