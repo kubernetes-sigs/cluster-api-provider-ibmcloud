@@ -22,7 +22,7 @@ import (
 )
 
 //go:generate ../../../../hack/tools/bin/mockgen -source=./resourcecontroller.go -destination=./mock/resourcecontroller_generated.go -package=mock
-//go:generate /usr/bin/env bash -c "cat ../../../../hack/boilerplate/boilerplate.generatego.txt ./mock/resourcecontroller_generated.go > ./mock/_resourcecontroller_generated.go && mv ./mock/_resourcecontroller_generated.go ./mock/resourcecontroller_generated.go"
+//go:generate /usr/bin/env bash -c "cat ../../../../hack/scripts/verify/boilerplate/boilerplate.generatego.txt ./mock/resourcecontroller_generated.go > ./mock/_resourcecontroller_generated.go && mv ./mock/_resourcecontroller_generated.go ./mock/resourcecontroller_generated.go"
 
 // ResourceController interface defines a method that a IBMCLOUD service object should implement in order to
 // use the resourcecontrollerv2 package for listing resource instances.

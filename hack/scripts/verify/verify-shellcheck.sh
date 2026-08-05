@@ -26,7 +26,7 @@ elif [[ "${OSTYPE}" == "darwin"* ]]; then
   OS="darwin"
 fi
 
-# shellcheck source=./hack/utils.sh
+# shellcheck source=./utils.sh
 source "$(dirname "$0")/utils.sh"
 ROOT_PATH=$(get_root_path)
 
@@ -49,7 +49,7 @@ cleanup() {
 trap cleanup EXIT
 
 
-SHELLCHECK="./$(dirname "$0")/tools/bin/shellcheck/${VERSION}/shellcheck"
+SHELLCHECK="${ROOT_PATH}/hack/tools/bin/shellcheck/${VERSION}/shellcheck"
 
 if [ ! -f "$SHELLCHECK" ]; then
   # install buildifier

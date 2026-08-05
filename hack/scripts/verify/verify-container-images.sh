@@ -26,7 +26,7 @@ VERSION=${1}
 GO_ARCH="$(go env GOARCH)"
 
 REPO_ROOT=$(git rev-parse --show-toplevel)
-"${REPO_ROOT}/hack/ensure-trivy.sh" "${VERSION}"
+"${REPO_ROOT}/hack/scripts/ensure/ensure-trivy.sh" "${VERSION}"
 
 TRIVY="${REPO_ROOT}/hack/tools/bin/trivy/${VERSION}/trivy"
 
@@ -34,7 +34,7 @@ TRIVY="${REPO_ROOT}/hack/tools/bin/trivy/${VERSION}/trivy"
 make REGISTRY=gcr.io/k8s-staging-capi-ibmcloud PULL_POLICY=IfNotPresent TAG=dev OUTPUT_TYPE=type=docker docker-build
 make clean-release-git
 
-make -C hack/ccm ARCH="${GO_ARCH}" TAG=dev build-local
+make -C hack/release/ccm ARCH="${GO_ARCH}" TAG=dev build-local
 
 # Scan the images
 "${TRIVY}" image -q --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL gcr.io/k8s-staging-capi-ibmcloud/cluster-api-ibmcloud-controller-"${GO_ARCH}":dev && R1=$? || R1=$?

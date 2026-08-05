@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-OUTPUT_TYPE=${OUTPUT_TYPE:-"type=docker"}
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-# shellcheck source=../hack/ensure-go.sh
-source "${REPO_ROOT}/hack/ensure-go.sh"
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
+# shellcheck source=../ensure/ensure-go.sh
+source "${REPO_ROOT}/hack/scripts/ensure/ensure-go.sh"
 
-cd "${REPO_ROOT}" && make docker-build OUTPUT_TYPE=${OUTPUT_TYPE}
+cd "${REPO_ROOT}" && APIDIFF_OLD_COMMIT="${PULL_BASE_SHA}" make apidiff

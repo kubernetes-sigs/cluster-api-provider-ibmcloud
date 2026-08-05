@@ -35,7 +35,7 @@ rootdir = os.path.abspath(rootdir)
 parser.add_argument(
     "--rootdir", default=rootdir, help="root directory to examine")
 
-default_boilerplate_dir = os.path.join(rootdir, "hack/boilerplate")
+default_boilerplate_dir = os.path.join(rootdir, "hack/scripts/verify/boilerplate")
 parser.add_argument(
     "--boilerplate-dir", default=default_boilerplate_dir)
 
@@ -151,12 +151,12 @@ def file_extension(filename):
     return os.path.splitext(filename)[1].split(".")[-1].lower()
 
 skipped_dirs = ['third_party', 'tilt_modules', '_gopath', '_output', '.git', 'cluster/env.sh',
-                "vendor", "test/e2e/generated/bindata.go", "hack/boilerplate/test",
+                "vendor", "test/e2e/generated/bindata.go", "hack/scripts/verify/boilerplate/test",
                 "staging/src/k8s.io/kubectl/pkg/generated/bindata.go"]
 
 # list all the files contain 'DO NOT EDIT', but are not generated
 skipped_ungenerated_files = [
-    'hack/lib/swagger.sh', 'hack/boilerplate/boilerplate.py']
+    'hack/lib/swagger.sh', 'hack/scripts/verify/boilerplate/boilerplate.py']
 
 def normalize_files(files):
     newfiles = []
