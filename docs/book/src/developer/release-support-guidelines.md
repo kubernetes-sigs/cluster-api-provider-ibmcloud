@@ -14,40 +14,37 @@ branches that minor and patch releases are tagged. In some cases, it may
 be necessary to open PRs for bugfixes directly against stable branches, but
 this should generally not be the case.
 
-### Support and guarantees
+## Support and Guarantees
 
-Cluster API Provider IBM Cloud maintains the most recent release/releases for all supported API and contract versions. Support for this section refers to the ability to backport and release patch versions;
-standard [backport policy](https://github.com/kubernetes-sigs/cluster-api/blob/main/CONTRIBUTING.md#backporting-a-patch) is defined here.
+Cluster API Provider IBM Cloud maintains the most recent release/releases for all supported API
+and contract versions. Support here refers to the ability to backport and release patch versions;
+the standard [backport policy](https://github.com/kubernetes-sigs/cluster-api/blob/main/CONTRIBUTING.md#backporting-a-patch)
+is defined upstream.
 
+For the full version support matrix — including which CAPIBM releases are currently supported,
+their EOL dates, CAPI compatibility, and Kubernetes version ranges — see the
+**[Version Support Policy](../reference/versions.md)** reference page.
+
+### Rules
+
+CAPIBM follows the same N / N-1 / N-2 model as upstream CAPI:
+
+- **N** and **N-1** receive standard support: bug fixes, backports, patch releases, and full CI
+  signal.
+- **N-2** is in **maintenance mode**: partial CI only, no proactive backports. Emergency patches
+  may be considered case-by-case by maintainers.
+- **N-3 and older** are EOL and receive no support.
+- Test coverage is maintained for all non-EOL minor releases (N, N-1, N-2). When N+1 is
+  released, tests for N-2 are removed (it becomes N-3 / EOL).
 - The API version is determined from the GroupVersion defined in the top-level `api/` package.
-- The EOL date of each API Version is determined from the last release available once a new API version is published.
+- The EOL date of each API version is determined from the last release available once a new API
+  version is published.
 
-| API Version  | Supported Until      |
-|--------------|----------------------|
-| **v1beta3**  | TBD (current stable) |
-| **v1beta2**  | EOL from August 2028 |
-| **v1beta1**  | EOL since 2023-02-09 |
+## Dependency Updates
 
-- For the current stable API version (v1beta2) we support the two most recent minor releases; older minor releases are immediately unsupported when a new major/minor release is available.
-- For older API versions we only support the most recent minor release until the API version reaches EOL.
-- We will maintain test coverage for all supported minor releases for the current stable API version in case we have to do an emergency patch release.
-  For example, if v0.5 and v0.6 are currently supported. When v0.7 is released, tests for v0.5 will be removed.
-
-| Minor Release | API Version | Supported Until                                    |
-|---------------|-------------|----------------------------------------------------|
-| v0.14.x       | **v1beta2** | when v0.16.0 will be released                      |
-| v0.13.x       | **v1beta2** | when v0.15.0 will be released                      |
-| v0.12.x       | **v1beta2** | EOL since 2026-05-18 - v0.14.0 release date        |
-| v0.11.x       | **v1beta2** | EOL since 2025-12-15 - v0.13.0 release date        |
-| v0.10.x       | **v1beta2** | EOL since 2025-09-04 - v0.12.0 release date        |
-| v0.9.x        | **v1beta2** | EOL since 2025-05-13 - v0.11.0 release date        |
-| v0.8.x        | **v1beta2** | EOL since 2025-02-12 - v0.10.0 release date        |
-| v0.7.x        | **v1beta2** | EOL since 2024-11-22 - v0.9.0 release date         |
-| v0.6.x        | **v1beta2** | EOL since 2024-05-23 - v0.8.0 release date         |
-| v0.5.x        | **v1beta2** | EOL since 2023-12-15 - v0.7.0 release date         |
-| v0.4.x        | **v1beta2** | EOL since 2023-09-07 - v0.6.0 release date         |
-| v0.3.x        | **v1beta1** | EOL since 2023-02-09 - API version EOL             |
-
-- The CAPI, k8s and test packages will receive regular updates for supported releases to ensure they remain synchronized with the CAPI release being utilized as an integral component of the provider release. This activity is ideally scheduled to occur with every new n-1 and n-2 CAPI minor releases.
-- The IBM packages will be monitored for latest updates in conjunction with CAPI minor release update activity, as long as there are no disruptive changes that impact the project stability.
-- Exceptions can be filed with maintainers and taken into consideration on a case-by-case basis.
+- The CAPI, Kubernetes, and test packages receive regular updates for supported releases to
+  ensure they remain synchronised with the CAPI release in use. This is ideally scheduled with
+  every new CAPI n-1 and n-2 minor release.
+- IBM Cloud SDK packages are monitored for updates alongside CAPI minor release activity, as
+  long as there are no breaking changes that impact project stability.
+- Exceptions can be filed with maintainers and considered on a case-by-case basis.
