@@ -604,7 +604,7 @@ verify-yamllint:
 MD_FILES := $(shell find . -iname "*.md")
 .PHONY: verify-linkcheck
 verify-linkcheck:
-	@docker run --init -w /input -v $(CURR_DIR):/input ghcr.io/tcort/markdown-link-check:3.12 -q -p $(MD_FILES)
+	@docker run --init -w /input -v $(CURR_DIR):/input ghcr.io/tcort/markdown-link-check:3.12 -q -c .markdownlinkcheck.json -p $(MD_FILES)
 
 ## --------------------------------------
 ## Cleanup / Verification
