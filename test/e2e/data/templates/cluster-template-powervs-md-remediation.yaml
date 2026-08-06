@@ -552,7 +552,7 @@ spec:
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s1022"}
       workspace:
         id: ${IBMPOWERVS_WORKSPACE_ID}
 ---
@@ -573,6 +573,6 @@ spec:
       processorType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="Shared"}
       processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
-      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s1022"}
       workspace:
         id: ${IBMPOWERVS_WORKSPACE_ID}
