@@ -306,7 +306,7 @@ func TestGetPublicLoadBalancerHostName(t *testing.T) {
 				Spec:       infrav1.IBMPowerVSClusterSpec{},
 				Status: infrav1.IBMPowerVSClusterStatus{
 					LoadBalancers: []infrav1.LoadBalancerStatus{
-						{Name: "-loadbalancer", Hostname: "lb-hostname"},
+						{Name: "-loadbalancer-public", Hostname: "lb-hostname"},
 					},
 				},
 			},
@@ -686,7 +686,7 @@ func TestPowerVSDeleteLoadBalancer(t *testing.T) {
 					},
 					LoadBalancers: []infrav1.LoadBalancerStatus{
 						{
-							Name: "capi-powervs-cluster-lb-public",
+							Name: "capi-powervs-cluster-loadbalancer-public",
 							ID:   "lb-id",
 						},
 					},

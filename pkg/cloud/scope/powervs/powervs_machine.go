@@ -457,7 +457,7 @@ func (s *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 		loadBalancer := infrav1.LoadBalancerSource{
 			Type: infrav1.SourceTypeProvision,
 			Provision: infrav1.LoadBalancerProvision{
-				Name: fmt.Sprintf("%s-loadbalancer", s.IBMPowerVSCluster.Name),
+				Name: ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, ""),
 				Type: infrav1.LoadBalancerTypePublic,
 			},
 		}
@@ -465,7 +465,15 @@ func (s *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vp
 	}
 	for index, loadBalancer := range s.IBMPowerVSCluster.Spec.LoadBalancers {
 		if loadBalancer.Type == infrav1.SourceTypeProvision && loadBalancer.Provision.Name == "" {
-			loadBalancer.Provision.Name = fmt.Sprintf("%s-loadbalancer-%d", s.IBMPowerVSCluster.Name, index)
+			lbType := ResourceTypeLBPublic
+			if loadBalancer.Provision.Type == infrav1.LoadBalancerTypePrivate {
+				lbType = ResourceTypeLBPrivate
+			}
+			qualifier := ""
+			if index > 0 {
+				qualifier = strconv.Itoa(index)
+			}
+			loadBalancer.Provision.Name = ResourceName(s.IBMPowerVSCluster.Name, lbType, qualifier)
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
