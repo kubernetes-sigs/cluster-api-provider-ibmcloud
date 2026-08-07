@@ -36,5 +36,6 @@
   - [PowerVS v1beta2 to v1beta3](./migrations/powervs-v1beta2-to-v1beta3.md)
 - [Troubleshooting](./user/troubleshooting.md)
 - [Reference](./reference/reference.md)
+  - [Version Support Policy](./reference/versions.md)
   - [API References](./reference/api-references.md)
   - [Regions-Zones Mapping](./reference/regions-zones-mapping.md)
