@@ -1,0 +1,14 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/"
+    },
+    {
+      "pattern": "^https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/release/ccm/Makefile"
+    }
+  ],
+  "retryOn429": true,
+  "retryCount": 2,
+  "timeout": "20s",
+  "aliveStatusCodes": [200, 206]
+}

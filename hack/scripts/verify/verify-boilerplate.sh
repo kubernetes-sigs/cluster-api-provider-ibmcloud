@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Copyright 2019 The Kubernetes Authors.
+
+# Copyright 2014 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,22 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# get_root_path returns the root path of the project source tree
-get_root_path() {
-    git rev-parse --show-toplevel
-}
+set -o errexit
+set -o nounset
+set -o pipefail
 
-# cd_root_path cds to the root path of the project source tree
-cd_root_path() {
-    cd "$(get_root_path)" || exit
-}
+KUBE_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 
-# get_capd_root_path returns the root path of CAPD source tree
-get_capd_root_path() {
-    echo "$(get_root_path)"/test/infrastructure/docker
-}
+boilerDir="${KUBE_ROOT}/hack/scripts/verify/boilerplate"
+boiler="${boilerDir}/boilerplate.py"
 
-# cd_capd_root_path cds to the root path of the CAPD source tree
-cd_capd_root_path() {
-    cd "$(get_capd_root_path)" || exit
-}
+files_need_boilerplate=()
+while IFS=$'\n' read -r line; do
+  files_need_boilerplate+=( "$line" )
+done < <("${boiler}" "$@")
+
+# Run boilerplate check
+if [[ ${#files_need_boilerplate[@]} -gt 0 ]]; then
+  for file in "${files_need_boilerplate[@]}"; do
+    echo "Boilerplate header is wrong for: ${file}" >&2
+  done
+
+  exit 1
+fi

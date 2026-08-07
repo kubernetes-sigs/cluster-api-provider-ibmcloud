@@ -18,8 +18,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-# shellcheck source=../hack/ensure-go.sh
-source "${REPO_ROOT}/hack/ensure-go.sh"
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
+# shellcheck source=../ensure/ensure-go.sh
+source "${REPO_ROOT}/hack/scripts/ensure/ensure-go.sh"
 
-make generate lint test
+cd "${REPO_ROOT}" && make manager

@@ -31,7 +31,6 @@ ARTIFACTS ?= $(REPO_ROOT)/_artifacts
 BIN_DIR := bin
 TOOLS_DIR := hack/tools
 TOOLS_BIN_DIR := $(TOOLS_DIR)/bin
-GO_INSTALL = ./scripts/go_install.sh
 E2E_CONF_FILE_ENVSUBST := $(REPO_ROOT)/test/e2e/config/ibmcloud-e2e-envsubst.yaml
 E2E_TEMPLATES := $(REPO_ROOT)/test/e2e/data/templates
 TEMPLATES_DIR := $(REPO_ROOT)/templates
@@ -104,7 +103,7 @@ BUILDX_PLATFORMS ?= linux/amd64,linux/arm64,linux/ppc64le
 PULL_POLICY ?= Always
 
 # Set build time variables including version details
-LDFLAGS := $(shell ./hack/version.sh)
+LDFLAGS := $(shell ./hack/release/version.sh)
 
 KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.35.0
 
@@ -184,7 +183,7 @@ generate: ## Run all generate-go generate-modules manifests generate-go-deepcopy
 	$(MAKE) generate-go generate-modules manifests generate-go-deepcopy generate-go-conversions generate-templates generate-e2e-templates
 
 generate-go-deepcopy: $(CONTROLLER_GEN) ## Generate deepcopy go code
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="hack/scripts/verify/boilerplate/boilerplate.go.txt" paths="./..."
 
 .PHONY: generate-go
 generate-go: $(MOCKGEN) ## Generate the Go mock code
@@ -200,7 +199,7 @@ generate-go-conversions: $(CONVERSION_GEN) ## Generate conversions go code
 	$(MAKE) clean-generated-conversions SRC_DIRS="./api/powervs/v1beta2,./api/vpc/v1beta1"
 	$(CONVERSION_GEN) \
 		--output-file=zz_generated.conversion.go \
-		--go-header-file=./hack/boilerplate/boilerplate.generatego.txt \
+		--go-header-file=./hack/scripts/verify/boilerplate/boilerplate.generatego.txt \
 		./api/powervs/v1beta2 \
 		./api/vpc/v1beta1
 
@@ -442,7 +441,7 @@ image-patch-kustomization: $(IMAGE_PATCH_DIR)
 image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
 	mkdir -p $(IMAGE_PATCH_DIR)/$(PROVIDER)
 	$(GOJQ) --yaml-input --yaml-output '.images[0]={"name":"$(OLD_IMG)","newName":"$(MANIFEST_IMG)","newTag":"$(TAG)"}' \
-		"hack/image-patch/kustomization.yaml" > $(IMAGE_PATCH_DIR)/$(PROVIDER)/kustomization.yaml
+		"hack/release/image-patch/kustomization.yaml" > $(IMAGE_PATCH_DIR)/$(PROVIDER)/kustomization.yaml
 
 ## --------------------------------------
 ## Docker
@@ -450,7 +449,7 @@ image-patch-kustomization-without-webhook: $(IMAGE_PATCH_DIR) $(GOJQ)
 
 .PHONY: ensure-buildx
 ensure-buildx:
-	./hack/init-buildx.sh
+	./hack/scripts/dev/init-buildx.sh
 
 .PHONY: docker-build
 docker-build: docker-pull-prerequisites ensure-buildx ## Build the docker image for controller-manager
@@ -536,11 +535,11 @@ verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
 
 .PHONY: verify-boilerplate
 verify-boilerplate: ## Verify boilerplate text exists in each file
-	./hack/verify-boilerplate.sh
+	./hack/scripts/verify/verify-boilerplate.sh
 
 .PHONY: verify-shellcheck
 verify-shellcheck: ## Verify shell files
-	./hack/verify-shellcheck.sh
+	./hack/scripts/verify/verify-shellcheck.sh
 
 .PHONY: verify-modules
 verify-modules: generate-modules ## Verify go modules are up to date
@@ -566,7 +565,7 @@ verify-conversions: $(CONVERSION_VERIFIER) ## Verifies expected API conversion a
 
 .PHONY: verify-container-images
 verify-container-images: ## Verify container images
-	TRACE=$(TRACE) ./hack/verify-container-images.sh $(TRIVY_VER)
+	TRACE=$(TRACE) ./hack/scripts/verify/verify-container-images.sh $(TRIVY_VER)
 
 .PHONY: verify-govulncheck
 verify-govulncheck: $(GOVULNCHECK) ## Verify code for vulnerabilities
@@ -586,7 +585,7 @@ verify-security: ## Verify code and images for vulnerabilities
 	fi
 
 
-SUBMAKEFILE_GO_VERSION=$(shell grep "GO_VERSION" -m1 hack/ccm/Makefile | cut -d '=' -f2 )
+SUBMAKEFILE_GO_VERSION=$(shell grep "GO_VERSION" -m1 hack/release/ccm/Makefile | cut -d '=' -f2 )
 .SILENT:
 .PHONY: verify-go-version
 verify-go-version: ## Confirms the version of go used in Makefiles are uniform
@@ -605,7 +604,7 @@ verify-yamllint:
 MD_FILES := $(shell find . -iname "*.md")
 .PHONY: verify-linkcheck
 verify-linkcheck:
-	@docker run --init -w /input -v $(CURR_DIR):/input ghcr.io/tcort/markdown-link-check:3.12 -q -p $(MD_FILES)
+	@docker run --init -w /input -v $(CURR_DIR):/input ghcr.io/tcort/markdown-link-check:3.12 -q -c .mlc_config.json -p $(MD_FILES)
 
 ## --------------------------------------
 ## Cleanup / Verification
@@ -658,7 +657,7 @@ clean-kind: ## Cleans up the kind cluster with the name $CAPI_KIND_CLUSTER_NAME
 
 .PHONY: kind-cluster
 kind-cluster: ## Create a new kind cluster designed for development with Tilt
-	hack/kind-install.sh
+	hack/scripts/dev/kind-install.sh
 
 ## --------------------------------------
 ## Helpers
@@ -685,6 +684,6 @@ update-go: ## Update Go version across files: Usage make update-go VERSION=X.YY.
 ifndef VERSION
 	echo "VERSION not set. Usage: make update-go VERSION=X.YY.ZZ"
 else
-	sed -i '' "s/GO_VERSION ?=[[:digit:]].[[:digit:]]\{1,\}.[[:digit:]]\{1,\}/GO_VERSION ?=$(VERSION)/" hack/ccm/Makefile
+	sed -i '' "s/GO_VERSION ?=[[:digit:]].[[:digit:]]\{1,\}.[[:digit:]]\{1,\}/GO_VERSION ?=$(VERSION)/" hack/release/ccm/Makefile
 	echo "Updated go version to $(VERSION) in Makefile"
 endif
