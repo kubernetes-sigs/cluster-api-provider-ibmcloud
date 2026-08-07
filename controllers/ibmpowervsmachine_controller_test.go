@@ -667,25 +667,22 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 				},
 			}
 
+			// Pool has no existing members; machine IP 192.168.7.1 is not yet registered.
+			// CreateLoadBalancerPoolMember is called and returns update_pending → requeue.
 			loadBalancerPoolMemberCollection := &vpcv1.LoadBalancerPoolMemberCollection{
-				Members: []vpcv1.LoadBalancerPoolMember{
-					{
-						ID: core.StringPtr("capi-test-lb-pool-id"),
-					},
-				},
+				Members: []vpcv1.LoadBalancerPoolMember{},
 			}
 
-			loadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{
+			newMember := &vpcv1.LoadBalancerPoolMember{
 				ID:                 core.StringPtr("capi-test-lb-pool-member-id"),
-				ProvisioningStatus: core.StringPtr("update-pending"),
+				ProvisioningStatus: core.StringPtr("update_pending"),
 			}
 
 			mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
 			mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
 			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
 			mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(loadBalancerPoolMember, &core.DetailedResponse{}, nil)
-			mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancer, &core.DetailedResponse{}, nil)
+			mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(newMember, &core.DetailedResponse{}, nil)
 			result, err := reconciler.reconcileNormal(ctx, machineScope)
 			g.Expect(err).To(BeNil())
 			g.Expect(result.RequeueAfter).To(Not(BeZero()))
@@ -889,6 +886,173 @@ func TestIBMPowerVSMachineReconciler_ReconcileOperations(t *testing.T) {
 		expectConditions(g, machineScope.IBMPowerVSMachine, []conditionAssertion{{infrav1.InstanceReadyCondition, corev1.ConditionTrue, "", ""}})
 	})
 }
+
+
+// TestHandleLoadBalancerPoolMemberConfiguration_PendingFlag verifies that the controller requeues at
+// lbSettleRequeue when CreateVPCLoadBalancerPoolMember reports pending work, and does not requeue
+// when registration is complete.
+func TestHandleLoadBalancerPoolMemberConfiguration_PendingFlag(t *testing.T) {
+	var (
+		mockCtrl    *gomock.Controller
+		mockvpc     *mockVPC.MockVpc
+		mockpowervs *mock.MockPowerVS
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockvpc = mockVPC.NewMockVpc(mockCtrl)
+		mockpowervs = mock.NewMockPowerVS(mockCtrl)
+	}
+	teardown := func() { mockCtrl.Finish() }
+
+	newScope := func(mockclient client.Client) *scope.PowerVSMachineScope {
+		// reconcileNormal calls SetProviderID which reads options.ProviderIDFormat.
+		// The package-level var defaults to "" which causes SetProviderID to error,
+		// so we set it here. t.Cleanup resets it so it does not leak into other tests.
+		prev := options.ProviderIDFormat
+		options.ProviderIDFormat = "v2"
+		t.Cleanup(func() { options.ProviderIDFormat = prev })
+		secret := newSecret()
+		pvsmachine := newIBMPowerVSMachine()
+		machine := newMachine()
+		machine.Labels = map[string]string{"cluster.x-k8s.io/control-plane": "true"}
+		if mockclient == nil {
+			mockclient = fake.NewClientBuilder().WithObjects(secret, pvsmachine, machine).Build()
+		}
+		return &scope.PowerVSMachineScope{
+			Client: mockclient,
+			Cluster: &clusterv1.Cluster{
+				Status: clusterv1.ClusterStatus{
+					Initialization: clusterv1.ClusterInitializationStatus{
+						InfrastructureProvisioned: ptr.To(true),
+					},
+				},
+			},
+			Machine:           machine,
+			IBMPowerVSMachine: pvsmachine,
+			IBMPowerVSImage: &infrav1.IBMPowerVSImage{
+				Status: infrav1.IBMPowerVSImageStatus{Ready: true},
+			},
+			IBMVPCClient:     mockvpc,
+			IBMPowerVSClient: mockpowervs,
+			DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{"powervs.cluster.x-k8s.io/create-infra": "true"},
+				},
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					ServiceInstance: &infrav1.IBMPowerVSResourceReference{ID: ptr.To("serviceInstanceID")},
+					VPC:             &infrav1.VPCResourceReference{Region: ptr.To("us-south")},
+					LoadBalancers:   []infrav1.VPCLoadBalancerSpec{{Name: "capi-test-lb"}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					LoadBalancers: map[string]infrav1.VPCLoadBalancerStatus{
+						"capi-test-lb": {ID: ptr.To("capi-test-lb-id")},
+					},
+				},
+			},
+		}
+	}
+
+	instanceReferences := &models.PVMInstances{
+		PvmInstances: []*models.PVMInstanceReference{
+			{PvmInstanceID: ptr.To("capi-test-machine-id"), ServerName: ptr.To("capi-test-machine")},
+		},
+	}
+	instance := &models.PVMInstance{
+		PvmInstanceID: ptr.To("capi-test-machine-id"),
+		ServerName:    ptr.To("capi-test-machine"),
+		Status:        ptr.To("ACTIVE"),
+		Networks:      []*models.PVMInstanceNetwork{{IPAddress: "192.168.7.1"}},
+	}
+	activeLB := &vpcv1.LoadBalancer{
+		ID:                 core.StringPtr("capi-test-lb-id"),
+		ProvisioningStatus: core.StringPtr("active"),
+		Name:               core.StringPtr("capi-test-lb-name"),
+		Pools: []vpcv1.LoadBalancerPoolReference{
+			{ID: core.StringPtr("capi-test-pool-id"), Name: core.StringPtr("capi-test-pool-name")},
+		},
+	}
+
+	t.Run("pending=true → RequeueAfter equals lbSettleRequeue", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		reconciler := IBMPowerVSMachineReconciler{
+			Client:   fake.NewClientBuilder().Build(),
+			Recorder: record.NewFakeRecorder(10),
+		}
+		machineScope := newScope(nil)
+
+		busyMember := &vpcv1.LoadBalancerPoolMember{
+			ID:                 core.StringPtr("member-id"),
+			ProvisioningStatus: core.StringPtr("update_pending"),
+		}
+		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
+		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+		mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(activeLB, &core.DetailedResponse{}, nil)
+		mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
+		mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(busyMember, &core.DetailedResponse{}, nil)
+
+		result, err := reconciler.reconcileNormal(ctx, machineScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result.RequeueAfter).To(Equal(lbSettleRequeue))
+	})
+
+	t.Run("pending=false → empty Result (no requeue)", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		reconciler := IBMPowerVSMachineReconciler{
+			Client:   fake.NewClientBuilder().Build(),
+			Recorder: record.NewFakeRecorder(10),
+		}
+		machineScope := newScope(nil)
+
+		activeMember := &vpcv1.LoadBalancerPoolMember{
+			ID:                 core.StringPtr("member-id"),
+			ProvisioningStatus: core.StringPtr("active"),
+		}
+		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
+		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+		mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(activeLB, &core.DetailedResponse{}, nil)
+		mockvpc.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, &core.DetailedResponse{}, nil)
+		mockvpc.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(activeMember, &core.DetailedResponse{}, nil)
+
+		result, err := reconciler.reconcileNormal(ctx, machineScope)
+		g.Expect(err).To(BeNil())
+		g.Expect(result.RequeueAfter).To(BeZero())
+	})
+
+	t.Run("scope error → reconciler propagates error, does not swallow it", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		reconciler := IBMPowerVSMachineReconciler{
+			Client:   fake.NewClientBuilder().Build(),
+			Recorder: record.NewFakeRecorder(10),
+		}
+		machineScope := newScope(nil)
+
+		// An LB in delete_pending is a non-transient error from CreateVPCLoadBalancerPoolMember.
+		deletingLB := &vpcv1.LoadBalancer{
+			ID:                 core.StringPtr("capi-test-lb-id"),
+			Name:               core.StringPtr("capi-test-lb-name"),
+			ProvisioningStatus: core.StringPtr("delete_pending"),
+		}
+		mockpowervs.EXPECT().GetAllInstance().Return(instanceReferences, nil)
+		mockpowervs.EXPECT().GetInstance(gomock.AssignableToTypeOf("capi-test-machine-id")).Return(instance, nil)
+		mockvpc.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(deletingLB, &core.DetailedResponse{}, nil)
+
+		_, err := reconciler.reconcileNormal(ctx, machineScope)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("failed to configure load balancer"))
+	})
+}
+
 
 type conditionAssertion struct {
 	conditionType clusterv1beta1.ConditionType
