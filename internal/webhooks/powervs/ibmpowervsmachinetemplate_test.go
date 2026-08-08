@@ -49,7 +49,7 @@ func TestIBMPowerVSMachineTemplate_default(t *testing.T) {
 		},
 	}
 	g.Expect((&IBMPowerVSMachineTemplate{}).Default(context.Background(), powervsMachineTemplate)).ToNot(HaveOccurred())
-	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo("s922"))
+	g.Expect(powervsMachineTemplate.Spec.Template.Spec.SystemType).To(BeEquivalentTo("s1022"))
 	g.Expect(powervsMachineTemplate.Spec.Template.Spec.ProcessorType).To(BeEquivalentTo(infrav1.PowerVSProcessorTypeShared))
 }
 

@@ -37,5 +37,5 @@ spec:
         name: "${IBMPOWERVS_NETWORK_NAME}"
       memoryGiB: ${IBMPOWERVS_COMPUTE_MEMORY:=4}
       processors: ${IBMPOWERVS_COMPUTE_PROCESSORS:="0.25"}
-      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s1022"}
       processorType: ${IBMPOWERVS_COMPUTE_PROCTYPE:="Shared"}
