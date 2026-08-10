@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
@@ -407,7 +408,7 @@ func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 	// Case 1: If no load balancers are specified in the spec, it defaults to a single
 	// auto-managed public load balancer using the default service name.
 	if len(cluster.Spec.LoadBalancers) == 0 {
-		defaultName := fmt.Sprintf("%s-loadbalancer", cluster.Name)
+		defaultName := ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, "")
 
 		for _, lbStatus := range cluster.Status.LoadBalancers {
 			if lbStatus.Name == defaultName && lbStatus.Hostname != "" {
@@ -430,7 +431,7 @@ func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 
 			targetName = lb.Provision.Name
 			if targetName == "" {
-				targetName = fmt.Sprintf("%s-lb-%d", cluster.Name, i)
+				targetName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, strconv.Itoa(i))
 			}
 
 		case infrav1.SourceTypeReference:
@@ -662,7 +663,7 @@ func (s *ClusterScope) reconcileWorkspaceProvision(ctx context.Context) (bool, e
 	// 1. Determine the name to use
 	workspaceName := provision.Name
 	if workspaceName == "" {
-		workspaceName = fmt.Sprintf("%s-workspace", s.IBMPowerVSCluster.Name)
+		workspaceName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeWorkspace, "")
 	}
 
 	// 2. Idempotency check: Did we already create this, but crash before saving to Status?
@@ -862,7 +863,7 @@ func (s *ClusterScope) reconcileNetworkProvision(ctx context.Context) (bool, err
 	// 1. Determine the exact name to use for the DHCP server
 	dhcpName := dhcpSpec.Name
 	if dhcpName == "" {
-		dhcpName = s.IBMPowerVSCluster.Name
+		dhcpName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeDHCP, "")
 	}
 
 	// 2. Idempotency check: Did we already create this DHCP server, but crash before saving to Status?
@@ -1093,7 +1094,7 @@ func (s *ClusterScope) provisionTransitGateway(ctx context.Context) (*tgapiv1.Tr
 	// Determine TG Name
 	tgName := tgSpec.Name
 	if tgName == "" {
-		tgName = fmt.Sprintf("%s-transitgateway", s.IBMPowerVSCluster.Name)
+		tgName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeTransitGateway, "")
 	}
 
 	// Idempotency: Check if we already created it
@@ -1299,9 +1300,9 @@ func (s *ClusterScope) reconcileConnectionProvision(ctx context.Context, tg *tga
 	connName := provSpec.Name
 	if connName == "" {
 		if netType == vpcNetworkConnectionType {
-			connName = getTGVPCConnectionName(*tg.Name)
+			connName = tgVPCConnectionName(*tg.Name)
 		} else {
-			connName = getTGPowerVSConnectionName(*tg.Name)
+			connName = tgPowerVSConnectionName(*tg.Name)
 		}
 	}
 
@@ -1428,7 +1429,7 @@ func (s *ClusterScope) reconcileVPCProvision(ctx context.Context) (bool, error) 
 
 	vpcName := s.IBMPowerVSCluster.Spec.VPC.Provision.Name
 	if vpcName == "" {
-		vpcName = fmt.Sprintf("%s-vpc", s.IBMPowerVSCluster.Name)
+		vpcName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeVPC, "")
 	}
 
 	// Check if a VPC with the target name already exists (e.g. from a previous partial run)
@@ -1541,7 +1542,7 @@ func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 				Type: infrav1.SourceTypeProvision,
 				Zone: zone, // Set at top-level
 				Provision: infrav1.VPCSubnetProvision{
-					Name: fmt.Sprintf("%s-subnet-%s", cluster.Name, zone),
+					Name: ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeSubnet, zone),
 				},
 			})
 		}
@@ -1561,7 +1562,7 @@ func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 		} else {
 			subnetName = subnetSpec.Provision.Name
 			if subnetName == "" {
-				subnetName = fmt.Sprintf("%s-subnet-%d", cluster.Name, i)
+				subnetName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeSubnet, strconv.Itoa(i))
 			}
 		}
 
@@ -1738,7 +1739,7 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 		loadBalancers = append(loadBalancers, infrav1.LoadBalancerSource{
 			Type: infrav1.SourceTypeProvision,
 			Provision: infrav1.LoadBalancerProvision{
-				Name: fmt.Sprintf("%s-lb-public", s.IBMPowerVSCluster.Name),
+				Name: ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, ""),
 				Type: infrav1.LoadBalancerTypePublic,
 			},
 		})
@@ -1784,15 +1785,15 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 		provision := lbSource.Provision
 		lbName := provision.Name
 		if lbName == "" {
-			suffix := "public"
+			lbType := ResourceTypeLBPublic
 			if provision.Type == infrav1.LoadBalancerTypePrivate {
-				suffix = "private"
+				lbType = ResourceTypeLBPrivate
 			}
+			qualifier := ""
 			if i > 0 {
-				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, i)
-			} else {
-				lbName = fmt.Sprintf("%s-lb-%s", s.IBMPowerVSCluster.Name, suffix)
+				qualifier = strconv.Itoa(i)
 			}
+			lbName = ResourceName(s.IBMPowerVSCluster.Name, lbType, qualifier)
 		}
 
 		// Check if we already have the ID cached in status
@@ -2074,7 +2075,7 @@ func (s *ClusterScope) reconcileVPCSecurityGroupReference(_ context.Context, ref
 func (s *ClusterScope) reconcileVPCSecurityGroupProvision(ctx context.Context, prov infrav1.VPCSecurityGroupProvision) (*infrav1.VPCSecurityGroupStatus, error) {
 	targetName := prov.Name
 	if targetName == "" {
-		targetName = fmt.Sprintf("%s-sg", s.IBMPowerVSCluster.Name)
+		targetName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeSG, "")
 	}
 
 	// 1. Ensure the Security Group exists
@@ -2308,7 +2309,7 @@ func (s *ClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 		case infrav1.SourceTypeProvision:
 			name := cosSpec.Provision.Name
 			if name == "" {
-				name = fmt.Sprintf("%s-cos", cluster.Name)
+				name = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeCOS, "")
 			}
 			instance, err = s.reconcileCOSProvision(ctx, name)
 		default:
@@ -2331,7 +2332,7 @@ func (s *ClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 	if targetBucketName == "" {
 		targetBucketName = cosSpec.BucketName
 		if targetBucketName == "" {
-			targetBucketName = fmt.Sprintf("%s-cos-bucket", cluster.Name)
+			targetBucketName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeCOSBucket, "")
 		}
 	}
 
@@ -2557,7 +2558,7 @@ func (s *ClusterScope) DeleteVPCSecurityGroups(ctx context.Context) error {
 		if sgSource.Type == infrav1.SourceTypeProvision {
 			name := sgSource.Provision.Name
 			if name == "" {
-				name = fmt.Sprintf("%s-sg", s.IBMPowerVSCluster.Name)
+				name = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeSG, "")
 			}
 			managedSGs[name] = true
 		}
@@ -2614,7 +2615,7 @@ func (s *ClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, error) {
 			{
 				Type: infrav1.SourceTypeProvision,
 				Provision: infrav1.LoadBalancerProvision{
-					Name: fmt.Sprintf("%s-lb-public", s.IBMPowerVSCluster.Name),
+					Name: ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, ""),
 					Type: infrav1.LoadBalancerTypePublic,
 				},
 			},
@@ -2630,15 +2631,15 @@ func (s *ClusterScope) DeleteLoadBalancer(ctx context.Context) (bool, error) {
 		provision := lbSource.Provision
 		lbName := provision.Name
 		if lbName == "" {
-			suffix := "public"
+			lbType := ResourceTypeLBPublic
 			if provision.Type == infrav1.LoadBalancerTypePrivate {
-				suffix = "private"
+				lbType = ResourceTypeLBPrivate
 			}
+			qualifier := ""
 			if i > 0 {
-				lbName = fmt.Sprintf("%s-lb-%s-%d", s.IBMPowerVSCluster.Name, suffix, i)
-			} else {
-				lbName = fmt.Sprintf("%s-lb-%s", s.IBMPowerVSCluster.Name, suffix)
+				qualifier = strconv.Itoa(i)
 			}
+			lbName = ResourceName(s.IBMPowerVSCluster.Name, lbType, qualifier)
 		}
 
 		// Look up the cached ID from the status slice
@@ -2733,7 +2734,7 @@ func (s *ClusterScope) DeleteVPCSubnets(ctx context.Context) (bool, error) {
 			if subnetSpec.Type == infrav1.SourceTypeProvision {
 				name := subnetSpec.Provision.Name
 				if name == "" {
-					name = fmt.Sprintf("%s-subnet-%d", cluster.Name, i)
+					name = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeSubnet, strconv.Itoa(i))
 				}
 				managedSubnetNames[name] = true
 			}
@@ -3124,12 +3125,4 @@ func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 
 	log.Info("COS service instance delete command accepted successfully")
 	return nil
-}
-
-func getTGPowerVSConnectionName(tgName string) string { return fmt.Sprintf("%s-pvs-con", tgName) }
-
-func getTGVPCConnectionName(tgName string) string { return fmt.Sprintf("%s-vpc-con", tgName) }
-
-func dhcpNetworkName(dhcpServerName string) string {
-	return fmt.Sprintf("DHCPSERVER%s_Private", dhcpServerName)
 }
