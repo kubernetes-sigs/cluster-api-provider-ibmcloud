@@ -32,6 +32,7 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	webhookspowervs "sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/powervs"
 	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	powervssvc "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
@@ -61,6 +62,9 @@ func (s stubClientBuilder) GetResourceControllerClient(_ context.Context, _ powe
 	return nil, nil
 }
 func (s stubClientBuilder) GetResourceManagerClient(_ context.Context, _ powervsscope.ClientOptions) (resourcemanager.ResourceManager, error) {
+	return nil, nil
+}
+func (s stubClientBuilder) GetCOSClient(_ context.Context, _ powervsscope.COSClientOptions) (cos.Cos, error) {
 	return nil, nil
 }
 

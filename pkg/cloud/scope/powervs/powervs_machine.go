@@ -126,6 +126,7 @@ type MachineScope struct {
 	IBMPowerVSClient powervs.PowerVS
 	IBMVPCClient     vpc.Vpc
 	ResourceClient   resourcecontroller.ResourceController
+	COSClient        cos.Cos
 
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
@@ -236,6 +237,19 @@ func (s *MachineScope) initClients(ctx context.Context, params *MachineScopePara
 	s.IBMVPCClient, err = params.ClientBuilder.GetVPCClient(ctx, opts)
 	if err != nil {
 		return fmt.Errorf("failed to create IBM VPC client: %w", err)
+	}
+
+	// 6. Build COS Client — only when Ignition is configured.
+	if s.useIgnition() {
+		cosStatus := s.IBMPowerVSCluster.Status.COSInstance
+		s.COSClient, err = params.ClientBuilder.GetCOSClient(ctx, COSClientOptions{
+			InstanceID:      cosStatus.ID,
+			BucketRegion:    cosStatus.BucketRegion,
+			ServiceEndpoint: s.ServiceEndpoint,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create COS client: %w", err)
+		}
 	}
 
 	return nil
@@ -431,15 +445,20 @@ func (s *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 		return nil
 	}
 
-	cosClient, err := s.createCOSClient(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to create COS client: %w", err)
+	// 3. Ensure we have a COS client; build one lazily if the scope was
+	// constructed before the bucket region was populated in cluster status.
+	if s.COSClient == nil {
+		cosClient, err := s.createCOSClient(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create COS client for ignition deletion: %w", err)
+		}
+		s.COSClient = cosClient
 	}
 
-	// 3. Delete the exact key, avoiding the strings.Contains partial match bug!
+	// 4. Delete the exact key, avoiding the strings.Contains partial match bug!
 	key := s.bootstrapDataKey()
 
-	if _, err := cosClient.DeleteObject(&s3.DeleteObjectInput{
+	if _, err := s.COSClient.DeleteObject(&s3.DeleteObjectInput{
 		Bucket: ptr.To(bucket),
 		Key:    ptr.To(key),
 	}); err != nil {
@@ -682,7 +701,7 @@ func (s *MachineScope) SetHealth(health *models.PVMInstanceHealth) {
 }
 
 // SetAddresses will set the addresses for the machine.
-func (s *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMInstance) error {
+func (s *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMInstance) {
 	log := ctrl.LoggerFrom(ctx)
 
 	// 1. Set Base Addresses (DNS and Hostname)
@@ -694,14 +713,14 @@ func (s *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 	// 2. Check if the instance already has IPs assigned
 	if instanceIPs := extractIPsFromInstance(instance); len(instanceIPs) > 0 {
 		s.IBMPowerVSMachine.Status.Addresses = append(addresses, instanceIPs...)
-		return nil
+		return
 	}
 
 	// 3. Look for DHCP IP in our local cache
 	if ip, found := s.getIPFromCache(ctx, *instance.ServerName); found {
 		addresses = append(addresses, clusterv1.MachineAddress{Type: clusterv1.MachineInternalIP, Address: ip})
 		s.IBMPowerVSMachine.Status.Addresses = addresses
-		return nil
+		return
 	}
 
 	// 4. Query the IBM Cloud DHCP Server directly; DHCP errors are non-fatal —
@@ -710,7 +729,7 @@ func (s *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 	if err != nil {
 		log.Info("Could not retrieve IP from DHCP server, using base addresses only", "reason", err.Error())
 		s.IBMPowerVSMachine.Status.Addresses = addresses
-		return nil
+		return
 	}
 
 	// 5. Update Cache and Status on success
@@ -721,8 +740,6 @@ func (s *MachineScope) SetAddresses(ctx context.Context, instance *models.PVMIns
 	log.V(3).Info("Successfully resolved internal IP for VM", "IP", ip)
 	addresses = append(addresses, clusterv1.MachineAddress{Type: clusterv1.MachineInternalIP, Address: ip})
 	s.IBMPowerVSMachine.Status.Addresses = addresses
-
-	return nil
 }
 
 // SetRegion will set the region for the machine.
@@ -884,11 +901,6 @@ func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 		return "", fmt.Errorf("user data is empty")
 	}
 
-	cosClient, err := s.createCOSClient(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to create COS client: %w", err)
-	}
-
 	key := s.bootstrapDataKey()
 	log.V(3).Info("Bootstrap data key name", "key", key)
 
@@ -897,7 +909,7 @@ func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 		return "", fmt.Errorf("COS bucket name is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
 
-	if _, err := cosClient.PutObject(&s3.PutObjectInput{
+	if _, err := s.COSClient.PutObject(&s3.PutObjectInput{
 		Body:   aws.ReadSeekCloser(bytes.NewReader(data)),
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
@@ -905,7 +917,7 @@ func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 		return "", fmt.Errorf("failed to push object to COS bucket: %w", err)
 	}
 
-	presignedURL, err := cosClient.PresignedURL(bucket, key, presignExpiry)
+	presignedURL, err := s.COSClient.PresignedURL(bucket, key, presignExpiry)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate pre-signed URL for ignition data: %w", err)
 	}
