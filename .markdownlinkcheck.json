@@ -1,0 +1,25 @@
+{
+    "ignorePatterns": [
+        {
+            "comment": "Live docs site — new pages return 404 until the branch is merged and Netlify rebuilds",
+            "pattern": "^https://cluster-api-ibmcloud\\.sigs\\.k8s\\.io/reference/versions"
+        },
+        {
+            "pattern": "^http://localhost"
+        }
+    ],
+    "httpHeaders": [
+        {
+            "comment": "Workaround for GitHub Docs rate-limiting: https://github.com/tcort/markdown-link-check/issues/201",
+            "urls": ["https://docs.github.com/"],
+            "headers": {
+                "Accept-Encoding": "zstd, br, gzip, deflate"
+            }
+        }
+    ],
+    "timeout": "10s",
+    "retryOn429": true,
+    "retryCount": 5,
+    "fallbackRetryDelay": "30s",
+    "aliveStatusCodes": [200, 206]
+}
