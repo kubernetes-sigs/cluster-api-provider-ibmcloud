@@ -1,6 +1,6 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-# Copyright 2014 The Kubernetes Authors.
+# Copyright 2022 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,21 +18,9 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-KUBE_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
+# shellcheck source=../ensure/ensure-go.sh
+source "${REPO_ROOT}/hack/scripts/ensure/ensure-go.sh"
 
-boilerDir="${KUBE_ROOT}/hack/boilerplate"
-boiler="${boilerDir}/boilerplate.py"
-
-files_need_boilerplate=()
-while IFS=$'\n' read -r line; do
-  files_need_boilerplate+=( "$line" )
-done < <("${boiler}" "$@")
-
-# Run boilerplate check
-if [[ ${#files_need_boilerplate[@]} -gt 0 ]]; then
-  for file in "${files_need_boilerplate[@]}"; do
-    echo "Boilerplate header is wrong for: ${file}" >&2
-  done
-
-  exit 1
-fi
+cd "${REPO_ROOT}" && \
+	make test-cover

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2022 The Kubernetes Authors.
+# Copyright 2021 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-# shellcheck source=../hack/ensure-go.sh
-source "${REPO_ROOT}/hack/ensure-go.sh"
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
+cd "${REPO_ROOT}" || exit 1
 
-echo "**** Running basic checks by deploying the required CAPI providers on a kind cluster ***"
-cd "${REPO_ROOT}" && make test-sanity
+echo "*** Verifying Cluster API ***"
+make verify

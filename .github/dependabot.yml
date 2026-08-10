@@ -40,6 +40,6 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "docker"
-    directory: "/hack/ccm"
+    directory: "/hack/release/ccm"
     schedule:
       interval: "weekly"

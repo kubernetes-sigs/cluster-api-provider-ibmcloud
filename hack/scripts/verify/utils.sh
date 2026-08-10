@@ -1,6 +1,5 @@
-#!/bin/bash
-
-# Copyright 2021 The Kubernetes Authors.
+#!/usr/bin/env bash
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
+# get_root_path returns the root path of the project source tree
+get_root_path() {
+    git rev-parse --show-toplevel
+}
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-cd "${REPO_ROOT}" || exit 1
-
-echo "*** Verifying Cluster API ***"
-make verify
+# cd_root_path cds to the root path of the project source tree
+cd_root_path() {
+    cd "$(get_root_path)" || exit
+}

@@ -18,21 +18,21 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
+REPO_ROOT=$(dirname "${BASH_SOURCE[0]}")/../../..
 cd "${REPO_ROOT}" || exit 1
 GOPATH_BIN="$(go env GOPATH)/bin/"
 export PATH="${GOPATH_BIN}:${PATH}"
 RESOURCE_TYPE="${RESOURCE_TYPE:-"powervs-service"}"
 NO_OF_RETRY=${NO_OF_RETRY:-"3"}
 
-# shellcheck source=../hack/ensure-go.sh
-source "${REPO_ROOT}/hack/ensure-go.sh"
-# shellcheck source=../hack/ensure-kubectl.sh
-source "${REPO_ROOT}/hack/ensure-kubectl.sh"
-# shellcheck source=../hack/boskos.sh
-source "${REPO_ROOT}/hack/boskos.sh"
-# shellcheck source=../hack/kind-network-fix.sh
-source "${REPO_ROOT}/hack/kind-network-fix.sh"
+# shellcheck source=../ensure/ensure-go.sh
+source "${REPO_ROOT}/hack/scripts/ensure/ensure-go.sh"
+# shellcheck source=../ensure/ensure-kubectl.sh
+source "${REPO_ROOT}/hack/scripts/ensure/ensure-kubectl.sh"
+# shellcheck source=./boskos.sh
+source "${REPO_ROOT}/hack/scripts/ci/boskos.sh"
+# shellcheck source=../dev/kind-network-fix.sh
+source "${REPO_ROOT}/hack/scripts/dev/kind-network-fix.sh"
 
 ARTIFACTS="${ARTIFACTS:-${PWD}/_artifacts}"
 mkdir -p "${ARTIFACTS}/logs/"
