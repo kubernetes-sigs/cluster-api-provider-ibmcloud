@@ -14,7 +14,7 @@ require (
 	github.com/IBM/go-sdk-core/v5 v5.23.2
 	github.com/IBM/ibm-cos-sdk-go v1.15.0
 	github.com/IBM/networking-go-sdk v0.53.6
-	github.com/IBM/platform-services-go-sdk v0.101.0
+	github.com/IBM/platform-services-go-sdk v0.102.0
 	github.com/IBM/vpc-go-sdk v0.76.2
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.26.0
