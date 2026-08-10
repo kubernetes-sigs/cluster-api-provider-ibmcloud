@@ -26,7 +26,7 @@ If Go version is bumped, update it in the following files
 - [ ] [go.mod](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/go.mod)
 - [ ] [hack/tools/go.mod](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/tools/go.mod)
 - [ ] [ .golangci.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/.golangci.yml)
-- [ ] [hack/ensure-go.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/ensure-go.sh)
+- [ ] [hack/scripts/ensure/ensure-go.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ensure/ensure-go.sh)
 - [ ] [netlify.toml](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/netlify.toml)
 - [ ] [Makefile](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/Makefile#L66)
 - [ ] [hack/release/ccm/Makefile](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/release/ccm/Makefile#L16)

@@ -49,7 +49,7 @@
 #### Other Tools
 | Package | Used by | Source |
 | --- | ----------- | ------ |
-| kind | [hack/kind-install.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/kind-install.sh) | [kind](https://github.com/kubernetes-sigs/kind) |
+| kind | [hack/scripts/dev/kind-install.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/dev/kind-install.sh) | [kind](https://github.com/kubernetes-sigs/kind) |
 | kubebuilder | [Makefile](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/Makefile) | [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) |
 
 [go.mod1]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/go.mod
