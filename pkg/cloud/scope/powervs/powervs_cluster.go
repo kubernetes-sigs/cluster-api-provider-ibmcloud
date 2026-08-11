@@ -2150,8 +2150,12 @@ func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []
 	for _, rule := range rules {
 		// Work on a copy with normalized prototypes so the deprecated 'all' protocol is
 		// translated without mutating the cluster spec.
-		rule.Source = normalizedVPCSecurityGroupRulePrototype(rule.Source)
-		rule.Destination = normalizedVPCSecurityGroupRulePrototype(rule.Destination)
+		if src := normalizedVPCSecurityGroupRulePrototype(&rule.Source); src != nil {
+			rule.Source = *src
+		}
+		if dst := normalizedVPCSecurityGroupRulePrototype(&rule.Destination); dst != nil {
+			rule.Destination = *dst
+		}
 
 		direction := string(rule.Direction)
 

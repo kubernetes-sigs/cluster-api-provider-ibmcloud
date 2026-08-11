@@ -3560,7 +3560,7 @@ func TestCreateVPCSecurityGroupRule(t *testing.T) {
 			IBMVPCClient:      mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
+		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleProtocolIcmptcpudp{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
 		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "outbound", protocol, portMin, portMax, remote)
 		g.Expect(ruleID).To(Equal("ruleID"))
 		g.Expect(err).To(BeNil())
@@ -3612,7 +3612,7 @@ func TestCreateVPCSecurityGroupRule(t *testing.T) {
 			IBMVPCClient:      mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 		}
-		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
+		mockVPC.EXPECT().CreateSecurityGroupRule(gomock.Any()).Return(&vpcv1.SecurityGroupRuleProtocolIcmptcpudp{Direction: ptr.To("outbound"), ID: ptr.To("ruleID")}, nil, nil)
 		ruleID, err := clusterScope.createVPCSecurityGroupRule(ctx, securityGroupID, "outbound", protocol, portMin, portMax, remote)
 		g.Expect(ruleID).To(Equal("ruleID"))
 		g.Expect(err).To(BeNil())
