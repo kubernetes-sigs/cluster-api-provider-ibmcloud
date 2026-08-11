@@ -44,7 +44,7 @@ spec:
         name: "${IBMPOWERVS_NETWORK_NAME}"
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s1022"}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
@@ -63,5 +63,5 @@ spec:
         name: "${IBMPOWERVS_NETWORK_NAME}"
       memoryGiB: ${IBMPOWERVS_CONTROL_PLANE_MEMORY:=4}
       processors: ${IBMPOWERVS_CONTROL_PLANE_PROCESSORS:="0.25"}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s1022"}
       processorType: ${IBMPOWERVS_CONTROL_PLANE_PROCTYPE:="Shared"}

@@ -290,7 +290,7 @@ spec:
       serviceInstance:
         id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s1022"}
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSMachineTemplate
@@ -309,7 +309,7 @@ spec:
       serviceInstance:
         id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s1022"}
 ---
 apiVersion: addons.cluster.x-k8s.io/v1beta2
 kind: ClusterResourceSet
