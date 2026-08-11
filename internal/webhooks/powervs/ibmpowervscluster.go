@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
@@ -44,6 +45,10 @@ var (
 
 const (
 	infrastructureGroup = "infrastructure.cluster.x-k8s.io"
+
+	// lbResourceNameMaxLen is the IBM Cloud resource name character limit.
+	// Mirrors resourceNameMaxLen in pkg/cloud/scope/powervs/resource_name.go.
+	lbResourceNameMaxLen = 63
 )
 
 //+kubebuilder:webhook:verbs=create;update,path=/mutate-infrastructure-cluster-x-k8s-io-v1beta3-ibmpowervscluster,mutating=true,failurePolicy=fail,groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,versions=v1beta3,name=mibmpowervscluster.kb.io,sideEffects=None,admissionReviewVersions=v1
@@ -81,18 +86,10 @@ func (r *IBMPowerVSCluster) ValidateDelete(_ context.Context, _ *infrav1.IBMPowe
 
 func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1.IBMPowerVSCluster) (admission.Warnings, error) {
 	var allErrs field.ErrorList
-	if err := validateIBMPowerVSClusterNetwork(newCluster); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := validateIBMPowerVSClusterCreateInfraPrereq(newCluster); err != nil {
-		allErrs = append(allErrs, err...)
-	}
-	// Need not validate for create operation
+	allErrs = append(allErrs, validateIBMPowerVSClusterCreateInfraPrereq(newCluster)...)
+	// validateAdditionalListenerSelector is only meaningful on update, not create.
 	if oldCluster != nil {
-		if err := validateAdditionalListenerSelector(newCluster, oldCluster); err != nil {
-			allErrs = append(allErrs, err...)
-		}
+		allErrs = append(allErrs, validateAdditionalListenerSelector(newCluster, oldCluster)...)
 	}
 
 	if len(allErrs) == 0 {
@@ -104,35 +101,8 @@ func validateIBMPowerVSCluster(oldCluster, newCluster *infrav1.IBMPowerVSCluster
 		newCluster.Name, allErrs)
 }
 
-func validateIBMPowerVSClusterNetwork(cluster *infrav1.IBMPowerVSCluster) *field.Error {
-	// Validate NetworkSource based on Type
-	switch cluster.Spec.Network.Type {
-	case infrav1.SourceTypeReference:
-		// Validate that Reference has either ID or Name
-		if cluster.Spec.Network.Reference.ID == "" && cluster.Spec.Network.Reference.Name == "" {
-			return field.Invalid(field.NewPath("spec.network.reference"), cluster.Spec.Network.Reference, "either ID or Name must be provided when type is Reference")
-		}
-		// Ensure Provision is not set when Type is Reference
-		if cluster.Spec.Network.Provision.DHCPServer.Name != "" || cluster.Spec.Network.Provision.DHCPServer.CIDR != "" {
-			return field.Invalid(field.NewPath("spec.network.provision"), cluster.Spec.Network.Provision, "provision must not be set when type is Reference")
-		}
-	case infrav1.SourceTypeProvision:
-		// Ensure Reference is not set when Type is Provision
-		if cluster.Spec.Network.Reference.ID != "" || cluster.Spec.Network.Reference.Name != "" {
-			return field.Invalid(field.NewPath("spec.network.reference"), cluster.Spec.Network.Reference, "reference must not be set when type is Provision")
-		}
-	default:
-		// Catch empty strings or invalid enum values and explicitly list what is allowed
-		validTypes := []string{string(infrav1.SourceTypeReference), string(infrav1.SourceTypeProvision)}
-		return field.NotSupported(field.NewPath("spec.network.type"), cluster.Spec.Network.Type, validTypes)
-	}
-	return nil
-}
-
 func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
-	if err := validateIBMPowerVSClusterLoadBalancerNames(cluster); err != nil {
-		allErrs = append(allErrs, err...)
-	}
+	allErrs = append(allErrs, validateIBMPowerVSClusterLoadBalancerNames(cluster)...)
 
 	if len(cluster.Spec.LoadBalancers) == 0 {
 		return allErrs
@@ -144,7 +114,7 @@ func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) 
 		}
 	}
 
-	return append(allErrs, field.Invalid(field.NewPath("spec.LoadBalancers"), cluster.Spec.LoadBalancers, "Expect atleast one of the load balancer to be public"))
+	return append(allErrs, field.Invalid(field.NewPath("spec").Child("loadBalancers"), cluster.Spec.LoadBalancers, "at least one load balancer must be public"))
 }
 
 func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
@@ -162,7 +132,7 @@ func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1.IBMPowerVSClust
 		}
 
 		if found[name] {
-			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", fmt.Sprintf("loadbalancers[%d]", i)), map[string]interface{}{"Name": name}))
+			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", "loadBalancers").Index(i).Child("name"), name))
 			continue
 		}
 		found[name] = true
@@ -185,7 +155,7 @@ func validateIBMPowerVSClusterVPCSubnetNames(cluster *infrav1.IBMPowerVSCluster)
 			continue
 		}
 		if found[name] {
-			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", fmt.Sprintf("vpcSubnets[%d]", i)), map[string]interface{}{"Name": name}))
+			allErrs = append(allErrs, field.Duplicate(field.NewPath("spec", "subnets").Index(i).Child("name"), name))
 			continue
 		}
 		found[name] = true
@@ -205,62 +175,33 @@ func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster)
 	// GlobalRouting is now in Provision field and is a string enum, not a bool pointer
 	if cluster.Spec.TransitGateway.Type == infrav1.SourceTypeProvision {
 		if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, &cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.Provision.GlobalRouting == infrav1.TransitGatewayRoutingLocal && globalRouting != nil && *globalRouting {
-			return field.Invalid(field.NewPath("spec.transitGateway.provision.globalRouting"), cluster.Spec.TransitGateway.Provision.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
+			return field.Invalid(field.NewPath("spec", "transitGateway", "provision", "globalRouting"), cluster.Spec.TransitGateway.Provision.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
 		}
 	}
 	return nil
 }
 
+// validateIBMPowerVSClusterCreateInfraPrereq validates the prerequisites required when
+// Topology is LoadBalancer, which is the v1beta3 signal that infrastructure should be provisioned.
 func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
-	annotations := cluster.GetAnnotations()
-	if len(annotations) == 0 {
+	if cluster.Spec.Topology != infrav1.PowerVSLoadBalancerTopology {
 		return nil
 	}
 
-	value, found := annotations[infrav1.CreateInfrastructureAnnotation]
-	if !found {
-		return nil
-	}
-
-	createInfra, err := strconv.ParseBool(value)
-	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("annotations"), cluster.Annotations, "value of powervs.cluster.x-k8s.io/create-infra should be boolean"))
-	}
-
-	if !createInfra {
-		return nil
-	}
-
-	if cluster.Spec.Zone == "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, "value of zone is empty"))
-	}
-
+	// CRD CEL rules enforce zone presence and resourceGroup validity.
+	// ValidateZone additionally checks the value against the known PowerVS zone list, which CEL cannot express.
 	if cluster.Spec.Zone != "" && !regionUtil.ValidateZone(cluster.Spec.Zone) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.zone"), cluster.Spec.Zone, fmt.Sprintf("zone '%s' is not supported", cluster.Spec.Zone)))
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "zone"), cluster.Spec.Zone, fmt.Sprintf("zone %q is not supported", cluster.Spec.Zone)))
 	}
 
-	if cluster.Spec.VPC.Type == "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc"), cluster.Spec.VPC, "value of VPC is empty"))
-	}
-
-	if cluster.Spec.VPC.Region == "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, "value of VPC region is empty"))
-	}
-
+	// CRD field markers enforce VPC type and region presence.
+	// ValidateVPCRegion additionally checks the value against the known IBM Cloud VPC region list, which CEL cannot express.
 	if cluster.Spec.VPC.Region != "" && !regionUtil.ValidateVPCRegion(cluster.Spec.VPC.Region) {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.vpc.region"), cluster.Spec.VPC.Region, fmt.Sprintf("vpc region '%s' is not supported", cluster.Spec.VPC.Region)))
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec", "vpc", "region"), cluster.Spec.VPC.Region, fmt.Sprintf("vpc region %q is not supported", cluster.Spec.VPC.Region)))
 	}
 
-	if cluster.Spec.ResourceGroup.Type == "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec.resourceGroup"), cluster.Spec.ResourceGroup, "value of resource group is empty"))
-	}
-	if err := validateIBMPowerVSClusterVPCSubnetNames(cluster); err != nil {
-		allErrs = append(allErrs, err...)
-	}
-
-	if err := validateIBMPowerVSClusterLoadBalancers(cluster); err != nil {
-		allErrs = append(allErrs, err...)
-	}
+	allErrs = append(allErrs, validateIBMPowerVSClusterVPCSubnetNames(cluster)...)
+	allErrs = append(allErrs, validateIBMPowerVSClusterLoadBalancers(cluster)...)
 
 	if err := validateIBMPowerVSClusterTransitGateway(cluster); err != nil {
 		allErrs = append(allErrs, err)
@@ -270,28 +211,73 @@ func validateIBMPowerVSClusterCreateInfraPrereq(cluster *infrav1.IBMPowerVSClust
 }
 
 func validateAdditionalListenerSelector(newCluster, oldCluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
-	newLoadBalancerListeners := map[string]metav1.LabelSelector{}
-	for _, loadbalancer := range newCluster.Spec.LoadBalancers {
-		for _, additionalListener := range loadbalancer.Provision.AdditionalListeners {
-			key := fmt.Sprintf("%d-%s", additionalListener.Port, additionalListener.Protocol)
-			if additionalListener.Protocol == "" {
-				key = fmt.Sprintf("%d-<default>", additionalListener.Port)
-			}
-			newLoadBalancerListeners[key] = additionalListener.Selector
+	// Build a map keyed by (lbName, port, protocol) so that listeners from
+	// different load balancers with the same port are not confused with each other.
+	// For nameless provision LBs the name is derived via resolvedLBName, which
+	// mirrors the controller's own naming logic, ensuring the key is stable and unique.
+	type listenerKey struct {
+		lbName   string
+		port     int64
+		protocol infrav1.LoadBalancerListenerProtocol
+	}
+	newListeners := map[listenerKey]metav1.LabelSelector{}
+	for i, lb := range newCluster.Spec.LoadBalancers {
+		if lb.Type != infrav1.SourceTypeProvision {
+			continue
+		}
+		lbName := resolvedLBName(newCluster.Name, lb, i)
+		for _, al := range lb.Provision.AdditionalListeners {
+			newListeners[listenerKey{lbName: lbName, port: al.Port, protocol: al.Protocol}] = al.Selector
 		}
 	}
-	for _, loadbalancer := range oldCluster.Spec.LoadBalancers {
-		for _, additionalListener := range loadbalancer.Provision.AdditionalListeners {
-			key := fmt.Sprintf("%d-%s", additionalListener.Port, additionalListener.Protocol)
-			if additionalListener.Protocol == "" {
-				key = fmt.Sprintf("%d-<default>", additionalListener.Port)
-			}
-			if selector, ok := newLoadBalancerListeners[key]; ok && !reflect.DeepEqual(selector, additionalListener.Selector) {
+	for i, lb := range oldCluster.Spec.LoadBalancers {
+		if lb.Type != infrav1.SourceTypeProvision {
+			continue
+		}
+		lbName := resolvedLBName(oldCluster.Name, lb, i)
+		for _, al := range lb.Provision.AdditionalListeners {
+			key := listenerKey{lbName: lbName, port: al.Port, protocol: al.Protocol}
+			if selector, ok := newListeners[key]; ok && !reflect.DeepEqual(selector, al.Selector) {
 				allErrs = append(allErrs, field.Forbidden(
-					field.NewPath("spec", "loadBalancers", "additionalListeners", "selector"),
-					fmt.Sprintf("Selector is immutable for port %d", additionalListener.Port)))
+					field.NewPath("spec", "loadBalancers").Index(i),
+					fmt.Sprintf("selector is immutable for load balancer %q port %d", lbName, al.Port)))
 			}
 		}
 	}
 	return allErrs
+}
+
+// lbResourceName builds a deterministic IBM Cloud resource name.
+// It mirrors ResourceName in pkg/cloud/scope/powervs/resource_name.go; we
+// cannot import that package directly because its test suite imports this
+// webhook package, which would create an import cycle.
+func lbResourceName(clusterName, suffix, qualifier string) string {
+	if qualifier != "" {
+		suffix = suffix + "-" + qualifier
+	}
+	maxBase := lbResourceNameMaxLen - len(suffix) - 1
+	base := clusterName
+	if len(base) > maxBase {
+		base = strings.TrimRight(base[:maxBase], "-")
+	}
+	return base + "-" + suffix
+}
+
+// resolvedLBName returns the effective load balancer name for a provision entry,
+// mirroring the same logic the controller uses in ReconcileLoadBalancers:
+// if the spec name is empty, a deterministic name is derived from the cluster
+// name, the LB type (public/private), and the list index.
+func resolvedLBName(clusterName string, lb infrav1.LoadBalancerSource, i int) string {
+	if lb.Provision.Name != "" {
+		return lb.Provision.Name
+	}
+	suffix := "loadbalancer-public"
+	if lb.Provision.Type == infrav1.LoadBalancerTypePrivate {
+		suffix = "loadbalancer-private"
+	}
+	qualifier := ""
+	if i > 0 {
+		qualifier = strconv.Itoa(i)
+	}
+	return lbResourceName(clusterName, suffix, qualifier)
 }

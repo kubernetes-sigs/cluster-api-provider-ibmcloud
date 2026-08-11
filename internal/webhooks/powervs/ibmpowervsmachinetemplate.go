@@ -70,68 +70,25 @@ func (r *IBMPowerVSMachineTemplate) ValidateDelete(_ context.Context, _ *infrav1
 }
 
 func validateIBMPowerVSMachineTemplate(machineTemplate *infrav1.IBMPowerVSMachineTemplate) (admission.Warnings, error) {
-	var allErrs field.ErrorList
-	if err := validateIBMPowerVSMachineTemplateNetwork(machineTemplate); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if err := validateIBMPowerVSMachineTemplateImage(machineTemplate); err != nil {
-		allErrs = append(allErrs, err)
-	}
-	if err := validateIBMPowerVSMachineTemplateMemory(machineTemplate); err != nil {
-		allErrs = append(allErrs, err)
-	}
+	// Network: CRD CEL on ResourceIdentifier enforces exactly-one of ID/Name.
+	// Image:   CRD CEL on IBMPowerVSMachineImage enforces type↔reference/import mutual exclusion;
+	//          Enum marker rejects invalid type; MinLength=1 on ImageReference.Name rejects empty import name.
+	// Memory:  +kubebuilder:validation:Minimum=2 on MemoryGiB enforces the minimum at the CRD level.
+	// Processors: intstr.IntOrString has no CRD-expressible minimum, so the webhook is the right layer.
 	if err := validateIBMPowerVSMachineTemplateProcessors(machineTemplate); err != nil {
-		allErrs = append(allErrs, err)
+		return nil, apierrors.NewInvalid(
+			schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSMachineTemplate"},
+			machineTemplate.Name, field.ErrorList{err})
 	}
-	if len(allErrs) == 0 {
-		return nil, nil
-	}
-
-	return nil, apierrors.NewInvalid(
-		schema.GroupKind{Group: infrastructureGroup, Kind: "IBMPowerVSMachineTemplate"},
-		machineTemplate.Name, allErrs)
-}
-
-func validateIBMPowerVSMachineTemplateNetwork(machineTemplate *infrav1.IBMPowerVSMachineTemplate) *field.Error {
-	if res, err := validateIBMPowerVSNetworkReference(machineTemplate.Spec.Template.Spec.Network); !res {
-		return err
-	}
-	return nil
-}
-
-func validateIBMPowerVSMachineTemplateImage(machineTemplate *infrav1.IBMPowerVSMachineTemplate) *field.Error {
-	img := machineTemplate.Spec.Template.Spec.Image
-	if img.Type == "" {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "image", "type"), img.Type, "Image type must be specified")
-	}
-	switch img.Type {
-	case infrav1.ImageSourceTypeReference:
-		if img.Reference.ID == "" && img.Reference.Name == "" {
-			return field.Invalid(field.NewPath("spec", "template", "spec", "image", "reference"), img.Reference, "Image reference must specify at least one of ID or Name")
-		}
-		if img.Reference.ID != "" && img.Reference.Name != "" {
-			return field.Invalid(field.NewPath("spec", "template", "spec", "image", "reference"), img.Reference, "Only one of Image reference - ID or Name may be specified")
-		}
-	case infrav1.ImageSourceTypeImport:
-		if img.Import.Name == "" {
-			return field.Invalid(field.NewPath("spec", "template", "spec", "image", "import"), img.Import, "Image import must specify a name")
-		}
-	default:
-		return field.Invalid(field.NewPath("spec", "template", "spec", "image", "type"), img.Type, "Image type must be Reference or Import")
-	}
-	return nil
-}
-
-func validateIBMPowerVSMachineTemplateMemory(machineTemplate *infrav1.IBMPowerVSMachineTemplate) *field.Error {
-	if res := validateIBMPowerVSMemoryValues(machineTemplate.Spec.Template.Spec.MemoryGiB); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "memoryGiB"), machineTemplate.Spec.Template.Spec.MemoryGiB, "Invalid Memory value - must be a positive integer no lesser than 2")
-	}
-	return nil
+	return nil, nil
 }
 
 func validateIBMPowerVSMachineTemplateProcessors(machineTemplate *infrav1.IBMPowerVSMachineTemplate) *field.Error {
-	if res := validateIBMPowerVSProcessorValues(machineTemplate.Spec.Template.Spec.Processors); !res {
-		return field.Invalid(field.NewPath("spec", "template", "spec", "processors"), machineTemplate.Spec.Template.Spec.Processors, "Invalid Processors value - must be non-empty and positive floating-point number no lesser than 0.25")
+	spec := machineTemplate.Spec.Template.Spec
+	err := validateIBMPowerVSProcessorValues(spec.ProcessorType, spec.Processors)
+	if err == nil {
+		return nil
 	}
-	return nil
+	// Re-point the field path to the template's spec location.
+	return field.Invalid(field.NewPath("spec", "template", "spec", "processors"), spec.Processors, err.Detail)
 }

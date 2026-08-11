@@ -33,49 +33,51 @@ func defaultIBMPowerVSMachineSpec(spec *infrav1.IBMPowerVSMachineSpec) {
 	if spec.MemoryGiB == 0 {
 		spec.MemoryGiB = 2
 	}
-	if spec.Processors.StrVal == "" && spec.Processors.IntVal == 0 {
-		spec.Processors = intstr.FromString("0.25")
-	}
 	if spec.SystemType == "" {
 		spec.SystemType = defaultSystemType
 	}
 	if spec.ProcessorType == "" {
 		spec.ProcessorType = infrav1.PowerVSProcessorTypeShared
 	}
+	// Default Processors based on ProcessorType: Dedicated requires a whole number (min 1),
+	// Shared/Capped accept fractional values (min 0.25).
+	if spec.Processors.StrVal == "" && spec.Processors.IntVal == 0 {
+		if spec.ProcessorType == infrav1.PowerVSProcessorTypeDedicated {
+			spec.Processors = intstr.FromInt32(1)
+		} else {
+			spec.Processors = intstr.FromString("0.25")
+		}
+	}
 }
 
-func validateIBMPowerVSNetworkReference(res infrav1.ResourceIdentifier) (bool, *field.Error) {
-	count := 0
-	if res.ID != "" {
-		count++
-	}
-	if res.Name != "" {
-		count++
-	}
-	if count > 1 {
-		return false, field.Invalid(field.NewPath("spec", "Network"), res, "Only one of Network - ID or Name can be specified")
-	}
-	return true, nil
-}
+// validateIBMPowerVSProcessorValues validates the processors value against the
+// rules that apply to the given ProcessorType:
+//   - Dedicated: must be a whole number >= 1
+//   - Shared / Capped: must be a number >= 0.25
+func validateIBMPowerVSProcessorValues(procType infrav1.PowerVSProcessorType, resValue intstr.IntOrString) *field.Error {
+	fldPath := field.NewPath("spec", "processors")
 
-func validateIBMPowerVSMemoryValues(resValue int32) bool {
-	if val := float64(resValue); val < 2 {
-		return false
-	}
-	return true
-}
-
-func validateIBMPowerVSProcessorValues(resValue intstr.IntOrString) bool {
+	var val float64
 	switch resValue.Type {
 	case intstr.Int:
-		if val := float64(resValue.IntVal); val < 0.25 {
-			return false
-		}
+		val = float64(resValue.IntVal)
 	case intstr.String:
-		if val, err := strconv.ParseFloat(resValue.StrVal, 64); err != nil || val < 0.25 {
-			return false
+		var err error
+		if val, err = strconv.ParseFloat(resValue.StrVal, 64); err != nil {
+			return field.Invalid(fldPath, resValue, "processors must be a valid number")
 		}
 	}
 
-	return true
+	if procType == infrav1.PowerVSProcessorTypeDedicated {
+		if val < 1 {
+			return field.Invalid(fldPath, resValue, "processors must be at least 1 when processorType is Dedicated")
+		}
+		if val != float64(int64(val)) {
+			return field.Invalid(fldPath, resValue, "processors cannot be fractional when processorType is Dedicated")
+		}
+	} else if val < 0.25 {
+		return field.Invalid(fldPath, resValue, "processors must be at least 0.25")
+	}
+
+	return nil
 }
