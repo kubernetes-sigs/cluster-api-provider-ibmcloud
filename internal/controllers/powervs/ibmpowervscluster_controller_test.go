@@ -17,6 +17,7 @@ limitations under the License.
 package powervs
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -34,14 +35,18 @@ import (
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -2019,6 +2024,468 @@ func TestReconcilePowerVSResources(t *testing.T) {
 			g.Expect(clusterScope.IBMPowerVSCluster.GetV1Beta1Conditions()).To(BeComparableTo(tc.conditions, ignoreLastTransitionTime))
 		})
 	}
+}
+
+// primePowerVSClusterReconcile drains the first-reconcile EnsurePausedCondition
+// requeue so that subsequent reconcile calls proceed past that check.
+func primePowerVSClusterReconcile(g *WithT, ns, name string) {
+	r := &IBMPowerVSClusterReconciler{
+		Client:        testEnv.Client,
+		Recorder:      record.NewFakeRecorder(4),
+		ClientBuilder: stubClientBuilder{},
+	}
+	req := ctrl.Request{NamespacedName: client.ObjectKey{Namespace: ns, Name: name}}
+	_, _ = r.Reconcile(ctx, req)
+	g.Eventually(func() bool {
+		got := &infrav1.IBMPowerVSCluster{}
+		if err := testEnv.Get(ctx, req.NamespacedName, got); err != nil {
+			return false
+		}
+		return conditions.Get(got, clusterv1.PausedCondition) != nil
+	}, 10*time.Second).Should(BeTrue())
+}
+
+// TestIBMPowerVSClusterReconciler_patchHelper tests the code path past
+// EnsurePausedCondition in Reconcile — specifically the patchHelper creation and
+// patchIBMPowerVSCluster defer execution.
+func TestIBMPowerVSClusterReconciler_patchHelper(t *testing.T) {
+	t.Run("Successfully patches IBMPowerVSCluster with VirtualIP topology", func(t *testing.T) {
+		g := NewWithT(t)
+
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		g.Expect(err).To(BeNil())
+
+		powerVSCluster := &infrav1.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				GenerateName: "pvs-patch-test-",
+				Finalizers:   []string{infrav1.IBMPowerVSClusterFinalizer},
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: clusterv1.GroupVersion.String(),
+					Kind:       "Cluster",
+					Name:       "capi-patch-test",
+					UID:        "patch-uid",
+				}},
+			},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
+				Workspace: infrav1.WorkspaceSource{
+					Type:      infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{ID: "ws-id"},
+				},
+				Network: infrav1.NetworkSource{
+					Type:      infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{ID: "net-id"},
+				},
+			},
+		}
+
+		ownerCluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "capi-patch-test",
+				Namespace: ns.Name,
+				UID:       "patch-uid",
+			},
+		}
+
+		g.Expect(testEnv.Create(ctx, ownerCluster)).To(Succeed())
+		defer func(obj ...client.Object) {
+			g.Expect(testEnv.Cleanup(ctx, obj...)).To(Succeed())
+		}(ownerCluster)
+
+		createCluster(g, powerVSCluster, ns.Name)
+		defer cleanupCluster(g, powerVSCluster, ns)
+
+		// Prime: drain the first-reconcile EnsurePausedCondition requeue.
+		primePowerVSClusterReconcile(g, ns.Name, powerVSCluster.Name)
+
+		r := &IBMPowerVSClusterReconciler{
+			Client:        testEnv.Client,
+			Recorder:      record.NewFakeRecorder(4),
+			ClientBuilder: stubClientBuilder{},
+		}
+		_, err = r.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{Namespace: powerVSCluster.Namespace, Name: powerVSCluster.Name},
+		})
+		g.Expect(err).To(BeNil())
+
+		// Verify the cluster was patched (Provisioned should be set to true).
+		patchedCluster := &infrav1.IBMPowerVSCluster{}
+		g.Eventually(func(gomega Gomega) {
+			gomega.Expect(testEnv.Client.Get(ctx, client.ObjectKey{
+				Namespace: powerVSCluster.Namespace,
+				Name:      powerVSCluster.Name,
+			}, patchedCluster)).To(Succeed())
+			gomega.Expect(ptr.Deref(patchedCluster.Status.Initialization.Provisioned, false)).To(BeTrue())
+		}, 10*time.Second).Should(Succeed())
+	})
+}
+
+// TestIBMPowerVSClusterReconciler_Reconcile_fakeClient covers branches in
+// Reconcile() that require fake/interceptor clients: non-NotFound Get error and
+// paused cluster path.
+func TestIBMPowerVSClusterReconciler_Reconcile_fakeClient(t *testing.T) {
+	t.Run("returns error when Get returns non-NotFound error", func(t *testing.T) {
+		g := NewWithT(t)
+		errClient := fake.NewClientBuilder().
+			WithScheme(scheme.Scheme).
+			WithInterceptorFuncs(interceptor.Funcs{
+				Get: func(_ context.Context, _ client.WithWatch, _ client.ObjectKey, _ client.Object, _ ...client.GetOption) error {
+					return apierrors.NewInternalError(errors.New("etcd unavailable"))
+				},
+			}).
+			Build()
+		r := &IBMPowerVSClusterReconciler{Client: errClient, Recorder: record.NewFakeRecorder(4)}
+		_, err := r.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{Namespace: "default", Name: "test-cluster"},
+		})
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("failed to get IBMPowerVSCluster"))
+	})
+
+	t.Run("returns nil when cluster is paused", func(t *testing.T) {
+		g := NewWithT(t)
+		ownerCluster := &clusterv1.Cluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "paused-cluster",
+				Namespace: "default",
+				UID:       "cluster-uid",
+			},
+			Spec: clusterv1.ClusterSpec{
+				Paused: ptr.To(true),
+			},
+		}
+		pvsClu := &infrav1.IBMPowerVSCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:       "test-pvs-cluster",
+				Namespace:  "default",
+				Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: clusterv1.GroupVersion.String(),
+					Kind:       "Cluster",
+					Name:       "paused-cluster",
+					UID:        "cluster-uid",
+				}},
+			},
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				Topology: infrav1.PowerVSVirtualIPTopology,
+				Workspace: infrav1.WorkspaceSource{
+					Type:      infrav1.SourceTypeReference,
+					Reference: infrav1.ResourceIdentifier{ID: "ws-id"},
+				},
+			},
+		}
+		fakeClient := fake.NewClientBuilder().
+			WithScheme(scheme.Scheme).
+			WithObjects(pvsClu, ownerCluster).
+			WithStatusSubresource(pvsClu).
+			Build()
+		r := &IBMPowerVSClusterReconciler{
+			Client:        fakeClient,
+			ClientBuilder: stubClientBuilder{},
+			Recorder:      record.NewFakeRecorder(4),
+		}
+		_, err := r.Reconcile(ctx, ctrl.Request{
+			NamespacedName: client.ObjectKey{Namespace: "default", Name: "test-pvs-cluster"},
+		})
+		g.Expect(err).ToNot(HaveOccurred())
+	})
+}
+
+// TestIBMPowerVSClusterReconciler_reconcile_extraBranches covers the remaining
+// uncovered branches in reconcile(): unknown topology and requeue paths that
+// require all goroutine + TG reconcile to succeed first.
+func TestIBMPowerVSClusterReconciler_reconcile_extraBranches(t *testing.T) {
+	t.Run("unknown topology returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		clusterScope := &powervsscope.ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Finalizers: []string{infrav1.IBMPowerVSClusterFinalizer},
+				},
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: "UnknownTopology",
+				},
+			},
+		}
+		reconciler := &IBMPowerVSClusterReconciler{Client: testEnv.Client}
+		_, err := reconciler.reconcile(ctx, clusterScope)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("unknown topology"))
+	})
+
+	t.Run("requeues when NetworkReady condition is not true", func(t *testing.T) {
+		g := NewWithT(t)
+		// Build a cluster that passes through PER/RG/goroutines/TG but has
+		// NetworkReadyCondition absent → requeue at line 255-258.
+		powerVSCluster := getPowerVSClusterWithSpecAndStatus()
+		// Ensure neither NetworkReadyCondition nor LoadBalancerReadyCondition
+		// is pre-set as True in Status.Conditions.
+		powerVSCluster.Status.Conditions = nil
+
+		clusterScope := &powervsscope.ClusterScope{
+			Cluster:           &clusterv1.Cluster{},
+			IBMPowerVSCluster: powerVSCluster,
+		}
+		clusterScope.IBMPowerVSClient = getMockPowerVS(t)
+		clusterScope.ResourceClient = getMockResourceController(t)
+		clusterScope.ResourceManagerClient = getMockResourceManager(t)
+		clusterScope.TransitGatewayClient = getMockTransitGateway(t)
+		// VPC mock: LB returns !loadBalancerReady so condition stays unset.
+		mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active"), CRN: ptr.To("vpc_crn")}, nil, nil).Times(2)
+		mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{ID: ptr.To("subnet-id"), Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+		// LB is still being provisioned → loadBalancerReady=false, condition not set to True.
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("lb-id"),
+			Name:               ptr.To("capi-powervs-cluster-lb-public"),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateCreatePending)),
+		}, nil, nil)
+		clusterScope.IBMVPCClient = mockVPC
+
+		reconciler := &IBMPowerVSClusterReconciler{Client: testEnv.Client}
+		result, err := reconciler.reconcile(ctx, clusterScope)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.RequeueAfter).To(Equal(30 * time.Second))
+	})
+
+	t.Run("requeues when loadbalancer hostname is nil", func(t *testing.T) {
+		g := NewWithT(t)
+		powerVSCluster := getPowerVSClusterWithSpecAndStatus()
+		// Pre-set both NetworkReady and LBReady as True so the condition check passes.
+		powerVSCluster.Status.Conditions = []metav1.Condition{
+			{Type: infrav1.NetworkReadyCondition, Status: metav1.ConditionTrue, Reason: infrav1.NetworkReadyReason},
+			{Type: infrav1.VPCLoadBalancerReadyCondition, Status: metav1.ConditionTrue, Reason: infrav1.VPCLoadBalancerReadyReason},
+		}
+		// Hostname in status is empty; mock LB also has no Hostname so it stays empty.
+		powerVSCluster.Status.LoadBalancers[0].Hostname = ""
+
+		clusterScope := &powervsscope.ClusterScope{
+			Cluster:           &clusterv1.Cluster{},
+			IBMPowerVSCluster: powerVSCluster,
+		}
+		clusterScope.IBMPowerVSClient = getMockPowerVS(t)
+		clusterScope.ResourceClient = getMockResourceController(t)
+		clusterScope.ResourceManagerClient = getMockResourceManager(t)
+		clusterScope.TransitGatewayClient = getMockTransitGateway(t)
+
+		// Build a VPC mock like getMockVPC but with LB returning no Hostname.
+		mockVPC := vpcmock.NewMockVpc(gomock.NewController(t))
+		mockVPC.EXPECT().GetVPC(gomock.Any()).Return(&vpcv1.VPC{Status: ptr.To("active"), CRN: ptr.To("vpc_crn")}, nil, nil).Times(2)
+		mockVPC.EXPECT().GetSubnet(gomock.Any()).Return(&vpcv1.Subnet{ID: ptr.To("subnet-id"), Name: ptr.To("subnet1"), Status: ptr.To("active")}, nil, nil)
+		// Return LB without Hostname → SetLoadBalancerStatus sets Hostname="" → GetPublicLoadBalancerHostName returns nil.
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To("lb-id"),
+			Name:               ptr.To("capi-powervs-cluster-lb-public"),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+			Hostname:           nil,
+		}, nil, nil)
+		clusterScope.IBMVPCClient = mockVPC
+
+		reconciler := &IBMPowerVSClusterReconciler{Client: testEnv.Client}
+		result, err := reconciler.reconcile(ctx, clusterScope)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(result.RequeueAfter).To(Equal(time.Minute))
+	})
+}
+
+// TestDeleteIBMPowerVSImage_extraBranches covers the uncovered branches inside
+// deleteIBMPowerVSImage: listDescendants error, GVK lookup error, filterOwned
+// error, already-deleting child (continue), and child-delete error.
+func TestDeleteIBMPowerVSImage_extraBranches(t *testing.T) {
+	// listDescendants error: use an interceptor client that returns an error on List.
+	t.Run("listDescendants error propagates", func(t *testing.T) {
+		g := NewWithT(t)
+		listErrClient := fake.NewClientBuilder().
+			WithScheme(scheme.Scheme).
+			WithInterceptorFuncs(interceptor.Funcs{
+				List: func(_ context.Context, _ client.WithWatch, _ client.ObjectList, _ ...client.ListOption) error {
+					return errors.New("etcd list error")
+				},
+			}).
+			Build()
+		reconciler := &IBMPowerVSClusterReconciler{Client: listErrClient}
+		clusterScope := &powervsscope.ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "IBMPowerVSCluster",
+					APIVersion: infrav1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
+				Spec:       infrav1.IBMPowerVSClusterSpec{Topology: infrav1.PowerVSVirtualIPTopology},
+			},
+		}
+		_, err := reconciler.deleteIBMPowerVSImage(ctx, clusterScope)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("failed to list descendants"))
+	})
+
+	// already-deleting child: child has DeletionTimestamp set → continue branch.
+	t.Run("already-deleting child is skipped", func(t *testing.T) {
+		g := NewWithT(t)
+		now := metav1.Now()
+		deletingImage := &infrav1.IBMPowerVSImage{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "deleting-image",
+				Namespace: "default",
+				// DeletionTimestamp non-zero → already deleting
+				DeletionTimestamp: &now,
+				Finalizers:        []string{"test-finalizer"},
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: infrav1.GroupVersion.String(),
+					Kind:       "IBMPowerVSCluster",
+					Name:       "test-cluster",
+					UID:        "cluster-uid",
+					Controller: ptr.To(true),
+				}},
+				Labels: map[string]string{clusterv1.ClusterNameLabel: "test-cluster"},
+			},
+			Spec: infrav1.IBMPowerVSImageSpec{
+				ClusterName: "test-cluster",
+				Object:      "image.ova.gz",
+				Region:      "us-south",
+				Bucket:      "bucket",
+			},
+		}
+		createObject(g, deletingImage, "default")
+		defer cleanupObject(g, deletingImage)
+
+		reconciler := &IBMPowerVSClusterReconciler{Client: testEnv.Client}
+		clusterScope := &powervsscope.ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "IBMPowerVSCluster",
+					APIVersion: infrav1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-cluster",
+					Namespace: "default",
+					UID:       "cluster-uid",
+				},
+				Spec: infrav1.IBMPowerVSClusterSpec{Topology: infrav1.PowerVSVirtualIPTopology},
+			},
+		}
+		result, err := reconciler.deleteIBMPowerVSImage(ctx, clusterScope)
+		g.Expect(err).ToNot(HaveOccurred())
+		// descendantCount > 0 → RequeueAfter 5s (image still exists with finalizer).
+		g.Expect(result.RequeueAfter).To(Equal(5 * time.Second))
+	})
+
+	// child delete error: use an interceptor that returns an error on Delete.
+	t.Run("child delete error is aggregated", func(t *testing.T) {
+		g := NewWithT(t)
+		liveImage := &infrav1.IBMPowerVSImage{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "live-image",
+				Namespace: "default",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: infrav1.GroupVersion.String(),
+					Kind:       "IBMPowerVSCluster",
+					Name:       "err-cluster",
+					UID:        "err-uid",
+					Controller: ptr.To(true),
+				}},
+				Labels: map[string]string{clusterv1.ClusterNameLabel: "err-cluster"},
+			},
+			Spec: infrav1.IBMPowerVSImageSpec{
+				ClusterName: "err-cluster",
+				Object:      "image.ova.gz",
+				Region:      "us-south",
+				Bucket:      "bucket",
+			},
+		}
+		createObject(g, liveImage, "default")
+		defer cleanupObject(g, liveImage)
+
+		// Build a client that wraps testEnv.Client with a Delete interceptor.
+		errClient := fake.NewClientBuilder().
+			WithScheme(scheme.Scheme).
+			WithObjects(liveImage).
+			WithInterceptorFuncs(interceptor.Funcs{
+				List: func(ctx context.Context, _ client.WithWatch, list client.ObjectList, opts ...client.ListOption) error {
+					return testEnv.Client.List(ctx, list, opts...)
+				},
+				Delete: func(_ context.Context, _ client.WithWatch, _ client.Object, _ ...client.DeleteOption) error {
+					return errors.New("delete forbidden")
+				},
+			}).
+			Build()
+
+		reconciler := &IBMPowerVSClusterReconciler{Client: errClient}
+		clusterScope := &powervsscope.ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "IBMPowerVSCluster",
+					APIVersion: infrav1.GroupVersion.String(),
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "err-cluster",
+					Namespace: "default",
+					UID:       "err-uid",
+				},
+				Spec: infrav1.IBMPowerVSClusterSpec{Topology: infrav1.PowerVSVirtualIPTopology},
+			},
+		}
+		_, err := reconciler.deleteIBMPowerVSImage(ctx, clusterScope)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("delete forbidden"))
+	})
+
+	// GVK lookup error: use a scheme that knows IBMPowerVSImage (so List succeeds)
+	// but NOT IBMPowerVSCluster (so GroupVersionKindFor fails), and a cluster with
+	// no TypeMeta so the GVK is empty and the lookup is attempted.
+	t.Run("GroupVersionKindFor error propagates", func(t *testing.T) {
+		g := NewWithT(t)
+
+		// Build a scheme that has IBMPowerVSImageList registered (for List) but
+		// does NOT have IBMPowerVSCluster registered (for GroupVersionKindFor).
+		partialScheme := runtime.NewScheme()
+		if err := metav1.AddMetaToScheme(partialScheme); err != nil {
+			t.Fatalf("failed to add meta to scheme: %v", err)
+		}
+		partialScheme.AddKnownTypes(infrav1.GroupVersion, &infrav1.IBMPowerVSImage{}, &infrav1.IBMPowerVSImageList{})
+
+		// Pre-populate the fake client with an image so List returns a result.
+		existingImage := &infrav1.IBMPowerVSImage{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "gvk-test-image",
+				Namespace: "default",
+				OwnerReferences: []metav1.OwnerReference{{
+					APIVersion: infrav1.GroupVersion.String(),
+					Kind:       "IBMPowerVSCluster",
+					Name:       "gvk-cluster",
+					UID:        "gvk-uid",
+					Controller: ptr.To(true),
+				}},
+				Labels: map[string]string{clusterv1.ClusterNameLabel: "gvk-cluster"},
+			},
+			Spec: infrav1.IBMPowerVSImageSpec{
+				ClusterName: "gvk-cluster",
+				Object:      "image.ova.gz",
+				Region:      "us-south",
+				Bucket:      "bucket",
+			},
+		}
+		partialClient := fake.NewClientBuilder().
+			WithScheme(partialScheme).
+			WithObjects(existingImage).
+			Build()
+
+		reconciler := &IBMPowerVSClusterReconciler{Client: partialClient}
+		clusterScope := &powervsscope.ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				// TypeMeta is intentionally NOT set → GVK is empty → GroupVersionKindFor is called.
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "gvk-cluster",
+					Namespace: "default",
+					UID:       "gvk-uid",
+				},
+				Spec: infrav1.IBMPowerVSClusterSpec{Topology: infrav1.PowerVSVirtualIPTopology},
+			},
+		}
+		_, err := reconciler.deleteIBMPowerVSImage(ctx, clusterScope)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(err.Error()).To(ContainSubstring("failed to get GVK of cluster"))
+	})
 }
 
 func getWorkspaceReadyCondition() clusterv1.Condition {
