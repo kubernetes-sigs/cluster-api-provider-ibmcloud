@@ -69,6 +69,7 @@ const (
 	pvsImage         = "foo-image"
 	pvsNetwork       = "foo-network"
 	defaultNamespace = "default"
+	idSuffix         = "-id"
 )
 
 func newCluster(name string) *clusterv1.Cluster {

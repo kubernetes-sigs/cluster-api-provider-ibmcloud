@@ -6,6 +6,14 @@
         },
         {
             "pattern": "^http://localhost"
+        },
+        {
+            "comment": "Slack workspaces require authentication and block bots",
+            "pattern": "^https://kubernetes\\.slack\\.com/.*"
+        },
+        {
+            "comment": "Slack invites block bots",
+            "pattern": "^https://slack\\.k8s\\.io/.*"
         }
     ],
     "httpHeaders": [
