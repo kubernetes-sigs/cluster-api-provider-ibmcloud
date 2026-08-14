@@ -32,10 +32,14 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
@@ -3865,4 +3869,177 @@ func TestFetchBucketRegionCluster(t *testing.T) {
 			g.Expect(r).To(Equal(tc.expectedBucketRegion))
 		})
 	}
+}
+
+func TestReconcileCOSHMACKey(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("Idempotent: Secret already exists, skip CreateResourceKey", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		existingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-cluster-cos-hmac",
+				Namespace: "default",
+			},
+		}
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(existingSecret).Build()
+
+		clusterScope := ClusterScope{
+			Client:         fakeClient,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					COSInstance: infrav1.COSInstanceStatus{HMACSecretName: "test-cluster-cos-hmac"},
+				},
+			},
+		}
+		// CreateResourceKey must NOT be called
+		err := clusterScope.reconcileCOSHMACKey(ctx, "crn:v1:bluemix:public:cloud-object-storage:global::::")
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("CreateResourceKey fails, return error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+		clusterScope := ClusterScope{
+			Client:         fakeClient,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
+			},
+		}
+		mockResourceController.EXPECT().CreateResourceKey(gomock.Any()).Return(nil, nil, fmt.Errorf("API error"))
+		err := clusterScope.reconcileCOSHMACKey(ctx, "crn:v1:test")
+		g.Expect(err).To(MatchError(ContainSubstring("failed to create COS HMAC resource key")))
+	})
+
+	t.Run("CreateResourceKey returns key without cos_hmac_keys, return error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+		clusterScope := ClusterScope{
+			Client:         fakeClient,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
+			},
+		}
+		creds := &resourcecontrollerv2.Credentials{}
+		rk := &resourcecontrollerv2.ResourceKey{Credentials: creds}
+		mockResourceController.EXPECT().CreateResourceKey(gomock.Any()).Return(rk, nil, nil)
+		err := clusterScope.reconcileCOSHMACKey(ctx, "crn:v1:test")
+		g.Expect(err).To(MatchError(ContainSubstring("cos_hmac_keys property is missing")))
+	})
+
+	t.Run("CreateResourceKey succeeds, Secret created, status updated", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
+		clusterScope := ClusterScope{
+			Client:         fakeClient,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Name: "test-cluster", Namespace: "default"},
+			},
+		}
+		creds := &resourcecontrollerv2.Credentials{}
+		creds.SetProperty("cos_hmac_keys", map[string]interface{}{
+			"access_key_id":     "AKID123",
+			"secret_access_key": "SECRET456",
+		})
+		rk := &resourcecontrollerv2.ResourceKey{Credentials: creds}
+		mockResourceController.EXPECT().CreateResourceKey(gomock.Any()).Return(rk, nil, nil)
+
+		err := clusterScope.reconcileCOSHMACKey(ctx, "crn:v1:test")
+		g.Expect(err).To(BeNil())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.COSInstance.HMACSecretName).To(Equal("test-cluster-cos-hmac"))
+
+		// Verify the Secret was written
+		stored := &corev1.Secret{}
+		g.Expect(fakeClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: "test-cluster-cos-hmac"}, stored)).To(Succeed())
+		g.Expect(string(stored.Data["access_key_id"])).To(Equal("AKID123"))
+		g.Expect(string(stored.Data["secret_access_key"])).To(Equal("SECRET456"))
+	})
+}
+
+func TestDeleteCOSInstanceHMACSecret(t *testing.T) {
+	var (
+		mockResourceController *mockRC.MockResourceController
+		mockCtrl               *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockResourceController = mockRC.NewMockResourceController(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("HMAC Secret is deleted before instance deletion", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		existingSecret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "my-cluster-cos-hmac",
+				Namespace: "default",
+			},
+		}
+		fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(existingSecret).Build()
+
+		clusterScope := ClusterScope{
+			Client:         fakeClient,
+			ResourceClient: mockResourceController,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					COSInstance: infrav1.COSInstanceSource{Type: infrav1.SourceTypeProvision},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					COSInstance: infrav1.COSInstanceStatus{ //nolint:gosec
+						ID:             "cosInstanceID",
+						HMACSecretName: "my-cluster-cos-hmac",
+					},
+				},
+			},
+		}
+		cosInstance := &resourcecontrollerv2.ResourceInstance{
+			ID:    ptr.To("cosInstanceID"),
+			State: ptr.To(string(infrav1.WorkspaceStateActive)),
+		}
+		mockResourceController.EXPECT().GetResourceInstance(gomock.Any()).Return(cosInstance, nil, nil)
+		mockResourceController.EXPECT().DeleteResourceInstance(gomock.Any()).Return(nil, nil)
+
+		err := clusterScope.DeleteCOSInstance(ctx)
+		g.Expect(err).To(BeNil())
+
+		// Secret must be gone
+		deleted := &corev1.Secret{}
+		getErr := fakeClient.Get(ctx, types.NamespacedName{Namespace: "default", Name: "my-cluster-cos-hmac"}, deleted)
+		g.Expect(getErr).ToNot(BeNil()) // not found
+	})
 }

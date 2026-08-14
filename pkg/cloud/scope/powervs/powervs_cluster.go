@@ -37,6 +37,9 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/ptr"
 
@@ -79,6 +82,11 @@ const (
 	// vpcSubnetIPAddressCount is the total IP Addresses for the subnet.
 	// Support for custom address prefixes will be added at a later time. Currently, we use the ip count for subnet creation.
 	vpcSubnetIPAddressCount int64 = 256
+
+	// cosHMACAccessKeyField and cosHMACSecretKeyField are the keys used in the
+	// Kubernetes Secret that stores COS HMAC credentials for pre-signed URL generation.
+	cosHMACAccessKeyField = "access_key_id"
+	cosHMACSecretKeyField = "secret_access_key"
 )
 
 // ClientOptions contains generic configurations required to build IBM Cloud clients.
@@ -2285,87 +2293,35 @@ func (s *ClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 		return nil
 	}
 
-	cosSpec := cluster.Spec.COSInstance
-	var instanceID string
-	var instanceName string
-
-	// 2. Idempotency & State Check: If we already resolved the COS ID, just verify its state.
-	if cluster.Status.COSInstance.ID != "" {
-		instanceID = cluster.Status.COSInstance.ID
-		log.V(3).Info("COS Instance ID is set, verifying presence in cloud", "id", instanceID)
-
-		instance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
-			ID: &instanceID,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to fetch COS instance (id: %s) details: %w", instanceID, err)
-		}
-		if instance == nil {
-			return fmt.Errorf("COS instance not found in cloud with ID: %s", instanceID)
-		}
-
-		// Ensure the instance is active before attempting to wire up buckets
-		if *instance.State != string(infrav1.WorkspaceStateActive) {
-			return fmt.Errorf("COS instance is not active, current state: %s", *instance.State)
-		}
-		instanceName = *instance.Name
-	} else {
-		// 3. We don't have an ID yet. Route logic based strictly on the user's explicit intent.
-		log.Info("Resolving IBM Cloud COS Instance", "type", cosSpec.Type)
-
-		var instance *resourcecontrollerv2.ResourceInstance
-		var err error
-
-		switch cosSpec.Type {
-		case infrav1.SourceTypeReference:
-			instance, err = s.reconcileCOSReference(ctx, cosSpec.Reference)
-		case infrav1.SourceTypeProvision:
-			name := cosSpec.Provision.Name
-			if name == "" {
-				name = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeCOS, "")
-			}
-			instance, err = s.reconcileCOSProvision(ctx, name)
-		default:
-			return fmt.Errorf("unknown COS instance source type: %s", cosSpec.Type)
-		}
-
-		if err != nil {
-			return fmt.Errorf("failed to resolve COS instance: %w", err)
-		}
-
-		instanceID = *instance.GUID
-		instanceName = *instance.Name
+	// 2. Resolve the COS instance to a stable (instanceID, instanceName, instanceCRN).
+	instanceID, instanceName, instanceCRN, err := s.resolveCOSInstance(ctx)
+	if err != nil {
+		return err
 	}
 
-	// Record the resolved instance identity
+	// Record the resolved instance identity.
 	cluster.Status.COSInstance.ID = instanceID
 	cluster.Status.COSInstance.Name = instanceName
 
-	targetBucketName := cluster.Status.COSInstance.BucketName
-	if targetBucketName == "" {
-		targetBucketName = cosSpec.BucketName
-		if targetBucketName == "" {
-			targetBucketName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeCOSBucket, "")
-		}
+	// 3. Resolve the bucket name and region, falling back through spec then VPC region.
+	targetBucketName, targetBucketRegion, err := s.resolveCOSBucketParams()
+	if err != nil {
+		return err
 	}
 
-	targetBucketRegion := cluster.Status.COSInstance.BucketRegion
-	if targetBucketRegion == "" {
-		targetBucketRegion = cosSpec.BucketRegion
-		if targetBucketRegion == "" {
-			targetBucketRegion = cluster.Status.VPC.Region
-			if targetBucketRegion == "" {
-				return fmt.Errorf("failed to determine COS bucket region: both bucket region and VPC region are unset")
-			}
-		}
-	}
+	log.V(3).Info("ReconcileCOSInstance: resolved params",
+		"instanceID", instanceID,
+		"instanceCRN", instanceCRN,
+		"bucketName", targetBucketName,
+		"bucketRegion", targetBucketRegion,
+	)
 
-	// 4. Setup the COS Client now that we have a guaranteed active instance ID
-	if err := s.setupCOSClient(instanceID, cosSpec.BucketRegion); err != nil {
+	// 4. Setup the COS Client now that we have a guaranteed active instance ID.
+	if err := s.setupCOSClient(instanceID, targetBucketRegion); err != nil {
 		return fmt.Errorf("failed to configure COS client: %w", err)
 	}
 
-	// 5. Reconcile the Bucket
+	// 5. Reconcile the Bucket.
 	if err := s.reconcileCOSBucket(ctx, targetBucketName); err != nil {
 		return fmt.Errorf("failed to reconcile COS bucket: %w", err)
 	}
@@ -2373,6 +2329,228 @@ func (s *ClusterScope) ReconcileCOSInstance(ctx context.Context) error {
 	cluster.Status.COSInstance.BucketName = targetBucketName
 	cluster.Status.COSInstance.BucketRegion = targetBucketRegion
 
+	// 6. Reconcile the HMAC key Secret for secure ignition pre-signed URL support.
+	if err := s.reconcileCOSHMACKey(ctx, instanceCRN); err != nil {
+		return fmt.Errorf("failed to reconcile COS HMAC key: %w", err)
+	}
+
+	return nil
+}
+
+// resolveCOSInstance returns the (instanceID, instanceName, instanceCRN) for the COS
+// instance declared in the cluster spec. It takes two paths:
+//   - Fast path: if the ID is already in Status, verify liveness in the cloud.
+//   - Slow path: resolve via spec (Reference or Provision) and verify the instance is active.
+func (s *ClusterScope) resolveCOSInstance(ctx context.Context) (instanceID, instanceName, instanceCRN string, err error) {
+	log := ctrl.LoggerFrom(ctx)
+	cluster := s.IBMPowerVSCluster
+
+	if cluster.Status.COSInstance.ID != "" {
+		return s.verifyCOSInstanceByID(ctx, cluster.Status.COSInstance.ID)
+	}
+
+	log.Info("Resolving IBM Cloud COS Instance", "type", cluster.Spec.COSInstance.Type)
+	return s.resolveCOSInstanceFromSpec(ctx)
+}
+
+// verifyCOSInstanceByID fetches the COS instance by its known ID from the cloud and
+// confirms it is active. Returns the (id, name, crn) triple ready for use.
+func (s *ClusterScope) verifyCOSInstanceByID(ctx context.Context, id string) (instanceID, instanceName, instanceCRN string, err error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.V(3).Info("COS Instance ID is set, verifying presence in cloud", "id", id)
+
+	instance, _, err := s.ResourceClient.GetResourceInstance(&resourcecontrollerv2.GetResourceInstanceOptions{
+		ID: &id,
+	})
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to fetch COS instance (id: %s) details: %w", id, err)
+	}
+	if instance == nil {
+		return "", "", "", fmt.Errorf("COS instance not found in cloud with ID: %s", id)
+	}
+	if instance.State == nil {
+		return "", "", "", fmt.Errorf("COS instance state is nil for ID: %s", id)
+	}
+	if *instance.State != string(infrav1.WorkspaceStateActive) {
+		return "", "", "", fmt.Errorf("COS instance is not active, current state: %s", *instance.State)
+	}
+
+	if instance.CRN == nil || *instance.CRN == "" {
+		return "", "", "", fmt.Errorf("COS instance (id: %s) has no CRN; cannot create HMAC credential", id)
+	}
+	if instance.Name == nil {
+		return "", "", "", fmt.Errorf("COS instance name is nil for ID: %s", id)
+	}
+	return id, *instance.Name, *instance.CRN, nil
+}
+
+// resolveCOSInstanceFromSpec routes to reconcileCOSReference or reconcileCOSProvision
+// based on the spec type, verifies the instance is active, and returns the identity triple.
+// If the instance is not yet active, it records the ID in Status so the next reconcile
+// can poll via the fast path (verifyCOSInstanceByID) instead of calling the API again.
+func (s *ClusterScope) resolveCOSInstanceFromSpec(ctx context.Context) (instanceID, instanceName, instanceCRN string, err error) {
+	cluster := s.IBMPowerVSCluster
+	cosSpec := cluster.Spec.COSInstance
+
+	var instance *resourcecontrollerv2.ResourceInstance
+
+	switch cosSpec.Type {
+	case infrav1.SourceTypeReference:
+		instance, err = s.reconcileCOSReference(ctx, cosSpec.Reference)
+	case infrav1.SourceTypeProvision:
+		name := cosSpec.Provision.Name
+		if name == "" {
+			name = ResourceName(cluster.Name, ResourceTypeCOS, "")
+		}
+		instance, err = s.reconcileCOSProvision(ctx, name)
+	default:
+		return "", "", "", fmt.Errorf("unknown COS instance source type: %s", cosSpec.Type)
+	}
+
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to resolve COS instance: %w", err)
+	}
+	if instance == nil {
+		return "", "", "", fmt.Errorf("COS instance resolved to nil")
+	}
+	if instance.GUID == nil {
+		return "", "", "", fmt.Errorf("COS instance GUID is nil")
+	}
+
+	// A newly provisioned instance may still be provisioning — record the ID so the
+	// next reconcile loop can skip the provision step and just poll for active state.
+	if instance.State == nil || *instance.State != string(infrav1.WorkspaceStateActive) {
+		state := "unknown"
+		if instance.State != nil {
+			state = *instance.State
+		}
+		cluster.Status.COSInstance.ID = *instance.GUID
+		if instance.Name != nil {
+			cluster.Status.COSInstance.Name = *instance.Name
+		}
+		return "", "", "", fmt.Errorf("COS instance is not yet active, current state: %s", state)
+	}
+
+	if instance.CRN == nil || *instance.CRN == "" {
+		return "", "", "", fmt.Errorf("COS instance has no CRN; cannot create HMAC credential")
+	}
+	if instance.Name == nil {
+		return "", "", "", fmt.Errorf("COS instance name is nil")
+	}
+	return *instance.GUID, *instance.Name, *instance.CRN, nil
+}
+
+// resolveCOSBucketParams determines the target bucket name and region by walking a
+// priority chain: Status (already confirmed) → Spec → derived from VPC region.
+func (s *ClusterScope) resolveCOSBucketParams() (bucketName, bucketRegion string, err error) {
+	cluster := s.IBMPowerVSCluster
+	cosSpec := cluster.Spec.COSInstance
+
+	bucketName = cluster.Status.COSInstance.BucketName
+	if bucketName == "" {
+		bucketName = cosSpec.BucketName
+		if bucketName == "" {
+			bucketName = ResourceName(cluster.Name, ResourceTypeCOSBucket, "")
+		}
+	}
+
+	bucketRegion = cluster.Status.COSInstance.BucketRegion
+	if bucketRegion == "" {
+		bucketRegion = cosSpec.BucketRegion
+		if bucketRegion == "" {
+			bucketRegion = cluster.Status.VPC.Region
+			if bucketRegion == "" {
+				return "", "", fmt.Errorf("failed to determine COS bucket region: both bucket region and VPC region are unset")
+			}
+		}
+	}
+
+	return bucketName, bucketRegion, nil
+}
+
+// reconcileCOSHMACKey ensures a COS HMAC service credential exists for the given
+// COS instance and stores the access_key_id / secret_access_key in a Kubernetes
+// Secret named "<cluster>-cos-hmac" in the cluster's namespace.
+func (s *ClusterScope) reconcileCOSHMACKey(ctx context.Context, instanceCRN string) error {
+	log := ctrl.LoggerFrom(ctx)
+	cluster := s.IBMPowerVSCluster
+
+	secretName := ResourceName(cluster.Name, ResourceTypeCOSHMACKey, "")
+
+	// Idempotency: if we already stored the Secret name and the Secret exists, we are done.
+	if cluster.Status.COSInstance.HMACSecretName != "" {
+		existing := &corev1.Secret{}
+		err := s.Client.Get(ctx, types.NamespacedName{
+			Namespace: cluster.Namespace,
+			Name:      cluster.Status.COSInstance.HMACSecretName,
+		}, existing)
+		if err == nil {
+			log.V(3).Info("COS HMAC Secret already exists, skipping creation", "secret", cluster.Status.COSInstance.HMACSecretName)
+			return nil
+		}
+	}
+
+	log.Info("Creating COS HMAC service credential", "instance", instanceCRN)
+
+	params := &resourcecontrollerv2.ResourceKeyPostParameters{}
+	params.SetProperty("HMAC", true)
+
+	keyOpts := &resourcecontrollerv2.CreateResourceKeyOptions{
+		Name:       ptr.To(ResourceName(cluster.Name, ResourceTypeCOSHMACKey, "")),
+		Source:     ptr.To(instanceCRN),
+		Parameters: params,
+	}
+
+	resourceKey, _, err := s.ResourceClient.CreateResourceKey(keyOpts)
+	if err != nil {
+		return fmt.Errorf("failed to create COS HMAC resource key: %w", err)
+	}
+
+	// The IBM Resource Controller returns HMAC keys under the "cos_hmac_keys" property
+	// of the credential credentials object.
+	hmacRaw := resourceKey.Credentials.GetProperty("cos_hmac_keys")
+	if hmacRaw == nil {
+		return fmt.Errorf("COS HMAC key created but cos_hmac_keys property is missing in response")
+	}
+
+	hmacMap, ok := hmacRaw.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("COS HMAC key cos_hmac_keys has unexpected type %T", hmacRaw)
+	}
+
+	accessKeyID, _ := hmacMap[cosHMACAccessKeyField].(string)
+	secretAccessKey, _ := hmacMap[cosHMACSecretKeyField].(string)
+	if accessKeyID == "" || secretAccessKey == "" {
+		return fmt.Errorf("COS HMAC key is missing %s or %s", cosHMACAccessKeyField, cosHMACSecretKeyField)
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: cluster.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         infrav1.GroupVersion.String(),
+					Kind:               "IBMPowerVSCluster",
+					Name:               cluster.Name,
+					UID:                cluster.UID,
+					Controller:         ptr.To(true),
+					BlockOwnerDeletion: ptr.To(true),
+				},
+			},
+		},
+		Data: map[string][]byte{
+			cosHMACAccessKeyField: []byte(accessKeyID),
+			cosHMACSecretKeyField: []byte(secretAccessKey),
+		},
+	}
+
+	if err := s.Client.Create(ctx, secret); err != nil {
+		return fmt.Errorf("failed to store COS HMAC Secret %q: %w", secretName, err)
+	}
+
+	cluster.Status.COSInstance.HMACSecretName = secretName
+	log.Info("COS HMAC Secret created successfully", "secret", secretName)
 	return nil
 }
 
@@ -2473,6 +2651,8 @@ func (s *ClusterScope) setupCOSClient(instanceID, bucketRegion string) error {
 		serviceEndpoint = cosServiceEndpoint
 	}
 
+	ctrl.Log.V(3).Info("Setting up COS client", "instanceID", instanceID, "bucketRegion", bucketRegion, "endpoint", serviceEndpoint)
+
 	cosOptions := cos.ServiceOptions{
 		Options: &cosSession.Options{
 			Config: aws.Config{
@@ -2488,6 +2668,7 @@ func (s *ClusterScope) setupCOSClient(instanceID, bucketRegion string) error {
 	}
 
 	s.COSClient = cosClient
+	ctrl.Log.V(3).Info("COS client created successfully")
 	return nil
 }
 
@@ -2507,6 +2688,8 @@ func (s *ClusterScope) reconcileCOSBucket(ctx context.Context, bucketName string
 		return fmt.Errorf("failed to check if COS bucket exists: %w", err)
 	}
 
+	log.V(3).Info("COS bucket lookup returned error", "code", aerr.Code(), "message", aerr.Message(), "origErr", aerr.OrigErr())
+
 	switch aerr.Code() {
 	case s3.ErrCodeNoSuchBucket, "Forbidden", "NotFound":
 		log.Info("Creating new COS bucket", "bucketName", bucketName)
@@ -2515,15 +2698,24 @@ func (s *ClusterScope) reconcileCOSBucket(ctx context.Context, bucketName string
 			Bucket: ptr.To(bucketName),
 		}
 
-		if _, err := s.COSClient.CreateBucket(input); err != nil {
-			// Handle edge case where it was created in the milliseconds between check and create
+		out, err := s.COSClient.CreateBucket(input)
+		if err != nil {
 			if createErr, isAwsErr := err.(awserr.Error); isAwsErr {
-				if createErr.Code() == s3.ErrCodeBucketAlreadyOwnedByYou || createErr.Code() == s3.ErrCodeBucketAlreadyExists {
+				// BucketAlreadyOwnedByYou means we own it
+				if createErr.Code() == s3.ErrCodeBucketAlreadyOwnedByYou {
+					log.V(3).Info("COS bucket already owned by us (concurrent create), treating as success", "bucketName", bucketName)
 					return nil
+				}
+				// BucketAlreadyExists means the name is taken globally by a DIFFERENT account/instance.
+				// The 403 Forbidden on HeadBucket confirms we don't own it. Surface this as a hard error
+				// so the operator can surface it and the user can choose a different bucket name.
+				if createErr.Code() == s3.ErrCodeBucketAlreadyExists {
+					return fmt.Errorf("bucket name %q is already taken in the global IBM COS namespace by a different instance; set a unique bucketName in spec.cosInstance.bucketName: %w", bucketName, err)
 				}
 			}
 			return fmt.Errorf("failed to execute CreateBucket API: %w", err)
 		}
+		log.V(3).Info("COS bucket created successfully", "bucketName", bucketName, "response", out)
 		return nil
 
 	default:
@@ -3127,7 +3319,24 @@ func (s *ClusterScope) DeleteCOSInstance(ctx context.Context) error {
 		}
 	}
 
-	// 5. Issue the recursive Delete API Call
+	// 5. Delete the HMAC Secret from Kubernetes (best-effort; log but do not block on failure).
+	if cluster.Status.COSInstance.HMACSecretName != "" {
+		hmacSecret := &corev1.Secret{}
+		getErr := s.Client.Get(ctx, types.NamespacedName{
+			Namespace: cluster.Namespace,
+			Name:      cluster.Status.COSInstance.HMACSecretName,
+		}, hmacSecret)
+		if getErr == nil {
+			if delErr := s.Client.Delete(ctx, hmacSecret); delErr != nil {
+				log.Error(delErr, "Failed to delete COS HMAC Secret; continuing with instance deletion",
+					"secret", cluster.Status.COSInstance.HMACSecretName)
+			} else {
+				log.Info("Deleted COS HMAC Secret", "secret", cluster.Status.COSInstance.HMACSecretName)
+			}
+		}
+	}
+
+	// 6. Issue the recursive Delete API Call
 	log.Info("Issuing recursive delete command for managed COS service instance", "id", instanceID, "name", cluster.Status.COSInstance.Name)
 	if _, err = s.ResourceClient.DeleteResourceInstance(&resourcecontrollerv2.DeleteResourceInstanceOptions{
 		ID:        ptr.To(instanceID),

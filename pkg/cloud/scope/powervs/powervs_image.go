@@ -210,9 +210,12 @@ func (s *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReferen
 	if lastJob != nil && lastJob.Status != nil && lastJob.Status.State != nil {
 		state := *lastJob.Status.State
 		if state != string(infrav1.PowerVSImageStateCompleted) && state != string(infrav1.PowerVSImageStateFailed) {
-			log.Info("Previous import job not yet finished", "state", state)
+			log.Info("Previous import job not yet finished, requeuing", "state", state)
 			return nil, nil, nil
 		}
+		log.Info("Previous import job ended, triggering new import", "state", state)
+	} else {
+		log.Info("No prior import job found, triggering first import")
 	}
 
 	// 3. Trigger New Import Job

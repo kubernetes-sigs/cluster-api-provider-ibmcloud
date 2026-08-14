@@ -26,6 +26,7 @@ package mock
 
 import (
 	reflect "reflect"
+	time "time"
 
 	aws "github.com/IBM/ibm-cos-sdk-go/aws"
 	request "github.com/IBM/ibm-cos-sdk-go/aws/request"
@@ -150,6 +151,21 @@ func (m *MockCos) ListObjects(input *s3.ListObjectsInput) (*s3.ListObjectsOutput
 func (mr *MockCosMockRecorder) ListObjects(input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjects", reflect.TypeOf((*MockCos)(nil).ListObjects), input)
+}
+
+// PresignedURL mocks base method.
+func (m *MockCos) PresignedURL(bucket, key string, expiry time.Duration) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PresignedURL", bucket, key, expiry)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PresignedURL indicates an expected call of PresignedURL.
+func (mr *MockCosMockRecorder) PresignedURL(bucket, key, expiry any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PresignedURL", reflect.TypeOf((*MockCos)(nil).PresignedURL), bucket, key, expiry)
 }
 
 // PutObject mocks base method.

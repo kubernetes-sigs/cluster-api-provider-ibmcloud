@@ -136,8 +136,14 @@ func (s *Service) CreateCosImage(_ context.Context, body *models.CreateCosImageI
 func (s *Service) GetCosImages(_ context.Context, id string) (*models.Job, error) {
 	params := p_cloud_images.NewPcloudV1CloudinstancesCosimagesGetParams().WithCloudInstanceID(id)
 	resp, err := s.session.Power.PCloudImages.PcloudV1CloudinstancesCosimagesGet(params, s.session.AuthInfo(id))
-	if err != nil || resp.Payload == nil {
+	if err != nil {
+		if _, ok := err.(*p_cloud_images.PcloudV1CloudinstancesCosimagesGetNotFound); ok {
+			return nil, nil
+		}
 		return nil, err
+	}
+	if resp == nil || resp.Payload == nil {
+		return nil, nil
 	}
 	return resp.Payload, nil
 }

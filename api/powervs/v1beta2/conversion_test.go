@@ -131,10 +131,11 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 	in.VPC = infrav1.VPCStatus{}
 
 	// COSInstance: only ID survives round-trip through v1beta2 (which uses *ResourceReference with only ID).
-	// Name, BucketName, and BucketRegion are not stored in v1beta2 Status.COSInstance.
+	// Name, BucketName, BucketRegion, and HMACSecretName are not stored in v1beta2 Status.COSInstance.
 	in.COSInstance.Name = ""
 	in.COSInstance.BucketName = ""
 	in.COSInstance.BucketRegion = ""
+	in.COSInstance.HMACSecretName = ""
 	if in.COSInstance.ID == "" {
 		in.COSInstance = infrav1.COSInstanceStatus{}
 	}

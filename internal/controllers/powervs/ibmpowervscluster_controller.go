@@ -84,6 +84,7 @@ type componentResult struct {
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmpowervsclusters/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;get;list;watch
 
 // Reconcile implements controller runtime Reconciler interface and handles reconcileation logic for IBMPowerVSCluster.
 func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (_ ctrl.Result, reterr error) {
@@ -479,7 +480,7 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		allErrs = append(allErrs, fmt.Errorf("failed to delete DHCP server: %w", err))
 	}
 
-	log.Info("Deleting PowerVS service instance")
+	log.Info("Deleting PowerVS workspace")
 	conditions.Set(clusterScope.IBMPowerVSCluster, metav1.Condition{
 		Type:   infrav1.WorkspaceReadyCondition,
 		Status: metav1.ConditionFalse,

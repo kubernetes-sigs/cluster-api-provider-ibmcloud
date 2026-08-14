@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
 	"path"
 	"slices"
 	"sort"
@@ -60,7 +59,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ignition"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
@@ -69,6 +67,10 @@ import (
 )
 
 const cosURLDomain = "cloud-object-storage.appdomain.cloud"
+
+// presignExpiry is the lifetime of the pre-signed ignition URL embedded in user-data.
+// One hour is enough for any reasonable bootstrap window; after expiry the URL is worthless.
+const presignExpiry = time.Hour
 
 // zoneCacheEntry holds the supported system types and the exact time they were fetched for a specific zone.
 type zoneCacheEntry struct {
@@ -832,24 +834,10 @@ func (s *MachineScope) resolveUserData(ctx context.Context) (string, error) {
 // ignitionUserData uploads the raw bootstrap data to COS via createIgnitionData,
 // then wraps the resulting pre-signed URL in an Ignition v2 or v3 redirect document.
 func (s *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([]byte, error) {
-	objectURL, err := s.createIgnitionData(ctx, userData)
+	presignedURL, err := s.createIgnitionData(ctx, userData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create user data object: %w", err)
 	}
-
-	auth, err := authenticator.GetIAMAuthenticator()
-	if err != nil {
-		return nil, err
-	}
-
-	iamtoken, err := auth.GetToken()
-	if err != nil {
-		return nil, err
-	}
-	if iamtoken == "" {
-		return nil, fmt.Errorf("IAM token is empty")
-	}
-	token := "Bearer " + iamtoken
 
 	ignVersion := s.getIgnitionVersion()
 	semver, err := semver.ParseTolerant(ignVersion)
@@ -864,13 +852,7 @@ func (s *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 				Version: semver.String(),
 				Config: ignV2Types.IgnitionConfig{
 					Replace: &ignV2Types.ConfigReference{
-						Source: objectURL,
-						HTTPHeaders: ignV2Types.HTTPHeaders{
-							{
-								Name:  "Authorization",
-								Value: token,
-							},
-						},
+						Source: presignedURL,
 					},
 				},
 			},
@@ -882,13 +864,7 @@ func (s *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 				Version: semver.String(),
 				Config: ignV3Types.IgnitionConfig{
 					Replace: ignV3Types.Resource{
-						Source: aws.String(objectURL),
-						HTTPHeaders: ignV3Types.HTTPHeaders{
-							{
-								Name:  "Authorization",
-								Value: aws.String(token),
-							},
-						},
+						Source: aws.String(presignedURL),
 					},
 				},
 			},
@@ -899,8 +875,9 @@ func (s *MachineScope) ignitionUserData(ctx context.Context, userData []byte) ([
 	}
 }
 
-// createIgnitionData uploads userData to the COS bucket and returns the HTTPS
-// object URL that Ignition will use to fetch the real bootstrap config.
+// createIgnitionData uploads userData to the COS bucket, then returns a
+// pre-signed HTTPS URL that Ignition uses to fetch the bootstrap config.
+// The URL is signed with HMAC SigV4 credentials — the signature is embedded as query parameters.
 func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	if len(data) == 0 {
@@ -915,11 +892,9 @@ func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 	key := s.bootstrapDataKey()
 	log.V(3).Info("Bootstrap data key name", "key", key)
 
-	// Fetch directly from the elevated Spec fields
-	bucket := s.IBMPowerVSCluster.Spec.COSInstance.BucketName
-	region := s.IBMPowerVSCluster.Spec.COSInstance.BucketRegion
-	if bucket == "" || region == "" {
-		return "", fmt.Errorf("cannot push ignition data: COS bucket name or region is not set in cluster spec")
+	bucket := s.IBMPowerVSCluster.Status.COSInstance.BucketName
+	if bucket == "" {
+		return "", fmt.Errorf("COS bucket name is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
 
 	if _, err := cosClient.PutObject(&s3.PutObjectInput{
@@ -930,57 +905,48 @@ func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 		return "", fmt.Errorf("failed to push object to COS bucket: %w", err)
 	}
 
-	objHost := fmt.Sprintf("%s.s3.%s.%s", bucket, region, cosURLDomain)
-
-	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
-	if cosServiceEndpoint != "" {
-		log.V(3).Info("Overriding the default COS endpoint in ignition URL", "cosEndpoint", cosServiceEndpoint)
-		cosURL, _ := url.Parse(cosServiceEndpoint)
-		if cosURL.Scheme != "" {
-			objHost = fmt.Sprintf("%s.%s", bucket, cosURL.Host)
-		} else {
-			objHost = fmt.Sprintf("%s.%s", bucket, cosServiceEndpoint)
-		}
+	presignedURL, err := cosClient.PresignedURL(bucket, key, presignExpiry)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate pre-signed URL for ignition data: %w", err)
 	}
 
-	objectURL := &url.URL{
-		Scheme: "https",
-		Host:   objHost,
-		Path:   key,
-	}
-	log.V(3).Info("Generated Ignition URL", "objectURL", objectURL.String())
-
-	return objectURL.String(), nil
+	log.V(3).Info("Generated pre-signed Ignition URL", "bucket", bucket, "key", key)
+	return presignedURL, nil
 }
 
-// createCOSClient creates a new cosClient from the supplied parameters.
+// createCOSClient builds an HMAC-credential COS client for the machine scope.
+// It reads the access_key_id and secret_access_key from the Kubernetes Secret that
+// was created by the cluster reconciler's reconcileCOSHMACKey step.
 func (s *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	// 1. Get the ID from IBMPowerVSCluster status.
-	cosID := s.IBMPowerVSCluster.Status.COSInstance.ID
-	if cosID == "" {
-		return nil, fmt.Errorf("COS instance ID is not yet populated in cluster status. Waiting for cluster reconciler")
-	}
-
-	// 2. Fetch the region directly from IBMPowerVSCluster status.
+	// 1. Fetch the region from cluster status.
 	region := s.IBMPowerVSCluster.Status.COSInstance.BucketRegion
 	if region == "" {
 		return nil, fmt.Errorf("COS bucket region is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
 
-	props, err := authenticator.GetProperties()
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch service properties: %w", err)
+	// 2. Read the HMAC Secret created by the cluster reconciler.
+	hmacSecretName := s.IBMPowerVSCluster.Status.COSInstance.HMACSecretName
+	if hmacSecretName == "" {
+		return nil, fmt.Errorf("COS HMAC Secret name is not yet populated in cluster status. Waiting for cluster reconciler")
 	}
-	apiKey := props["APIKEY"]
-	if apiKey == "" {
-		return nil, fmt.Errorf("IBM Cloud API key is not provided, set IBMCLOUD_API_KEY environmental variable")
+
+	secret := &corev1.Secret{}
+	if err := s.Client.Get(ctx, types.NamespacedName{
+		Namespace: s.IBMPowerVSCluster.Namespace,
+		Name:      hmacSecretName,
+	}, secret); err != nil {
+		return nil, fmt.Errorf("failed to fetch COS HMAC Secret %q: %w", hmacSecretName, err)
+	}
+
+	accessKeyID := string(secret.Data[cosHMACAccessKeyField])
+	secretAccessKey := string(secret.Data[cosHMACSecretKeyField])
+	if accessKeyID == "" || secretAccessKey == "" {
+		return nil, fmt.Errorf("COS HMAC Secret %q is missing %s or %s", hmacSecretName, cosHMACAccessKeyField, cosHMACSecretKeyField)
 	}
 
 	serviceEndpoint := fmt.Sprintf("s3.%s.%s", region, cosURLDomain)
-
-	// Fetch the custom COS service endpoint if provided
 	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
 	if cosServiceEndpoint != "" {
 		log.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
@@ -996,10 +962,9 @@ func (s *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
 		},
 	}
 
-	// Build the client using our cached, validated ID
-	cosClient, err := cos.NewService(cosOptions, apiKey, cosID)
+	cosClient, err := cos.NewServiceWithHMAC(cosOptions, accessKeyID, secretAccessKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create COS client: %w", err)
+		return nil, fmt.Errorf("failed to create HMAC COS client: %w", err)
 	}
 
 	return cosClient, nil

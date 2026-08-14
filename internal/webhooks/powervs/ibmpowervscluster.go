@@ -109,7 +109,8 @@ func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) 
 	}
 
 	for _, loadBalancer := range cluster.Spec.LoadBalancers {
-		if loadBalancer.Type == infrav1.SourceTypeProvision && loadBalancer.Provision.Type == infrav1.LoadBalancerTypePublic {
+		if loadBalancer.Type == infrav1.SourceTypeProvision &&
+			(loadBalancer.Provision.Type == infrav1.LoadBalancerTypePublic || loadBalancer.Provision.Type == "") {
 			return allErrs
 		}
 	}

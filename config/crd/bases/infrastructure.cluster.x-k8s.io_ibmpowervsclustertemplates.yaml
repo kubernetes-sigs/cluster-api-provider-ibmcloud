@@ -1076,10 +1076,10 @@ spec:
                             Reference, and forbidden otherwise
                           rule: 'self.type == ''Reference'' ? has(self.reference)
                             : !has(self.reference)'
-                        - message: provision configuration is required when type is
-                            Provision, and forbidden otherwise
-                          rule: 'self.type == ''Provision'' ? has(self.provision)
-                            : !has(self.provision)'
+                        - message: provision configuration is forbidden when type
+                            is not Provision; it is optional when type is Provision
+                          rule: 'self.type != ''Provision'' ? !has(self.provision)
+                            : true'
                       ignition:
                         description: ignition defines options related to the bootstrapping
                           systems where Ignition is used.
