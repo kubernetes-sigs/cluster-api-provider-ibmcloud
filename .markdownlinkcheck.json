@@ -1,0 +1,16 @@
+{
+  "ignorePatterns": [
+    {
+      "comment": "Slack workspaces require authentication and block bots",
+      "pattern": "^https://kubernetes\\.slack\\.com/.*"
+    },
+    {
+      "comment": "Slack invites block bots",
+      "pattern": "^https://slack\\.k8s\\.io/.*"
+    }
+  ],
+  "aliveStatusCodes": [200, 206],
+  "retryOn429": true,
+  "retryCount": 2,
+  "timeout": "20s"
+}
