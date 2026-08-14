@@ -134,6 +134,7 @@ following the steps below.
     ibm-powervs-1-control-plane-rg6xv    Ready    master   41h   v1.34.7
     ibm-powervs-1-md-0-4dc5c             Ready    <none>   41h   v1.34.7
     ibm-powervs-1-md-0-dbxb7             Ready    <none>   20h   v1.34.7
+    ```
 
 ### Deploy a PowerVS cluster with infrastructure creation
 
@@ -193,7 +194,7 @@ following the steps below.
 - IBMPOWERVS_SSHKEY_NAME : Name of the SSH Key. Refer [here](../../topics/capibmadm/powervs/key.md#3-capibmadm-powervs-key-list) how to get the keys.
 - IBMPOWERVS_VIP, IBMPOWERVS_VIP_EXTERNAL and IBMPOWERVS_VIP_CIDR : Once we have created the network and port, the values will be available on listing the ports. Refer [here](../../topics/capibmadm/powervs/port.md#3-capibmadm-powervs-port-list)
 - IBMPOWERVS_IMAGE_NAME : Name of the custom image. Refer [here](../../topics/capibmadm/powervs/image.md#2-capibmadm-powervs-image-list) to get image details.
-- IBMPOWERVS_SERVICE_INSTANCE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas-cli-plugin?topic=power-iaas-cli-plugin-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
+- IBMPOWERVS_SERVICE_INSTANCE_ID : ID of the PowerVS workspace. Refer [here](https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-power-iaas-cli-reference-v1#ibmcloud-pi-workspace)
 - IBMACCOUNT_ID : Go to the Account settings page in the IBM Cloud console to view your account ID and type. The account ID is a 32 character, unique account identifier.Refer [here](https://cloud.ibm.com/account/settings)
 - IBMPOWERVS_NETWORK_NAME : The name of the network. Refer [here](../../topics/capibmadm/powervs/network.md#3-capibmadm-powervs-network-list) how to get the network details.
 - [IBMPOWERVS_REGION](../../reference/regions-zones-mapping.md)
