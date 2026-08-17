@@ -13,7 +13,7 @@ require (
 	github.com/IBM-Cloud/power-go-client v1.16.2
 	github.com/IBM/go-sdk-core/v5 v5.23.2
 	github.com/IBM/ibm-cos-sdk-go v1.15.0
-	github.com/IBM/networking-go-sdk v0.53.6
+	github.com/IBM/networking-go-sdk v0.53.10
 	github.com/IBM/platform-services-go-sdk v0.102.0
 	github.com/IBM/vpc-go-sdk v0.76.2
 	github.com/blang/semver/v4 v4.0.0
@@ -22,8 +22,8 @@ require (
 	github.com/go-openapi/strfmt v0.27.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
-	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/onsi/gomega v1.40.0
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20260417184652-84e90bc52f3d
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
