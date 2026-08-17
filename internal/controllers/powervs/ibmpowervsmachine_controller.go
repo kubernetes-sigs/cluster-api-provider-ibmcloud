@@ -55,6 +55,11 @@ import (
 	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
+// loadBalancerSettleRequeueInterval is the poll interval while waiting for a VPC load balancer pool
+// update to leave the update_pending state. IBM VPC load balancers typically settle in 10–30 s;
+// 15 s avoids hammering the API while still reacting promptly.
+const loadBalancerSettleRequeueInterval = 15 * time.Second
+
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object.
 type IBMPowerVSMachineReconciler struct {
 	client.Client
@@ -423,12 +428,15 @@ func (r *IBMPowerVSMachineReconciler) markCondition(machineScope *powervsscope.M
 
 // handleLoadBalancerPoolMemberConfiguration handles load balancer pool member creation flow.
 func (r *IBMPowerVSMachineReconciler) handleLoadBalancerPoolMemberConfiguration(ctx context.Context, machineScope *powervsscope.MachineScope) (ctrl.Result, error) {
-	poolMember, err := machineScope.CreateVPCLoadBalancerPoolMember(ctx)
+	log := ctrl.LoggerFrom(ctx)
+	pendingUpdate, err := machineScope.CreateVPCLoadBalancerPoolMember(ctx)
 	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to create VPC load balancer pool member: %w", err)
+		return ctrl.Result{}, fmt.Errorf("failed to configure VPC load balancer pool member: %w", err)
 	}
-	if poolMember != nil && (poolMember.ProvisioningStatus == nil || *poolMember.ProvisioningStatus != string(infrav1.LoadBalancerStateActive)) {
-		return ctrl.Result{RequeueAfter: 1 * time.Minute}, nil
+	if pendingUpdate {
+		log.V(3).Info("VPC load balancer pool member registration incomplete, requeuing",
+			"requeueAfter", loadBalancerSettleRequeueInterval)
+		return ctrl.Result{RequeueAfter: loadBalancerSettleRequeueInterval}, nil
 	}
 	return ctrl.Result{}, nil
 }
