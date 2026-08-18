@@ -25,7 +25,7 @@ title: Onboard new machine images for Kubernetes version v<>
 
 - [ ] Update Kubernetes version in E2E [config files](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/tree/main/test/e2e/config)
 
-- [ ] Update [E2E script](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh) with latest image names
+- [ ] Update [E2E script](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh) with latest image names
 
 
 **Notes**:
