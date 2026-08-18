@@ -43,13 +43,13 @@
 
 | Package | Used by | GitHub |
 | --- | ----------- | ------ |
-| IBM Cloud CLI | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh) | [ibm-cloud-cli-release](https://github.com/IBM-Cloud/ibm-cloud-cli-release.git) |
-| capibmadm | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh) | [capibmadm](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/tree/main/cmd/capibmadm) |
+| IBM Cloud CLI | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh) | [ibm-cloud-cli-release](https://github.com/IBM-Cloud/ibm-cloud-cli-release.git) |
+| capibmadm | [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh) | [capibmadm](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/tree/main/cmd/capibmadm) |
 
 #### Other Tools
 | Package | Used by | Source |
 | --- | ----------- | ------ |
-| kind | [ensure-kind.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/ensure-kind.sh) | [kind](https://github.com/kubernetes-sigs/kind) |
+| kind | [hack/scripts/dev/kind-install.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/dev/kind-install.sh) | [kind](https://github.com/kubernetes-sigs/kind) |
 | kubebuilder | [Makefile](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/Makefile) | [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder) |
 
 [go.mod1]: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/go.mod

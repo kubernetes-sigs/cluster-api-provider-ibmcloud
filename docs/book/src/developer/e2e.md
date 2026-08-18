@@ -24,8 +24,8 @@ For development and debugging the E2E tests, they can be executed locally.
 ```
 export E2E_FLAVOR=<e2e-flavor>
 ```
-2. Set the infra environment variables accrodingly based on the flavor being tested. Check the required variables for [VPC](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh#L132-L145) and [PowerVS](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh#L123-L130) being set in [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh).
-3. Run the e2e test 
+2. Set the infra environment variables accrodingly based on the flavor being tested. Check the required variables for [VPC](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh#L132-L145) and [PowerVS](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh#L123-L130) being set in [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh).
+3. Run the e2e test
 ```
-./scripts/ci-e2e.sh
+./hack/scripts/ci/ci-e2e.sh
 ```

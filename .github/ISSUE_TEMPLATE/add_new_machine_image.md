@@ -18,7 +18,7 @@ title: Onboard new machine images for Kubernetes version v<>
       - Account: `Upstream CI`
       - Resource group: `prow-upstream`
     - [ ] Update Kubernetes version in E2E [config file](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/811cf285d371b4d9fffdff027a3f3c90b17e6719/test/e2e/config/ibmcloud-e2e-powervs.yaml#L45)
-    - [ ] Update [E2E script](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/811cf285d371b4d9fffdff027a3f3c90b17e6719/scripts/ci-e2e.sh#L127) with latest PowerVS image name
+    - [ ] Update [E2E script](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh#L127) with latest PowerVS image name
   - [ ] Upload the built image to the public COS bucket `power-oss-bucket`
   - [ ] Update [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/powervs#powervs-images) with the latest image details
   - [ ] Update the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/topics/powervs/creating-a-cluster) with latest image details and Kubernetes version in the cluster deployment instructions.
@@ -42,7 +42,7 @@ title: Onboard new machine images for Kubernetes version v<>
       - Account: Upstream CI
       - Resource group: prow-upstream
     - [ ] Update Kubernetes version in E2E [config file](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/test/e2e/config/ibmcloud-e2e-vpc.yaml#L45)
-    - [ ] Update [E2E script](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/scripts/ci-e2e.sh#L141) with latest VPC image name
+    - [ ] Update [E2E script](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh#L141) with latest VPC image name
   - [ ] Upload the built image to the public COS bucket `power-oss-bucket`
   - [ ] Update [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/machine-images/vpc/) with the latest image details
   - [ ] Update the [documentation](https://cluster-api-ibmcloud.sigs.k8s.io/topics/vpc/creating-a-cluster) with latest image details and Kubernetes version in the cluster deployment instructions.
