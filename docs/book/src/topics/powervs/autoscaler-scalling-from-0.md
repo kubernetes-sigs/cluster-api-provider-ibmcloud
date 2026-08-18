@@ -1,10 +1,10 @@
 # Using Autoscaler to scale machines from 0 machine
 
-The autoscaler project supports [cluster-api](https://github.com/kubernetes-sigs/cluster-autoscaler/tree/main/pkg/cloudprovider/clusterapi#cluster-autoscaler-on-cluster-api). With this [enhancement](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md#upgrade-strategy) now the user can use cluster-api feature to scaling from 0 machine.
+The autoscaler project supports [cluster-api](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/clusterapi/README.md#cluster-autoscaler-on-cluster-api). With this [enhancement](https://github.com/kubernetes-sigs/cluster-api/blob/main/docs/proposals/20210310-opt-in-autoscaling-from-zero.md#upgrade-strategy) now the user can use cluster-api feature to scaling from 0 machine.
 
 ## Settinng up the workload cluster
 
-While creating a workload cluster, We need to set the below annotations to machinedeployment inorder to enable the autoscaling, This is one of the [prerequisites](https://github.com/kubernetes-sigs/cluster-autoscaler/tree/main/pkg/cloudprovider/clusterapi#enabling-autoscaling) for autoscaler.
+While creating a workload cluster, We need to set the below annotations to machinedeployment inorder to enable the autoscaling, This is one of the [prerequisites](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/clusterapi/README.md#enabling-autoscaling) for autoscaler.
 ```yaml
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: MachineDeployment
@@ -45,7 +45,7 @@ go build .
 ```
 
 Note:
-1. Autoscaler can be run in different ways, the possible ways are described [here](https://github.com/kubernetes-sigs/cluster-autoscaler/tree/main/pkg/cloudprovider/clusterapi#connecting-cluster-autoscaler-to-cluster-api-management-and-workload-clusters).
+1. Autoscaler can be run in different ways, the possible ways are described [here](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/cloudprovider/clusterapi/README.md#connecting-cluster-autoscaler-to-cluster-api-management-and-workload-clusters).
 2. Autoscaler supports various command line flags and more details about it can be found [here](https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md#what-are-the-parameters-to-ca).
 
 ## Use case of cluster-autoscaler 
