@@ -46,3 +46,16 @@ func fetchBucketRegion(cos infrav1.COSInstanceSource, vpc infrav1.VPCStatus) str
 	}
 	return vpc.Region
 }
+
+// normalizedVPCSecurityGroupRulePrototype translates the deprecated 'all' protocol value to
+// 'icmp_tcp_udp'. This ensures backward compatibility with YAMLs using the old value.
+// The prototype is returned unchanged unless it uses 'all', in which case a normalized copy
+// is returned.
+func normalizedVPCSecurityGroupRulePrototype(prototype *infrav1.VPCSecurityGroupRulePrototype) *infrav1.VPCSecurityGroupRulePrototype {
+	if prototype == nil || prototype.Protocol != infrav1.VPCSecurityGroupRuleProtocolAll {
+		return prototype
+	}
+	normalized := prototype.DeepCopy()
+	normalized.Protocol = infrav1.VPCSecurityGroupRuleProtocolIcmpTCPUDP
+	return normalized
+}

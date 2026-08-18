@@ -104,3 +104,31 @@ func TestFetchBucketRegion(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizedVPCSecurityGroupRulePrototype(t *testing.T) {
+	t.Run("When prototype is nil", func(t *testing.T) {
+		g := NewWithT(t)
+		g.Expect(normalizedVPCSecurityGroupRulePrototype(nil)).To(BeNil())
+	})
+	t.Run("When protocol is not deprecated, the prototype is returned unchanged", func(t *testing.T) {
+		g := NewWithT(t)
+		prototype := &infrav1.VPCSecurityGroupRulePrototype{
+			Protocol: infrav1.VPCSecurityGroupRuleProtocolTCP,
+		}
+		g.Expect(normalizedVPCSecurityGroupRulePrototype(prototype)).To(BeIdenticalTo(prototype))
+	})
+	t.Run("When protocol is deprecated 'all', a normalized copy is returned and the input is not mutated", func(t *testing.T) {
+		g := NewWithT(t)
+		prototype := &infrav1.VPCSecurityGroupRulePrototype{
+			Protocol: infrav1.VPCSecurityGroupRuleProtocolAll,
+			Remotes: []infrav1.VPCSecurityGroupRuleRemote{
+				{RemoteType: infrav1.VPCSecurityGroupRuleRemoteTypeAny},
+			},
+		}
+		normalized := normalizedVPCSecurityGroupRulePrototype(prototype)
+		g.Expect(normalized).ToNot(BeIdenticalTo(prototype))
+		g.Expect(normalized.Protocol).To(Equal(infrav1.VPCSecurityGroupRuleProtocolIcmpTCPUDP))
+		g.Expect(normalized.Remotes).To(Equal(prototype.Remotes))
+		g.Expect(prototype.Protocol).To(Equal(infrav1.VPCSecurityGroupRuleProtocolAll))
+	})
+}

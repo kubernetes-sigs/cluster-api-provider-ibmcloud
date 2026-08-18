@@ -1,0 +1,550 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: Cluster
+metadata:
+  labels:
+    ccm: external
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
+  namespace: ${NAMESPACE}
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+      - ${POD_CIDR:="192.168.0.0/16"}
+    serviceDomain: ${SERVICE_DOMAIN:="cluster.local"}
+    services:
+      cidrBlocks:
+      - ${SERVICE_CIDR:="10.128.0.0/12"}
+  controlPlaneRef:
+    apiGroup: controlplane.cluster.x-k8s.io
+    kind: KubeadmControlPlane
+    name: ${CLUSTER_NAME}-control-plane
+  infrastructureRef:
+    apiGroup: infrastructure.cluster.x-k8s.io
+    kind: IBMVPCCluster
+    name: ${CLUSTER_NAME}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCCluster
+metadata:
+  labels:
+    cluster.x-k8s.io/cluster-name: ${CLUSTER_NAME}
+  name: ${CLUSTER_NAME}
+spec:
+  region: ${IBMVPC_REGION}
+  resourceGroup: ${IBMVPC_RESOURCEGROUP} # needs to be the resource group name https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/issues/2445
+  controlPlaneLoadBalancer:
+    name: ${CLUSTER_NAME}-load-balancer
+  network:
+    vpc:
+      name: ${IBMVPC_NAME}
+    controlPlaneSubnets:
+    - name: ${CLUSTER_NAME}-controlplane-subnet
+      cidr: ${IBMVPC_CONTROLPLANE_SUBNET_CIDR:="10.240.0.0/24"}
+      zone: ${IBMVPC_ZONE}
+    workerSubnets:
+    - name: ${CLUSTER_NAME}-worker-subnet
+      cidr: ${IBMVPC_WORKER_SUBNET_CIDR:="10.240.1.0/24"}
+      zone: ${IBMVPC_ZONE}
+    securityGroups:
+    - name: ${CLUSTER_NAME}-lb-sg
+      rules:
+      - action: allow
+        direction: inbound
+        source:
+          protocol: tcp
+          portRange:
+            minimumPort: 6443
+            maximumPort: 6443
+          remotes:
+          - remoteType: any
+      - action: allow
+        direction: outbound
+        destination:
+          protocol: tcp
+          portRange:
+            minimumPort: 6443
+            maximumPort: 6443
+          remotes:
+          - remoteType: sg
+            securityGroupName: ${CLUSTER_NAME}-controlplane-sg
+    - name: ${CLUSTER_NAME}-controlplane-sg
+      rules:
+      - action: allow
+        direction: inbound
+        source:
+          protocol: tcp
+          portRange:
+            minimumPort: 6443
+            maximumPort: 6443
+          remotes:
+          - remoteType: sg
+            securityGroupName: ${CLUSTER_NAME}-lb-sg
+      - action: allow
+        direction: inbound
+        source:
+          protocol: tcp
+          portRange:
+            minimumPort: 2379
+            maximumPort: 2380
+          remotes:
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
+      - action: allow
+        direction: inbound
+        source:
+          protocol: tcp
+          portRange:
+            minimumPort: 10250
+            maximumPort: 10252
+          remotes:
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
+      # Convenience rule: allow ALL traffic between cluster nodes so any CNI works out of the box.
+      # For a production cluster, drop this rule and add only your CNI's required ports instead
+      # (e.g. Calico VXLAN udp/4789 + Typha tcp/5473). The rules above are the Kubernetes baseline;
+      # this broad rule trades tight security for easy try-outs.
+      - action: allow
+        direction: inbound
+        source:
+          protocol: any
+          remotes:
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-worker-subnet
+      - action: allow
+        direction: outbound
+        destination:
+          protocol: any
+          remotes:
+          - remoteType: any
+    - name: ${CLUSTER_NAME}-worker-sg
+      rules:
+      - action: allow
+        direction: inbound
+        source:
+          protocol: tcp
+          portRange:
+            minimumPort: 10250
+            maximumPort: 10250
+          remotes:
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
+      - action: allow
+        direction: inbound
+        source:
+          protocol: tcp
+          portRange:
+            minimumPort: 30000
+            maximumPort: 32767
+          remotes:
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-worker-subnet
+      # Convenience rule: allow ALL traffic between cluster nodes (see the note on the control-plane SG).
+      # For a production cluster, drop this rule and use your CNI's specific ports instead.
+      - action: allow
+        direction: inbound
+        source:
+          protocol: any
+          remotes:
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
+          - remoteType: cidr
+            cidrSubnetName: ${CLUSTER_NAME}-worker-subnet
+      - action: allow
+        direction: outbound
+        destination:
+          protocol: any
+          remotes:
+          - remoteType: any
+    loadBalancers:
+    - name: ${CLUSTER_NAME}-load-balancer
+      public: true
+      subnets:
+      - name: ${CLUSTER_NAME}-controlplane-subnet
+      securityGroups:
+      - name: ${CLUSTER_NAME}-lb-sg
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1beta2
+kind: KubeadmControlPlane
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+  namespace: ${NAMESPACE}
+spec:
+  kubeadmConfigSpec:
+    clusterConfiguration:
+      apiServer:
+        certSANs:
+        - localhost
+        - 127.0.0.1
+      controllerManager:
+        extraArgs:
+        - name: cloud-provider
+          value: external
+    initConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+        - name: cloud-provider
+          value: external
+        - name: eviction-hard
+          value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+    joinConfiguration:
+      nodeRegistration:
+        criSocket: /var/run/containerd/containerd.sock
+        kubeletExtraArgs:
+        - name: cloud-provider
+          value: external
+        - name: eviction-hard
+          value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+  machineTemplate:
+    spec:
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: IBMVPCMachineTemplate
+        name: ${CLUSTER_NAME}-control-plane
+  replicas: ${CONTROL_PLANE_MACHINE_COUNT}
+  version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-control-plane
+spec:
+  template:
+    spec:
+      bootVolume:
+        sizeGiB: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_SIZEGIB:=20}
+        profile: ${IBMVPC_CONTROLPLANE_BOOT_VOLUME_PROFILE:="general-purpose"}
+      image:
+        name: ${IBMVPC_IMAGE_NAME}
+      profile: ${IBMVPC_PROFILE}
+      primaryNetworkInterface:
+        subnet: ${CLUSTER_NAME}-controlplane-subnet
+        securityGroups:
+        - name: ${CLUSTER_NAME}-controlplane-sg
+      sshKeys:
+      - name: ${IBMVPC_SSHKEY_NAME}
+      zone: ${IBMVPC_ZONE}
+      loadBalancerPoolMembers:
+      - loadBalancer:
+          name: ${CLUSTER_NAME}-load-balancer
+        pool:
+          name: ${CLUSTER_NAME}-lbpool
+        port: 6443
+---
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  clusterName: ${CLUSTER_NAME}
+  replicas: ${WORKER_MACHINE_COUNT}
+  template:
+    spec:
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KubeadmConfigTemplate
+          name: ${CLUSTER_NAME}-md-0
+      clusterName: ${CLUSTER_NAME}
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: IBMVPCMachineTemplate
+        name: ${CLUSTER_NAME}-md-0
+      version: ${KUBERNETES_VERSION}
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: IBMVPCMachineTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      bootVolume:
+        sizeGiB: ${IBMVPC_WORKER_BOOT_VOLUME_SIZEGIB:=20}
+        profile: ${IBMVPC_WORKER_BOOT_VOLUME_PROFILE:="general-purpose"}
+      image:
+        name: ${IBMVPC_IMAGE_NAME}
+      profile: ${IBMVPC_PROFILE}
+      primaryNetworkInterface:
+        subnet: ${CLUSTER_NAME}-worker-subnet
+        securityGroups:
+        - name: ${CLUSTER_NAME}-worker-sg
+      sshKeys:
+      - name: ${IBMVPC_SSHKEY_NAME}
+      zone: ${IBMVPC_ZONE}
+---
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KubeadmConfigTemplate
+metadata:
+  name: ${CLUSTER_NAME}-md-0
+spec:
+  template:
+    spec:
+      joinConfiguration:
+        nodeRegistration:
+          kubeletExtraArgs:
+          - name: cloud-provider
+            value: external
+          - name: eviction-hard
+            value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
+---
+apiVersion: addons.cluster.x-k8s.io/v1beta2
+kind: ClusterResourceSet
+metadata:
+  name: crs-cloud-conf
+spec:
+  clusterSelector:
+    matchLabels:
+      ccm: external
+  resources:
+  - kind: Secret
+    name: ibm-credential
+  - kind: ConfigMap
+    name: ibm-cfg
+  - kind: ConfigMap
+    name: cloud-controller-manager-addon
+  strategy: ApplyOnce
+---
+apiVersion: v1
+data:
+  ibm-cloud-conf.yaml: |-
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: ibm-cloud-config
+      namespace: kube-system
+    data:
+      ibm.conf: |
+        [global]
+        version = 1.1.0
+        [kubernetes]
+        config-file = ""
+        [provider]
+        cluster-default-provider = g2
+        accountID = ${IBMACCOUNT_ID}
+        clusterID = ${CLUSTER_NAME}
+        g2workerServiceAccountID = ${IBMACCOUNT_ID}
+        g2Credentials = /etc/ibm-secret/ibmcloud_api_key
+        g2ResourceGroupName = ${IBMVPC_RESOURCEGROUP_NAME:=""}
+        g2VpcSubnetNames = "${CLUSTER_NAME}-controlplane-subnet,${CLUSTER_NAME}-worker-subnet"
+        g2VpcName = ${IBMVPC_NAME:=""}
+        region =  ${IBMVPC_REGION:=""}
+kind: ConfigMap
+metadata:
+  name: ibm-cfg
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ibm-credential
+stringData:
+  ibm-credential.yaml: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ibm-cloud-credential
+      namespace: kube-system
+    data:
+      ibmcloud_api_key: ${BASE64_API_KEY}
+type: addons.cluster.x-k8s.io/resource-set
+---
+apiVersion: v1
+data:
+  ibm-ccm-external.yaml: |-
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: cloud-controller-manager
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: cloud-controller-manager:apiserver-authentication-reader
+      namespace: kube-system
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: extension-apiserver-authentication-reader
+    subjects:
+      - apiGroup: ""
+        kind: ServiceAccount
+        name: cloud-controller-manager
+        namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: system:cloud-controller-manager
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: system:cloud-controller-manager
+    subjects:
+      - kind: ServiceAccount
+        name: cloud-controller-manager
+        namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: system:cloud-controller-manager
+    rules:
+      - apiGroups:
+          - ""
+        resources:
+          - events
+        verbs:
+          - create
+          - patch
+          - update
+      - apiGroups:
+          - ""
+        resources:
+          - nodes
+        verbs:
+          - "*"
+      - apiGroups:
+          - ""
+        resources:
+          - nodes/status
+        verbs:
+          - patch
+      - apiGroups:
+          - ""
+        resources:
+          - services
+        verbs:
+          - list
+          - patch
+          - update
+          - watch
+      - apiGroups:
+          - ""
+        resources:
+          - services/status
+        verbs:
+          - patch
+      - apiGroups:
+          - ""
+        resources:
+          - serviceaccounts
+        verbs:
+          - create
+          - get
+          - list
+          - watch
+          - update
+      - apiGroups:
+          - ""
+        resources:
+          - persistentvolumes
+        verbs:
+          - get
+          - list
+          - update
+          - watch
+      - apiGroups:
+          - ""
+        resources:
+          - endpoints
+        verbs:
+          - create
+          - get
+          - list
+          - watch
+          - update
+      - apiGroups:
+          - ""
+        resources:
+          - secrets
+        verbs:
+          - get
+          - list
+          - watch
+      - apiGroups:
+          - "coordination.k8s.io"
+        resources:
+          - leases
+        verbs:
+          - create
+          - get
+          - list
+          - watch
+          - update
+      - apiGroups:
+          - ""
+        resourceNames:
+          - node-controller
+          - service-controller
+        resources:
+          - serviceaccounts/token
+        verbs:
+          - create
+    ---
+    apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: ibm-cloud-controller-manager
+      namespace: kube-system
+      labels:
+        k8s-app: ibm-cloud-controller-manager
+    spec:
+      selector:
+        matchLabels:
+          k8s-app: ibm-cloud-controller-manager
+      updateStrategy:
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            k8s-app: ibm-cloud-controller-manager
+        spec:
+          nodeSelector:
+            node-role.kubernetes.io/control-plane: ""
+          tolerations:
+            - key: node.cloudprovider.kubernetes.io/uninitialized
+              value: "true"
+              effect: NoSchedule
+            - key: node-role.kubernetes.io/master
+              effect: NoSchedule
+              operator: Exists
+            - key: node-role.kubernetes.io/control-plane
+              effect: NoSchedule
+              operator: Exists
+            - key: node.kubernetes.io/not-ready
+              effect: NoSchedule
+              operator: Exists
+          serviceAccountName: cloud-controller-manager
+          containers:
+            - name: ibm-cloud-controller-manager
+              image: registry.k8s.io/capi-ibmcloud/powervs-cloud-controller-manager:ef83f3f
+              args:
+                - --v=2
+                - --cloud-provider=ibm
+                - --cloud-config=/etc/cloud/ibm.conf
+                - --use-service-account-credentials=true
+              resources:
+                requests:
+                  cpu: 200m
+              terminationMessagePolicy: FallbackToLogsOnError
+              volumeMounts:
+                - mountPath: /etc/cloud
+                  name: ibm-config-volume
+                  readOnly: true
+                - mountPath: /etc/ibm-secret
+                  name: ibm-secret
+          hostNetwork: true
+          volumes:
+            - name: ibm-config-volume
+              configMap:
+                name: ibm-cloud-config
+            - name: ibm-secret
+              secret:
+                secretName: ibm-cloud-credential
+kind: ConfigMap
+metadata:
+  name: cloud-controller-manager-addon

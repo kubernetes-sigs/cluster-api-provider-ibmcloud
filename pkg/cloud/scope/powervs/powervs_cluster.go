@@ -2148,6 +2148,15 @@ func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []
 	log.V(3).Info("Creating VPC security group rules", "securityGroupID", securityGroupID, "ruleCount", len(rules))
 
 	for _, rule := range rules {
+		// Work on a copy with normalized prototypes so the deprecated 'all' protocol is
+		// translated without mutating the cluster spec.
+		if src := normalizedVPCSecurityGroupRulePrototype(&rule.Source); src != nil {
+			rule.Source = *src
+		}
+		if dst := normalizedVPCSecurityGroupRulePrototype(&rule.Destination); dst != nil {
+			rule.Destination = *dst
+		}
+
 		direction := string(rule.Direction)
 
 		var protocol string
@@ -2248,11 +2257,15 @@ func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityG
 	// 4. Extract Rule ID based on returned interface type
 	var ruleID string
 	switch rule := ruleIntf.(type) {
-	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolAll:
+	case *vpcv1.SecurityGroupRuleProtocolAny:
+		ruleID = *rule.ID
+	case *vpcv1.SecurityGroupRuleProtocolIcmptcpudp:
 		ruleID = *rule.ID
 	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp:
 		ruleID = *rule.ID
 	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp:
+		ruleID = *rule.ID
+	case *vpcv1.SecurityGroupRuleProtocolIndividual:
 		ruleID = *rule.ID
 	default:
 		return "", fmt.Errorf("unrecognized rule type returned from API")
