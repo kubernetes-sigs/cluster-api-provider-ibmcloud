@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	defaultSystemType = "s922"
+	defaultSystemType = "s1022"
 )
 
 func defaultIBMPowerVSMachineSpec(spec *infrav1.IBMPowerVSMachineSpec) {

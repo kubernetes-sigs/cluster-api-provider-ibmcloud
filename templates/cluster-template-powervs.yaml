@@ -228,7 +228,7 @@ spec:
       serviceInstance:
         id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
-      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_CONTROL_PLANE_SYSTYPE:="s1022"}
 ---
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: MachineDeployment
@@ -268,7 +268,7 @@ spec:
       serviceInstance:
         id: ${IBMPOWERVS_SERVICE_INSTANCE_ID}
       sshKey: ${IBMPOWERVS_SSHKEY_NAME}
-      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s922"}
+      systemType: ${IBMPOWERVS_COMPUTE_SYSTYPE:="s1022"}
 ---
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KubeadmConfigTemplate
