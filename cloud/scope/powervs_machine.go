@@ -955,16 +955,35 @@ func (m *PowerVSMachineScope) GetMachineInternalIP() string {
 	return ""
 }
 
-// CreateVPCLoadBalancerPoolMember creates a member in load balancer pool.
-func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (*vpcv1.LoadBalancerPoolMember, error) { //nolint:gocyclo
+// CreateVPCLoadBalancerPoolMember registers the current machine's IP in every eligible load balancer
+// pool. It is designed for parallel progress across multiple load balancers:
+//
+//   - A transiently-busy load balancer (update_pending, create_pending) is skipped — not an error —
+//     so the other load balancer can still make progress in the same reconcile pass. This avoids the
+//     error-backoff retry storm that occurred when "LB not active" was returned as an error.
+//   - A non-transient non-active state (e.g. delete_pending, or any unknown state) is returned as
+//     an error so that a genuinely broken load balancer surfaces through conditions/events rather
+//     than silently retrying forever.
+//   - At most one CreateLoadBalancerPoolMember (POST) is issued per load balancer per pass. After a
+//     write the load balancer goes update_pending, so subsequent pools on the same load balancer are
+//     checked for membership only; if any are still unregistered the pending flag is set so the
+//     controller requeues.
+//
+// Returns (pendingUpdate, err):
+//   - pendingUpdate: true when any registration is still incomplete (load balancer busy, or more
+//     pools remain after this pass's one write). The controller requeues at
+//     loadBalancerSettleRequeueInterval while this is true.
+//   - err: only set for real API failures or a non-transient load balancer state; a
+//     transiently-busy load balancer is never an error.
+func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (bool, error) { //nolint:gocyclo
 	log := ctrl.LoggerFrom(ctx)
+
 	loadBalancers := make([]infrav1.VPCLoadBalancerSpec, 0)
 	if len(m.IBMPowerVSCluster.Spec.LoadBalancers) == 0 {
-		loadBalancer := infrav1.VPCLoadBalancerSpec{
+		loadBalancers = append(loadBalancers, infrav1.VPCLoadBalancerSpec{
 			Name:   fmt.Sprintf("%s-loadbalancer", m.IBMPowerVSCluster.Name),
 			Public: ptr.To(true),
-		}
-		loadBalancers = append(loadBalancers, loadBalancer)
+		})
 	}
 	for index, loadBalancer := range m.IBMPowerVSCluster.Spec.LoadBalancers {
 		if loadBalancer.Name == "" {
@@ -973,51 +992,70 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
 
-	for _, lb := range loadBalancers {
-		var lbID *string
+	pendingUpdate := false
+
+	for _, loadBalancer := range loadBalancers {
 		if m.IBMPowerVSCluster.Status.LoadBalancers == nil {
-			return nil, fmt.Errorf("failed to find VPC load balancer ID")
+			return false, fmt.Errorf("failed to find VPC load balancer ID")
 		}
-		if val, ok := m.IBMPowerVSCluster.Status.LoadBalancers[lb.Name]; ok {
-			lbID = val.ID
-		} else {
-			return nil, fmt.Errorf("failed to find VPC load balancer ID")
+		loadBalancerStatus, ok := m.IBMPowerVSCluster.Status.LoadBalancers[loadBalancer.Name]
+		if !ok {
+			return false, fmt.Errorf("failed to find VPC load balancer ID")
 		}
-		loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-			ID: lbID,
-		})
+		loadBalancerID := loadBalancerStatus.ID
+
+		loadBalancerDetails, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: loadBalancerID})
 		if err != nil {
-			return nil, fmt.Errorf("failed to find VPC load balancer details: %w", err)
+			return false, fmt.Errorf("failed to find VPC load balancer details: %w", err)
 		}
-		if *loadBalancer.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
-			return nil, fmt.Errorf("VPC load balancer is not in active state, current state %s", *loadBalancer.ProvisioningStatus)
+
+		// Only transient states are safe to skip and retry. A non-transient non-active state
+		// (e.g. delete_pending, or any unknown state) means the load balancer is genuinely broken
+		// and should surface as an error so conditions/events reflect it.
+		// Note: the provisioning-status check must come before the pool-count check because a
+		// create_pending LB may legitimately have zero pools until creation completes.
+		if loadBalancerDetails.ProvisioningStatus == nil {
+			return false, fmt.Errorf("VPC load balancer %s is in non-recoverable state %q", loadBalancer.Name, "<nil>")
 		}
-		if len(loadBalancer.Pools) == 0 {
-			return nil, fmt.Errorf("no pools exist for the VPC load balancer %s", lb.Name)
+
+		loadBalancerState := infrav1.VPCLoadBalancerState(*loadBalancerDetails.ProvisioningStatus)
+
+		switch loadBalancerState {
+		case infrav1.VPCLoadBalancerStateActive:
+			// Load balancer is active and ready; proceed normally.
+		case infrav1.VPCLoadBalancerStateUpdatePending, infrav1.VPCLoadBalancerStateCreatePending:
+			log.V(3).Info("VPC load balancer is transiently busy, skipping this pass",
+				"loadBalancerName", loadBalancer.Name, "loadBalancerState", loadBalancerState)
+			pendingUpdate = true
+			continue
+		default:
+			return false, fmt.Errorf("VPC load balancer %s is in non-recoverable state %q", loadBalancer.Name, loadBalancerState)
+		}
+
+		if len(loadBalancerDetails.Pools) == 0 {
+			return false, fmt.Errorf("no pools exist for the VPC load balancer %s", loadBalancer.Name)
 		}
 
 		internalIP := m.GetMachineInternalIP()
 
-		// lbAdditionalListeners is a mapping of additionalListener's port-protocol to the additionalListener as defined in the specification
-		// It will be used later to get the default pool associated with the listener
+		// lbAdditionalListeners: port-protocol key → spec entry (used to resolve target ports).
 		lbAdditionalListeners := map[string]infrav1.AdditionalListenerSpec{}
-		for _, additionalListener := range lb.AdditionalListeners {
+		for _, additionalListener := range loadBalancer.AdditionalListeners {
 			if additionalListener.Protocol == nil {
 				additionalListener.Protocol = &infrav1.VPCLoadBalancerListenerProtocolTCP
 			}
 			lbAdditionalListeners[fmt.Sprintf("%d-%s", additionalListener.Port, *additionalListener.Protocol)] = additionalListener
 		}
 
-		// loadBalancerListeners is a mapping of the loadBalancer listener's defaultPoolName to the additionalListener
-		// as the default pool name might be empty in spec and should be fetched from the cloud's listener
+		// loadBalancerListeners: pool name → listener spec (populated from the cloud's listener list).
 		loadBalancerListeners := map[string]infrav1.AdditionalListenerSpec{}
-		for _, listener := range loadBalancer.Listeners {
-			listenerOptions := &vpcv1.GetLoadBalancerListenerOptions{}
-			listenerOptions.SetLoadBalancerID(*loadBalancer.ID)
-			listenerOptions.SetID(*listener.ID)
-			loadBalancerListener, _, err := m.IBMVPCClient.GetLoadBalancerListener(listenerOptions)
+		for _, listenerRef := range loadBalancerDetails.Listeners {
+			listenerOpts := &vpcv1.GetLoadBalancerListenerOptions{}
+			listenerOpts.SetLoadBalancerID(*loadBalancerDetails.ID)
+			listenerOpts.SetID(*listenerRef.ID)
+			loadBalancerListener, _, err := m.IBMVPCClient.GetLoadBalancerListener(listenerOpts)
 			if err != nil {
-				return nil, fmt.Errorf("failed to list %s load balancer listener: %w", *listener.ID, err)
+				return false, fmt.Errorf("failed to get load balancer listener %s: %w", *listenerRef.ID, err)
 			}
 			if additionalListener, ok := lbAdditionalListeners[fmt.Sprintf("%d-%s", *loadBalancerListener.Port, *loadBalancerListener.Protocol)]; ok {
 				if loadBalancerListener.DefaultPool != nil {
@@ -1039,20 +1077,18 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 				}
 			}
 		}
-		// Update each LoadBalancer pool
-		// For each pool, get the additionalListener associated with the pool from the loadBalancerListeners map.
-		for _, pool := range loadBalancer.Pools {
-			log.V(3).Info("Updating LoadBalancer pool member", "pool", *pool.Name, "loadBalancerName", *loadBalancer.Name, "IP", internalIP)
-			listOptions := &vpcv1.ListLoadBalancerPoolMembersOptions{}
-			listOptions.SetLoadBalancerID(*loadBalancer.ID)
-			listOptions.SetPoolID(*pool.ID)
-			listLoadBalancerPoolMembers, _, err := m.IBMVPCClient.ListLoadBalancerPoolMembers(listOptions)
-			if err != nil {
-				return nil, fmt.Errorf("failed to list %s VPC load balancer pool: %w", *pool.Name, err)
-			}
-			var targetPort int64
-			var alreadyRegistered bool
 
+		// updatedThisLB tracks whether we've already issued a POST to this load balancer in the
+		// current pass. After one write the load balancer goes update_pending, so further writes
+		// would fail the active-check. Instead we continue scanning remaining pools for membership
+		// to set pendingUpdate correctly.
+		updatedThisLB := false
+
+		for _, pool := range loadBalancerDetails.Pools {
+			log.V(3).Info("Checking LoadBalancer pool member", "pool", *pool.Name, "loadBalancerName", *loadBalancerDetails.Name, "IP", internalIP)
+
+			// Determine the target port and evaluate label selectors for this pool.
+			var targetPort int64
 			if loadBalancerListener, ok := loadBalancerListeners[*pool.Name]; ok {
 				targetPort = loadBalancerListener.Port
 				log.V(3).Info("Checking if machine label matches with the label selector in listener", "machineLabel", m.IBMPowerVSMachine.Labels, "labelSelector", loadBalancerListener.Selector)
@@ -1061,61 +1097,69 @@ func (m *PowerVSMachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Contex
 					log.V(5).Error(err, "Skipping listener addition, failed to get label selector from spec selector")
 					continue
 				}
-
 				if selector.Empty() && !util.IsControlPlaneMachine(m.Machine) {
 					log.V(3).Info("Skipping listener addition as the selector is empty and not a control plane machine")
 					continue
 				}
-				// Skip adding the listener if the selector does not match
 				if !selector.Empty() && !selector.Matches(labels.Set(m.IBMPowerVSMachine.Labels)) {
 					log.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "IP", internalIP)
 					continue
 				}
 			}
 
-			for _, member := range listLoadBalancerPoolMembers.Members {
-				if target, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok {
+			// Check existing membership.
+			listOpts := &vpcv1.ListLoadBalancerPoolMembersOptions{}
+			listOpts.SetLoadBalancerID(*loadBalancerDetails.ID)
+			listOpts.SetPoolID(*pool.ID)
+			existingPoolMembers, _, err := m.IBMVPCClient.ListLoadBalancerPoolMembers(listOpts)
+			if err != nil {
+				return false, fmt.Errorf("failed to list %s VPC load balancer pool members: %w", *pool.Name, err)
+			}
+
+			alreadyRegistered := false
+			for _, member := range existingPoolMembers.Members {
+				if target, ok := member.Target.(*vpcv1.LoadBalancerPoolMemberTarget); ok && target.Address != nil {
 					if *target.Address == internalIP {
 						alreadyRegistered = true
-						log.V(3).Info("Target IP already configured for pool", "IP", internalIP, "poolName", *pool.Name)
+						log.V(3).Info("Pool member already exists", "poolName", *pool.Name, "IP", internalIP)
+						break
 					}
 				}
 			}
-
 			if alreadyRegistered {
-				log.V(3).Info("PoolMember already exist", "poolName", *pool.Name, "IP", internalIP, "targetPort", targetPort)
 				continue
 			}
 
-			// make sure that LoadBalancer is in active state
-			loadBalancer, _, err := m.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-				ID: loadBalancer.ID,
-			})
-			if err != nil {
-				return nil, fmt.Errorf("failed to fetch VPC load balancer details with ID: %s error: %v", *lbID, err)
-			}
-			if *loadBalancer.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
-				log.V(3).Info("Unable to update pool for VPC load balancer as it is not in active state", "loadBalancerName", *loadBalancer.Name, "loadBalancerState", *loadBalancer.ProvisioningStatus)
-				return nil, fmt.Errorf("VPC load balancer %s not in active state to update pool member", *loadBalancer.Name)
+			// Machine is not yet in this pool — registration is needed.
+			if updatedThisLB {
+				// We already wrote to this load balancer this pass; it is now update_pending.
+				// Don't attempt another write. Record that work remains and move on.
+				log.V(3).Info("Already updated load balancer this pass, deferring remaining pool registration",
+					"pool", *pool.Name, "loadBalancerName", *loadBalancerDetails.Name)
+				pendingUpdate = true
+				continue
 			}
 
-			options := &vpcv1.CreateLoadBalancerPoolMemberOptions{}
-			options.SetPort(targetPort)
-			options.SetLoadBalancerID(*loadBalancer.ID)
-			options.SetPoolID(*pool.ID)
-			options.SetTarget(&vpcv1.LoadBalancerPoolMemberTargetPrototype{
-				Address: &internalIP,
-			})
-			log.V(3).Info("Creating VPC load balancer pool member", "options", options)
-			loadBalancerPoolMember, _, err := m.IBMVPCClient.CreateLoadBalancerPoolMember(options)
+			opts := &vpcv1.CreateLoadBalancerPoolMemberOptions{}
+			opts.SetPort(targetPort)
+			opts.SetLoadBalancerID(*loadBalancerDetails.ID)
+			opts.SetPoolID(*pool.ID)
+			opts.SetTarget(&vpcv1.LoadBalancerPoolMemberTargetPrototype{Address: &internalIP})
+			log.V(3).Info("Creating VPC load balancer pool member", "pool", *pool.Name, "IP", internalIP, "port", targetPort)
+			newMember, _, err := m.IBMVPCClient.CreateLoadBalancerPoolMember(opts)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create VPC load balancer %s pool member %w", *loadBalancer.Name, err)
+				return false, fmt.Errorf("failed to create VPC load balancer %s pool member: %w", *loadBalancerDetails.Name, err)
 			}
-			log.Info("Created VPC load balancer pool member", "loadBalancerID", *loadBalancerPoolMember.ID)
-			return loadBalancerPoolMember, nil
+			log.Info("Created VPC load balancer pool member", "memberID", *newMember.ID, "pool", *pool.Name)
+
+			updatedThisLB = true
+			// If the member is not yet active, the load balancer is settling; signal a requeue.
+			if newMember.ProvisioningStatus == nil || *newMember.ProvisioningStatus != string(infrav1.VPCLoadBalancerStateActive) {
+				pendingUpdate = true
+			}
 		}
 	}
-	return nil, nil
+	return pendingUpdate, nil
 }
 
 // APIServerPort returns the APIServerPort.
