@@ -81,6 +81,9 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Add finalizer first if not set to avoid the race condition between init and delete.
 	if finalizerAdded, err := finalizers.EnsureFinalizer(ctx, r.Client, ibmPowerVSImage, infrav1.IBMPowerVSImageFinalizer); err != nil || finalizerAdded {
+		if err == nil {
+			log.Info("Added finalizer to IBMPowerVSImage, requeuing")
+		}
 		return ctrl.Result{}, err
 	}
 
@@ -146,7 +149,7 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 	}
 
 	if r.shouldAdopt(*imageScope.IBMPowerVSImage) {
-		log.Info("Image Controller has not yet set OwnerRef")
+		log.Info("Setting OwnerRef on IBMPowerVSImage, requeuing")
 		imageScope.IBMPowerVSImage.OwnerReferences = clusterv1util.EnsureOwnerRef(imageScope.IBMPowerVSImage.OwnerReferences, metav1.OwnerReference{
 			APIVersion: infrav1.GroupVersion.String(),
 			Kind:       ibmPowerVSClusterKind,
@@ -174,8 +177,10 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 
 		imageScope.SetImageState(*job.Status.State)
 
+		log.Info("Polling import job", "jobID", jobID, "state", *job.Status.State)
 		switch imageScope.GetImageState() {
 		case infrav1.PowerVSImageStateCompleted:
+			log.Info("Import job completed, proceeding to reconcile image", "jobID", jobID)
 			r.markCondition(imageScope.IBMPowerVSImage, infrav1.IBMPowerVSImageReadyCondition, infrav1.ImageImportedV1Beta2Condition, metav1.ConditionTrue, infrav1.IBMPowerVSImageReadyReason, clusterv1.ConditionSeverityInfo, "")
 
 		case infrav1.PowerVSImageStateFailed:
@@ -201,7 +206,10 @@ func (r *IBMPowerVSImageReconciler) reconcile(ctx context.Context, cluster *infr
 	}
 
 	if jobRef != nil && jobRef.ID != nil {
+		log.Info("Import job submitted", "jobID", *jobRef.ID)
 		imageScope.SetJobID(*jobRef.ID)
+	} else if img == nil {
+		log.Info("Import job already in progress (no jobRef returned), requeuing")
 	}
 	return r.reconcileImage(ctx, img, imageScope)
 }

@@ -909,7 +909,7 @@ type LoadBalancerStatus struct {
 
 // COSInstanceSource defines how the IBM Cloud COS instance is sourced.
 // +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
-// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type != 'Provision' ? !has(self.provision) : true",message="provision configuration is forbidden when type is not Provision; it is optional when type is Provision"
 type COSInstanceSource struct {
 	// type defines whether to use an existing COS instance or provision a new one.
 	// +required
@@ -975,6 +975,16 @@ type COSInstanceStatus struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=32
 	BucketRegion string `json:"bucketRegion,omitempty"`
+
+	// hmacSecretName is the name of the Kubernetes Secret (in the same namespace as the
+	// IBMPowerVSCluster) that holds the HMAC credentials for the COS instance.
+	// The Secret contains keys "access_key_id" and "secret_access_key".
+	// These are used by the machine scope to generate short-lived pre-signed URLs for
+	// ignition bootstrap data instead of embedding a long-lived IAM Bearer token.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	HMACSecretName string `json:"hmacSecretName,omitempty"`
 }
 
 const (

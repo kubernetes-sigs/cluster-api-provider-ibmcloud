@@ -50,6 +50,8 @@ const (
 	ResourceTypeCOS ResourceType = "cos"
 	// ResourceTypeCOSBucket is a COS bucket inside a COS instance.
 	ResourceTypeCOSBucket ResourceType = "cos-bucket"
+	// ResourceTypeCOSHMACKey is a COS HMAC service credential key.
+	ResourceTypeCOSHMACKey ResourceType = "cos-hmac"
 )
 
 // resourceNameMaxLen is the maximum length allowed for IBM Cloud resource names.

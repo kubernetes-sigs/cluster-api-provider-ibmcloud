@@ -17,6 +17,8 @@ limitations under the License.
 package cos
 
 import (
+	"time"
+
 	"github.com/IBM/ibm-cos-sdk-go/aws"
 	"github.com/IBM/ibm-cos-sdk-go/aws/request"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
@@ -36,4 +38,5 @@ type Cos interface {
 	ListObjects(input *s3.ListObjectsInput) (*s3.ListObjectsOutput, error)
 	DeleteObject(input *s3.DeleteObjectInput) (*s3.DeleteObjectOutput, error)
 	PutPublicAccessBlock(input *s3.PutPublicAccessBlockInput) (*s3.PutPublicAccessBlockOutput, error)
+	PresignedURL(bucket, key string, expiry time.Duration) (string, error)
 }
