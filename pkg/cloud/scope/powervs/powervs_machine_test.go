@@ -1202,6 +1202,7 @@ func TestCreateMachinePVS(t *testing.T) {
 			scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage+"-temp"), ptr.To(pvsNetwork), false, mockpowervs)
 			mockpowervs.EXPECT().ListInstances(gomock.Any()).Return(pvmInstances, nil)
 			mockpowervs.EXPECT().ListImages(gomock.Any()).Return(images, nil)
+			mockpowervs.EXPECT().ListStockImages(gomock.Any()).Return(images, nil)
 			_, err := scope.CreateMachine(ctx)
 			g.Expect(err).To(Not(BeNil()))
 		})
