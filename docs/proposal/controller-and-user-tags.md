@@ -33,6 +33,54 @@ This proposal presents adding two kinds of tags to the resources created by cont
  Below are the cluster creation scenarios.
  #### Creating a new cluster 
  - When resources will be created for new cluster in the cloud the tag will be attached. During deletion flow, will check for tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and delete the resources.
+ ##### Tag Attachment Scenarios
+   ##### Success 
+
+   When the controller successfully attaches the tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` to a newly created resource, the cluster creation process proceeds normally and completes successfully.
+
+   - **Deletion Behavior**
+
+   	 During cluster deletion, the controller identifies resources with the matching tag `powervs.cluster.x-k8s.io/cluster-uuid: UUID` and deletes them, allowing the cluster to be deleted successfully.
+
+   ##### Failure 
+
+   If a resource is created successfully but tag attachment fails then:
+   
+   1. Reconciliation Attempts: The controller attempts attaching the tag during reconciliations.
+   2. If tag attachment fails, the controller:
+   	  - Sets a condition on the cluster, condition example for workspace. "Failed to attach tag to newly created Workspace <workspace-name>. Please delete the cluster and recreate it in different region."
+   	  ```
+   	  status:
+   	        conditions:
+   	        - lastTransitionTime: "2025-03-26T06:06:11Z"
+   	          status: "True"
+   	          type: Ready
+   	        - lastTransitionTime: "2025-03-26T06:06:11Z"
+   	          status: "False"
+   	          type: WorkspaceReady
+   	        v1beta2:
+   	          conditions:
+   	          - lastTransitionTime: "2025-03-26T06:06:11Z"
+   	            message: ""
+   	            observedGeneration: 2
+   	            reason: Ready
+   	            status: "True"
+   	            type: Ready
+   	          - lastTransitionTime: "2025-03-26T06:06:11Z"
+   	            message: "Failed to attach tag to newly created Workspace. Please delete the cluster and recreate it in different region"
+   	            observedGeneration: 2
+   	            reason: WorkspaceTagAttachmentFailed
+   	            status: "False"
+   	            type: WorkspaceReady
+   	  ```
+   3. The controller will try to check on each reconciliations if tag is attached. Since tag attachment is failing it will try to attach the tag again. If it is failing again. It will repeat the same process. If tag attachment is succesfull, it will move ahead with other resources creation.
+   4. If the tag attachment continues to fail, reconciliations will be happening infinityly. Then user has to intervene.
+
+   - **Deletion Behavior**
+
+   	 When the user triggers deletion of a cluster where tag attachment previously failed, the controller will check the condition that is set during tag attachment failure. Since the condition set, the controller will proceed with resource deletion.
+    
+ 
  #### Creating a new cluster with reusing pre-created resources
  - When cluster is created using existing resources, no tag will be attached. We won't delete these resources, as these were not created by controller.
  #### Creating a new cluster with reusing pre-created resources from old cluster.
@@ -50,7 +98,7 @@ This proposal presents adding two kinds of tags to the resources created by cont
 8. [COS Instance](https://www.ibm.com/products/cloud-object-storage)
 
 #### Note 
-- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `powervs.cluster.x-k8s.io/owner/<cluster-name>/TG: vpcconnection, powervsconnection` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
+- When TransitGateway is tagged we can delete connections. But there is case when TransitGateway is not newly created but connections are newly created. But we cannot delete connections since it doesn't support tagging. So to delete TransitGateway connections have to add tag `powervs.cluster.x-k8s.io/owner/<cluster-name>/TG: vpcconnectionID, powervsconnectionID` to TransitGateway. So will check if this tag is added to TransitGateway, will move with the deletion of connections.
 
 - To handle deletion DHCP server, have to tag DHCP Network. DHCP server doesn't support tagging.
 
