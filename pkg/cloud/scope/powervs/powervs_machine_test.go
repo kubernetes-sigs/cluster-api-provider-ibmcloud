@@ -1255,7 +1255,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-23"),
@@ -1328,10 +1328,10 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
 		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
-		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
-		g.Expect(result).To(BeNil())
+		g.Expect(pending).To(BeFalse())
 	})
 
 	t.Run("Add listener if the machine label and listener label matches", func(t *testing.T) {
@@ -1342,7 +1342,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-22"),
@@ -1418,12 +1418,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
 		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
 		expectedLoadBalancerPoolMemberID := "pool-member-3"
-		expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
+		expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID), ProvisioningStatus: ptr.To("active")}
 		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
-		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
-		g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
+		g.Expect(pending).To(BeFalse())
 	})
 
 	t.Run("Skip adding non control plane nodes if there is no selector", func(t *testing.T) {
@@ -1434,7 +1434,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-6443"),
@@ -1504,10 +1504,10 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{})).Return(loadBalancerListener, nil, nil).AnyTimes()
 		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
-		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 
 		g.Expect(err).To(BeNil())
-		g.Expect(result).To(BeNil())
+		g.Expect(pending).To(BeFalse())
 	})
 	t.Run("Adding control plane nodes even if there is no selector", func(t *testing.T) {
 		g := NewWithT(t)
@@ -1517,7 +1517,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		loadBalancers := &vpcv1.LoadBalancer{
 			ID:                 ptr.To(loadBalancerID),
 			Name:               ptr.To(loadBalancerName),
-			ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 			Pools: []vpcv1.LoadBalancerPoolReference{
 				{
 					ID:   ptr.To("pool-id-6443"),
@@ -1563,8 +1563,14 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 					},
 				},
 			},
-			IBMVPCClient:      mockClient,
-			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
+			IBMVPCClient: mockClient,
+			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
+				Status: infrav1.IBMPowerVSMachineStatus{
+					Addresses: []clusterv1.MachineAddress{
+						{Address: machineAddress, Type: clusterv1.MachineInternalIP},
+					},
+				},
+			},
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
 					LoadBalancers: []infrav1.LoadBalancerSource{
@@ -1600,22 +1606,35 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{LoadBalancerID: ptr.To(loadBalancerID), ID: ptr.To("pool-id-6443")})).Return(loadBalancerListener6443, nil, nil).AnyTimes()
 		mockClient.EXPECT().GetLoadBalancerListener(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerListenerOptions{LoadBalancerID: ptr.To(loadBalancerID), ID: ptr.To("pool-id-24")})).Return(loadBalancerListener24, nil, nil).AnyTimes()
-		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
-		expectedLoadBalancerPoolMemberID6443 := "pool-member-6443"
-		expectedLoadBalancerPoolMember6443 := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID6443)}
-		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember6443, nil, nil).Times(1)
-		result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		// Pass 1: pool-6443 listed (empty) → POST; pool-24 skipped (updatedThisLB=true breaks before listing) → pendingUpdate=true.
+		memberID6443 := "pool-member-6443"
+		memberID24 := "pool-member-24"
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).Times(1)
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMember{ID: ptr.To(memberID6443), ProvisioningStatus: ptr.To("update_pending")}, nil, nil).Times(1)
 
-		g.Expect(err).To(BeNil())
-		g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID6443))
-
-		expectedLoadBalancerPoolMemberID24 := "pool-member-24"
-		expectedLoadBalancerPoolMember24 := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID24)}
-		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember24, nil, nil).Times(1)
-		result1, err1 := scope.CreateVPCLoadBalancerPoolMember(ctx)
-
+		pending1, err1 := scope.CreateVPCLoadBalancerPoolMember(ctx)
 		g.Expect(err1).To(BeNil())
-		g.Expect(*result1.ID).To(Equal(expectedLoadBalancerPoolMemberID24))
+		g.Expect(pending1).To(BeTrue())
+
+		// Pass 2: pool-6443 has machineAddress (already registered); pool-24 is empty → POST.
+		// GetLoadBalancer and GetLoadBalancerListener are already covered by AnyTimes() above.
+		alreadyInPool := &vpcv1.LoadBalancerPoolMemberCollection{
+			Members: []vpcv1.LoadBalancerPoolMember{
+				{Target: &vpcv1.LoadBalancerPoolMemberTarget{Address: ptr.To(machineAddress)}},
+			},
+		}
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).
+			Return(alreadyInPool, nil, nil).Times(1)
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).Times(1)
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMember{ID: ptr.To(memberID24), ProvisioningStatus: ptr.To("active")}, nil, nil).Times(1)
+
+		pending2, err2 := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err2).To(BeNil())
+		g.Expect(pending2).To(BeFalse())
 	})
 	t.Run("Create VPC Load Balancer Pool Member", func(t *testing.T) {
 		t.Run("No load balancers present in status", func(t *testing.T) {
@@ -1630,8 +1649,8 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
-			g.Expect(result).To(BeNil())
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			g.Expect(pending).To(BeFalse())
 			g.Expect(err.Error()).To(Equal("failed to find VPC load balancer ID"))
 		})
 
@@ -1663,8 +1682,8 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
-			g.Expect(result).To(BeNil())
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			g.Expect(pending).To(BeFalse())
 			g.Expect(err).ToNot(BeNil())
 		})
 
@@ -1673,7 +1692,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancers := &vpcv1.LoadBalancer{
-				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateCreatePending),
+				ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateCreatePending)),
 			}
 			mockClient := vpcmock.NewMockVpc(mockCtrl)
 
@@ -1700,9 +1719,10 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
-			g.Expect(result).To(BeNil())
-			g.Expect(err.Error()).To(ContainSubstring("VPC load balancer is not in active state"))
+			// A transiently-busy load balancer (create_pending) is skipped with pendingUpdate=true, not an error.
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			g.Expect(err).To(BeNil())
+			g.Expect(pending).To(BeTrue())
 		})
 
 		t.Run("No pools exist for the VPC load balancer", func(t *testing.T) {
@@ -1710,7 +1730,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			setup(t)
 			t.Cleanup(teardown)
 			loadBalancers := &vpcv1.LoadBalancer{
-				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+				ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 			}
 			mockClient := vpcmock.NewMockVpc(mockCtrl)
 			mockClient.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(loadBalancerID)}).Return(loadBalancers, nil, nil)
@@ -1736,8 +1756,8 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
-			g.Expect(result).To(BeNil())
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			g.Expect(pending).To(BeFalse())
 			g.Expect(err.Error()).To(Equal("no pools exist for the VPC load balancer load-balancer-0"))
 		})
 
@@ -1749,7 +1769,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			loadBalancers := &vpcv1.LoadBalancer{
 				ID:                 ptr.To(loadBalancerID),
 				Name:               ptr.To(loadBalancerName),
-				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+				ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 				Pools: []vpcv1.LoadBalancerPoolReference{
 					{
 						ID:   ptr.To("pool-id-0"),
@@ -1800,11 +1820,12 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(loadBalancers, nil, nil).AnyTimes()
 			mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).AnyTimes()
 			expectedLoadBalancerPoolMemberID := "pool-member-2"
-			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
+			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID), ProvisioningStatus: ptr.To("active")}
 			mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(err).To(BeNil())
-			g.Expect(*result.ID).To(Equal(expectedLoadBalancerPoolMemberID))
+			// Three pools; first eligible pool gets one POST, the other two are deferred → pending=true.
+			g.Expect(pending).To(BeTrue())
 		})
 
 		t.Run("Failed to find VPC load balancer ID", func(t *testing.T) {
@@ -1822,9 +1843,9 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 					},
 				},
 			}
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 			g.Expect(err.Error()).To(Equal("failed to find VPC load balancer ID"))
-			g.Expect(result).To(BeNil())
+			g.Expect(pending).To(BeFalse())
 		})
 
 		t.Run("Created load balancer pool member (when target IP is already configured for pool)", func(t *testing.T) {
@@ -1836,7 +1857,7 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 			loadBalancers := &vpcv1.LoadBalancer{
 				ID:                 ptr.To(loadBalancerID),
 				Name:               ptr.To(loadBalancerName),
-				ProvisioningStatus: (*string)(&infrav1.LoadBalancerStateActive),
+				ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
 				Pools: []vpcv1.LoadBalancerPoolReference{
 					{
 						ID:   ptr.To("pool-id-2"),
@@ -1890,15 +1911,370 @@ func TestCreateVPCLoadBalancerPoolMemberPowerVSMachine(t *testing.T) {
 				},
 			}
 			mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(loadBalancerPoolMemberCollection, nil, nil).AnyTimes()
-			expectedLoadBalancerPoolMemberID := "pool-member-2"
-			expectedLoadBalancerPoolMember := &vpcv1.LoadBalancerPoolMember{ID: ptr.To(expectedLoadBalancerPoolMemberID)}
-			mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(expectedLoadBalancerPoolMember, nil, nil).AnyTimes()
-			result, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
-			g.Expect(result).To(BeNil())
+			// IP already registered — CreateLoadBalancerPoolMember must NOT be called.
+			pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+			g.Expect(pending).To(BeFalse())
 			g.Expect(err).To(BeNil())
 		})
 	})
 }
+
+
+// TestCreateVPCLoadBalancerPoolMemberSkipAndRequeue verifies the skip-and-requeue behaviour
+// that fixes the PowerVS IPI provisioning bottleneck. Key invariants:
+//   - A transiently-busy load balancer sets pendingUpdate=true but returns no error.
+//   - A non-transient (delete_pending) or nil ProvisioningStatus returns a hard error.
+//   - A create_pending load balancer with zero pools is treated as transient (not an error).
+//   - When two LBs are present and one is busy, the active one still makes progress.
+//   - updatedThisLB prevents a second POST to the same LB in one reconcile pass.
+func TestCreateVPCLoadBalancerPoolMemberSkipAndRequeue(t *testing.T) {
+	var mockCtrl *gomock.Controller
+	setupSR := func(t *testing.T) { t.Helper(); mockCtrl = gomock.NewController(t) }
+	teardownSR := func() { mockCtrl.Finish() }
+
+	lbID := "lb-id-1"
+	lbName := "lb-1"
+	poolID := "pool-id-1"
+	poolName := fmt.Sprintf("pool-1-%d", 6443)
+	machineIP := "10.0.0.5"
+
+	baseCluster := func(lbSrc infrav1.LoadBalancerSource, lbStatus infrav1.LoadBalancerStatus) *infrav1.IBMPowerVSCluster {
+		return &infrav1.IBMPowerVSCluster{
+			Spec:   infrav1.IBMPowerVSClusterSpec{LoadBalancers: []infrav1.LoadBalancerSource{lbSrc}},
+			Status: infrav1.IBMPowerVSClusterStatus{LoadBalancers: []infrav1.LoadBalancerStatus{lbStatus}},
+		}
+	}
+	cpMachine := func() *clusterv1.Machine {
+		return &clusterv1.Machine{ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"cluster.x-k8s.io/control-plane": "true"}}}
+	}
+	machineWithIP := func() *infrav1.IBMPowerVSMachine {
+		return &infrav1.IBMPowerVSMachine{
+			Status: infrav1.IBMPowerVSMachineStatus{
+				Addresses: []clusterv1.MachineAddress{{Address: machineIP, Type: clusterv1.MachineInternalIP}},
+			},
+		}
+	}
+
+	t.Run("Skips busy load balancer without error", func(t *testing.T) {
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		busyLB := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateUpdatePending)),
+		}
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(busyLB, nil, nil)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		pendingUpdate, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(pendingUpdate).To(BeTrue())
+		// No CreateLoadBalancerPoolMember call expected (gomock will fail the test if one occurs).
+	})
+
+	t.Run("Treats nil member ProvisioningStatus as pending without panic", func(t *testing.T) {
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		activeLB := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+			Pools:              []vpcv1.LoadBalancerPoolReference{{ID: ptr.To(poolID), Name: ptr.To(poolName)}},
+		}
+		// ProvisioningStatus nil on the newly created member — should not panic, should set pending=true.
+		nilStatusMember := &vpcv1.LoadBalancerPoolMember{
+			ID:                 ptr.To("member-id-nil"),
+			ProvisioningStatus: nil,
+		}
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(activeLB, nil, nil)
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(
+			&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil)
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).Return(nilStatusMember, nil, nil)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		pendingUpdate, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(pendingUpdate).To(BeTrue())
+	})
+
+	t.Run("Returns error for non-transient load balancer state", func(t *testing.T) {
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		deletingLB := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateDeletePending)),
+		}
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(deletingLB, nil, nil)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		_, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("non-recoverable state"))
+	})
+
+	t.Run("Returns error when load balancer ProvisioningStatus is nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		nilStatusLB := &vpcv1.LoadBalancer{
+			ID:   ptr.To(lbID),
+			Name: ptr.To(lbName),
+			// ProvisioningStatus intentionally nil
+		}
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(nilStatusLB, nil, nil)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		_, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(err.Error()).To(ContainSubstring("has no provisioning status"))
+	})
+
+	t.Run("Treats create_pending with zero pools as transient, not an error", func(t *testing.T) {
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		creatingLB := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateCreatePending)),
+			// Pools intentionally empty — LB not yet fully created
+		}
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(creatingLB, nil, nil)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		pendingUpdate, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(pendingUpdate).To(BeTrue())
+	})
+
+	t.Run("Issues at most one write per load balancer per pass", func(t *testing.T) {
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		pool2ID := "pool-id-2"
+		pool2Name := fmt.Sprintf("pool-2-%d", 22)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		activeLBTwoPools := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{ID: ptr.To(poolID), Name: ptr.To(poolName)},
+				{ID: ptr.To(pool2ID), Name: ptr.To(pool2Name)},
+			},
+		}
+
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).Return(activeLBTwoPools, nil, nil)
+		// pool-1 is listed then written; pool-2 is never listed because break exits the loop after the write.
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).Return(
+			&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).Times(1)
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMember{ID: ptr.To("member-id-1"), ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive))}, nil, nil).Times(1)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		pendingUpdate, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).To(BeNil())
+		// Wrote to pool-1; pool-2 deferred → pendingUpdate=true, only 1 POST issued (enforced by Times(1)).
+		g.Expect(pendingUpdate).To(BeTrue())
+	})
+
+	t.Run("Makes progress on active load balancer when other is busy", func(t *testing.T) {
+		// Two LBs in the cluster: lb-1 is update_pending (busy), lb-2 is active with an
+		// unregistered pool. The fix must write to lb-2 and return pendingUpdate=true
+		// (because lb-1 was skipped, not because lb-2 is incomplete).
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		lbID2 := "lb-id-2"
+		lbName2 := "lb-2"
+		poolID2 := "pool-id-2"
+		poolName2 := fmt.Sprintf("pool-2-%d", 6443)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		busyLB := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateUpdatePending)),
+		}
+		activeLB2 := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID2),
+			Name:               ptr.To(lbName2),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+			Pools:              []vpcv1.LoadBalancerPoolReference{{ID: ptr.To(poolID2), Name: ptr.To(poolName2)}},
+		}
+		registeredMember := &vpcv1.LoadBalancerPoolMember{
+			ID:                 ptr.To("member-id-2"),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+		}
+
+		// lb-1 is busy — one GetLoadBalancer call, no write.
+		mockClient.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(lbID)}).
+			Return(busyLB, nil, nil).Times(1)
+		// lb-2 is active — proceeds through list+create.
+		mockClient.EXPECT().GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: ptr.To(lbID2)}).
+			Return(activeLB2, nil, nil).Times(1)
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).Times(1)
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).
+			Return(registeredMember, nil, nil).Times(1)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+						{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID2, Name: lbName2}},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{Name: lbName, ID: lbID},
+						{Name: lbName2, ID: lbID2},
+					},
+				},
+			},
+		}
+
+		pendingUpdate, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).To(BeNil())
+		// lb-1 was busy → pendingUpdate=true even though lb-2 made progress.
+		g.Expect(pendingUpdate).To(BeTrue())
+		// Exactly one POST was issued — to lb-2, not lb-1 (enforced by Times(1) above).
+	})
+
+	t.Run("Completes registration across multiple passes", func(t *testing.T) {
+		// Pass 1: pool is unregistered → POST, member returns active.
+		// Pass 2: pool already has machineIP → no write, pendingUpdate=false.
+		g := NewWithT(t)
+		setupSR(t)
+		t.Cleanup(teardownSR)
+
+		mockClient := vpcmock.NewMockVpc(mockCtrl)
+		activeLB := &vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+			Pools:              []vpcv1.LoadBalancerPoolReference{{ID: ptr.To(poolID), Name: ptr.To(poolName)}},
+		}
+
+		// Pass 1: empty pool → POST → active member.
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).
+			Return(activeLB, nil, nil).Times(1)
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMemberCollection{}, nil, nil).Times(1)
+		mockClient.EXPECT().CreateLoadBalancerPoolMember(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerPoolMemberOptions{})).
+			Return(&vpcv1.LoadBalancerPoolMember{
+				ID:                 ptr.To("member-id-1"),
+				ProvisioningStatus: ptr.To(string(infrav1.LoadBalancerStateActive)),
+			}, nil, nil).Times(1)
+
+		scope := MachineScope{
+			Machine:           cpMachine(),
+			IBMVPCClient:      mockClient,
+			IBMPowerVSMachine: machineWithIP(),
+			IBMPowerVSCluster: baseCluster(
+				infrav1.LoadBalancerSource{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: lbID, Name: lbName}},
+				infrav1.LoadBalancerStatus{Name: lbName, ID: lbID},
+			),
+		}
+
+		pending1, err1 := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err1).To(BeNil())
+		// Active member returned but pool was written → pendingUpdate=false (all done).
+		g.Expect(pending1).To(BeFalse())
+
+		// Pass 2: pool already has machineIP registered → no POST, pendingUpdate=false.
+		registeredMembers := &vpcv1.LoadBalancerPoolMemberCollection{
+			Members: []vpcv1.LoadBalancerPoolMember{
+				{Target: &vpcv1.LoadBalancerPoolMemberTarget{Address: ptr.To(machineIP)}},
+			},
+		}
+		mockClient.EXPECT().GetLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.GetLoadBalancerOptions{})).
+			Return(activeLB, nil, nil).Times(1)
+		mockClient.EXPECT().ListLoadBalancerPoolMembers(gomock.AssignableToTypeOf(&vpcv1.ListLoadBalancerPoolMembersOptions{})).
+			Return(registeredMembers, nil, nil).Times(1)
+
+		pending2, err2 := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err2).To(BeNil())
+		g.Expect(pending2).To(BeFalse())
+	})
+}
+
+
 
 func TestDeleteMachinePVS(t *testing.T) {
 	var (
