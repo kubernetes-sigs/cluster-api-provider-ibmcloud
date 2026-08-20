@@ -371,6 +371,15 @@ spec:
                               minLength: 1
                               pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                               type: string
+                            profile:
+                              default: application
+                              description: |-
+                                Profile defines the profile to use for this load balancer.
+                                Default is "application" if omitted.
+                              enum:
+                              - application
+                              - network-fixed
+                              type: string
                             public:
                               default: true
                               description: public indicates that load balancer is
