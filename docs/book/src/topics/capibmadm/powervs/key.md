@@ -9,7 +9,7 @@ Create an SSH key in the PowerVS environment.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --zone: PowerVS zone.
 
@@ -41,7 +41,7 @@ Delete an SSH key in the PowerVS environment.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --zone: PowerVS zone.
 
@@ -62,7 +62,7 @@ List all SSH Keys in the PowerVS environment.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --zone: PowerVS zone.
 

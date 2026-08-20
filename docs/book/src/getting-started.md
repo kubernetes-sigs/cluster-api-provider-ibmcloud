@@ -5,7 +5,7 @@ For prerequisites, check the respective sections for [VPC](topics/vpc/prerequisi
 Now that we’ve got all the prerequisites in place, let’s create a Kubernetes cluster and transform 
 it into a management cluster using `clusterctl`.
 
-### Provision local boostrap management cluster:
+### Provision local bootstrap management cluster:
 
 1. Create simple, local bootstrap cluster with a control-plane and worker node
 
@@ -28,9 +28,9 @@ it into a management cluster using `clusterctl`.
 
     ```console
     ~ kubectl get nodes
-    NAME                         STATUS   ROLES                  AGE   VERSION
-    my-bootstrap-control-plane   Ready    control-plane,master   46h   v1.20.2
-    my-bootstrap-worker          Ready    <none>                 46h   v1.20.2
+    NAME                         STATUS   ROLES           AGE   VERSION
+    my-bootstrap-control-plane   Ready    control-plane   46h   v1.34.7
+    my-bootstrap-worker          Ready    <none>          46h   v1.34.7
     ```
 
 2. Set workload cluster environment variables

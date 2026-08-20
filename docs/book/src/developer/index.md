@@ -1,6 +1,6 @@
 # Developer Guide
 
-- [Rapid iterative development with Tilt](./tilt.md)
+- [Development with Tilt](./tilt.md)
 - [Guide for API conversions](./conversion.md)
 - [Release Process](./release.md)
 - [Release Support Guidelines](./release-support-guidelines.md)

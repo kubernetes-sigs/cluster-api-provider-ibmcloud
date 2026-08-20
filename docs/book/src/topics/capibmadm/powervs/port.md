@@ -1,4 +1,4 @@
-## PowerVS Network Commands
+## PowerVS Port Commands
 
 ### 1. capibmadm powervs port create
 
@@ -9,9 +9,9 @@ Create PowerVS network port.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
---zone: PowerVS service instance zone.
+--zone: PowerVS workspace zone.
 
 --network: Network ID/ Network Name.
 
@@ -34,7 +34,7 @@ Delete PowerVS network port.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --zone: PowerVS zone.
 
@@ -57,7 +57,7 @@ List PowerVS ports.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --zone: PowerVS zone.
 

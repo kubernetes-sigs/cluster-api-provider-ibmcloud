@@ -9,7 +9,7 @@ Create PowerVS network.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --cidr: The network CIDR. Required for private network type.
 
@@ -49,9 +49,9 @@ Delete PowerVS network.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
---zone: PowerVS service instance zone.
+--zone: PowerVS workspace zone.
 
 --network: Network ID or Name.
 
@@ -71,9 +71,9 @@ List PowerVS networks.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
---zone: PowerVS service instance zone.
+--zone: PowerVS workspace zone.
 
 #### Example:
 ```shell
