@@ -2467,18 +2467,18 @@ func (s *ClusterScope) resolveCOSInstanceFromSpec(ctx context.Context) (instance
 		return "", "", "", fmt.Errorf("COS instance GUID is nil")
 	}
 
+	if instance.State == nil {
+		return "", "", "", fmt.Errorf("COS instance (id: %s) has no state", *instance.GUID)
+	}
+
 	// A newly provisioned instance may still be provisioning — record the ID so the
 	// next reconcile loop can skip the provision step and just poll for active state.
-	if instance.State == nil || *instance.State != string(infrav1.WorkspaceStateActive) {
-		state := "unknown"
-		if instance.State != nil {
-			state = *instance.State
-		}
+	if *instance.State != string(infrav1.WorkspaceStateActive) {
 		cluster.Status.COSInstance.ID = *instance.GUID
 		if instance.Name != nil {
 			cluster.Status.COSInstance.Name = *instance.Name
 		}
-		return "", "", "", fmt.Errorf("COS instance is not yet active, current state: %s", state)
+		return "", "", "", fmt.Errorf("COS instance is not yet active, current state: %s", *instance.State)
 	}
 
 	if instance.CRN == nil || *instance.CRN == "" {
