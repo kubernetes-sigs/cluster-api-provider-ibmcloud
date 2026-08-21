@@ -2095,7 +2095,8 @@ func TestReconcileCOSInstance(t *testing.T) {
 			State: ptr.To(string(infrav1.WorkspaceStateActive)),
 		}, nil, nil)
 		err := clusterScope.ReconcileCOSInstance(ctx)
-		g.Expect(err).ToNot(BeNil()) // fails on COS client setup (no API key)
+		g.Expect(err).ToNot(BeNil()) // fails because mock returns instance with no CRN
+		g.Expect(err.Error()).To(ContainSubstring("has no CRN"))
 	})
 
 	t.Run("When status ID is set but GetResourceInstance errors, return error", func(t *testing.T) {

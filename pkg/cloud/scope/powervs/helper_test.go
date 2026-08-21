@@ -27,6 +27,7 @@ import (
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
@@ -61,6 +62,9 @@ func (s stubClientBuilder) GetResourceControllerClient(_ context.Context, _ Clie
 }
 func (s stubClientBuilder) GetResourceManagerClient(_ context.Context, _ ClientOptions) (resourcemanager.ResourceManager, error) {
 	return s.rmClient, nil
+}
+func (s stubClientBuilder) GetCOSClient(_ context.Context, _ COSClientOptions) (cos.Cos, error) {
+	return nil, nil
 }
 
 const (

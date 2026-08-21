@@ -315,9 +315,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 
 	machineScope.SetInstanceID(instance.PvmInstanceID)
 
-	if err := machineScope.SetAddresses(ctx, instance); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to set machine IP addresses: %w", err)
-	}
+	machineScope.SetAddresses(ctx, instance)
 
 	machineScope.SetHealth(instance.Health)
 	machineScope.SetInstanceState(instance.Status)
