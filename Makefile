@@ -84,7 +84,7 @@ RELEASE_NOTES_DIR := CHANGELOG
 OUTPUT_TYPE ?= type=registry
 
 # Go
-GO_VERSION ?=1.25.13
+GO_VERSION ?=1.26.7
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # Trivy
@@ -105,7 +105,7 @@ PULL_POLICY ?= Always
 # Set build time variables including version details
 LDFLAGS := $(shell ./hack/release/version.sh)
 
-KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.35.0
+KUBEBUILDER_ENVTEST_KUBERNETES_VERSION ?= 1.36.0
 
 # main controller
 CORE_IMAGE_NAME ?= cluster-api-ibmcloud-controller
@@ -236,7 +236,7 @@ endif
 
 ##@ test:
 
-# Workaround for Go 1.25.x missing covdata tool (https://github.com/golang/go/issues/75031)
+# Workaround for Go 1.26.x missing covdata tool (https://github.com/golang/go/issues/75031)
 GOVERSION := $(shell go env GOVERSION)
 export GOTOOLCHAIN := $(GOVERSION)+auto
 

@@ -312,7 +312,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*vpcv1.Instance, erro
 		}
 		imageID, err := fetchImageID(ctx, m.IBMVPCMachine.Spec.Image, m)
 		if err != nil {
-			record.Warnf(m.IBMVPCMachine, "FailedRetrieveImage", "Failed image retrieval - %w", err)
+			record.Warnf(m.IBMVPCMachine, "FailedRetrieveImage", "Failed image retrieval - %v", err)
 			return nil, fmt.Errorf("error while fetching image ID: %w", err)
 		}
 		imageInstancePrototype.Image = &vpcv1.ImageIdentity{
