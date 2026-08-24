@@ -501,3 +501,35 @@ func TestIBMPowerVSMachineTemplate_update(t *testing.T) {
 		})
 	}
 }
+
+func TestIBMPowerVSMachineTemplate_ValidateDelete(t *testing.T) {
+	g := NewWithT(t)
+	template := &infrav1.IBMPowerVSMachineTemplate{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "capi-machine-template",
+			Namespace: "default",
+		},
+		Spec: infrav1.IBMPowerVSMachineTemplateSpec{
+			Template: infrav1.IBMPowerVSMachineTemplateResource{
+				Spec: infrav1.IBMPowerVSMachineSpec{
+					Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
+					SystemType:    "s922",
+					ProcessorType: infrav1.PowerVSProcessorTypeShared,
+					MemoryGiB:     4,
+					Processors:    intstr.FromString("0.25"),
+					Network: infrav1.ResourceIdentifier{
+						Name: "capi-net",
+					},
+					Image: infrav1.IBMPowerVSMachineImage{
+						Type:      infrav1.ImageSourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
+					},
+				},
+			},
+		},
+	}
+	w := &IBMPowerVSMachineTemplate{}
+	warnings, err := w.ValidateDelete(context.Background(), template)
+	g.Expect(warnings).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
+}

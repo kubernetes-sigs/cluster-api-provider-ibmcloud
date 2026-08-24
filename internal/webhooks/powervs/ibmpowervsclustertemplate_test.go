@@ -17,6 +17,7 @@ limitations under the License.
 package powervs
 
 import (
+	"context"
 	"testing"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
@@ -113,4 +114,74 @@ func TestIBMPowerVSClusterTemplate_ValidateUpdate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIBMPowerVSClusterTemplate_Default(t *testing.T) {
+	g := NewWithT(t)
+	template := &infrav1.IBMPowerVSClusterTemplate{
+		Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+			Template: infrav1.IBMPowerVSClusterTemplateResource{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-instance",
+						},
+					},
+				},
+			},
+		},
+	}
+	// Default is a no-op; it should succeed and not modify the object.
+	g.Expect((&IBMPowerVSClusterTemplate{}).Default(context.Background(), template)).To(Succeed())
+	g.Expect(template.Spec.Template.Spec.Topology).To(Equal(infrav1.PowerVSVirtualIPTopology))
+}
+
+func TestIBMPowerVSClusterTemplate_ValidateCreate(t *testing.T) {
+	g := NewWithT(t)
+	template := &infrav1.IBMPowerVSClusterTemplate{
+		Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+			Template: infrav1.IBMPowerVSClusterTemplateResource{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-instance",
+						},
+					},
+				},
+			},
+		},
+	}
+	// ValidateCreate is a no-op; it should always succeed.
+	w := IBMPowerVSClusterTemplate{}
+	warnings, err := w.ValidateCreate(ctx, template)
+	g.Expect(warnings).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestIBMPowerVSClusterTemplate_ValidateDelete(t *testing.T) {
+	g := NewWithT(t)
+	template := &infrav1.IBMPowerVSClusterTemplate{
+		Spec: infrav1.IBMPowerVSClusterTemplateSpec{
+			Template: infrav1.IBMPowerVSClusterTemplateResource{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Topology: infrav1.PowerVSVirtualIPTopology,
+					Workspace: infrav1.WorkspaceSource{
+						Type: infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{
+							ID: "test-instance",
+						},
+					},
+				},
+			},
+		},
+	}
+	// ValidateDelete is a no-op; it should always succeed.
+	w := IBMPowerVSClusterTemplate{}
+	warnings, err := w.ValidateDelete(ctx, template)
+	g.Expect(warnings).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
 }

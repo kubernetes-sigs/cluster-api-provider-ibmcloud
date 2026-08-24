@@ -423,3 +423,72 @@ func TestIBMPowerVSMachine_update(t *testing.T) {
 		})
 	}
 }
+
+func TestIBMPowerVSMachine_ValidateDelete(t *testing.T) {
+	g := NewWithT(t)
+	machine := &infrav1.IBMPowerVSMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "capi-machine",
+			Namespace: "default",
+		},
+		Spec: infrav1.IBMPowerVSMachineSpec{
+			Workspace:     infrav1.ResourceIdentifier{ID: "capi-si-id"},
+			SystemType:    "s922",
+			ProcessorType: infrav1.PowerVSProcessorTypeShared,
+			MemoryGiB:     4,
+			Processors:    intstr.FromString("0.25"),
+			Network: infrav1.ResourceIdentifier{
+				Name: "capi-net",
+			},
+			Image: infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "capi-image-id"},
+			},
+		},
+	}
+	w := &IBMPowerVSMachine{}
+	warnings, err := w.ValidateDelete(context.Background(), machine)
+	g.Expect(warnings).To(BeNil())
+	g.Expect(err).NotTo(HaveOccurred())
+}
+
+func TestIBMPowerVSMachine_default_dedicated_processors(t *testing.T) {
+	g := NewWithT(t)
+	// When ProcessorType is Dedicated and Processors is zero, the default should be 1 (int).
+	powervsMachine := &infrav1.IBMPowerVSMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "capi-machine-dedicated",
+			Namespace: "default",
+		},
+		Spec: infrav1.IBMPowerVSMachineSpec{
+			ProcessorType: infrav1.PowerVSProcessorTypeDedicated,
+			Image: infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "capi-image"},
+			},
+		},
+	}
+	g.Expect((&IBMPowerVSMachine{}).Default(context.Background(), powervsMachine)).ToNot(HaveOccurred())
+	g.Expect(powervsMachine.Spec.Processors).To(Equal(intstr.FromInt32(1)))
+	g.Expect(powervsMachine.Spec.SystemType).To(BeEquivalentTo(defaultSystemType))
+}
+
+func TestIBMPowerVSMachine_default_shared_processors_zero(t *testing.T) {
+	g := NewWithT(t)
+	// When ProcessorType is Shared and Processors is zero, the default should be "0.25".
+	powervsMachine := &infrav1.IBMPowerVSMachine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "capi-machine-shared-zero",
+			Namespace: "default",
+		},
+		Spec: infrav1.IBMPowerVSMachineSpec{
+			ProcessorType: infrav1.PowerVSProcessorTypeShared,
+			Image: infrav1.IBMPowerVSMachineImage{
+				Type:      infrav1.ImageSourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "capi-image"},
+			},
+		},
+	}
+	g.Expect((&IBMPowerVSMachine{}).Default(context.Background(), powervsMachine)).ToNot(HaveOccurred())
+	g.Expect(powervsMachine.Spec.Processors).To(Equal(intstr.FromString("0.25")))
+}
