@@ -25,8 +25,8 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/pagingutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
 )
 
 var currentDate = fmt.Sprintf("%d-%02d-%02d", time.Now().Year(), time.Now().Month(), time.Now().Day())
@@ -95,7 +95,7 @@ func (s *Service) GetTransitGatewayByName(name string) (*tgapiv1.TransitGateway,
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 	return &transitGateway, nil

@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/genutil"
+	ibmcloudutil "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/util"
 )
 
 // Ensure IBMPowerVSCluster implements the typed webhook interfaces.
@@ -175,7 +175,7 @@ func validateIBMPowerVSClusterTransitGateway(cluster *infrav1.IBMPowerVSCluster)
 	}
 	// GlobalRouting is now in Provision field and is a string enum, not a bool pointer
 	if cluster.Spec.TransitGateway.Type == infrav1.SourceTypeProvision {
-		if _, globalRouting, _ := genutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, &cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.Provision.GlobalRouting == infrav1.TransitGatewayRoutingLocal && globalRouting != nil && *globalRouting {
+		if _, globalRouting, _ := ibmcloudutil.GetTransitGatewayLocationAndRouting(&cluster.Spec.Zone, &cluster.Spec.VPC.Region); cluster.Spec.TransitGateway.Provision.GlobalRouting == infrav1.TransitGatewayRoutingLocal && globalRouting != nil && *globalRouting {
 			return field.Invalid(field.NewPath("spec", "transitGateway", "provision", "globalRouting"), cluster.Spec.TransitGateway.Provision.GlobalRouting, "global routing is required since PowerVS and VPC region are from different region")
 		}
 	}

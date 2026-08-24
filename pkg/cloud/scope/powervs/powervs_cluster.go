@@ -50,7 +50,6 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/genutil"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
@@ -60,6 +59,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcemanager"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	ibmcloudutil "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/util"
 )
 
 // vpcSubnetIPVersion4 defines the IP v4 string used for VPC Subnet generation.
@@ -1172,7 +1172,7 @@ func (s *ClusterScope) provisionTransitGateway(ctx context.Context) (*tgapiv1.Tr
 	}
 
 	// Determine Routing
-	location, sysGlobalRouting, err := genutil.GetTransitGatewayLocationAndRouting(ptr.To(s.Zone()), &s.IBMPowerVSCluster.Status.VPC.Region)
+	location, sysGlobalRouting, err := ibmcloudutil.GetTransitGatewayLocationAndRouting(ptr.To(s.Zone()), &s.IBMPowerVSCluster.Status.VPC.Region)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transit gateway location and routing: %w", err)
 	}

@@ -36,8 +36,8 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/pagingutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
@@ -186,7 +186,7 @@ func (s *ClusterScope) ensureVPCUnique(vpcName string) (*vpcv1.VPC, error) {
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 
@@ -291,7 +291,7 @@ func (s *ClusterScope) getSubnetAddrPrefix(vpcID, zone string) (string, error) {
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return "", err
 	}
 
@@ -332,7 +332,7 @@ func (s *ClusterScope) ensureSubnetUnique(subnetName string) (*vpcv1.Subnet, err
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 
@@ -379,7 +379,7 @@ func (s *ClusterScope) DeleteSubnet(ctx context.Context) error {
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return err
 	}
 
@@ -561,7 +561,7 @@ func (s *ClusterScope) getLoadBalancerByHostname(loadBalancerHostname string) (*
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 
@@ -599,7 +599,7 @@ func (s *ClusterScope) ensureLoadBalancerUnique(loadBalancerName string) (*vpcv1
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 
@@ -647,7 +647,7 @@ func (s *ClusterScope) DeleteLoadBalancer() (bool, error) {
 			return true, "", nil
 		}
 
-		if err := pagingutils.PagingHelper(f); err != nil {
+		if err := paging.Helper(f); err != nil {
 			return false, err
 		}
 	}

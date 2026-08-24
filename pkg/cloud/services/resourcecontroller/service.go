@@ -24,8 +24,8 @@ import (
 
 	"k8s.io/utils/ptr"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/pagingutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
 )
 
 const (
@@ -141,7 +141,7 @@ func (s *Service) GetServiceInstance(id, name string, zone *string) (*resourceco
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, fmt.Errorf("error listing service instances %v", err)
 	}
 	switch len(serviceInstancesList) {
@@ -187,7 +187,7 @@ func (s *Service) GetInstanceByName(name, resourceID, planID string) (*resourcec
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, fmt.Errorf("error listing COS instances %v", err)
 	}
 	switch len(serviceInstancesList) {
@@ -256,7 +256,7 @@ func (s *Service) GetResourceInstanceByFilter(filter InstanceFilter) (*resourcec
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, fmt.Errorf("error listing resource instances: %v", err)
 	}
 

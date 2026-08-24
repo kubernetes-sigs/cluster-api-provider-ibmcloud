@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pagingutils
+package paging
 
 import (
 	"fmt"
@@ -32,13 +32,13 @@ func getStartToken(nextURLS string) (string, error) {
 	return start, nil
 }
 
-// PagingHelper while listing resources, can use this to get the start token for getting the next set of resources for processing
-// start token will get fetched from nextURL returned by f and passed to the func f.
+// Helper pages through resources while listing. It drives the iteration loop,
+// fetching the start token from nextURL and passing it to f on each call.
 // f should take start as param and return three values isDone bool, nextURL string, e error.
 // isDone  - represents no need to iterate for getting next set of resources.
 // nextURL - if nextURL is present, will try to get the start token and pass it to f for next set of resource processing.
 // e       - if e is not nil, will break and return the error.
-func PagingHelper(f func(string) (bool, string, error)) error {
+func Helper(f func(string) (bool, string, error)) error {
 	start := ""
 	var err error
 	for {
