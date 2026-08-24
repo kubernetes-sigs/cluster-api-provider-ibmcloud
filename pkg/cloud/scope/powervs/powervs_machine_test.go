@@ -2584,27 +2584,23 @@ func TestGetNetworkIDByNameError(t *testing.T) {
 	})
 }
 
-// errCacheStore is a test-only cache.Store whose GetByKey always returns an error.
-type errCacheStore struct{}
+// errCacheStore is a test-only cache.Store whose methods return configurable errors.
+type errCacheStore struct{ cache.Store }
 
-func (e *errCacheStore) Add(_ interface{}) error                      { return nil }
-func (e *errCacheStore) Update(_ interface{}) error                   { return nil }
-func (e *errCacheStore) Delete(_ interface{}) error                   { return nil }
-func (e *errCacheStore) List() []interface{}                          { return nil }
-func (e *errCacheStore) ListKeys() []string                           { return nil }
-func (e *errCacheStore) Get(_ interface{}) (interface{}, bool, error) { return nil, false, nil }
+func (e *errCacheStore) Add(_ interface{}) error {
+	return errors.New("cache add error")
+}
+
 func (e *errCacheStore) GetByKey(_ string) (interface{}, bool, error) {
 	return nil, false, errors.New("cache error")
 }
-func (e *errCacheStore) Replace(_ []interface{}, _ string) error { return nil }
-func (e *errCacheStore) Resync() error                           { return nil }
 
 func TestGetIPFromCacheStoreError(t *testing.T) {
 	t.Run("returns empty string and false when cache store returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
-			DHCPIPCacheStore:  &errCacheStore{},
+			DHCPIPCacheStore:  &errCacheStore{Store: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL)},
 		}
 		ip, found := scope.getIPFromCache(ctx, "any-vm")
 		g.Expect(found).To(BeFalse())
@@ -3091,7 +3087,7 @@ func TestSetAddressesCacheStoreAddError(t *testing.T) {
 		instance := newPowerVSInstance(serverName, networkID, macAddress)
 		scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(networkID), true, mockpowervs)
 		// Replace the cache store with one that always errors on Add.
-		scope.DHCPIPCacheStore = &errCacheStore{}
+		scope.DHCPIPCacheStore = &errCacheStore{Store: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL)}
 
 		mockpowervs.EXPECT().ListDHCPServers(gomock.Any()).Return(newDHCPServer(dhcpSrvID, networkID), nil)
 		mockpowervs.EXPECT().GetDHCPServer(gomock.Any(), dhcpSrvID).Return(newDHCPServerDetails(dhcpSrvID, dhcpIP, macAddress), nil)
