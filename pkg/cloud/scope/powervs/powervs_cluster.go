@@ -1993,6 +1993,13 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 		ID: &resourceGroupID,
 	})
 
+	// Set the Load Balancer Profile if defined
+	if prov.Profile != nil && *prov.Profile != "" {
+		options.SetProfile(&vpcv1.LoadBalancerProfileIdentityByName{
+			Name: ptr.To(*prov.Profile),
+		})
+	}
+
 	if len(s.IBMPowerVSCluster.Status.VPCSubnets) == 0 {
 		return nil, fmt.Errorf("no VPC subnets are present in cluster status for load balancer creation")
 	}
