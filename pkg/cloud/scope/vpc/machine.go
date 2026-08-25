@@ -42,11 +42,11 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/pagingutils"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
@@ -508,7 +508,7 @@ func (m *MachineScope) ensureInstanceUnique(instanceName string) (*vpcv1.Instanc
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 
@@ -955,7 +955,7 @@ func fetchKeyID(ctx context.Context, key *infrav1.IBMVPCResourceReference, m *Ma
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 
@@ -1013,7 +1013,7 @@ func fetchImageID(ctx context.Context, image *infrav1.IBMVPCResourceReference, m
 		return true, "", nil
 	}
 
-	if err := pagingutils.PagingHelper(f); err != nil {
+	if err := paging.Helper(f); err != nil {
 		return nil, err
 	}
 

@@ -30,7 +30,6 @@ import (
 
 	// +kubebuilder:scaffold:imports
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	webhookspowervs "sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/powervs"
 	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	powervssvc "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -39,6 +38,7 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/transitgateway"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
+	webhookspowervs "sigs.k8s.io/cluster-api-provider-ibmcloud/webhooks/powervs/admission"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 

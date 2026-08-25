@@ -29,8 +29,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/webhooks/powervs/admission"
 )
 
 var (

@@ -28,8 +28,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
+	vpc "sigs.k8s.io/cluster-api-provider-ibmcloud/webhooks/vpc/admission"
 )
 
 var (

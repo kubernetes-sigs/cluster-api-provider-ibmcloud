@@ -14,5 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package ignition implements ignition code.
+// Package ignition provides Go type definitions for the Coreos Ignition v2
+// machine bootstrap configuration format.
+//
+// Why this is a local copy:
+// The upstream library github.com/coreos/ignition/v2 only ships v3.x config
+// types (v3_0 through v3_6); v2.x types were removed from the library entirely.
+// There is no upstream Go package for Ignition v2 types, so this local
+// definition is the only option for generating Ignition v2 redirect documents
+// when creating PowerVS machine user-data.
 package ignition

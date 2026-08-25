@@ -56,8 +56,8 @@ import (
 	"sigs.k8s.io/cluster-api/util"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/bootstrap/ignition"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
-	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/ignition"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"

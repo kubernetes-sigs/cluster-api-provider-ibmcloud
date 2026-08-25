@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/internal/webhooks/vpc"
 	"testing"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -30,6 +29,7 @@ import (
 	// +kubebuilder:scaffold:imports
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/test/helpers"
+	vpc "sigs.k8s.io/cluster-api-provider-ibmcloud/webhooks/vpc/admission"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 )
 
