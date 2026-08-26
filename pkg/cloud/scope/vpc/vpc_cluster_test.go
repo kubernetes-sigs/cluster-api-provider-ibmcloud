@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package scope
+package vpc
 
 import (
 	"context"
@@ -39,21 +39,21 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// setupVPCClusterScope builds a VPCClusterScope directly (no NewVPCClusterScope, no envtest)
+// setupClusterScopeV2 builds a ClusterScopeV2 directly (no NewClusterScopeV2, no envtest)
 // with the provided mocks injected. ResourceGroup ID is pre-populated in Status so that
 // createLoadBalancer can skip the ResourceManager API call unless the test needs to test that path.
-func setupVPCClusterScope(
+func setupClusterScopeV2(
 	t *testing.T,
 	vpcCluster *infrav1.IBMVPCCluster,
 	mockVPC *mockvpc.MockVpc,
 	mockRM *mockrm.MockResourceManager,
 	mockGT *mockgt.MockGlobalTagging,
-) *VPCClusterScope {
+) *ClusterScopeV2 {
 	t.Helper()
 	cluster := newCluster(clusterName)
 	initObjects := []client.Object{cluster, vpcCluster}
 	fakeClient := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(initObjects...).Build()
-	return &VPCClusterScope{
+	return &ClusterScopeV2{
 		Logger:                klog.Background(),
 		Client:                fakeClient,
 		Cluster:               cluster,
@@ -94,7 +94,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 
 		vpcCluster := newVPCCluster(clusterName)
 		vpcCluster.Spec.Network = &infrav1.VPCNetworkSpec{}
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		_, err := scope.ReconcileLoadBalancers(ctx)
 		g.Expect(err).To(HaveOccurred())
@@ -112,7 +112,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 			{Name: "lb-3"},
 		}
 		vpcCluster := newVPCClusterWithNetwork(clusterName, lbs)
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		_, err := scope.ReconcileLoadBalancers(ctx)
 		g.Expect(err).To(HaveOccurred())
@@ -129,7 +129,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 			{Name: "my-lb"},
 		}
 		vpcCluster := newVPCClusterWithNetwork(clusterName, lbs)
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		mockVPC.EXPECT().GetLoadBalancerByName("my-lb").Return(&vpcv1.LoadBalancer{
 			ID:                 ptr.To(lbID),
@@ -152,7 +152,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 			{Name: "my-lb"},
 		}
 		vpcCluster := newVPCClusterWithNetwork(clusterName, lbs)
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		mockVPC.EXPECT().GetLoadBalancerByName("my-lb").Return(&vpcv1.LoadBalancer{
 			ID:                 ptr.To(lbID),
@@ -183,7 +183,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 		vpcCluster.Status.Network.ControlPlaneSubnets = map[string]*infrav1.ResourceStatus{
 			"subnet-a": {ID: "subnet-id-a"},
 		}
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		// LB doesn't exist yet.
 		mockVPC.EXPECT().GetLoadBalancerByName("my-app-lb").Return(nil, nil)
@@ -229,7 +229,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 		vpcCluster.Status.Network.ControlPlaneSubnets = map[string]*infrav1.ResourceStatus{
 			"subnet-a": {ID: "subnet-id-a"},
 		}
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		// LB doesn't exist yet.
 		mockVPC.EXPECT().GetLoadBalancerByName("my-nlb").Return(nil, nil)
@@ -281,7 +281,7 @@ func TestVPCClusterReconcileLoadBalancers(t *testing.T) {
 		vpcCluster.Status.Network.ControlPlaneSubnets = map[string]*infrav1.ResourceStatus{
 			"subnet-a": {ID: "subnet-id-a"},
 		}
-		scope := setupVPCClusterScope(t, vpcCluster, mockVPC, mockRM, mockGT)
+		scope := setupClusterScopeV2(t, vpcCluster, mockVPC, mockRM, mockGT)
 
 		mockVPC.EXPECT().GetLoadBalancerByName("my-default-lb").Return(nil, nil)
 		mockVPC.EXPECT().CreateLoadBalancer(gomock.AssignableToTypeOf(&vpcv1.CreateLoadBalancerOptions{})).
