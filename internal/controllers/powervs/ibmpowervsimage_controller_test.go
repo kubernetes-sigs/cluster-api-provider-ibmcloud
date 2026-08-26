@@ -119,6 +119,7 @@ func newImageScope(image *infrav1.IBMPowerVSImage, mockPVS *mock.MockPowerVS) *p
 		Client:           c,
 		IBMPowerVSImage:  image,
 		IBMPowerVSClient: mockPVS,
+		Recorder:         record.NewFakeRecorder(1000),
 	}
 }
 

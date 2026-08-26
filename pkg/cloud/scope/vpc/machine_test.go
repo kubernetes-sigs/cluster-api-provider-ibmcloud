@@ -29,13 +29,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
@@ -94,6 +94,7 @@ func setupMachineScope(clusterName string, machineName string, mockvpc *mock.Moc
 		Machine:       machine,
 		IBMVPCCluster: vpcCluster,
 		IBMVPCMachine: vpcMachine,
+		Recorder:      record.NewFakeRecorder(1000),
 	}
 }
 
@@ -142,7 +143,7 @@ func TestSetVPCProviderID(t *testing.T) {
 	t.Run("Set Provider ID in invalid format", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupMachineScope(clusterName, machineName, mock.NewMockVpc(gomock.NewController(t)))
-		options.ProviderIDFormat = string("v1")
+		scope.ProviderIDFormat = "v1"
 		err := scope.SetProviderID(ptr.To(providerID))
 		g.Expect(err).ToNot(BeNil())
 	})
@@ -150,7 +151,7 @@ func TestSetVPCProviderID(t *testing.T) {
 	t.Run("Set Provider ID in valid format", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupMachineScope(clusterName, machineName, mock.NewMockVpc(gomock.NewController(t)))
-		options.ProviderIDFormat = string("v2")
+		scope.ProviderIDFormat = "v2"
 		accounts.GetAccountIDFunc = func() (string, error) {
 			return "dummy-account-id", nil // Return dummy value
 		}
@@ -161,7 +162,7 @@ func TestSetVPCProviderID(t *testing.T) {
 	t.Run("Set Provider ID returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupMachineScope(clusterName, machineName, mock.NewMockVpc(gomock.NewController(t)))
-		options.ProviderIDFormat = string("v2")
+		scope.ProviderIDFormat = "v2"
 		accounts.GetAccountIDFunc = func() (string, error) {
 			return "", errors.New("error getting accountID") // Return dummy error
 		}

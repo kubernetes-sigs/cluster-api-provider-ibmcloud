@@ -241,23 +241,28 @@ for future contributors.
 
 ---
 
-## Future Work (Out of Scope for This PR)
+## Dependency Injection for Event Recorders and Provider ID Format
 
-### Replace global singletons with explicit dependency injection
+Two packages used global variables as a substitute for proper dependency injection into scope
+params — a pattern CAPI has moved away from entirely. Both were addressed in this PR.
 
-Two packages use global variables as a substitute for proper dependency injection into scope
-params — a pattern CAPI has moved away from entirely:
+### Recorder injection
 
-**`pkg/util/record/`** implements a global singleton `EventRecorder` initialized once from
-`cmd/main.go` and called directly from scope methods without passing a recorder explicitly. CAPI
-passes the `Recorder` field explicitly through each reconciler struct into scope params, making
-event emission testable and traceable to a specific reconciler.
+**Before:** `pkg/util/record/` implemented a global singleton `EventRecorder` initialized once
+from `cmd/main.go` and called directly from scope methods without passing a recorder explicitly.
 
-**`pkg/cloud/options/`** stores `ProviderIDFormat` as a global var set from the `--provider-id-fmt`
-CLI flag and read directly by machine scopes. CAPI passes all flag-derived values as explicit
-fields on reconciler structs and into scope params (e.g. `WatchFilterValue string`).
+**After:** Every `*ScopeParams` struct (`ClusterScopeParams`, `MachineScopeParams`,
+`ImageScopeParams` — for both PowerVS and VPC) gains a `Recorder cgrecord.EventRecorder` field.
+Each reconciler struct already held a `Recorder record.EventRecorder` field; `setupReconcilers`
+in `cmd/main.go` now passes `mgr.GetEventRecorderFor(...)` into scope params at construction
+time. All scope methods call `s.Recorder.Eventf(...)` directly. `pkg/util/record/` is deleted.
 
-Both should be addressed in a single follow-up PR:
-1. Add `Recorder` and `ProviderIDFormat` fields to each `*ScopeParams` struct
-2. Propagate values from `cmd/main.go` `setupReconcilers` into scope params at construction time
-3. Remove `pkg/util/record/` and `pkg/cloud/options/` global vars and their init calls
+### ProviderIDFormat injection
+
+**Before:** `pkg/cloud/options/` stored `ProviderIDFormat` as a global var set from the
+`--provider-id-fmt` CLI flag and read directly by machine scopes.
+
+**After:** `MachineScopeParams` and `MachineScope` for both PowerVS and VPC gain a
+`ProviderIDFormat string` field. The machine reconciler structs gain the same field, populated
+from `cmd/main.go` `setupReconcilers`. Machine scopes read `s.ProviderIDFormat` directly.
+`pkg/cloud/options/` is deleted; the `"v2"` constant is inlined where needed.

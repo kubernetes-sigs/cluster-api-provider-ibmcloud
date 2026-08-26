@@ -54,8 +54,6 @@ import (
 	powervscontroller "sigs.k8s.io/cluster-api-provider-ibmcloud/internal/controllers/powervs"
 	vpccontroller "sigs.k8s.io/cluster-api-provider-ibmcloud/internal/controllers/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 	powervs "sigs.k8s.io/cluster-api-provider-ibmcloud/webhooks/powervs/admission"
 	vpc "sigs.k8s.io/cluster-api-provider-ibmcloud/webhooks/vpc/admission"
 
@@ -77,6 +75,7 @@ var (
 	webhookPort            int
 	webhookCertDir         string
 	watchFilterValue       string
+	providerIDFormat       string
 	disableHTTP2           bool
 	skipCRDMigrationPhases []string
 )
@@ -126,9 +125,9 @@ func initFlags(fs *pflag.FlagSet) {
 		"The minimum interval at which watched resources are reconciled.",
 	)
 	fs.StringVar(
-		&options.ProviderIDFormat,
+		&providerIDFormat,
 		"provider-id-fmt",
-		string(options.ProviderIDFormatV2),
+		"v2",
 		"ProviderID format is used set the Provider ID format for Machine",
 	)
 
@@ -169,10 +168,10 @@ func initFlags(fs *pflag.FlagSet) {
 }
 
 func validateFlags() error {
-	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
+	if providerIDFormat == "v2" {
 		setupLog.Info("Using v2 version of ProviderID format")
 	} else {
-		return fmt.Errorf("invalid value for flag provider-id-fmt: %s, Only supported value is %s", options.ProviderIDFormat, options.ProviderIDFormatV2)
+		return fmt.Errorf("invalid value for flag provider-id-fmt: %s, Only supported value is v2", providerIDFormat)
 	}
 
 	if err := logsv1.ValidateAndApply(logOptions, nil); err != nil {
@@ -274,15 +273,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize event recorder.
-	record.InitFromRecorder(mgr.GetEventRecorderFor("ibmcloud-controller"))
-
 	// Setup the context that's going to be used in controllers and for the manager.
 	ctx := ctrl.SetupSignalHandler()
 
 	setupWebhooks(mgr)
 	setupChecks(mgr)
-	setupReconcilers(ctx, mgr, serviceEndpoint, watchFilterValue, skipCRDMigrationPhases)
+	setupReconcilers(ctx, mgr, serviceEndpoint, watchFilterValue, providerIDFormat, skipCRDMigrationPhases)
 
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager")
@@ -303,7 +299,7 @@ func setupChecks(mgr ctrl.Manager) {
 	}
 }
 
-func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpoint, watchFilterValue string, skipCRDMigrationPhases []string) {
+func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpoint, watchFilterValue string, providerIDFormat string, skipCRDMigrationPhases []string) {
 	// Note: The kubebuilder RBAC markers above have to be kept in sync
 	// with the CRDs that should be migrated by this provider.
 	crdMigratorConfig := map[client.Object]crdmigrator.ByObjectConfig{
@@ -342,11 +338,12 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 	}
 
 	if err := (&vpccontroller.IBMVPCMachineReconciler{
-		Client:          mgr.GetClient(),
-		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
-		Recorder:        mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
-		ServiceEndpoint: serviceEndpoint,
-		Scheme:          mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Log:              ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
+		Recorder:         mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
+		ServiceEndpoint:  serviceEndpoint,
+		Scheme:           mgr.GetScheme(),
+		ProviderIDFormat: providerIDFormat,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
 		os.Exit(1)
@@ -378,6 +375,7 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 		ServiceEndpoint:  serviceEndpoint,
 		Scheme:           mgr.GetScheme(),
 		WatchFilterValue: watchFilterValue,
+		ProviderIDFormat: providerIDFormat,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)

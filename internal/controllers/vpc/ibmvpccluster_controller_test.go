@@ -19,7 +19,6 @@ package vpc
 import (
 	"errors"
 	"fmt"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 	"testing"
 	"time"
 
@@ -29,8 +28,10 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
+
 	clusterv1beta1 "sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
@@ -38,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
+	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
 
 	. "github.com/onsi/gomega"
@@ -161,6 +163,7 @@ func TestIBMVPCClusterReconciler_reconcile(t *testing.T) {
 			IBMVPCClient: mockvpc,
 			Cluster:      &clusterv1.Cluster{},
 			Logger:       klog.Background(),
+			Recorder:     record.NewFakeRecorder(1000),
 			IBMVPCCluster: &infrav1.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-cluster",
@@ -298,6 +301,7 @@ func TestIBMVPCClusterLBReconciler_reconcile(t *testing.T) {
 			IBMVPCClient: mockvpc,
 			Cluster:      &clusterv1.Cluster{},
 			Logger:       klog.Background(),
+			Recorder:     record.NewFakeRecorder(1000),
 			IBMVPCCluster: &infrav1.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "vpc-cluster",
@@ -454,6 +458,7 @@ func TestIBMVPCClusterReconciler_delete(t *testing.T) {
 		clusterScope = &vpc.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Logger:       klog.Background(),
+			Recorder:     record.NewFakeRecorder(1000),
 			IBMVPCCluster: &infrav1.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Finalizers: []string{infrav1.ClusterFinalizer},
@@ -564,6 +569,7 @@ func TestIBMVPCClusterLBReconciler_delete(t *testing.T) {
 		clusterScope := &vpc.ClusterScope{
 			IBMVPCClient: mockvpc,
 			Logger:       klog.Background(),
+			Recorder:     record.NewFakeRecorder(1000),
 			IBMVPCCluster: &infrav1.IBMVPCCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Finalizers: []string{infrav1.ClusterFinalizer},

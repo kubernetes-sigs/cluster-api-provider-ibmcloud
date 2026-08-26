@@ -132,6 +132,7 @@ func (r *IBMPowerVSClusterReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		IBMPowerVSCluster: ibmPowerVSCluster,
 		ServiceEndpoint:   r.ServiceEndpoint,
 		ClientBuilder:     r.ClientBuilder,
+		Recorder:          r.Recorder,
 	})
 
 	if err != nil {

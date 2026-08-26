@@ -26,6 +26,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -51,6 +52,7 @@ func setupClusterScope(clusterName string, mockvpc *mock.MockVpc) *ClusterScope 
 		IBMVPCClient:  mockvpc,
 		Cluster:       cluster,
 		IBMVPCCluster: vpcCluster,
+		Recorder:      record.NewFakeRecorder(1000),
 	}
 }
 

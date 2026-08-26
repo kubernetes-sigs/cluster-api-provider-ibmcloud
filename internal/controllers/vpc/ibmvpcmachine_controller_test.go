@@ -20,8 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 	"testing"
 	"time"
 
@@ -32,6 +30,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/cluster-api/api/core/v1beta1" //nolint:staticcheck
@@ -42,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
+	vpc "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	gtmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging/mock"
 	vpcmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc/mock"
@@ -249,6 +249,7 @@ func TestIBMVPCMachineReconciler_reconcile(t *testing.T) {
 			},
 			IBMVPCCluster: &infrav1.IBMVPCCluster{},
 			IBMVPCClient:  mockvpc,
+			Recorder:      record.NewFakeRecorder(1000),
 		}
 	}
 	teardown := func() {
@@ -287,8 +288,9 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 		mockvpc := vpcmock.NewMockVpc(gomock.NewController(t))
 		mockgt := gtmock.NewMockGlobalTagging(gomock.NewController(t))
 		reconciler := IBMVPCMachineReconciler{
-			Client: testEnv.Client,
-			Log:    klog.Background(),
+			Client:   testEnv.Client,
+			Log:      klog.Background(),
+			Recorder: record.NewFakeRecorder(1000),
 		}
 		machineScope := &vpc.MachineScope{
 			IBMVPCMachine: &infrav1.IBMVPCMachine{
@@ -332,8 +334,9 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			Cluster:             &clusterv1.Cluster{},
 			IBMVPCClient:        mockvpc,
 			GlobalTaggingClient: mockgt,
+			ProviderIDFormat:    "v2",
+			Recorder:            record.NewFakeRecorder(1000),
 		}
-		options.ProviderIDFormat = string(options.ProviderIDFormatV2)
 		return gomock.NewController(t), mockvpc, mockgt, machineScope, reconciler
 	}
 
@@ -607,6 +610,7 @@ func TestIBMVPCMachineReconciler_Delete(t *testing.T) {
 				},
 			},
 			IBMVPCClient: mockvpc,
+			Recorder:     record.NewFakeRecorder(1000),
 		}
 	}
 	teardown := func() {
@@ -671,6 +675,7 @@ func TestIBMVPCMachineLBReconciler_Delete(t *testing.T) {
 					},
 				},
 			},
+			Recorder: record.NewFakeRecorder(1000),
 		}
 		return gomock.NewController(t), mockvpc, machineScope, reconciler
 	}
@@ -877,6 +882,7 @@ func TestReconcileAdditionalVolumes(t *testing.T) {
 				},
 			},
 			IBMVPCClient: mockvpc,
+			Recorder:     record.NewFakeRecorder(1000),
 		}
 		return gomock.NewController(t), mockvpc, machineScope, reconciler
 	}

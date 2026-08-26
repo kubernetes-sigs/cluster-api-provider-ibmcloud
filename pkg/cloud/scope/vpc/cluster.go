@@ -26,6 +26,8 @@ import (
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	corev1 "k8s.io/api/core/v1"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,7 +40,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 const (
@@ -56,6 +57,7 @@ type ClusterScopeParams struct {
 	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
+	Recorder        cgrecord.EventRecorder
 }
 
 // ClusterScope defines a scope defined around a cluster.
@@ -68,6 +70,8 @@ type ClusterScope struct {
 	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1.IBMVPCCluster
 	ServiceEndpoint []endpoints.ServiceEndpoint
+	// Recorder is the event recorder for emitting Kubernetes events.
+	Recorder cgrecord.EventRecorder
 }
 
 // NewClusterScope creates a new ClusterScopeV2 from the supplied parameters.
@@ -107,6 +111,7 @@ func NewClusterScope(params ClusterScopeParams) (*ClusterScope, error) {
 		Cluster:       params.Cluster,
 		IBMVPCCluster: params.IBMVPCCluster,
 		patchHelper:   helper,
+		Recorder:      params.Recorder,
 	}, nil
 }
 
@@ -127,13 +132,13 @@ func (s *ClusterScope) CreateVPC() (*vpcv1.VPC, error) {
 	options.SetName(s.IBMVPCCluster.Spec.VPC)
 	vpc, _, err := s.IBMVPCClient.CreateVPC(options)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedCreateVPC", "Failed vpc creation - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedCreateVPC", "Failed vpc creation - %v", err)
 		return nil, err
 	} else if err := s.updateDefaultSG(*vpc.DefaultSecurityGroup.ID); err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedUpdateDefaultSecurityGroup", "Failed to update default security group - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedUpdateDefaultSecurityGroup", "Failed to update default security group - %v", err)
 		return nil, err
 	}
-	record.Eventf(s.IBMVPCCluster, "SuccessfulCreateVPC", "Created VPC %q", *vpc.Name)
+	s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeNormal, "SuccessfulCreateVPC", "Created VPC %q", *vpc.Name)
 	return vpc, nil
 }
 
@@ -147,9 +152,9 @@ func (s *ClusterScope) DeleteVPC() error {
 	deleteVpcOptions.SetID(s.IBMVPCCluster.Status.VPC.ID)
 	_, err := s.IBMVPCClient.DeleteVPC(deleteVpcOptions)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedDeleteVPC", "Failed vpc deletion - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedDeleteVPC", "Failed vpc deletion - %v", err)
 	} else {
-		record.Eventf(s.IBMVPCCluster, "SuccessfulDeleteVPC", "Deleted VPC %q", s.IBMVPCCluster.Status.VPC.Name)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeNormal, "SuccessfulDeleteVPC", "Deleted VPC %q", s.IBMVPCCluster.Status.VPC.Name)
 	}
 
 	return err
@@ -205,7 +210,7 @@ func (s *ClusterScope) updateDefaultSG(sgID string) error {
 	})
 	_, _, err := s.IBMVPCClient.CreateSecurityGroupRule(options)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedCreateSecurityGroupRule", "Failed security group rule creation - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedCreateSecurityGroupRule", "Failed security group rule creation - %v", err)
 	}
 	return err
 }
@@ -242,7 +247,7 @@ func (s *ClusterScope) CreateSubnet() (*vpcv1.Subnet, error) {
 	})
 	subnet, _, err := s.IBMVPCClient.CreateSubnet(options)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedCreateSubnet", "Failed subnet creation - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedCreateSubnet", "Failed subnet creation - %v", err)
 	}
 	if subnet != nil {
 		pgw, err := s.createPublicGateWay(s.IBMVPCCluster.Status.VPC.ID, s.IBMVPCCluster.Spec.Zone, s.IBMVPCCluster.Spec.ResourceGroup)
@@ -408,7 +413,7 @@ func (s *ClusterScope) DeleteSubnet(ctx context.Context) error {
 	deleteSubnetOption.SetID(subnetID)
 	_, err = s.IBMVPCClient.DeleteSubnet(deleteSubnetOption)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedDeleteSubnet", "Failed subnet deletion - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedDeleteSubnet", "Failed subnet deletion - %v", err)
 		return fmt.Errorf("error when deleting subnet: %w", err)
 	}
 	return err
@@ -427,7 +432,7 @@ func (s *ClusterScope) createPublicGateWay(vpcID string, zoneName string, resour
 	})
 	publicGateway, _, err := s.IBMVPCClient.CreatePublicGateway(options)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedCreatePublicGateway", "Failed publicgateway creation - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedCreatePublicGateway", "Failed publicgateway creation - %v", err)
 	}
 	return publicGateway, err
 }
@@ -440,7 +445,7 @@ func (s *ClusterScope) attachPublicGateWay(subnetID string, pgwID string) (*vpcv
 	})
 	publicGateway, _, err := s.IBMVPCClient.SetSubnetPublicGateway(options)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedAttachPublicGateway", "Failed publicgateway attachment - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedAttachPublicGateway", "Failed publicgateway attachment - %v", err)
 	}
 	return publicGateway, err
 }
@@ -451,7 +456,7 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	unsetPGWOption.SetID(subnetID)
 	_, err := s.IBMVPCClient.UnsetSubnetPublicGateway(unsetPGWOption)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedDetachPublicGateway", "Failed publicgateway detachment - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedDetachPublicGateway", "Failed publicgateway detachment - %v", err)
 		return fmt.Errorf("error when unsetting publicgateway for subnet %s: %w", subnetID, err)
 	}
 
@@ -460,7 +465,7 @@ func (s *ClusterScope) detachPublicGateway(subnetID string, pgwID string) error 
 	deletePGWOption.SetID(pgwID)
 	_, err = s.IBMVPCClient.DeletePublicGateway(deletePGWOption)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedDeletePublicGateway", "Failed publicgateway deletion - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedDeletePublicGateway", "Failed publicgateway deletion - %v", err)
 		return fmt.Errorf("error when deleting publicgateway for subnet %s: %w", subnetID, err)
 	}
 	return err
@@ -513,11 +518,11 @@ func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
 
 	loadBalancer, _, err := s.IBMVPCClient.CreateLoadBalancer(options)
 	if err != nil {
-		record.Warnf(s.IBMVPCCluster, "FailedCreateLoadBalancer", "Failed loadBalancer creation - %v", err)
+		s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedCreateLoadBalancer", "Failed loadBalancer creation - %v", err)
 		return nil, err
 	}
 
-	record.Eventf(s.IBMVPCCluster, "SuccessfulCreateLoadBalancer", "Created loadBalancer %q", *loadBalancer.Name)
+	s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeNormal, "SuccessfulCreateLoadBalancer", "Created loadBalancer %q", *loadBalancer.Name)
 	return loadBalancer, nil
 }
 
@@ -634,7 +639,7 @@ func (s *ClusterScope) DeleteLoadBalancer() (bool, error) {
 						deleteLoadBalancerOption.SetID(lbipID)
 						_, err := s.IBMVPCClient.DeleteLoadBalancer(deleteLoadBalancerOption)
 						if err != nil {
-							record.Warnf(s.IBMVPCCluster, "FailedDeleteLoadBalancer", "Failed loadBalancer deletion - %v", err)
+							s.Recorder.Eventf(s.IBMVPCCluster, corev1.EventTypeWarning, "FailedDeleteLoadBalancer", "Failed loadBalancer deletion - %v", err)
 							return false, "", err
 						}
 					}

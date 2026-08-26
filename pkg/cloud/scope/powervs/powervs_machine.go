@@ -47,6 +47,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/cache"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -58,13 +59,14 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	ignV2Types "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/bootstrap/ignition"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
+
+// providerIDFormatV2 is the only supported provider ID format value.
+const providerIDFormatV2 = "v2"
 
 const cosURLDomain = "cloud-object-storage.appdomain.cloud"
 
@@ -116,7 +118,9 @@ type MachineScopeParams struct {
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 	DHCPIPCacheStore  cache.Store
 
-	ClientBuilder ClientBuilder
+	ClientBuilder    ClientBuilder
+	Recorder         cgrecord.EventRecorder
+	ProviderIDFormat string
 }
 
 // MachineScope defines a scope defined around a Power VS Machine.
@@ -127,6 +131,11 @@ type MachineScope struct {
 	IBMVPCClient     vpc.Vpc
 	ResourceClient   resourcecontroller.ResourceController
 	COSClient        cos.Cos
+
+	// Recorder is the event recorder for emitting Kubernetes events.
+	Recorder cgrecord.EventRecorder
+	// ProviderIDFormat is the format used to set the provider ID on the machine.
+	ProviderIDFormat string
 
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
@@ -152,6 +161,8 @@ func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineSc
 		IBMPowerVSImage:   params.IBMPowerVSImage,
 		ServiceEndpoint:   params.ServiceEndpoint,
 		DHCPIPCacheStore:  params.DHCPIPCacheStore,
+		Recorder:          params.Recorder,
+		ProviderIDFormat:  params.ProviderIDFormat,
 	}
 
 	if err := scope.initClients(ctx, &params); err != nil {
@@ -361,7 +372,7 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	} else {
 		imageID, err = s.getImageID(ctx, machineSpec.Image.Reference)
 		if err != nil {
-			record.Warnf(s.IBMPowerVSMachine, "FailedRetrieveImage", "Failed image retrieval: %v", err)
+			s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedRetrieveImage", "Failed image retrieval: %v", err)
 			return nil, fmt.Errorf("error getting image ID from reference: %w", err)
 		}
 	}
@@ -381,7 +392,7 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 
 	networkID, err := s.getNetworkID(ctx, network)
 	if err != nil {
-		record.Warnf(s.IBMPowerVSMachine, "FailedRetrieveNetwork", "Failed network retrieval: %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedRetrieveNetwork", "Failed network retrieval: %v", err)
 		return nil, fmt.Errorf("error getting network ID: %w", err)
 	}
 	log.V(3).Info("Retrieved network id", "networkID", *networkID)
@@ -409,11 +420,11 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 	// 9. Execute Instance Creation
 	log.Info("Triggering PowerVS instance creation", "machine", s.IBMPowerVSMachine.Name)
 	if _, err := s.IBMPowerVSClient.CreateInstance(ctx, payload); err != nil {
-		record.Warnf(s.IBMPowerVSMachine, "FailedCreateInstance", "Failed instance creation: %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedCreateInstance", "Failed instance creation: %v", err)
 		return nil, fmt.Errorf("failed to create PowerVS instance via SDK: %w", err)
 	}
 
-	record.Eventf(s.IBMPowerVSMachine, "SuccessfulCreateInstance", "Successfully triggered creation for Instance %q", s.IBMPowerVSMachine.Name)
+	s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeNormal, "SuccessfulCreateInstance", "Successfully triggered creation for Instance %q", s.IBMPowerVSMachine.Name)
 
 	return nil, nil
 }
@@ -421,10 +432,10 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 // DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
 func (s *MachineScope) DeleteMachine(ctx context.Context) error {
 	if err := s.IBMPowerVSClient.DeleteInstance(ctx, s.IBMPowerVSMachine.Status.InstanceID); err != nil {
-		record.Warnf(s.IBMPowerVSMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedDeleteInstance", "Failed instance deletion - %v", err)
 		return err
 	}
-	record.Eventf(s.IBMPowerVSMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", s.IBMPowerVSMachine.Name)
+	s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeNormal, "SuccessfulDeleteInstance", "Deleted Instance %q", s.IBMPowerVSMachine.Name)
 	return nil
 }
 
@@ -462,11 +473,11 @@ func (s *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 		Bucket: ptr.To(bucket),
 		Key:    ptr.To(key),
 	}); err != nil {
-		record.Warnf(s.IBMPowerVSMachine, "FailedDeleteMachineIgnition", "Failed machine ignition deletion - %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedDeleteMachineIgnition", "Failed machine ignition deletion - %v", err)
 		return fmt.Errorf("failed to delete COS object %s from bucket %s: %w", key, bucket, err)
 	}
 
-	record.Eventf(s.IBMPowerVSMachine, "SuccessfulDeleteMachineIgnition", "Deleted machine ignition %q", s.IBMPowerVSMachine.Name)
+	s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeNormal, "SuccessfulDeleteMachineIgnition", "Deleted machine ignition %q", s.IBMPowerVSMachine.Name)
 	return nil
 }
 
@@ -805,7 +816,7 @@ func (s *MachineScope) GetWorkspaceID() (string, error) {
 
 // SetProviderID will set the provider id for the machine.
 func (s *MachineScope) SetProviderID(instanceID string) error {
-	if options.ProviderIDFormatType(options.ProviderIDFormat) != options.ProviderIDFormatV2 {
+	if s.ProviderIDFormat != providerIDFormatV2 {
 		return fmt.Errorf("invalid value for ProviderIDFormat")
 	}
 

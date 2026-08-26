@@ -24,6 +24,8 @@ import (
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 
+	corev1 "k8s.io/api/core/v1"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -33,7 +35,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 // BucketAccess indicates if the bucket has public or private access public access.
@@ -51,6 +52,7 @@ type ImageScopeParams struct {
 	Zone            string
 	ServiceEndpoint []endpoints.ServiceEndpoint
 	ClientBuilder   ClientBuilder
+	Recorder        cgrecord.EventRecorder
 }
 
 // ImageScope defines a scope defined around a Power VS Cluster.
@@ -59,6 +61,9 @@ type ImageScope struct {
 
 	IBMPowerVSClient powervs.PowerVS
 	ResourceClient   resourcecontroller.ResourceController
+
+	// Recorder is the event recorder for emitting Kubernetes events.
+	Recorder cgrecord.EventRecorder
 
 	IBMPowerVSImage *infrav1.IBMPowerVSImage
 	ServiceEndpoint []endpoints.ServiceEndpoint
@@ -74,6 +79,7 @@ func NewPowerVSImageScope(ctx context.Context, params ImageScopeParams) (*ImageS
 	scope := &ImageScope{
 		Client:          params.Client,
 		IBMPowerVSImage: params.IBMPowerVSImage,
+		Recorder:        params.Recorder,
 	}
 
 	if err := scope.initClients(ctx, &params); err != nil {
@@ -194,7 +200,7 @@ func (s *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReferen
 	// 1. Idempotency Check
 	imageReply, err := s.ensureImageUnique(ctx, imageName)
 	if err != nil {
-		record.Warnf(s.IBMPowerVSImage, "FailedRetrieveImage", "Failed to retrieve image %q", imageName)
+		s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeWarning, "FailedRetrieveImage", "Failed to retrieve image %q", imageName)
 		return nil, nil, fmt.Errorf("failed to verify image uniqueness: %w", err)
 	} else if imageReply != nil {
 		log.Info("Image already exists", "imageName", imageName)
@@ -233,12 +239,12 @@ func (s *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReferen
 
 	jobRef, err := s.IBMPowerVSClient.CreateCosImage(ctx, body)
 	if err != nil {
-		record.Warnf(s.IBMPowerVSImage, "FailedCreateImageImportJob", "Failed image import job creation: %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeWarning, "FailedCreateImageImportJob", "Failed image import job creation: %v", err)
 		return nil, nil, fmt.Errorf("failed to create COS image import job: %w", err)
 	}
 
 	log.Info("New import job request created", "jobID", *jobRef.ID)
-	record.Eventf(s.IBMPowerVSImage, "SuccessfulCreateImageImportJob", "Created image import job %q", *jobRef.ID)
+	s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeNormal, "SuccessfulCreateImageImportJob", "Created image import job %q", *jobRef.ID)
 	return nil, jobRef, nil
 }
 
@@ -250,11 +256,11 @@ func (s *ImageScope) DeleteImage(ctx context.Context) error {
 	}
 
 	if err := s.IBMPowerVSClient.DeleteImage(ctx, imageID); err != nil {
-		record.Warnf(s.IBMPowerVSImage, "FailedDeleteImage", "Failed image deletion: %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeWarning, "FailedDeleteImage", "Failed image deletion: %v", err)
 		return fmt.Errorf("failed to delete PowerVS image %s: %w", imageID, err)
 	}
 
-	record.Eventf(s.IBMPowerVSImage, "SuccessfulDeleteImage", "Deleted Image %q", imageID)
+	s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeNormal, "SuccessfulDeleteImage", "Deleted Image %q", imageID)
 	return nil
 }
 
@@ -266,11 +272,11 @@ func (s *ImageScope) DeleteImportJob(ctx context.Context) error {
 	}
 
 	if err := s.IBMPowerVSClient.DeleteJob(ctx, jobID); err != nil {
-		record.Warnf(s.IBMPowerVSImage, "FailedDeleteImageImportJob", "Failed image import job deletion: %v", err)
+		s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeWarning, "FailedDeleteImageImportJob", "Failed image import job deletion: %v", err)
 		return fmt.Errorf("failed to delete COS image import job %s: %w", jobID, err)
 	}
 
-	record.Eventf(s.IBMPowerVSImage, "SuccessfulDeleteImageImportJob", "Deleted image import job %q", jobID)
+	s.Recorder.Eventf(s.IBMPowerVSImage, corev1.EventTypeNormal, "SuccessfulDeleteImageImportJob", "Deleted image import job %q", jobID)
 	return nil
 }
 
