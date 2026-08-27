@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,7 +44,6 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos"
 	cosmock "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
@@ -115,6 +115,7 @@ func setupPowerVSMachineScope(clusterName string, machineName string, imageID *s
 		IBMPowerVSCluster: powerVSCluster,
 		IBMPowerVSMachine: powerVSMachine,
 		DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+		Recorder:          record.NewFakeRecorder(1000),
 	}
 }
 
@@ -1083,7 +1084,7 @@ func TestSetProviderID(t *testing.T) {
 	t.Run("error when ProviderIDFormat is invalid", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, nil)
-		options.ProviderIDFormat = "v1"
+		scope.ProviderIDFormat = "v1"
 		err := scope.SetProviderID(providerID)
 		g.Expect(err).To(HaveOccurred())
 	})
@@ -1091,6 +1092,7 @@ func TestSetProviderID(t *testing.T) {
 	t.Run("error when workspace ID cannot be resolved", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
+			ProviderIDFormat: "v2",
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{},
 			},
@@ -1106,7 +1108,6 @@ func TestSetProviderID(t *testing.T) {
 				},
 			},
 		}
-		options.ProviderIDFormat = string(options.ProviderIDFormatV2)
 		err := scope.SetProviderID(providerID)
 		g.Expect(err).To(HaveOccurred())
 	})
@@ -1114,6 +1115,7 @@ func TestSetProviderID(t *testing.T) {
 	t.Run("sets provider ID in v2 format", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
+			ProviderIDFormat: "v2",
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReference{ID: "foo-service-instance-id"},
@@ -1121,7 +1123,6 @@ func TestSetProviderID(t *testing.T) {
 			},
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{},
 		}
-		options.ProviderIDFormat = string(options.ProviderIDFormatV2)
 		scope.SetZone("us-south-1")
 		scope.SetRegion(region)
 		err := scope.SetProviderID(providerID)
@@ -2890,6 +2891,7 @@ func TestDeleteMachineIgnitionCOSDelete(t *testing.T) {
 			},
 			Machine:   &clusterv1.Machine{},
 			COSClient: mockCOS,
+			Recorder:  record.NewFakeRecorder(1000),
 		}
 		mockCOS.EXPECT().DeleteObject(gomock.Any()).Return(nil, nil)
 
@@ -2916,6 +2918,7 @@ func TestDeleteMachineIgnitionCOSDelete(t *testing.T) {
 			},
 			Machine:   &clusterv1.Machine{},
 			COSClient: mockCOS,
+			Recorder:  record.NewFakeRecorder(1000),
 		}
 		mockCOS.EXPECT().DeleteObject(gomock.Any()).Return(nil, errors.New("delete failed"))
 

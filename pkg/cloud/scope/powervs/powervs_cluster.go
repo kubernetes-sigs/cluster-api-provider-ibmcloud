@@ -41,6 +41,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -116,6 +117,7 @@ type ClusterScopeParams struct {
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 	ClientBuilder     ClientBuilder
+	Recorder          cgrecord.EventRecorder
 }
 
 // ClusterScope defines a scope defined around a Power VS Cluster.
@@ -135,6 +137,9 @@ type ClusterScope struct {
 	// (e.g. setupCOSClient) can use the same injected builder rather than
 	// hard-coding the production implementation.
 	ClientBuilder ClientBuilder
+
+	// Recorder is the event recorder for emitting Kubernetes events.
+	Recorder cgrecord.EventRecorder
 
 	// Kubernetes Resources
 	Cluster           *clusterv1.Cluster
@@ -305,6 +310,7 @@ func NewPowerVSClusterScope(ctx context.Context, params ClusterScopeParams) (*Cl
 		IBMPowerVSCluster: params.IBMPowerVSCluster,
 		ServiceEndpoint:   params.ServiceEndpoint,
 		ClientBuilder:     params.ClientBuilder,
+		Recorder:          params.Recorder,
 	}
 
 	// 4. Incase of VIP Topology we need not build clients

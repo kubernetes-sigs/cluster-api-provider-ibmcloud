@@ -30,6 +30,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 
@@ -41,25 +42,28 @@ import (
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/globaltagging"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
+
+// providerIDFormatV2 is the only supported provider ID format value.
+const providerIDFormatV2 = "v2"
 
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	IBMVPCClient    vpc.Vpc
-	Client          client.Client
-	Logger          logr.Logger
-	Cluster         *clusterv1.Cluster
-	Machine         *clusterv1.Machine
-	IBMVPCCluster   *infrav1.IBMVPCCluster
-	IBMVPCMachine   *infrav1.IBMVPCMachine
-	ServiceEndpoint []endpoints.ServiceEndpoint
+	IBMVPCClient     vpc.Vpc
+	Client           client.Client
+	Logger           logr.Logger
+	Cluster          *clusterv1.Cluster
+	Machine          *clusterv1.Machine
+	IBMVPCCluster    *infrav1.IBMVPCCluster
+	IBMVPCMachine    *infrav1.IBMVPCMachine
+	ServiceEndpoint  []endpoints.ServiceEndpoint
+	Recorder         cgrecord.EventRecorder
+	ProviderIDFormat string
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -74,6 +78,10 @@ type MachineScope struct {
 	IBMVPCCluster       *infrav1.IBMVPCCluster
 	IBMVPCMachine       *infrav1.IBMVPCMachine
 	ServiceEndpoint     []endpoints.ServiceEndpoint
+	// Recorder is the event recorder for emitting Kubernetes events.
+	Recorder cgrecord.EventRecorder
+	// ProviderIDFormat is the format used to set the provider ID on the machine.
+	ProviderIDFormat string
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -136,6 +144,8 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		patchHelper:         helper,
 		Machine:             params.Machine,
 		IBMVPCMachine:       params.IBMVPCMachine,
+		Recorder:            params.Recorder,
+		ProviderIDFormat:    params.ProviderIDFormat,
 	}, nil
 }
 
@@ -312,7 +322,7 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*vpcv1.Instance, erro
 		}
 		imageID, err := fetchImageID(ctx, m.IBMVPCMachine.Spec.Image, m)
 		if err != nil {
-			record.Warnf(m.IBMVPCMachine, "FailedRetrieveImage", "Failed image retrieval - %v", err)
+			m.Recorder.Eventf(m.IBMVPCMachine, corev1.EventTypeWarning, "FailedRetrieveImage", "Failed image retrieval - %v", err)
 			return nil, fmt.Errorf("error while fetching image ID: %w", err)
 		}
 		imageInstancePrototype.Image = &vpcv1.ImageIdentity{
@@ -388,9 +398,9 @@ func (m *MachineScope) CreateMachine(ctx context.Context) (*vpcv1.Instance, erro
 	log.Info("Creating instance", "createOptions", options, "name", m.IBMVPCMachine.Name, "profile", *profile.Name, "resourceGroup", resourceGroupIdentity, "vpc", vpcIdentity, "zone", zone)
 	instance, _, err := m.IBMVPCClient.CreateInstance(options)
 	if err != nil {
-		record.Warnf(m.IBMVPCMachine, "FailedCreateInstance", "Failed instance creation - %s, %v", options, err)
+		m.Recorder.Eventf(m.IBMVPCMachine, corev1.EventTypeWarning, "FailedCreateInstance", "Failed instance creation - %s, %v", options, err)
 	} else {
-		record.Eventf(m.IBMVPCMachine, "SuccessfulCreateInstance", "Created Instance %q", *instance.Name)
+		m.Recorder.Eventf(m.IBMVPCMachine, corev1.EventTypeNormal, "SuccessfulCreateInstance", "Created Instance %q", *instance.Name)
 	}
 	return instance, err
 }
@@ -470,9 +480,9 @@ func (m *MachineScope) DeleteMachine() error {
 	options.SetID(m.IBMVPCMachine.Status.InstanceID)
 	_, err := m.IBMVPCClient.DeleteInstance(options)
 	if err != nil {
-		record.Warnf(m.IBMVPCMachine, "FailedDeleteInstance", "Failed instance deletion - %v", err)
+		m.Recorder.Eventf(m.IBMVPCMachine, corev1.EventTypeWarning, "FailedDeleteInstance", "Failed instance deletion - %v", err)
 	} else {
-		record.Eventf(m.IBMVPCMachine, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMVPCMachine.Name)
+		m.Recorder.Eventf(m.IBMVPCMachine, corev1.EventTypeNormal, "SuccessfulDeleteInstance", "Deleted Instance %q", m.IBMVPCMachine.Name)
 	}
 	return err
 }
@@ -1098,7 +1108,7 @@ func (m *MachineScope) SetNotReady() {
 // SetProviderID will set the provider id for the machine.
 func (m *MachineScope) SetProviderID(id *string) error {
 	// Based on the ProviderIDFormat version the providerID format will be decided.
-	if options.ProviderIDFormatType(options.ProviderIDFormat) == options.ProviderIDFormatV2 {
+	if m.ProviderIDFormat == providerIDFormatV2 {
 		accountID, err := accounts.GetAccountIDWrapper()
 		if err != nil {
 			return fmt.Errorf("failed to get cloud account id: %w", err)

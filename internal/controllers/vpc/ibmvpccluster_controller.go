@@ -114,6 +114,7 @@ func (r *IBMVPCClusterReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		Cluster:         cluster,
 		IBMVPCCluster:   ibmVPCCluster,
 		ServiceEndpoint: r.ServiceEndpoint,
+		Recorder:        r.Recorder,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
@@ -178,6 +179,7 @@ func (r *IBMVPCClusterReconciler) reconcileV2(ctx context.Context, req ctrl.Requ
 		Cluster:         cluster,
 		IBMVPCCluster:   ibmVPCCluster,
 		ServiceEndpoint: r.ServiceEndpoint,
+		Recorder:        r.Recorder,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)

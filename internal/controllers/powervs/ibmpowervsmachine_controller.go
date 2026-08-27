@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -52,15 +53,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	powervsscope "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/powervs"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs"
-	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object.
 type IBMPowerVSMachineReconciler struct {
 	client.Client
-	Recorder        record.EventRecorder
-	ServiceEndpoint []endpoints.ServiceEndpoint
-	Scheme          *runtime.Scheme
+	Recorder         record.EventRecorder
+	ServiceEndpoint  []endpoints.ServiceEndpoint
+	Scheme           *runtime.Scheme
+	ProviderIDFormat string
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
@@ -183,6 +184,8 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		ServiceEndpoint:   r.ServiceEndpoint,
 		DHCPIPCacheStore:  dhcpCacheStore,
 		ClientBuilder:     r.ClientBuilder,
+		Recorder:          r.Recorder,
+		ProviderIDFormat:  r.ProviderIDFormat,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVS machine scope: %w", err)
@@ -342,7 +345,7 @@ func (r *IBMPowerVSMachineReconciler) reconcileNormal(ctx context.Context, machi
 		machineScope.SetNotReady()
 		// Note: No more SetFailureMessage/Reason! It goes straight into the condition.
 		r.markCondition(machineScope, metav1.ConditionFalse, infrav1.InstanceErroredReason, msg)
-		capibmrecord.Warnf(machineScope.IBMPowerVSMachine, "FailedBuildInstance", "Failed to build the instance: %s", msg)
+		r.Recorder.Eventf(machineScope.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedBuildInstance", "Failed to build the instance: %s", msg)
 		return ctrl.Result{}, nil
 
 	default:

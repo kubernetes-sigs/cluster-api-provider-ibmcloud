@@ -26,6 +26,7 @@ import (
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,16 +52,16 @@ import (
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/scope/vpc"
-	capibmrecord "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/record"
 )
 
 // IBMVPCMachineReconciler reconciles a IBMVPCMachine object.
 type IBMVPCMachineReconciler struct {
 	client.Client
-	Log             logr.Logger
-	Recorder        record.EventRecorder
-	ServiceEndpoint []endpoints.ServiceEndpoint
-	Scheme          *runtime.Scheme
+	Log              logr.Logger
+	Recorder         record.EventRecorder
+	ServiceEndpoint  []endpoints.ServiceEndpoint
+	Scheme           *runtime.Scheme
+	ProviderIDFormat string
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=get;list;watch;create;update;patch;delete
@@ -139,12 +140,14 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Create the machine scope.
 	machineScope, err := vpc.NewMachineScope(vpc.MachineScopeParams{
-		Client:          r.Client,
-		Cluster:         cluster,
-		IBMVPCCluster:   ibmVPCCluster,
-		Machine:         machine,
-		IBMVPCMachine:   ibmVPCMachine,
-		ServiceEndpoint: r.ServiceEndpoint,
+		Client:           r.Client,
+		Cluster:          cluster,
+		IBMVPCCluster:    ibmVPCCluster,
+		Machine:          machine,
+		IBMVPCMachine:    ibmVPCMachine,
+		ServiceEndpoint:  r.ServiceEndpoint,
+		Recorder:         r.Recorder,
+		ProviderIDFormat: r.ProviderIDFormat,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)
@@ -257,7 +260,7 @@ func (r *IBMVPCMachineReconciler) reconcileNormal(ctx context.Context, machineSc
 				Status: metav1.ConditionFalse,
 				Reason: infrav1.InstanceErroredReason,
 			})
-			capibmrecord.Warnf(machineScope.IBMVPCMachine, "FailedBuildInstance", "Failed to build the instance - %s", msg)
+			r.Recorder.Eventf(machineScope.IBMVPCMachine, corev1.EventTypeWarning, "FailedBuildInstance", "Failed to build the instance - %s", msg)
 			return ctrl.Result{}, nil
 		case vpcv1.InstanceStatusRunningConst:
 			machineRunning = true

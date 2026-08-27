@@ -44,7 +44,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/client/interceptor"
 
-	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/options"
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
 	"sigs.k8s.io/cluster-api/util"
 	"sigs.k8s.io/cluster-api/util/conditions"
@@ -357,6 +356,7 @@ func TestIBMPowerVSMachineReconciler_reconcileDelete(t *testing.T) {
 				IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{},
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 				Machine:           machine,
+				Recorder:          record.NewFakeRecorder(2),
 			}
 
 			_, err := reconciler.reconcileDelete(ctx, scope)
@@ -377,9 +377,6 @@ func TestIBMPowerVSMachineReconciler_reconcileDelete(t *testing.T) {
 }
 
 func TestIBMPowerVSMachineReconciler_reconcileNormal(t *testing.T) {
-	t.Cleanup(func() { options.ProviderIDFormat = "" })
-	options.ProviderIDFormat = "v2"
-
 	testCases := []struct {
 		name            string
 		machine         *infrav1.IBMPowerVSMachine
@@ -597,6 +594,7 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal(t *testing.T) {
 				IBMPowerVSImage:   tc.image,
 				Machine:           tc.ownerMachine,
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				ProviderIDFormat:  "v2",
 			}
 			if tc.pvsCluster == nil {
 				scope.IBMPowerVSCluster = &infrav1.IBMPowerVSCluster{}
@@ -949,6 +947,7 @@ func TestIBMPowerVSMachineReconciler_reconcileDelete_ignitionError(t *testing.T)
 			},
 			DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
 			Machine:          machine,
+			Recorder:         record.NewFakeRecorder(2),
 		}
 
 		_, err := reconciler.reconcileDelete(ctx, scope)
@@ -960,9 +959,6 @@ func TestIBMPowerVSMachineReconciler_reconcileDelete_ignitionError(t *testing.T)
 }
 
 func TestIBMPowerVSMachineReconciler_reconcileNormal_additionalBranches(t *testing.T) {
-	t.Cleanup(func() { options.ProviderIDFormat = "" })
-	options.ProviderIDFormat = "v2"
-
 	// shared instance references used by multiple cases
 	instanceRef := &models.PVMInstances{
 		PvmInstances: []*models.PVMInstanceReference{
@@ -1076,8 +1072,8 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal_additionalBranches(t *testi
 				m.EXPECT().GetInstance(gomock.Any(), "inst-id").Return(activeInstance(), nil)
 			},
 			// Override ProviderIDFormat to something invalid so SetProviderID fails
-			checkScope: func(_ *WithT, _ *powervsscope.MachineScope) {
-				options.ProviderIDFormat = "v1" // invalid → SetProviderID returns error
+			checkScope: func(_ *WithT, s *powervsscope.MachineScope) {
+				s.ProviderIDFormat = "v1" // invalid → SetProviderID returns error
 			},
 			expectedError: "failed to set provider ID",
 		},
@@ -1336,8 +1332,6 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal_additionalBranches(t *testi
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
-			// reset to valid format after any test that changes it
-			t.Cleanup(func() { options.ProviderIDFormat = "v2" })
 
 			mockCtrl := gomock.NewController(t)
 			defer mockCtrl.Finish()
@@ -1378,6 +1372,7 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal_additionalBranches(t *testi
 				IBMPowerVSImage:   tc.image,
 				Machine:           tc.ownerMachine,
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
+				ProviderIDFormat:  "v2",
 			}
 			if scope.IBMPowerVSCluster == nil {
 				scope.IBMPowerVSCluster = &infrav1.IBMPowerVSCluster{}
@@ -1872,6 +1867,7 @@ func TestIBMPowerVSMachineReconciler_reconcileDelete_dhcpCacheError(t *testing.T
 			// errCacheStore.Delete always returns an error, exercising the non-fatal log path
 			DHCPIPCacheStore: errCacheStore{cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL)},
 			Machine:          newMachine(),
+			Recorder:         record.NewFakeRecorder(2),
 		}
 
 		_, err := reconciler.reconcileDelete(ctx, scope)
@@ -2092,8 +2088,6 @@ func primeReconcile(g *WithT, ns, name string) {
 }
 
 func TestIBMPowerVSMachineReconciler_Reconcile_withScope(t *testing.T) {
-	options.ProviderIDFormat = "v2"
-
 	// ── IBMPowerVSImage not found (lines 163-172) ─────────────────────────
 	t.Run("returns nil when IBMPowerVSImage is not found", func(t *testing.T) {
 		g := NewWithT(t)

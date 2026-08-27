@@ -93,6 +93,7 @@ func (r *IBMPowerVSImageReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		IBMPowerVSImage: ibmPowerVSImage,
 		ServiceEndpoint: r.ServiceEndpoint,
 		ClientBuilder:   r.ClientBuilder,
+		Recorder:        r.Recorder,
 	}
 
 	// Externally managed clusters might not be available during image deletion. Get the cluster only when image is still not deleted.

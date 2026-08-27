@@ -32,6 +32,7 @@ import (
 	"github.com/IBM/platform-services-go-sdk/resourcemanagerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
+	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2/textlogger"
 	"k8s.io/utils/ptr"
 
@@ -79,6 +80,7 @@ type ClusterScopeParamsV2 struct {
 	IBMVPCCluster   *infrav1.IBMVPCCluster
 	Logger          logr.Logger
 	ServiceEndpoint []endpoints.ServiceEndpoint
+	Recorder        cgrecord.EventRecorder
 
 	IBMVPCClient vpc.Vpc
 }
@@ -94,6 +96,9 @@ type ClusterScopeV2 struct {
 	ResourceControllerClient resourcecontroller.ResourceController
 	ResourceManagerClient    resourcemanager.ResourceManager
 	VPCClient                vpc.Vpc
+
+	// Recorder is the event recorder for emitting Kubernetes events.
+	Recorder cgrecord.EventRecorder
 
 	Cluster         *clusterv1.Cluster
 	IBMVPCCluster   *infrav1.IBMVPCCluster
@@ -195,6 +200,7 @@ func NewClusterScopeV2(params ClusterScopeParamsV2) (*ClusterScopeV2, error) {
 		Cluster:                  params.Cluster,
 		IBMVPCCluster:            params.IBMVPCCluster,
 		ServiceEndpoint:          params.ServiceEndpoint,
+		Recorder:                 params.Recorder,
 		GlobalTaggingClient:      globalTaggingClient,
 		ResourceControllerClient: resourceControllerClient,
 		ResourceManagerClient:    resourceManagerClient,
