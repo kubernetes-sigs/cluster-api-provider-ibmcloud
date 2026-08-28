@@ -49,21 +49,17 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/util/paging"
 )
 
-// providerIDFormatV2 is the only supported provider ID format value.
-const providerIDFormatV2 = "v2"
-
 // MachineScopeParams defines the input parameters used to create a new MachineScope.
 type MachineScopeParams struct {
-	IBMVPCClient     vpc.Vpc
-	Client           client.Client
-	Logger           logr.Logger
-	Cluster          *clusterv1.Cluster
-	Machine          *clusterv1.Machine
-	IBMVPCCluster    *infrav1.IBMVPCCluster
-	IBMVPCMachine    *infrav1.IBMVPCMachine
-	ServiceEndpoint  []endpoints.ServiceEndpoint
-	Recorder         cgrecord.EventRecorder
-	ProviderIDFormat string
+	IBMVPCClient    vpc.Vpc
+	Client          client.Client
+	Logger          logr.Logger
+	Cluster         *clusterv1.Cluster
+	Machine         *clusterv1.Machine
+	IBMVPCCluster   *infrav1.IBMVPCCluster
+	IBMVPCMachine   *infrav1.IBMVPCMachine
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Recorder        cgrecord.EventRecorder
 }
 
 // MachineScope defines a scope defined around a machine and its cluster.
@@ -80,8 +76,6 @@ type MachineScope struct {
 	ServiceEndpoint     []endpoints.ServiceEndpoint
 	// Recorder is the event recorder for emitting Kubernetes events.
 	Recorder cgrecord.EventRecorder
-	// ProviderIDFormat is the format used to set the provider ID on the machine.
-	ProviderIDFormat string
 }
 
 // NewMachineScope creates a new MachineScope from the supplied parameters.
@@ -145,7 +139,6 @@ func NewMachineScope(params MachineScopeParams) (*MachineScope, error) {
 		Machine:             params.Machine,
 		IBMVPCMachine:       params.IBMVPCMachine,
 		Recorder:            params.Recorder,
-		ProviderIDFormat:    params.ProviderIDFormat,
 	}, nil
 }
 
@@ -1107,16 +1100,11 @@ func (m *MachineScope) SetNotReady() {
 
 // SetProviderID will set the provider id for the machine.
 func (m *MachineScope) SetProviderID(id *string) error {
-	// Based on the ProviderIDFormat version the providerID format will be decided.
-	if m.ProviderIDFormat == providerIDFormatV2 {
-		accountID, err := accounts.GetAccountIDWrapper()
-		if err != nil {
-			return fmt.Errorf("failed to get cloud account id: %w", err)
-		}
-		m.IBMVPCMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibm://%s///%s/%s", accountID, m.Machine.Spec.ClusterName, *id))
-	} else {
-		return fmt.Errorf("invalid value for ProviderIDFormat")
+	accountID, err := accounts.GetAccountIDWrapper()
+	if err != nil {
+		return fmt.Errorf("failed to get cloud account id: %w", err)
 	}
+	m.IBMVPCMachine.Spec.ProviderID = ptr.To(fmt.Sprintf("ibm://%s///%s/%s", accountID, m.Machine.Spec.ClusterName, *id))
 	return nil
 }
 

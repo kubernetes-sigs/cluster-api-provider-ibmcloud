@@ -241,10 +241,10 @@ for future contributors.
 
 ---
 
-## Dependency Injection for Event Recorders and Provider ID Format
+## Dependency Injection for Event Recorders
 
-Two packages used global variables as a substitute for proper dependency injection into scope
-params — a pattern CAPI has moved away from entirely. Both were addressed in this PR.
+One package used a global variable as a substitute for proper dependency injection into scope
+params — a pattern CAPI has moved away from entirely.
 
 ### Recorder injection
 
@@ -257,12 +257,15 @@ Each reconciler struct already held a `Recorder record.EventRecorder` field; `se
 in `cmd/main.go` now passes `mgr.GetEventRecorderFor(...)` into scope params at construction
 time. All scope methods call `s.Recorder.Eventf(...)` directly. `pkg/util/record/` is deleted.
 
-### ProviderIDFormat injection
+### `--provider-id-fmt` flag removal
 
-**Before:** `pkg/cloud/options/` stored `ProviderIDFormat` as a global var set from the
-`--provider-id-fmt` CLI flag and read directly by machine scopes.
+Since `v2` was the only accepted value (any other value caused an immediate startup error), the
+flag provided no real configurability. It has been removed entirely:
 
-**After:** `MachineScopeParams` and `MachineScope` for both PowerVS and VPC gain a
-`ProviderIDFormat string` field. The machine reconciler structs gain the same field, populated
-from `cmd/main.go` `setupReconcilers`. Machine scopes read `s.ProviderIDFormat` directly.
-`pkg/cloud/options/` is deleted; the `"v2"` constant is inlined where needed.
+- The `--provider-id-fmt` CLI flag and the `PROVIDER_ID_FORMAT` env var shim in
+  `config/manager/manager.yaml` are deleted.
+- `ProviderIDFormat` fields are removed from `MachineScopeParams`, `MachineScope`,
+  `IBMVPCMachineReconciler`, and `IBMPowerVSMachineReconciler`.
+- `SetProviderID` in both machine scope files now always produces the v2 format directly,
+  with no runtime branch.
+- The `providerIDFormatV2 = "v2"` constants are removed.

@@ -65,9 +65,6 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 )
 
-// providerIDFormatV2 is the only supported provider ID format value.
-const providerIDFormatV2 = "v2"
-
 const cosURLDomain = "cloud-object-storage.appdomain.cloud"
 
 // presignExpiry is the lifetime of the pre-signed ignition URL embedded in user-data.
@@ -118,9 +115,8 @@ type MachineScopeParams struct {
 	ServiceEndpoint   []endpoints.ServiceEndpoint
 	DHCPIPCacheStore  cache.Store
 
-	ClientBuilder    ClientBuilder
-	Recorder         cgrecord.EventRecorder
-	ProviderIDFormat string
+	ClientBuilder ClientBuilder
+	Recorder      cgrecord.EventRecorder
 }
 
 // MachineScope defines a scope defined around a Power VS Machine.
@@ -134,8 +130,6 @@ type MachineScope struct {
 
 	// Recorder is the event recorder for emitting Kubernetes events.
 	Recorder cgrecord.EventRecorder
-	// ProviderIDFormat is the format used to set the provider ID on the machine.
-	ProviderIDFormat string
 
 	Cluster           *clusterv1.Cluster
 	Machine           *clusterv1.Machine
@@ -162,7 +156,6 @@ func NewMachineScope(ctx context.Context, params MachineScopeParams) (*MachineSc
 		ServiceEndpoint:   params.ServiceEndpoint,
 		DHCPIPCacheStore:  params.DHCPIPCacheStore,
 		Recorder:          params.Recorder,
-		ProviderIDFormat:  params.ProviderIDFormat,
 	}
 
 	if err := scope.initClients(ctx, &params); err != nil {
@@ -857,10 +850,6 @@ func (s *MachineScope) GetWorkspaceID() (string, error) {
 
 // SetProviderID will set the provider id for the machine.
 func (s *MachineScope) SetProviderID(instanceID string) error {
-	if s.ProviderIDFormat != providerIDFormatV2 {
-		return fmt.Errorf("invalid value for ProviderIDFormat")
-	}
-
 	workspaceID, err := s.GetWorkspaceID()
 	if err != nil {
 		return err

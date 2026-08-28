@@ -594,7 +594,6 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal(t *testing.T) {
 				IBMPowerVSImage:   tc.image,
 				Machine:           tc.ownerMachine,
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
-				ProviderIDFormat:  "v2",
 			}
 			if tc.pvsCluster == nil {
 				scope.IBMPowerVSCluster = &infrav1.IBMPowerVSCluster{}
@@ -931,7 +930,6 @@ func TestHandleLoadBalancerPoolMemberConfiguration_PendingFlag(t *testing.T) {
 			IBMVPCClient:     mockvpc,
 			IBMPowerVSClient: mockpowervs,
 			DHCPIPCacheStore: cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
-			ProviderIDFormat: "v2",
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{"powervs.cluster.x-k8s.io/create-infra": "true"},
@@ -1247,9 +1245,11 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal_additionalBranches(t *testi
 				m.EXPECT().ListInstances(gomock.Any()).Return(instanceRef, nil)
 				m.EXPECT().GetInstance(gomock.Any(), "inst-id").Return(activeInstance(), nil)
 			},
-			// Override ProviderIDFormat to something invalid so SetProviderID fails
+			// Clear workspace ID on both machine spec and cluster status so all
+			// three GetWorkspaceID precedences fail, causing SetProviderID to error.
 			checkScope: func(_ *WithT, s *powervsscope.MachineScope) {
-				s.ProviderIDFormat = "v1" // invalid → SetProviderID returns error
+				s.IBMPowerVSMachine.Spec.Workspace.ID = ""
+				s.IBMPowerVSMachine.Spec.Workspace.Name = ""
 			},
 			expectedError: "failed to set provider ID",
 		},
@@ -1545,14 +1545,12 @@ func TestIBMPowerVSMachineReconciler_reconcileNormal_additionalBranches(t *testi
 				IBMPowerVSImage:   tc.image,
 				Machine:           tc.ownerMachine,
 				DHCPIPCacheStore:  cache.NewTTLStore(powervs.CacheKeyFunc, powervs.CacheTTL),
-				ProviderIDFormat:  "v2",
 			}
 			if scope.IBMPowerVSCluster == nil {
 				scope.IBMPowerVSCluster = &infrav1.IBMPowerVSCluster{}
 			}
 			scope.SetZone("us-south")
 
-			// allow test to mutate scope before reconcile (e.g. ProviderIDFormat)
 			if tc.checkScope != nil {
 				tc.checkScope(g, scope)
 			}

@@ -1081,18 +1081,9 @@ func TestGetMachineInternalIP(t *testing.T) {
 func TestSetProviderID(t *testing.T) {
 	providerID := "foo-provider-id"
 
-	t.Run("error when ProviderIDFormat is invalid", func(t *testing.T) {
-		g := NewWithT(t)
-		scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, nil)
-		scope.ProviderIDFormat = "v1"
-		err := scope.SetProviderID(providerID)
-		g.Expect(err).To(HaveOccurred())
-	})
-
 	t.Run("error when workspace ID cannot be resolved", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
-			ProviderIDFormat: "v2",
 			IBMPowerVSMachine: &infrav1.IBMPowerVSMachine{
 				Spec: infrav1.IBMPowerVSMachineSpec{},
 			},
@@ -1112,10 +1103,9 @@ func TestSetProviderID(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 	})
 
-	t.Run("sets provider ID in v2 format", func(t *testing.T) {
+	t.Run("sets provider ID", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := MachineScope{
-			ProviderIDFormat: "v2",
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Status: infrav1.IBMPowerVSClusterStatus{
 					Workspace: infrav1.ResourceReference{ID: "foo-service-instance-id"},

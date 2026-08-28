@@ -334,7 +334,6 @@ func TestIBMVPCMachineLBReconciler_reconcile(t *testing.T) {
 			Cluster:             &clusterv1.Cluster{},
 			IBMVPCClient:        mockvpc,
 			GlobalTaggingClient: mockgt,
-			ProviderIDFormat:    "v2",
 			Recorder:            record.NewFakeRecorder(1000),
 		}
 		return gomock.NewController(t), mockvpc, mockgt, machineScope, reconciler

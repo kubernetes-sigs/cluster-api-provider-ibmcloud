@@ -140,18 +140,9 @@ func TestNewMachineScope(t *testing.T) {
 func TestSetVPCProviderID(t *testing.T) {
 	providerID := "foo-provider-id"
 
-	t.Run("Set Provider ID in invalid format", func(t *testing.T) {
+	t.Run("Set Provider ID succeeds", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupMachineScope(clusterName, machineName, mock.NewMockVpc(gomock.NewController(t)))
-		scope.ProviderIDFormat = "v1"
-		err := scope.SetProviderID(ptr.To(providerID))
-		g.Expect(err).ToNot(BeNil())
-	})
-
-	t.Run("Set Provider ID in valid format", func(t *testing.T) {
-		g := NewWithT(t)
-		scope := setupMachineScope(clusterName, machineName, mock.NewMockVpc(gomock.NewController(t)))
-		scope.ProviderIDFormat = "v2"
 		accounts.GetAccountIDFunc = func() (string, error) {
 			return "dummy-account-id", nil // Return dummy value
 		}
@@ -162,7 +153,6 @@ func TestSetVPCProviderID(t *testing.T) {
 	t.Run("Set Provider ID returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		scope := setupMachineScope(clusterName, machineName, mock.NewMockVpc(gomock.NewController(t)))
-		scope.ProviderIDFormat = "v2"
 		accounts.GetAccountIDFunc = func() (string, error) {
 			return "", errors.New("error getting accountID") // Return dummy error
 		}
