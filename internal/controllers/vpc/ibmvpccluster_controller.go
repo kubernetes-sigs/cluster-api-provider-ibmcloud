@@ -523,7 +523,7 @@ func (r *IBMVPCClusterReconciler) reconcileDelete(ctx context.Context, clusterSc
 	return handleFinalizerRemoval(clusterScope)
 }
 
-func (r *IBMVPCClusterReconciler) reconcileDeleteV2(clusterScope *vpcscope.ClusterScopeV2) (ctrl.Result, error) { //nolint:unparam
+func (r *IBMVPCClusterReconciler) reconcileDeleteV2(clusterScope *vpcscope.ClusterScopeV2) (ctrl.Result, error) {
 	clusterScope.Info("Delete cluster is not implemented for reconcile v2")
 	controllerutil.RemoveFinalizer(clusterScope.IBMVPCCluster, infrav1.ClusterFinalizer)
 	return ctrl.Result{}, nil

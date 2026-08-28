@@ -155,10 +155,6 @@ linters:
         text: 'appendAssign: append result not assigned to the same slice'
       # Disable linters for conversion
       - linters:
-          - staticcheck
-        path: .*(api|types)\/.*\/.*conversion.*\.go$
-        text: 'SA1019: in.(.+) is deprecated'
-      - linters:
           - revive
         path: .*(api|types)\/.*\/.*conversion.*\.go$
         text: exported (method|function|type|const) (.+) should have comment or be unexported
@@ -207,23 +203,23 @@ linters:
       - linters:
           - staticcheck
         text: 'SA1019: endpoints.(FetchRCEndpoint|FetchPVSEndpoint) is deprecated: Use FetchEndpoints instead.'
-      # v1Beta2 deprecated fields
+      # v1beta1 deprecated types/fields - use alias-agnostic pattern (staticcheck v0.8.0 uses fully-qualified names)
       - linters:
           - staticcheck
-        text: 'SA1019: .*\.Deprecated\.V1Beta2.* is deprecated'
+        text: 'SA1019: .* is deprecated: This (type|field) is deprecated and is going to be removed when support for v1beta1 will be dropped'
       # Specific exclude rules for deprecated packages that are still part of the codebase. These
       # should be removed as the referenced deprecated packages are removed from the project.
       - linters:
           - staticcheck
         text: 'SA1019: .* is deprecated: This package is deprecated and is going to be removed when support for v1beta2 will be dropped.'
-      # v1beta1 condition types are deprecated but still needed for backward compatibility
+      # GetEventRecorderFor/EventBroadcaster are deprecated but still needed
       - linters:
           - staticcheck
-        text: 'SA1019: clusterv1\.(Condition|Conditions|ConditionType|ConditionSeverity) is deprecated: This type is deprecated and is going to be removed when support for v1beta1 will be dropped\.'
-      # GetEventRecorderFor is deprecated but GetEventRecorder returns incompatible interface type
+        text: 'SA1019: .*\.(GetEventRecorderFor|EventBroadcaster) is deprecated'
+      # DualStack has been deprecated
       - linters:
           - staticcheck
-        text: 'SA1019: mgr\.GetEventRecorderFor is deprecated: this uses the old events API and will be removed in a future release\. Please use GetEventRecorder instead\.'
+        text: 'SA1019: .*\.DualStack has been deprecated'
     paths:
       - zz_generated.*\.go$
       - third_party$
