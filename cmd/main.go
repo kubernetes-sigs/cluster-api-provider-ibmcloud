@@ -75,7 +75,6 @@ var (
 	webhookPort            int
 	webhookCertDir         string
 	watchFilterValue       string
-	providerIDFormat       string
 	disableHTTP2           bool
 	skipCRDMigrationPhases []string
 )
@@ -124,12 +123,6 @@ func initFlags(fs *pflag.FlagSet) {
 		10*time.Minute,
 		"The minimum interval at which watched resources are reconciled.",
 	)
-	fs.StringVar(
-		&providerIDFormat,
-		"provider-id-fmt",
-		"v2",
-		"ProviderID format is used set the Provider ID format for Machine",
-	)
 
 	fs.StringVar(
 		&endpoints.ServiceEndpointFormat,
@@ -168,12 +161,6 @@ func initFlags(fs *pflag.FlagSet) {
 }
 
 func validateFlags() error {
-	if providerIDFormat == "v2" {
-		setupLog.Info("Using v2 version of ProviderID format")
-	} else {
-		return fmt.Errorf("invalid value for flag provider-id-fmt: %s, Only supported value is v2", providerIDFormat)
-	}
-
 	if err := logsv1.ValidateAndApply(logOptions, nil); err != nil {
 		setupLog.Error(err, "unable to validate and apply log options")
 		return err
@@ -278,7 +265,7 @@ func main() {
 
 	setupWebhooks(mgr)
 	setupChecks(mgr)
-	setupReconcilers(ctx, mgr, serviceEndpoint, watchFilterValue, providerIDFormat, skipCRDMigrationPhases)
+	setupReconcilers(ctx, mgr, serviceEndpoint, watchFilterValue, skipCRDMigrationPhases)
 
 	// +kubebuilder:scaffold:builder
 	setupLog.Info("starting manager")
@@ -299,7 +286,7 @@ func setupChecks(mgr ctrl.Manager) {
 	}
 }
 
-func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpoint, watchFilterValue string, providerIDFormat string, skipCRDMigrationPhases []string) {
+func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []endpoints.ServiceEndpoint, watchFilterValue string, skipCRDMigrationPhases []string) {
 	// Note: The kubebuilder RBAC markers above have to be kept in sync
 	// with the CRDs that should be migrated by this provider.
 	crdMigratorConfig := map[client.Object]crdmigrator.ByObjectConfig{
@@ -338,12 +325,11 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 	}
 
 	if err := (&vpccontroller.IBMVPCMachineReconciler{
-		Client:           mgr.GetClient(),
-		Log:              ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
-		Recorder:         mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
-		ServiceEndpoint:  serviceEndpoint,
-		Scheme:           mgr.GetScheme(),
-		ProviderIDFormat: providerIDFormat,
+		Client:          mgr.GetClient(),
+		Log:             ctrl.Log.WithName("controllers").WithName("IBMVPCMachine"),
+		Recorder:        mgr.GetEventRecorderFor("ibmvpcmachine-controller"),
+		ServiceEndpoint: serviceEndpoint,
+		Scheme:          mgr.GetScheme(),
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMVPCMachine")
 		os.Exit(1)
@@ -375,7 +361,6 @@ func setupReconcilers(ctx context.Context, mgr ctrl.Manager, serviceEndpoint []e
 		ServiceEndpoint:  serviceEndpoint,
 		Scheme:           mgr.GetScheme(),
 		WatchFilterValue: watchFilterValue,
-		ProviderIDFormat: providerIDFormat,
 	}).SetupWithManager(ctx, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "IBMPowerVSMachine")
 		os.Exit(1)

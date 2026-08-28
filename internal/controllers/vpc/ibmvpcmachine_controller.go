@@ -57,11 +57,10 @@ import (
 // IBMVPCMachineReconciler reconciles a IBMVPCMachine object.
 type IBMVPCMachineReconciler struct {
 	client.Client
-	Log              logr.Logger
-	Recorder         record.EventRecorder
-	ServiceEndpoint  []endpoints.ServiceEndpoint
-	Scheme           *runtime.Scheme
-	ProviderIDFormat string
+	Log             logr.Logger
+	Recorder        record.EventRecorder
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Scheme          *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=infrastructure.cluster.x-k8s.io,resources=ibmvpcmachines,verbs=get;list;watch;create;update;patch;delete
@@ -140,14 +139,13 @@ func (r *IBMVPCMachineReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Create the machine scope.
 	machineScope, err := vpc.NewMachineScope(vpc.MachineScopeParams{
-		Client:           r.Client,
-		Cluster:          cluster,
-		IBMVPCCluster:    ibmVPCCluster,
-		Machine:          machine,
-		IBMVPCMachine:    ibmVPCMachine,
-		ServiceEndpoint:  r.ServiceEndpoint,
-		Recorder:         r.Recorder,
-		ProviderIDFormat: r.ProviderIDFormat,
+		Client:          r.Client,
+		Cluster:         cluster,
+		IBMVPCCluster:   ibmVPCCluster,
+		Machine:         machine,
+		IBMVPCMachine:   ibmVPCMachine,
+		ServiceEndpoint: r.ServiceEndpoint,
+		Recorder:        r.Recorder,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create scope: %w", err)

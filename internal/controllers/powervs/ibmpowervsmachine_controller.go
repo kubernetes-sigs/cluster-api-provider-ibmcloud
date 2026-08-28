@@ -63,10 +63,9 @@ const loadBalancerSettleRequeueInterval = 15 * time.Second
 // IBMPowerVSMachineReconciler reconciles a IBMPowerVSMachine object.
 type IBMPowerVSMachineReconciler struct {
 	client.Client
-	Recorder         record.EventRecorder
-	ServiceEndpoint  []endpoints.ServiceEndpoint
-	Scheme           *runtime.Scheme
-	ProviderIDFormat string
+	Recorder        record.EventRecorder
+	ServiceEndpoint []endpoints.ServiceEndpoint
+	Scheme          *runtime.Scheme
 
 	// WatchFilterValue is the label value used to filter events prior to reconciliation.
 	WatchFilterValue string
@@ -190,7 +189,6 @@ func (r *IBMPowerVSMachineReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		DHCPIPCacheStore:  dhcpCacheStore,
 		ClientBuilder:     r.ClientBuilder,
 		Recorder:          r.Recorder,
-		ProviderIDFormat:  r.ProviderIDFormat,
 	})
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create IBMPowerVS machine scope: %w", err)
