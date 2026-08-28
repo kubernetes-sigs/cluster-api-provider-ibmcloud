@@ -1,148 +1,53 @@
-# Rapid iterative development with Tilt
+# Development with Tilt
 
 ## Overview
 
-This document describes how to use [kind](https://kind.sigs.k8s.io) and [Tilt](https://tilt.dev) for a simplified workflow that offers easy deployments and rapid iterative builds.
+This guide sets up a local development environment using [kind](https://kind.sigs.k8s.io) and [Tilt](https://tilt.dev) that hot-reloads controller changes without having to rebuild and redeploy manually.
+
+The setup involves two repositories:
+
+- **`cluster-api-provider-ibmcloud`** — this repository. The `make kind-cluster` command and controller code live here.
+- **`cluster-api`** — the upstream CAPI repo. The `tilt-settings.yaml` file and `tilt up` command are run from here.
+
+---
 
 ## Prerequisites
 
-1. Container Runtime Interface
-    * [Docker](https://docs.docker.com/install/)    - v19.03 or newer
-    * [Podman](https://podman.io/docs/installation) - v3.0 or newer
-2. [kind](https://kind.sigs.k8s.io) v0.9 or newer (other clusters can be
-   used if `preload_images_for_kind` is set to false)
+1. Container runtime — one of:
+   - [Docker](https://docs.docker.com/install/) v19.03 or newer
+   - [Podman](https://podman.io/docs/installation) v3.0 or newer (see [Podman setup](#podman-setup) below)
+2. [kind](https://kind.sigs.k8s.io) v0.9 or newer
 3. [kustomize](https://kubectl.docs.kubernetes.io/installation/kustomize/)
 4. [Tilt](https://docs.tilt.dev/install.html) v0.30.8 or newer
-5. [envsubst](https://github.com/drone/envsubst) or similar to handle
-   clusterctl var replacement
-6. Clone the [Cluster API](https://github.com/kubernetes-sigs/cluster-api) repository
-   locally
-7. Clone the [cluster-api-provider-ibmcloud](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud) repository you want to deploy locally as well
+5. [envsubst](https://github.com/drone/envsubst) or similar (for `clusterctl` variable substitution)
+6. Both repositories cloned side-by-side:
+   ```console
+   git clone https://github.com/kubernetes-sigs/cluster-api.git
+   git clone https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud.git
+   ```
 
 ---
-If the user prefers to have Podman as the CRI, then follow the steps listed below:
 
-1. Emulate Docker CLI with Podman: Instructions can be found [here](https://podman-desktop.io/docs/migrating-from-docker/emulating-docker-cli-with-podman)
-2. On `Mac OS` migrate from Docker to Podman: Instructions can be found
- [here](https://podman-desktop.io/docs/migrating-from-docker/using-podman-mac-helper).
+## Setup steps
 
-### 1. Create Podman machine
+### 1. Create the kind management cluster
 
-```shell
-$ podman machine init
-$ podman machine start
-```
+Run from the **`cluster-api-provider-ibmcloud`** directory:
 
-### 2. Configure podman to use local registry
-
-```shell
-$ podman machine ssh
-$ sudo vi /etc/containers/registries.conf
-
-## at the end of the file add below content
-
-[[registry]]
-location = "localhost:5001"
-insecure = true
-```
-### 3. Restart Podman machine
-
-```shell
-podman machine stop
-podman machine start
-```
----
-
-## Create a kind cluster
-
-First, make sure you have a kind cluster and that your `KUBECONFIG` is set up correctly.
-> **Note:** Execute the following from the `cluster-api-provider-ibmcloud` respository. 
-
-``` bash
+```bash
 make kind-cluster
 ```
 
-This local cluster will host the cluster-api controllers, which makes it the management cluster. The management cluster can be used to create and manage workload clusters on IBM Cloud.
+This creates a local kind cluster and sets it as your active `KUBECONFIG` context. This cluster acts as the CAPI management cluster — it runs the controllers and is used to provision workload clusters on IBM Cloud.
 
----
+### 2. Create a tilt-settings.yaml
 
-## Create a tilt-settings.yaml file
+Create `tilt-settings.yaml` in your local **`cluster-api`** directory. This file tells Tilt where to find the IBM Cloud provider and which credentials to use.
 
-Next, create a `tilt-settings.yaml` file and place it in your local copy of `cluster-api`. Here is an example:
-
-**Example `tilt-settings.yaml` for CAPI-IBM clusters:**
-
-Make sure to set a valid API key for the field `IBMCLOUD_API_KEY`.
+Minimum configuration:
 
 ```yaml
 default_registry: "localhost:5001"
-provider_repos:
-- ../cluster-api-provider-ibmcloud
-enable_providers:
-- ibmcloud
-- kubeadm-bootstrap
-- kubeadm-control-plane
-kustomize_substitutions:
-  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-```
-
-Add following extra_args to log PowerVS REST API Requests/Responses
-
-```yaml
-extra_args:
-  ibmcloud:
-    - '-v=5'
-```
----
-## Different flavors of deploying workload clusters using CAPIBM.
-
-> **Note:** Currently, [ClusterClass](https://cluster-api.sigs.k8s.io/tasks/experimental-features/cluster-class/index.html) is an experimental features. By default, the workload cluster is deployed using the external Cloud Controller Manager (CCM).
-
-### 1.  Configuration to deploy workload cluster from ClusterClass template
-
-To deploy workload cluster with [clusterclass-template](../topics/powervs/creating-a-cluster.md#deploy-a-powervs-cluster-with-cluster-class), enable the feature gate `CLUSTER_TOPOLOGY` to `true` under kustomize_substitutions.
-
-```yaml
-default_registry: "localhost:5001"
-provider_repos:
-- ../cluster-api-provider-ibmcloud
-enable_providers:
-- ibmcloud
-- kubeadm-bootstrap
-- kubeadm-control-plane
-kustomize_substitutions:
-  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  CLUSTER_TOPOLOGY: "true"
-```
-
-### 2.  Configuration to deploy workload cluster with Custom Service Endpoint
-
-To deploy workload cluster with Custom Service Endpoint, Set `SERVICE_ENDPOINT` environmental variable in semi-colon separated format: `${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2...}`
-```yaml
-default_registry: "localhost:5001"
-provider_repos:
-- ../cluster-api-provider-ibmcloud
-enable_providers:
-- ibmcloud
-- kubeadm-bootstrap
-- kubeadm-control-plane
-kustomize_substitutions:
-  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-  SERVICE_ENDPOINT: "us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com"
-  IBMCLOUD_AUTH_URL: "https://iam.test.cloud.ibm.com"
-```
-
-### 3.  Configuration to use observability tools
-
-- cluster-api provides support for deploying observability tools, More information about it is available in cluster-api [book](https://cluster-api.sigs.k8s.io/developer/core/logging#developing-and-testing-logs).
-
-```yaml
-default_registry: "localhost:5001"
-deploy_observability:
-   - promtail
-   - loki
-   - grafana
-   - prometheus
 provider_repos:
   - ../cluster-api-provider-ibmcloud
 enable_providers:
@@ -150,46 +55,150 @@ enable_providers:
   - kubeadm-bootstrap
   - kubeadm-control-plane
 kustomize_substitutions:
-  IBMCLOUD_API_KEY: "XXXXXXXXXXXXXXXXXX"
-extra_args:
-   core:
-      - "--logging-format=json"
-      - "--v=5"
-   kubeadm-bootstrap:
-      - "--v=5"
-      - "--logging-format=json"
-   kubeadm-control-plane:
-      - "--v=5"
-      - "--logging-format=json"
-   ibmcloud:
-      - "--v=5"
-      - "--logging-format=json"
+  IBMCLOUD_API_KEY: "<YOUR_API_KEY>"
 ```
 
-**NOTE**: For information about all the fields that can be used in the `tilt-settings.yaml` file, check them [here](https://cluster-api.sigs.k8s.io/developer/core/tilt.html#tilt-settings-fields).
+> **Note:** The path `../cluster-api-provider-ibmcloud` assumes both repositories are cloned side-by-side in the same parent directory.
 
-## Run Tilt
+### 3. Start Tilt
 
-To launch your development environment, run:
+Run from the **`cluster-api`** directory:
 
-``` bash
+```bash
 tilt up
 ```
 
-Kind cluster becomes a management cluster after this point, check the pods running on the kind cluster by running `kubectl get pods -A`.
+Tilt builds and deploys the controllers onto the kind cluster, then watches for source changes and hot-reloads automatically. Verify the controllers are running:
+
+```bash
+kubectl get pods -A
+```
+
+---
+
+## Optional configurations
+
+All of the following are additions to the base `tilt-settings.yaml` shown above. Only include the fields relevant to your use case.
+
+### Enable verbose API logging
+
+Logs all PowerVS REST API requests and responses:
+
+```yaml
+extra_args:
+  ibmcloud:
+    - '--v=5'
+```
+
+### Enable ClusterClass support
+
+Required when deploying a cluster using `--flavor=powervs-clusterclass`. See [ClusterClass variant](../topics/powervs/creating-a-cluster.md#clusterclass-variant).
+
+```yaml
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "<YOUR_API_KEY>"
+  CLUSTER_TOPOLOGY: "true"
+```
+
+### Use custom service endpoints (staging/test environments)
+
+Set `SERVICE_ENDPOINT` in semi-colon separated format: `${ServiceRegion}:${ServiceID1}=${URL1},${ServiceID2}=${URL2}`:
+
+```yaml
+kustomize_substitutions:
+  IBMCLOUD_API_KEY: "<YOUR_API_KEY>"
+  SERVICE_ENDPOINT: "us-south:vpc=https://us-south-stage01.iaasdev.cloud.ibm.com,powervs=https://dal.power-iaas.test.cloud.ibm.com,rc=https://resource-controller.test.cloud.ibm.com"
+  IBMCLOUD_AUTH_URL: "https://iam.test.cloud.ibm.com"
+```
+
+### Enable observability tools
+
+Deploys Prometheus, Grafana, Loki, and Promtail alongside the controllers. See [CAPI observability docs](https://cluster-api.sigs.k8s.io/developer/core/logging#developing-and-testing-logs) for more detail.
+
+```yaml
+deploy_observability:
+  - promtail
+  - loki
+  - grafana
+  - prometheus
+extra_args:
+  core:
+    - "--logging-format=json"
+    - "--v=5"
+  kubeadm-bootstrap:
+    - "--v=5"
+    - "--logging-format=json"
+  kubeadm-control-plane:
+    - "--v=5"
+    - "--logging-format=json"
+  ibmcloud:
+    - "--v=5"
+    - "--logging-format=json"
+```
+
+> For a full list of supported `tilt-settings.yaml` fields, see the [CAPI Tilt settings reference](https://cluster-api.sigs.k8s.io/developer/core/tilt.html#tilt-settings-fields).
+
+---
 
 ## Create workload clusters
 
-To provision your workload cluster, check the `Creating a cluster` section for [VPC](../topics/vpc/creating-a-cluster.md) and [PowerVS](../topics/powervs/creating-a-cluster.md). 
+With Tilt running, provision a workload cluster using `clusterctl`. See:
 
-After deploying it, check the tilt logs and wait for the clusters to be created.
+- [PowerVS cluster](../topics/powervs/creating-a-cluster.md)
+- [VPC cluster](../topics/vpc/creating-a-cluster.md)
+
+---
 
 ## Clean up
 
-Before deleting the kind cluster, make sure you delete all the workload clusters.
+Delete all workload clusters before tearing down the management cluster:
 
 ```bash
-kubectl delete cluster <clustername>
-tilt up (ctrl-c)
+# Delete workload clusters first
+kubectl delete cluster <cluster-name>
+
+# Stop Tilt (Ctrl-C in the tilt terminal, then)
+tilt down
+
+# Delete the kind management cluster
 kind delete cluster
+```
+
+---
+
+## Podman setup
+
+If you prefer Podman over Docker, complete these steps before running `make kind-cluster`.
+
+**Emulate the Docker CLI** (required for kind to work with Podman):
+- [General instructions](https://podman-desktop.io/docs/migrating-from-docker/emulating-docker-cli-with-podman)
+- [macOS-specific instructions](https://podman-desktop.io/docs/migrating-from-docker/using-podman-mac-helper)
+
+**1. Initialise and start the Podman machine:**
+
+```bash
+podman machine init
+podman machine start
+```
+
+**2. Configure the local registry as insecure:**
+
+```bash
+podman machine ssh
+sudo vi /etc/containers/registries.conf
+```
+
+Add at the end of the file:
+
+```toml
+[[registry]]
+location = "localhost:5001"
+insecure = true
+```
+
+**3. Restart the Podman machine to apply the config:**
+
+```bash
+podman machine stop
+podman machine start
 ```

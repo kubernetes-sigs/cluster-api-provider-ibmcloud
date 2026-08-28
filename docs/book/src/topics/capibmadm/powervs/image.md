@@ -9,7 +9,7 @@ Import PowerVS image.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
 --bucket: Cloud Object Storage bucket name.
 
@@ -57,9 +57,9 @@ List PowerVS images.
 IBMCLOUD_API_KEY: IBM Cloud API key.
 
 #### Arguments:
---service-instance-id: PowerVS service instance id.
+--service-instance-id: PowerVS workspace ID.
 
---zone: PowerVS service instance zone.
+--zone: PowerVS workspace zone.
 
 
 #### Example:

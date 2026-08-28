@@ -1,23 +1,37 @@
 # PowerVS Images
 
+CAPIBM requires a machine boot image to be available in your PowerVS workspace. Two image types are available depending on your [cluster topology](../topics/powervs/index.md):
 
-| Region   | Bucket           | Object                                                          | Kubernetes Version |
-|----------|------------------|-----------------------------------------------------------------|--------------------|
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-34-7.ova.gz][streams10-1-34-7] | 1.34.7             |
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams9-1-33-1.ova.gz][streams9-1-33-1] | 1.33.1             |
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams9-1-32-3.ova.gz][streams9-1-32-3] | 1.32.3             |
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams9-1-31-0.ova.gz][streams9-1-31-0] | 1.31.0             |
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams9-1-30-0.ova.gz][streams9-1-30-0] | 1.30.0             |
+| Image type | Used with |
+|---|---|
+| **Standard** images | [VirtualIP topology](../topics/powervs/index.md#option-1--virtualip) — imported manually into an existing workspace |
+| **DHCP-enabled** images | [LoadBalancer topology](../topics/powervs/index.md#option-2--loadbalancer) — imported automatically by CAPIBM from COS during cluster creation |
 
-## PowerVS Images with DHCP based network
+> Images are built using the [image-builder](https://github.com/kubernetes-sigs/image-builder) tool. See [How to build machine boot images](../developer/build-images.md#powervs) for details.
 
-| Region   | Bucket           | Object                                                                 | Kubernetes Version |
-|----------|------------------|------------------------------------------------------------------------|--------------------|
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz][centos-streams10-1-34-7-dhcp] | 1.34.7             |
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams9-1-32-3.ova.gz][centos-streams9-1-32-3] | 1.32.3             |
-| us-south | power-oss-bucket | [capibm-powervs-centos-streams9-1-29-3.ova.gz][centos-streams9-1-29-3] | 1.29.3             |
+---
 
-> **Note:** These images are built using the [image-builder][image-builder] tool and more information can be found [here](../developer/build-images.md#powervs)
+## Standard images
+
+| Region | Bucket | Object | Kubernetes Version |
+|--------|--------|--------|--------------------|
+| us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-34-7.ova.gz][streams10-1-34-7] | 1.34.7 |
+
+To import a standard image manually into your workspace, see [capibmadm powervs image import](../topics/capibmadm/powervs/image.md#1-capibmadm-powervs-image-import).
+
+---
+
+## DHCP-enabled images
+
+These images include a built-in DHCP client configuration required by the [LoadBalancer topology](../topics/powervs/index.md#option-2--loadbalancer), where the network is provisioned by CAPIBM with a DHCP server.
+
+| Region | Bucket | Object | Kubernetes Version |
+|--------|--------|--------|--------------------|
+| us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz][centos-streams10-1-34-7-dhcp] | 1.34.7 |
+
+Set `COS_BUCKET_NAME`, `COS_BUCKET_REGION`, and `COS_OBJECT_NAME` to the values from this table when using `--flavor=powervs-create-infra`.
+
+---
 
 [streams10-1-34-7]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-34-7-150500-1-1-1778144615.ova.gz
 [streams9-1-33-1]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-33-1-1751454774.ova.gz

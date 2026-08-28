@@ -51,12 +51,12 @@ Compose the `user-variables.json` file containing the information for the PowerV
 - `capture_cos_region`: IBM Cloud Object Storage(COS) bucket region
 - `capture_cos_secret_key`: IBM Cloud Object Storage(COS) secret key
 - `key_pair_name`: SSH key name present in the PowerVS
-- `kubernetes_deb_version`: Kubernetes deb version, e.g: 1.24.2-00
-- `kubernetes_rpm_version`: Kubernetes RPM package version, e.g: 1.24.2-0
-- `kubernetes_semver`: e.g: v1.24.2
-- `kubernetes_series`: e.g: v1.24
+- `kubernetes_deb_version`: Kubernetes deb version, e.g: 1.34.7-0
+- `kubernetes_rpm_version`: Kubernetes RPM package version, e.g: 1.34.7-0
+- `kubernetes_semver`: e.g: v1.34.7
+- `kubernetes_series`: e.g: v1.34
 - `region`: PowerVS region, e.g: osa
-- `service_instance_id`: PowerVS service instance ID
+- `service_instance_id`: PowerVS workspace ID
 - `ssh_private_key_file`: Path to the SSH private key file used to connect to the vm while image preparation, e.g: /Users/manjunath/.ssh/id_rsa
 - `zone`: PowerVS zone, e.g: osa21
 - `dhcp_network`: Set to `true` if the image has to be built with DHCP support
