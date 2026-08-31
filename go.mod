@@ -18,7 +18,7 @@ require (
 	github.com/IBM/platform-services-go-sdk v0.103.0
 	github.com/IBM/vpc-go-sdk v0.90.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/coreos/ignition/v2 v2.26.0
+	github.com/coreos/ignition/v2 v2.27.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/strfmt v0.27.0
 	github.com/golang-jwt/jwt/v4 v4.5.2
@@ -63,7 +63,7 @@ require (
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.41.1 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.43.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
