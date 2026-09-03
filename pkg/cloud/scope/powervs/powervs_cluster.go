@@ -2164,7 +2164,7 @@ func (s *ClusterScope) reconcileVPCSecurityGroupProvision(ctx context.Context, p
 	}
 
 	// 2. Reconcile Rules
-	ruleIDs, err := s.createVPCSecurityGroupRules(ctx, prov.Rules, *sg.ID)
+	ruleIDs, err := s.createVPCSecurityGroupRules(ctx, prov.Rules, *sg.ID, sg.Rules)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create VPC security group rules for '%s': %w", targetName, err)
 	}
@@ -2204,12 +2204,122 @@ func (s *ClusterScope) createVPCSecurityGroup(ctx context.Context, name string) 
 	return securityGroup.ID, nil
 }
 
-// createVPCSecurityGroupRules iterates through the provided rules and creates them in IBM Cloud.
-func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []infrav1.VPCSecurityGroupRule, securityGroupID string) ([]string, error) {
+// sgRuleKey is a comparable identity for a security group rule.
+type sgRuleKey struct {
+	direction string
+	protocol  string
+	portMin   int64
+	portMax   int64
+	cidrBlock string
+	address   string
+	crn       string
+}
+
+// sgRuleIDFrom returns the rule ID from any concrete SG rule type, or "" if unrecognized.
+func sgRuleIDFrom(ruleIntf vpcv1.SecurityGroupRuleIntf) string {
+	switch r := ruleIntf.(type) {
+	case *vpcv1.SecurityGroupRule:
+		if r != nil && r.ID != nil {
+			return *r.ID
+		}
+	case *vpcv1.SecurityGroupRuleProtocolAny:
+		if r != nil && r.ID != nil {
+			return *r.ID
+		}
+	case *vpcv1.SecurityGroupRuleProtocolIcmptcpudp:
+		if r != nil && r.ID != nil {
+			return *r.ID
+		}
+	case *vpcv1.SecurityGroupRuleProtocolIndividual:
+		if r != nil && r.ID != nil {
+			return *r.ID
+		}
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp:
+		if r != nil && r.ID != nil {
+			return *r.ID
+		}
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp:
+		if r != nil && r.ID != nil {
+			return *r.ID
+		}
+	}
+	return ""
+}
+
+// existingSGRuleKey builds an sgRuleKey from an existing SG rule.
+func existingSGRuleKey(ctx context.Context, ruleIntf vpcv1.SecurityGroupRuleIntf) (sgRuleKey, bool) {
+	if ruleIntf == nil {
+		return sgRuleKey{}, false
+	}
+	var key sgRuleKey
+	switch r := ruleIntf.(type) {
+	case *vpcv1.SecurityGroupRule:
+		key = buildSGRuleKey(r.Direction, r.Protocol, r.PortMin, r.PortMax, r.Remote)
+	case *vpcv1.SecurityGroupRuleProtocolAny:
+		key = buildSGRuleKey(r.Direction, r.Protocol, nil, nil, r.Remote)
+	case *vpcv1.SecurityGroupRuleProtocolIcmptcpudp:
+		key = buildSGRuleKey(r.Direction, r.Protocol, nil, nil, r.Remote)
+	case *vpcv1.SecurityGroupRuleProtocolIndividual:
+		key = buildSGRuleKey(r.Direction, r.Protocol, nil, nil, r.Remote)
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp:
+		key = buildSGRuleKey(r.Direction, r.Protocol, nil, nil, r.Remote)
+	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp:
+		key = buildSGRuleKey(r.Direction, r.Protocol, r.PortMin, r.PortMax, r.Remote)
+	default:
+		ctrl.LoggerFrom(ctx).V(4).Info("Skipping unrecognized security group rule type during deduplication", "type", fmt.Sprintf("%T", ruleIntf))
+		return sgRuleKey{}, false
+	}
+	return key, true
+}
+
+// buildSGRuleKey assembles an sgRuleKey from the fields common to all rule types.
+func buildSGRuleKey(direction, protocol *string, portMin, portMax *int64, remoteIntf vpcv1.SecurityGroupRuleRemoteIntf) sgRuleKey {
+	var key sgRuleKey
+	if direction != nil {
+		key.direction = *direction
+	}
+	if protocol != nil {
+		key.protocol = *protocol
+	}
+	if portMin != nil {
+		key.portMin = *portMin
+	}
+	if portMax != nil {
+		key.portMax = *portMax
+	}
+	if remote, ok := remoteIntf.(*vpcv1.SecurityGroupRuleRemote); ok && remote != nil {
+		if remote.CIDRBlock != nil {
+			key.cidrBlock = *remote.CIDRBlock
+		}
+		if remote.Address != nil {
+			key.address = *remote.Address
+		}
+		if remote.CRN != nil {
+			key.crn = *remote.CRN
+		}
+	}
+	return key
+}
+
+// createVPCSecurityGroupRules creates the given rules on the security group.
+// Rules already present on the SG are skipped.
+func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []infrav1.VPCSecurityGroupRule, securityGroupID string, existingRules []vpcv1.SecurityGroupRuleIntf) ([]string, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var ruleIDs []string
 
-	log.V(3).Info("Creating VPC security group rules", "securityGroupID", securityGroupID, "ruleCount", len(rules))
+	log.V(3).Info("Reconciling VPC security group rules", "securityGroupID", securityGroupID, "specRuleCount", len(rules), "existingRuleCount", len(existingRules))
+
+	// Index existing rules by key so we can skip ones already present.
+	existingByKey := make(map[sgRuleKey]string, len(existingRules))
+	for _, rIntf := range existingRules {
+		key, ok := existingSGRuleKey(ctx, rIntf)
+		if !ok {
+			continue
+		}
+		if id := sgRuleIDFrom(rIntf); id != "" {
+			existingByKey[key] = id
+		}
+	}
 
 	for _, rule := range rules {
 		// Work on a copy with normalized prototypes so the deprecated 'all' protocol is
@@ -2255,7 +2365,7 @@ func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []
 
 		// Create a distinct rule in IBM Cloud for every remote target specified
 		for _, remote := range remotes {
-			id, err := s.createVPCSecurityGroupRule(ctx, securityGroupID, direction, protocol, portMin, portMax, remote)
+			id, err := s.createVPCSecurityGroupRule(ctx, securityGroupID, direction, protocol, portMin, portMax, remote, existingByKey)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create %s VPC security group rule: %w", direction, err)
 			}
@@ -2266,33 +2376,42 @@ func (s *ClusterScope) createVPCSecurityGroupRules(ctx context.Context, rules []
 	return ruleIDs, nil
 }
 
-// createVPCSecurityGroupRule safely maps pointer-free CRD values to the pointer-heavy IBM SDK.
-func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityGroupID string, direction string, protocol string, portMin, portMax int64, remote infrav1.VPCSecurityGroupRuleRemote) (string, error) {
+// createVPCSecurityGroupRule creates a single rule. If a matching rule already exists in
+// existingByKey, it returns that ID without calling the API.
+func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityGroupID string, direction string, protocol string, portMin, portMax int64, remote infrav1.VPCSecurityGroupRuleRemote, existingByKey map[sgRuleKey]string) (string, error) {
 	log := ctrl.LoggerFrom(ctx)
-	remoteOption := &vpcv1.SecurityGroupRuleRemotePrototype{}
 
 	// 1. Resolve Remote Target
-	switch remote.RemoteType {
-	case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
-		cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(remote.CIDRSubnetName)
-		if err != nil || cidrSubnet == nil {
-			return "", fmt.Errorf("failed to find VPC subnet by name '%s': %w", remote.CIDRSubnetName, err)
-		}
-		remoteOption.CIDRBlock = cidrSubnet.Ipv4CIDRBlock
-	case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
-		remoteOption.Address = ptr.To(remote.Address)
-	case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
-		sg, err := s.IBMVPCClient.GetSecurityGroupByName(remote.SecurityGroupName)
-		if err != nil || sg == nil {
-			return "", fmt.Errorf("failed to find VPC security group by name '%s': %w", remote.SecurityGroupName, err)
-		}
-		remoteOption.CRN = sg.CRN
-	default:
-		// Any/0.0.0.0 mapping
-		remoteOption.CIDRBlock = ptr.To("0.0.0.0/0")
+	remoteOption, err := s.resolveRuleRemote(remote)
+	if err != nil {
+		return "", err
 	}
 
-	// 2. Build Protocol Prototype (Injecting Pointers here for SDK)
+	// 2. Check whether this rule already exists.
+	key := sgRuleKey{
+		direction: direction,
+		protocol:  protocol,
+	}
+	if (protocol == string(infrav1.VPCSecurityGroupRuleProtocolTCP) || protocol == string(infrav1.VPCSecurityGroupRuleProtocolUDP)) && portMin > 0 {
+		key.portMin = portMin
+		key.portMax = portMax
+	}
+	if remoteOption.CIDRBlock != nil {
+		key.cidrBlock = *remoteOption.CIDRBlock
+	}
+	if remoteOption.Address != nil {
+		key.address = *remoteOption.Address
+	}
+	if remoteOption.CRN != nil {
+		key.crn = *remoteOption.CRN
+	}
+
+	if existingID, found := existingByKey[key]; found {
+		log.V(3).Info("Skipping duplicate VPC security group rule", "securityGroupID", securityGroupID, "existingRuleID", existingID)
+		return existingID, nil
+	}
+
+	// 3. Build Protocol Prototype (Injecting Pointers here for SDK)
 	prototype := &vpcv1.SecurityGroupRulePrototype{
 		Direction: ptr.To(direction),
 		Protocol:  ptr.To(protocol),
@@ -2312,31 +2431,50 @@ func (s *ClusterScope) createVPCSecurityGroupRule(ctx context.Context, securityG
 
 	log.V(3).Info("Creating VPC security group rule", "securityGroupID", securityGroupID, "direction", direction, "protocol", protocol)
 
-	// 3. Execute API Call
+	// 4. Execute API Call
 	ruleIntf, _, err := s.IBMVPCClient.CreateSecurityGroupRule(options)
 	if err != nil {
 		return "", fmt.Errorf("failed to execute CreateSecurityGroupRule API: %w", err)
 	}
 
-	// 4. Extract Rule ID based on returned interface type
-	var ruleID string
-	switch rule := ruleIntf.(type) {
-	case *vpcv1.SecurityGroupRuleProtocolAny:
-		ruleID = *rule.ID
-	case *vpcv1.SecurityGroupRuleProtocolIcmptcpudp:
-		ruleID = *rule.ID
-	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolTcpudp:
-		ruleID = *rule.ID
-	case *vpcv1.SecurityGroupRuleSecurityGroupRuleProtocolIcmp:
-		ruleID = *rule.ID
-	case *vpcv1.SecurityGroupRuleProtocolIndividual:
-		ruleID = *rule.ID
-	default:
-		return "", fmt.Errorf("unrecognized rule type returned from API")
+	// 5. Extract Rule ID based on returned interface type
+	ruleID := sgRuleIDFrom(ruleIntf)
+	if ruleID == "" {
+		return "", fmt.Errorf("unrecognized rule type returned from API: %T", ruleIntf)
+	}
+
+	// Record so identical remotes later in the same spec are also skipped.
+	if existingByKey != nil {
+		existingByKey[key] = ruleID
 	}
 
 	log.Info("Successfully created VPC security group rule", "ruleID", ruleID)
 	return ruleID, nil
+}
+
+// resolveRuleRemote resolves a CRD remote to the SDK prototype, looking up subnet CIDRs and SG CRNs as needed.
+func (s *ClusterScope) resolveRuleRemote(remote infrav1.VPCSecurityGroupRuleRemote) (*vpcv1.SecurityGroupRuleRemotePrototype, error) {
+	remoteOption := &vpcv1.SecurityGroupRuleRemotePrototype{}
+	switch remote.RemoteType {
+	case infrav1.VPCSecurityGroupRuleRemoteTypeCIDR:
+		cidrSubnet, err := s.IBMVPCClient.GetVPCSubnetByName(remote.CIDRSubnetName)
+		if err != nil || cidrSubnet == nil {
+			return nil, fmt.Errorf("failed to find VPC subnet by name '%s': %w", remote.CIDRSubnetName, err)
+		}
+		remoteOption.CIDRBlock = cidrSubnet.Ipv4CIDRBlock
+	case infrav1.VPCSecurityGroupRuleRemoteTypeAddress:
+		remoteOption.Address = ptr.To(remote.Address)
+	case infrav1.VPCSecurityGroupRuleRemoteTypeSG:
+		sg, err := s.IBMVPCClient.GetSecurityGroupByName(remote.SecurityGroupName)
+		if err != nil || sg == nil {
+			return nil, fmt.Errorf("failed to find VPC security group by name '%s': %w", remote.SecurityGroupName, err)
+		}
+		remoteOption.CRN = sg.CRN
+	default:
+		// Any/0.0.0.0 mapping
+		remoteOption.CIDRBlock = ptr.To("0.0.0.0/0")
+	}
+	return remoteOption, nil
 }
 
 // ReconcileCOSInstance evaluates the user's intent and reconciles the COS instance and bucket.
