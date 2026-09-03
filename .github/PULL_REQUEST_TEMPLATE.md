@@ -1,9 +1,17 @@
-<!--  Thanks for sending a pull request!  Here are some tips for you:
-1. If this is your first time, read our contributor guidelines https://git.k8s.io/community/contributors/guide/pull-requests.md#the-pull-request-submit-process and developer guide https://git.k8s.io/community/contributors/devel/development.md#development-guide
-2. If you want *faster* PR reviews, read how: https://git.k8s.io/community/contributors/guide/pull-requests.md#best-practices-for-faster-reviews
-3. Follow the instructions for writing a release note: https://git.k8s.io/community/contributors/guide/release-notes.md
-4. If the PR is unfinished, see how to mark it: https://git.k8s.io/community/contributors/guide/pull-requests.md#marking-unfinished-pull-requests
-5. If this PR changes image versions, please title this PR "Bump <image name> from x.x.x to y.y.y."
+<!-- Thanks for sending a pull request! Here are some tips for you:
+    1. If this is your first time, please read our contributor guidelines:
+       https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/CONTRIBUTING.md#contributing-a-patch
+
+    2. Please add an emoji prefix to the title of this PR (see https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/CONTRIBUTING.md#contributing-a-patch):
+       ⚠️ (:warning:)  — major or breaking changes
+       ✨ (:sparkles:) — feature additions
+       🐛 (:bug:)      — patch and bugfixes
+       📖 (:book:)     — documentation or proposals
+       🌱 (:seedling:) — minor or other
+       The PR title emoji is validated by CI and will block merging if missing.
+
+    3. If the PR is unfinished, prefix the title with "WIP" or open it as a Draft PR.
+
 -->
 
 **What this PR does / why we need it**:
@@ -14,8 +22,6 @@ Fixes #
 **Special notes for your reviewer**:
 
 /area provider/ibmcloud
-
-1. Please confirm that if this PR changes any image versions, then that's the sole change this PR makes.
 
 **Release note**:
 <!--  Write your release note:
