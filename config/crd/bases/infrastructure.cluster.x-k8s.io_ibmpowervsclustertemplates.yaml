@@ -1431,6 +1431,14 @@ spec:
                                     minLength: 1
                                     pattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$
                                     type: string
+                                  cloudConnectionID:
+                                    description: |-
+                                      cloudConnectionID is the IBM Cloud Connection UUID to connect with the DHCP private network.
+                                      When set, the created DHCP server's private network will be attached to the specified Cloud Connection.
+                                      More information: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-cloud-connections
+                                    maxLength: 64
+                                    minLength: 1
+                                    type: string
                                   dnsServer:
                                     description: dnsServer is the DNS Server for the
                                       DHCP service.
