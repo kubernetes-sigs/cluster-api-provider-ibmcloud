@@ -88,7 +88,7 @@ GO_VERSION ?=1.26.7
 GO_CONTAINER_IMAGE ?= golang:$(GO_VERSION)
 
 # Trivy
-TRIVY_VER := 0.69.3
+TRIVY_VER := 0.74.0
 
 # kind
 CAPI_KIND_CLUSTER_NAME ?= capi-test
