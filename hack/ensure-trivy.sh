@@ -52,7 +52,7 @@ TRIVY="${TOOL_BIN}/trivy/${VERSION}/trivy"
 # Downloads trivy scanner
 if [ ! -f "$TRIVY" ]; then
   curl -L -o ${TOOL_BIN}/trivy.tar.gz "https://github.com/aquasecurity/trivy/releases/download/v${VERSION}/trivy_${VERSION}_${TRIVY_OS}-${TRIVY_ARCH}.tar.gz"
-  mkdir -p "$(dirname "$0")/tools/bin/trivy/${VERSION}"
+  mkdir -p "${TOOL_BIN}/trivy/${VERSION}"
   tar -xf "${TOOL_BIN}/trivy.tar.gz" -C "${TOOL_BIN}/trivy/${VERSION}" trivy
   chmod +x "${TOOL_BIN}/trivy/${VERSION}/trivy"
   rm "${TOOL_BIN}/trivy.tar.gz"
