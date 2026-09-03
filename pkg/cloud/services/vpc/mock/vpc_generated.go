@@ -216,6 +216,22 @@ func (mr *MockVpcMockRecorder) CreateVPC(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVPC", reflect.TypeOf((*MockVpc)(nil).CreateVPC), options)
 }
 
+// CreateVPCRoutingTable mocks base method.
+func (m *MockVpc) CreateVPCRoutingTable(options *vpcv1.CreateVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateVPCRoutingTable", options)
+	ret0, _ := ret[0].(*vpcv1.RoutingTable)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateVPCRoutingTable indicates an expected call of CreateVPCRoutingTable.
+func (mr *MockVpcMockRecorder) CreateVPCRoutingTable(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateVPCRoutingTable", reflect.TypeOf((*MockVpc)(nil).CreateVPCRoutingTable), options)
+}
+
 // CreateVolume mocks base method.
 func (m *MockVpc) CreateVolume(options *vpcv1.CreateVolumeOptions) (*vpcv1.Volume, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -335,6 +351,21 @@ func (m *MockVpc) DeleteVPC(options *vpcv1.DeleteVPCOptions) (*core.DetailedResp
 func (mr *MockVpcMockRecorder) DeleteVPC(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVPC", reflect.TypeOf((*MockVpc)(nil).DeleteVPC), options)
+}
+
+// DeleteVPCRoutingTable mocks base method.
+func (m *MockVpc) DeleteVPCRoutingTable(options *vpcv1.DeleteVPCRoutingTableOptions) (*core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteVPCRoutingTable", options)
+	ret0, _ := ret[0].(*core.DetailedResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteVPCRoutingTable indicates an expected call of DeleteVPCRoutingTable.
+func (mr *MockVpcMockRecorder) DeleteVPCRoutingTable(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVPCRoutingTable", reflect.TypeOf((*MockVpc)(nil).DeleteVPCRoutingTable), options)
 }
 
 // GetDedicatedHostByName mocks base method.
@@ -556,6 +587,22 @@ func (mr *MockVpcMockRecorder) GetSubnetPublicGateway(options any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetPublicGateway", reflect.TypeOf((*MockVpc)(nil).GetSubnetPublicGateway), options)
 }
 
+// GetSubnetRoutingTable mocks base method.
+func (m *MockVpc) GetSubnetRoutingTable(options *vpcv1.GetSubnetRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubnetRoutingTable", options)
+	ret0, _ := ret[0].(*vpcv1.RoutingTable)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetSubnetRoutingTable indicates an expected call of GetSubnetRoutingTable.
+func (mr *MockVpcMockRecorder) GetSubnetRoutingTable(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubnetRoutingTable", reflect.TypeOf((*MockVpc)(nil).GetSubnetRoutingTable), options)
+}
+
 // GetVPC mocks base method.
 func (m *MockVpc) GetVPC(arg0 *vpcv1.GetVPCOptions) (*vpcv1.VPC, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -600,6 +647,37 @@ func (m *MockVpc) GetVPCPublicGatewayByName(publicGatewayName, resourceGroupID s
 func (mr *MockVpcMockRecorder) GetVPCPublicGatewayByName(publicGatewayName, resourceGroupID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCPublicGatewayByName", reflect.TypeOf((*MockVpc)(nil).GetVPCPublicGatewayByName), publicGatewayName, resourceGroupID)
+}
+
+// GetVPCRoutingTable mocks base method.
+func (m *MockVpc) GetVPCRoutingTable(options *vpcv1.GetVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPCRoutingTable", options)
+	ret0, _ := ret[0].(*vpcv1.RoutingTable)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetVPCRoutingTable indicates an expected call of GetVPCRoutingTable.
+func (mr *MockVpcMockRecorder) GetVPCRoutingTable(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCRoutingTable", reflect.TypeOf((*MockVpc)(nil).GetVPCRoutingTable), options)
+}
+
+// GetVPCRoutingTableByName mocks base method.
+func (m *MockVpc) GetVPCRoutingTableByName(vpcID, name string) (*vpcv1.RoutingTable, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVPCRoutingTableByName", vpcID, name)
+	ret0, _ := ret[0].(*vpcv1.RoutingTable)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVPCRoutingTableByName indicates an expected call of GetVPCRoutingTableByName.
+func (mr *MockVpcMockRecorder) GetVPCRoutingTableByName(vpcID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVPCRoutingTableByName", reflect.TypeOf((*MockVpc)(nil).GetVPCRoutingTableByName), vpcID, name)
 }
 
 // GetVPCSubnetByName mocks base method.
@@ -808,6 +886,22 @@ func (mr *MockVpcMockRecorder) ListVPCAddressPrefixes(options any) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVPCAddressPrefixes", reflect.TypeOf((*MockVpc)(nil).ListVPCAddressPrefixes), options)
 }
 
+// ListVPCRoutingTables mocks base method.
+func (m *MockVpc) ListVPCRoutingTables(options *vpcv1.ListVPCRoutingTablesOptions) (*vpcv1.RoutingTableCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListVPCRoutingTables", options)
+	ret0, _ := ret[0].(*vpcv1.RoutingTableCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListVPCRoutingTables indicates an expected call of ListVPCRoutingTables.
+func (mr *MockVpcMockRecorder) ListVPCRoutingTables(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVPCRoutingTables", reflect.TypeOf((*MockVpc)(nil).ListVPCRoutingTables), options)
+}
+
 // ListVpcs mocks base method.
 func (m *MockVpc) ListVpcs(options *vpcv1.ListVpcsOptions) (*vpcv1.VPCCollection, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -822,6 +916,22 @@ func (m *MockVpc) ListVpcs(options *vpcv1.ListVpcsOptions) (*vpcv1.VPCCollection
 func (mr *MockVpcMockRecorder) ListVpcs(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListVpcs", reflect.TypeOf((*MockVpc)(nil).ListVpcs), options)
+}
+
+// ReplaceSubnetRoutingTable mocks base method.
+func (m *MockVpc) ReplaceSubnetRoutingTable(options *vpcv1.ReplaceSubnetRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReplaceSubnetRoutingTable", options)
+	ret0, _ := ret[0].(*vpcv1.RoutingTable)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ReplaceSubnetRoutingTable indicates an expected call of ReplaceSubnetRoutingTable.
+func (mr *MockVpcMockRecorder) ReplaceSubnetRoutingTable(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplaceSubnetRoutingTable", reflect.TypeOf((*MockVpc)(nil).ReplaceSubnetRoutingTable), options)
 }
 
 // SetSubnetPublicGateway mocks base method.

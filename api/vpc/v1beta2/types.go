@@ -161,6 +161,8 @@ var (
 	ResourceTypePublicGateway = ResourceType("publicGateway")
 	// ResourceTypeCustomImage is a VPC Custom Image.
 	ResourceTypeCustomImage = ResourceType("customImage")
+	// ResourceTypeRoutingTable is a VPC Routing Table resource.
+	ResourceTypeRoutingTable = ResourceType("routingTable")
 )
 
 const (
@@ -485,4 +487,82 @@ type VPCResource struct {
 	// +kubebuilder:validation:MinLength=1
 	// +optional
 	Name *string `json:"name,omitempty"`
+}
+
+// VPCRoutingTableRoute defines a route within a VPC Routing Table.
+// +kubebuilder:validation:XValidation:rule="self.action == 'deliver' ? has(self.nextHop) : true",message="nextHop must be set when action is deliver"
+// +kubebuilder:validation:XValidation:rule="self.action != 'deliver' ? !has(self.nextHop) : true",message="nextHop must not be set unless action is deliver"
+type VPCRoutingTableRoute struct {
+	// action defines the action to perform with a packet matching this route.
+	// +kubebuilder:validation:Enum=delegate;delegate_vpc;deliver;drop
+	// +required
+	Action string `json:"action"`
+
+	// destination is the destination CIDR for the route.
+	// The host identifier in the CIDR must be zero.
+	// +kubebuilder:validation:MinLength=1
+	// +required
+	Destination string `json:"destination"`
+
+	// name is an optional name for the route.
+	// If unspecified, IBM Cloud will generate a name.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// nextHop is the next-hop IP address for routes with action deliver.
+	// Must be a unicast IP address within a subnet in the routing table's VPC.
+	// +optional
+	NextHop *string `json:"nextHop,omitempty"`
+
+	// zone is the name of the availability zone to apply the route to.
+	// +kubebuilder:validation:MinLength=1
+	// +required
+	Zone string `json:"zone"`
+}
+
+// VPCRoutingTable defines a VPC Routing Table to create or reference for the cluster's VPC.
+// +kubebuilder:validation:XValidation:rule="has(self.id) || has(self.name)",message="an id or name must be provided"
+type VPCRoutingTable struct {
+	// id of the Routing Table.
+	// When specified, the existing routing table is used and no new routing table is created.
+	// +kubebuilder:validation:MinLength=1
+	// +optional
+	ID *string `json:"id,omitempty"`
+
+	// name of the Routing Table.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name *string `json:"name,omitempty"`
+
+	// routes defines the set of routes to create in the routing table.
+	// Routes are only created when the routing table is created by the controller (i.e., no id is provided).
+	// +optional
+	Routes []VPCRoutingTableRoute `json:"routes,omitempty"`
+
+	// routeDirectLinkIngress indicates whether this routing table is used to route traffic from Direct Link.
+	// Only one routing table per VPC may have this set to true.
+	// +optional
+	RouteDirectLinkIngress *bool `json:"routeDirectLinkIngress,omitempty"`
+
+	// routeTransitGatewayIngress indicates whether this routing table routes traffic from Transit Gateway.
+	// Only one routing table per VPC may have this set to true.
+	// +optional
+	RouteTransitGatewayIngress *bool `json:"routeTransitGatewayIngress,omitempty"`
+
+	// routeVPCZoneIngress indicates whether this routing table routes traffic from subnets in other zones.
+	// Only one routing table per VPC may have this set to true.
+	// +optional
+	RouteVPCZoneIngress *bool `json:"routeVPCZoneIngress,omitempty"`
+
+	// advertiseRoutesTo defines the ingress sources to which routes in this routing table will be advertised.
+	// Allowed values are "transit_gateway" and "direct_link".
+	// +optional
+	// +kubebuilder:validation:MaxItems=2
+	// +listType=set
+	AdvertiseRoutesTo []string `json:"advertiseRoutesTo,omitempty"`
 }
