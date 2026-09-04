@@ -16,7 +16,7 @@ require (
 	go.uber.org/mock v0.6.0
 	golang.org/x/vuln v1.7.0
 	gotest.tools/gotestsum v1.13.0
-	k8s.io/code-generator v0.36.3
+	k8s.io/code-generator v0.36.4
 	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260730162741-560d4acf507b
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387
 	sigs.k8s.io/controller-tools v0.21.0
@@ -292,7 +292,7 @@ require (
 	honnef.co/go/tools v0.8.1 // indirect
 	k8s.io/api v0.36.3 // indirect
 	k8s.io/apiextensions-apiserver v0.36.3 // indirect
-	k8s.io/apimachinery v0.36.3 // indirect
+	k8s.io/apimachinery v0.36.4 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250922181213-ec3ebc5fd46b // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260427204847-8949caaa1199 // indirect
