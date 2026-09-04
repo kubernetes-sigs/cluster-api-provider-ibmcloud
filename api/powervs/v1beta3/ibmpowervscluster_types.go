@@ -577,6 +577,14 @@ type DHCPServer struct {
 	// +optional
 	// +kubebuilder:validation:Enum=Enabled;Disabled
 	Snat DHCPSnatPolicy `json:"snat,omitempty"`
+
+	// cloudConnectionID is the IBM Cloud Connection UUID to connect with the DHCP private network.
+	// When set, the created DHCP server's private network will be attached to the specified Cloud Connection.
+	// More information: https://cloud.ibm.com/docs/power-iaas?topic=power-iaas-cloud-connections
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	CloudConnectionID string `json:"cloudConnectionID,omitempty"`
 }
 
 // NetworkStatus defines the observed state of the PowerVS network and its associated components.

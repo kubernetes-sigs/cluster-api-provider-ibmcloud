@@ -1034,6 +1034,12 @@ func (s *ClusterScope) createDHCPServer(ctx context.Context, dhcpName string) (s
 	}
 	params.SnatEnabled = &snatEnabled
 
+	if dhcpSpec.CloudConnectionID != "" {
+		// If the provided CloudConnectionID does not exist in IBM Cloud, the CreateDHCPServer
+		// API call below will fail and the error will be propagated to the caller.
+		params.CloudConnectionID = &dhcpSpec.CloudConnectionID
+	}
+
 	dhcpServer, err := s.IBMPowerVSClient.CreateDHCPServer(ctx, &params)
 	if err != nil {
 		return "", "", err
