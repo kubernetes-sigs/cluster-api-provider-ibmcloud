@@ -77,4 +77,11 @@ type Vpc interface {
 	AttachVolumeToInstance(options *vpcv1.CreateInstanceVolumeAttachmentOptions) (*vpcv1.VolumeAttachment, *core.DetailedResponse, error)
 	GetVolumeAttachments(options *vpcv1.ListInstanceVolumeAttachmentsOptions) (result *vpcv1.VolumeAttachmentCollection, response *core.DetailedResponse, err error)
 	GetVolume(options *vpcv1.GetVolumeOptions) (result *vpcv1.Volume, response *core.DetailedResponse, err error)
+	CreateVPCRoutingTable(options *vpcv1.CreateVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error)
+	DeleteVPCRoutingTable(options *vpcv1.DeleteVPCRoutingTableOptions) (*core.DetailedResponse, error)
+	GetVPCRoutingTable(options *vpcv1.GetVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error)
+	ListVPCRoutingTables(options *vpcv1.ListVPCRoutingTablesOptions) (*vpcv1.RoutingTableCollection, *core.DetailedResponse, error)
+	GetVPCRoutingTableByName(vpcID string, name string) (*vpcv1.RoutingTable, error)
+	GetSubnetRoutingTable(options *vpcv1.GetSubnetRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error)
+	ReplaceSubnetRoutingTable(options *vpcv1.ReplaceSubnetRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error)
 }

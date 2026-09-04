@@ -247,6 +247,10 @@ type VPCNetworkSpec struct {
 	// +optional
 	ResourceGroup *IBMCloudResourceReference `json:"resourceGroup,omitempty"`
 
+	// routingTables is a set of VPCRoutingTable's which define the VPC Routing Tables for the cluster's VPC.
+	// +optional
+	RoutingTables []VPCRoutingTable `json:"routingTables,omitempty"`
+
 	// securityGroups is a set of VPCSecurityGroup's which define the VPC Security Groups that manage traffic within and out of the VPC.
 	// +optional
 	SecurityGroups []VPCSecurityGroup `json:"securityGroups,omitempty"`
@@ -357,6 +361,11 @@ type VPCNetworkStatus struct {
 	// This can be the same or unique from the cluster's Resource Group.
 	// +optional
 	ResourceGroup *ResourceStatus `json:"resourceGroup,omitempty"`
+
+	// routingTables references the VPC Routing Tables for the cluster.
+	// The map simplifies lookups.
+	// +optional
+	RoutingTables map[string]*ResourceStatus `json:"routingTables,omitempty"`
 
 	// securityGroups references the VPC Security Groups for the cluster.
 	// The map simplifies lookups.
