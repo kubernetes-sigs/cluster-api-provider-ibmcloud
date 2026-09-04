@@ -1548,6 +1548,12 @@ spec:
                           minLength: 1
                           pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                           type: string
+                        profile:
+                          description: |-
+                            profile defines the profile to use for this load balancer.
+                            Supported values are "application" and "network-fixed".
+                            When omitted, the IBM Cloud default (application) is used.
+                          type: string
                         securityGroups:
                           description: securityGroups defines the Security Groups
                             to attach to the load balancer.

@@ -105,7 +105,22 @@ type VPCLoadBalancerSpec struct {
 	// Subnets defiens here are expected to already exist when the load balancer is reconciled (these do not get created when reconciling the load balancer).
 	// +optional
 	Subnets []VPCResource `json:"subnets,omitempty"`
+
+	// Profile defines the profile to use for this load balancer.
+	// Default is "application" if omitted.
+	// +kubebuilder:default=application
+	// +optional
+	Profile *VPCLoadBalancerProfile `json:"profile,omitempty"`
 }
+
+// VPCLoadBalancerProfile defines the profile for the VPC load balancer.
+// +kubebuilder:validation:Enum=application;network-fixed
+type VPCLoadBalancerProfile string
+
+const (
+	VPCLoadBalancerProfileApplication  VPCLoadBalancerProfile = "application"
+	VPCLoadBalancerProfileNetworkFixed VPCLoadBalancerProfile = "network-fixed"
+)
 
 // AdditionalListenerSpec defines the desired state of an
 // additional listener on an VPC load balancer.
