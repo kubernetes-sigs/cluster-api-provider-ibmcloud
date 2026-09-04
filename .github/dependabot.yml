@@ -1,19 +1,42 @@
 version: 2
 updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      all-github-actions:
+        patterns: [ "*" ]
+    commit-message:
+      prefix: ":seedling:"
+    labels:
+      - "area/ci"
+      - "ok-to-test"
+
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      all-go-mod-patch-and-minor:
+        patterns: [ "*" ]
+        update-types: [ "patch", "minor" ]
     ignore:
     # Ignore controller-runtime as its upgraded manually.
     - dependency-name: "sigs.k8s.io/controller-runtime"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     # Ignore cluster-api as its upgraded manually.
     - dependency-name: "sigs.k8s.io/cluster-api/*"
     # Ignore k8s and its transitives modules as they are upgraded manually
     # together with controller-runtime.
     - dependency-name: "k8s.io/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     - dependency-name: "github.com/onsi/*"
+    commit-message:
+      prefix: ":seedling:"
     labels:
+      - "area/dependency"
       - "ok-to-test"
 
   # Enable version updates for Go tools
@@ -21,25 +44,44 @@ updates:
     directory: "/hack/tools"
     schedule:
       interval: "weekly"
+    groups:
+      all-go-mod-patch-and-minor:
+        patterns: [ "*" ]
+        update-types: [ "patch", "minor" ]
     ignore:
     # Ignore controller-runtime as its upgraded manually.
     - dependency-name: "sigs.k8s.io/controller-runtime/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     # Ignore cluster-api as its upgraded manually.
     - dependency-name: "sigs.k8s.io/cluster-api/*"
     - dependency-name: "sigs.k8s.io/controller-tools"
     # Ignore k8s and its transitives modules as they are upgraded manually
     # together with controller-runtime.
     - dependency-name: "k8s.io/*"
+      update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
     - dependency-name: "github.com/onsi/*"
+    commit-message:
+      prefix: ":seedling:"
     labels:
+      - "area/dependency"
       - "ok-to-test"
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: ":seedling:"
+    labels:
+      - "area/dependency"
+      - "ok-to-test"
 
   - package-ecosystem: "docker"
     directory: "/hack/release/ccm"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: ":seedling:"
+    labels:
+      - "area/dependency"
+      - "ok-to-test"
