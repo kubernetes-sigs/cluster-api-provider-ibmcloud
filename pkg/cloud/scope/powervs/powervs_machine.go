@@ -1066,17 +1066,32 @@ func (s *MachineScope) getRawBootstrapData() ([]byte, error) {
 
 // getImageID resolves an image ResourceIdentifier to a concrete image ID string.
 func (s *MachineScope) getImageID(ctx context.Context, image infrav1.ResourceIdentifier) (string, error) {
+	var (
+		images      *models.Images
+		stockImages *models.Images
+		err         error
+	)
 	if image.ID != "" {
 		return image.ID, nil
 	}
 
 	if image.Name != "" {
-		images, err := s.getImages(ctx)
+		images, err = s.getImages(ctx)
 		if err != nil {
 			return "", fmt.Errorf("failed to get images from IBM Cloud: %w", err)
 		}
 
 		for _, img := range images.Images {
+			if image.Name == *img.Name {
+				return *img.ImageID, nil
+			}
+		}
+
+		stockImages, err = s.getStockImages(ctx)
+		if err != nil {
+			return "", fmt.Errorf("failed to get stock catalog images from IBM Cloud: %w", err)
+		}
+		for _, img := range stockImages.Images {
 			if image.Name == *img.Name {
 				return *img.ImageID, nil
 			}
@@ -1290,4 +1305,9 @@ func (s *MachineScope) getIPFromDHCPServer(ctx context.Context, instance *models
 	}
 
 	return "", fmt.Errorf("DHCP lease not found for machine with MAC %s in DHCP Server %s", pvmNetwork.MacAddress, dhcpServerID)
+}
+
+// getStockImages will get list of images for the powervs service instance.
+func (s *MachineScope) getStockImages(ctx context.Context) (*models.Images, error) {
+	return s.IBMPowerVSClient.ListStockImages(ctx)
 }
