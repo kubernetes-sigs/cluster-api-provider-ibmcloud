@@ -1122,58 +1122,31 @@ func TestSetProviderID(t *testing.T) {
 	})
 }
 
-func TestCreateCOSClient(t *testing.T) {
-	t.Run("Returns error when COS bucket region is not in cluster status", func(t *testing.T) {
-		g := NewWithT(t)
-		scope := MachineScope{
-			Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					COSInstance: infrav1.COSInstanceStatus{ID: "cos-id"},
-					// BucketRegion empty
-				},
-			},
-		}
-		result, err := scope.createCOSClient(ctx)
-		g.Expect(result).To(BeNil())
-		g.Expect(err).To(MatchError(ContainSubstring("COS bucket region is not yet populated in cluster status")))
-	})
+// TestGetHMACCOSClient tests ProdClientBuilder.GetHMACCOSClient directly, covering the
+// same error paths that were previously tested via MachineScope.createCOSClient.
+func TestGetHMACCOSClient(t *testing.T) {
+	builder := ProdClientBuilder{}
 
-	t.Run("Returns error when HMAC Secret name is not in cluster status", func(t *testing.T) {
+	t.Run("Returns error when HMAC Secret name is not set in options", func(t *testing.T) {
 		g := NewWithT(t)
-		scope := MachineScope{
-			Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Status: infrav1.IBMPowerVSClusterStatus{
-					COSInstance: infrav1.COSInstanceStatus{
-						ID:           "cos-id",
-						BucketRegion: "us-south",
-						// HMACSecretName empty
-					},
-				},
-			},
-		}
-		result, err := scope.createCOSClient(ctx)
+		result, err := builder.GetHMACCOSClient(ctx, HMACCOSClientOptions{
+			Client:              fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
+			BucketRegion:        "us-south",
+			HMACSecretNamespace: "default",
+			// HMACSecretName deliberately empty
+		})
 		g.Expect(result).To(BeNil())
 		g.Expect(err).To(MatchError(ContainSubstring("COS HMAC Secret name is not yet populated in cluster status")))
 	})
 
 	t.Run("Returns error when HMAC Secret does not exist in Kubernetes", func(t *testing.T) {
 		g := NewWithT(t)
-		scope := MachineScope{
-			Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
-				Status: infrav1.IBMPowerVSClusterStatus{
-					COSInstance: infrav1.COSInstanceStatus{
-						ID:             "cos-id",
-						BucketRegion:   "us-south",
-						HMACSecretName: "missing-secret",
-					},
-				},
-			},
-		}
-		result, err := scope.createCOSClient(ctx)
+		result, err := builder.GetHMACCOSClient(ctx, HMACCOSClientOptions{
+			Client:              fake.NewClientBuilder().WithScheme(scheme.Scheme).Build(),
+			HMACSecretName:      "missing-secret",
+			HMACSecretNamespace: "default",
+			BucketRegion:        "us-south",
+		})
 		g.Expect(result).To(BeNil())
 		g.Expect(err).To(MatchError(ContainSubstring("failed to fetch COS HMAC Secret")))
 	})
@@ -1184,20 +1157,12 @@ func TestCreateCOSClient(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{Name: "cos-hmac", Namespace: "default"},
 			Data:       map[string][]byte{"secret_access_key": []byte("secret")},
 		}
-		scope := MachineScope{
-			Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(hmacSecret).Build(),
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
-				Status: infrav1.IBMPowerVSClusterStatus{
-					COSInstance: infrav1.COSInstanceStatus{
-						ID:             "cos-id",
-						BucketRegion:   "us-south",
-						HMACSecretName: "cos-hmac",
-					},
-				},
-			},
-		}
-		result, err := scope.createCOSClient(ctx)
+		result, err := builder.GetHMACCOSClient(ctx, HMACCOSClientOptions{
+			Client:              fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(hmacSecret).Build(),
+			HMACSecretName:      "cos-hmac",
+			HMACSecretNamespace: "default",
+			BucketRegion:        "us-south",
+		})
 		g.Expect(result).To(BeNil())
 		g.Expect(err).To(MatchError(ContainSubstring("missing access_key_id or secret_access_key")))
 	})
@@ -1211,27 +1176,19 @@ func TestCreateCOSClient(t *testing.T) {
 				"secret_access_key": []byte("SECRET"),
 			},
 		}
-		scope := MachineScope{
-			Client: fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(hmacSecret).Build(),
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				ObjectMeta: metav1.ObjectMeta{Namespace: "default"},
-				Status: infrav1.IBMPowerVSClusterStatus{
-					COSInstance: infrav1.COSInstanceStatus{
-						ID:             "cos-id",
-						BucketRegion:   "us-south",
-						HMACSecretName: "cos-hmac",
-					},
-				},
-			},
-		}
-		result, err := scope.createCOSClient(ctx)
+		result, err := builder.GetHMACCOSClient(ctx, HMACCOSClientOptions{
+			Client:              fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(hmacSecret).Build(),
+			HMACSecretName:      "cos-hmac",
+			HMACSecretNamespace: "default",
+			BucketRegion:        "us-south",
+		})
 		g.Expect(err).To(BeNil())
 		g.Expect(result).ToNot(BeNil())
 	})
 }
 
 func TestNewMachineScopeCOSClientBuild(t *testing.T) {
-	t.Run("error when GetCOSClient fails during initClients", func(t *testing.T) {
+	t.Run("error when GetHMACCOSClient fails during initClients", func(t *testing.T) {
 		g := NewWithT(t)
 
 		pvsMachine := newPowerVSMachine(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true)
@@ -1240,11 +1197,12 @@ func TestNewMachineScopeCOSClientBuild(t *testing.T) {
 		pvsCluster := newPowerVSCluster(clusterName)
 		pvsCluster.Spec.Zone = "us-south-1"
 		pvsCluster.Spec.VPC.Region = "us-south"
-		// Mark ignition configured so the COS build is triggered
+		// Mark ignition configured so the HMAC COS client build is triggered.
 		pvsCluster.Spec.COSInstance = infrav1.COSInstanceSource{Type: infrav1.SourceTypeProvision}
 		pvsCluster.Status.COSInstance = infrav1.COSInstanceStatus{
-			ID:           "cos-id",
-			BucketRegion: "us-south",
+			ID:             "cos-id",
+			BucketRegion:   "us-south",
+			HMACSecretName: "cos-hmac",
 		}
 
 		mockRC := resourcecontrollermock.NewMockResourceController(gomock.NewController(t))
@@ -1262,31 +1220,31 @@ func TestNewMachineScopeCOSClientBuild(t *testing.T) {
 			Cluster:           newCluster(clusterName),
 			IBMPowerVSMachine: pvsMachine,
 			IBMPowerVSCluster: pvsCluster,
-			ClientBuilder:     errCOSBuilder{rc: mockRC},
+			ClientBuilder:     errHMACCOSBuilder{rc: mockRC},
 		})
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(ContainSubstring("failed to create COS client"))
+		g.Expect(err.Error()).To(ContainSubstring("failed to create HMAC COS client"))
 	})
 }
 
-// errCOSBuilder succeeds for all clients but fails on GetCOSClient.
-type errCOSBuilder struct {
+// errHMACCOSBuilder succeeds for all clients but fails on GetHMACCOSClient.
+type errHMACCOSBuilder struct {
 	stubClientBuilder
 	rc resourcecontroller.ResourceController
 	pv powervs.PowerVS
 }
 
-func (e errCOSBuilder) GetResourceControllerClient(_ context.Context, _ ClientOptions) (resourcecontroller.ResourceController, error) {
+func (e errHMACCOSBuilder) GetResourceControllerClient(_ context.Context, _ ClientOptions) (resourcecontroller.ResourceController, error) {
 	return e.rc, nil
 }
-func (e errCOSBuilder) GetPowerVSClient(_ context.Context, _ ClientOptions) (powervs.PowerVS, error) {
+func (e errHMACCOSBuilder) GetPowerVSClient(_ context.Context, _ ClientOptions) (powervs.PowerVS, error) {
 	return e.pv, nil
 }
-func (e errCOSBuilder) GetVPCClient(_ context.Context, _ ClientOptions) (vpc.Vpc, error) {
+func (e errHMACCOSBuilder) GetVPCClient(_ context.Context, _ ClientOptions) (vpc.Vpc, error) {
 	return nil, nil
 }
-func (e errCOSBuilder) GetCOSClient(_ context.Context, _ COSClientOptions) (cos.Cos, error) {
-	return nil, errors.New("cos client error")
+func (e errHMACCOSBuilder) GetHMACCOSClient(_ context.Context, _ HMACCOSClientOptions) (cos.Cos, error) {
+	return nil, errors.New("hmac cos client error")
 }
 
 func TestSetInstanceID(t *testing.T) {
@@ -1386,28 +1344,6 @@ func TestDeleteMachineIgnition(t *testing.T) {
 		}
 		err := scope.DeleteMachineIgnition(ctx)
 		g.Expect(err).To(BeNil())
-	})
-
-	t.Run("Error creating COS client when COS bucket region not in status", func(t *testing.T) {
-		g := NewWithT(t)
-		scope := MachineScope{
-			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
-				Spec: infrav1.IBMPowerVSClusterSpec{
-					COSInstance: infrav1.COSInstanceSource{
-						Type: infrav1.SourceTypeProvision,
-					},
-				},
-				Status: infrav1.IBMPowerVSClusterStatus{
-					COSInstance: infrav1.COSInstanceStatus{
-						BucketName: "test-bucket",
-						// BucketRegion is empty → createCOSClient will fail
-					},
-				},
-			},
-			Machine: &clusterv1.Machine{},
-		}
-		err := scope.DeleteMachineIgnition(ctx)
-		g.Expect(err).To(MatchError(ContainSubstring("COS bucket region is not yet populated in cluster status")))
 	})
 }
 
