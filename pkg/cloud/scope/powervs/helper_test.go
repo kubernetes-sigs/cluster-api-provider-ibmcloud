@@ -35,6 +35,15 @@ import (
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/vpc"
 )
 
+const (
+	clusterName      = "foo-cluster"
+	machineName      = "foo-machine"
+	pvsImage         = "foo-image"
+	pvsNetwork       = "foo-network"
+	defaultNamespace = "default"
+	idSuffix         = "-id"
+)
+
 // stubClientBuilder is a test-only ClientBuilder that returns nil clients.
 // Use it when the test bypasses real IBM Cloud calls by injecting mocks directly into scope fields.
 type stubClientBuilder struct {
@@ -66,15 +75,9 @@ func (s stubClientBuilder) GetResourceManagerClient(_ context.Context, _ ClientO
 func (s stubClientBuilder) GetCOSClient(_ context.Context, _ COSClientOptions) (cos.Cos, error) {
 	return nil, nil
 }
-
-const (
-	clusterName      = "foo-cluster"
-	machineName      = "foo-machine"
-	pvsImage         = "foo-image"
-	pvsNetwork       = "foo-network"
-	defaultNamespace = "default"
-	idSuffix         = "-id"
-)
+func (s stubClientBuilder) GetHMACCOSClient(_ context.Context, _ HMACCOSClientOptions) (cos.Cos, error) {
+	return nil, nil
+}
 
 func newCluster(name string) *clusterv1.Cluster {
 	return &clusterv1.Cluster{

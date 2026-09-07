@@ -37,7 +37,6 @@ import (
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/ibm-cos-sdk-go/aws"
-	cosSession "github.com/IBM/ibm-cos-sdk-go/aws/session"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
@@ -126,7 +125,9 @@ type MachineScope struct {
 	IBMPowerVSClient powervs.PowerVS
 	IBMVPCClient     vpc.Vpc
 	ResourceClient   resourcecontroller.ResourceController
-	COSClient        cos.Cos
+	// COSClient is an HMAC-credential COS client (built via GetHMACCOSClient).
+	// It supports SigV4 pre-signed URL generation; the IAM OAuth client does not.
+	COSClient cos.Cos
 
 	// Recorder is the event recorder for emitting Kubernetes events.
 	Recorder cgrecord.EventRecorder
@@ -245,14 +246,9 @@ func (s *MachineScope) initClients(ctx context.Context, params *MachineScopePara
 
 	// 6. Build COS Client — only when Ignition is configured.
 	if s.useIgnition() {
-		cosStatus := s.IBMPowerVSCluster.Status.COSInstance
-		s.COSClient, err = params.ClientBuilder.GetCOSClient(ctx, COSClientOptions{
-			InstanceID:      cosStatus.ID,
-			BucketRegion:    cosStatus.BucketRegion,
-			ServiceEndpoint: s.ServiceEndpoint,
-		})
+		s.COSClient, err = params.ClientBuilder.GetHMACCOSClient(ctx, s.hmacCOSClientOptions())
 		if err != nil {
-			return fmt.Errorf("failed to create COS client: %w", err)
+			return fmt.Errorf("failed to create HMAC COS client: %w", err)
 		}
 	}
 
@@ -449,17 +445,7 @@ func (s *MachineScope) DeleteMachineIgnition(ctx context.Context) error {
 		return nil
 	}
 
-	// 3. Ensure we have a COS client; build one lazily if the scope was
-	// constructed before the bucket region was populated in cluster status.
-	if s.COSClient == nil {
-		cosClient, err := s.createCOSClient(ctx)
-		if err != nil {
-			return fmt.Errorf("failed to create COS client for ignition deletion: %w", err)
-		}
-		s.COSClient = cosClient
-	}
-
-	// 4. Delete the exact key, avoiding the strings.Contains partial match bug!
+	// 3. Delete the bootstrap key
 	key := s.bootstrapDataKey()
 
 	if _, err := s.COSClient.DeleteObject(&s3.DeleteObjectInput{
@@ -967,60 +953,17 @@ func (s *MachineScope) createIgnitionData(ctx context.Context, data []byte) (str
 	return presignedURL, nil
 }
 
-// createCOSClient builds an HMAC-credential COS client for the machine scope.
-// It reads the access_key_id and secret_access_key from the Kubernetes Secret that
-// was created by the cluster reconciler's reconcileCOSHMACKey step.
-func (s *MachineScope) createCOSClient(ctx context.Context) (cos.Cos, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	// 1. Fetch the region from cluster status.
-	region := s.IBMPowerVSCluster.Status.COSInstance.BucketRegion
-	if region == "" {
-		return nil, fmt.Errorf("COS bucket region is not yet populated in cluster status. Waiting for cluster reconciler")
+// hmacCOSClientOptions builds the HMACCOSClientOptions for the current machine scope,
+// drawing region, secret name, namespace, and endpoint overrides from cluster status.
+func (s *MachineScope) hmacCOSClientOptions() HMACCOSClientOptions {
+	cosStatus := s.IBMPowerVSCluster.Status.COSInstance
+	return HMACCOSClientOptions{
+		Client:              s.Client,
+		HMACSecretName:      cosStatus.HMACSecretName,
+		HMACSecretNamespace: s.IBMPowerVSCluster.Namespace,
+		BucketRegion:        cosStatus.BucketRegion,
+		ServiceEndpoint:     s.ServiceEndpoint,
 	}
-
-	// 2. Read the HMAC Secret created by the cluster reconciler.
-	hmacSecretName := s.IBMPowerVSCluster.Status.COSInstance.HMACSecretName
-	if hmacSecretName == "" {
-		return nil, fmt.Errorf("COS HMAC Secret name is not yet populated in cluster status. Waiting for cluster reconciler")
-	}
-
-	secret := &corev1.Secret{}
-	if err := s.Client.Get(ctx, types.NamespacedName{
-		Namespace: s.IBMPowerVSCluster.Namespace,
-		Name:      hmacSecretName,
-	}, secret); err != nil {
-		return nil, fmt.Errorf("failed to fetch COS HMAC Secret %q: %w", hmacSecretName, err)
-	}
-
-	accessKeyID := string(secret.Data[cosHMACAccessKeyField])
-	secretAccessKey := string(secret.Data[cosHMACSecretKeyField])
-	if accessKeyID == "" || secretAccessKey == "" {
-		return nil, fmt.Errorf("COS HMAC Secret %q is missing %s or %s", hmacSecretName, cosHMACAccessKeyField, cosHMACSecretKeyField)
-	}
-
-	serviceEndpoint := fmt.Sprintf("s3.%s.%s", region, cosURLDomain)
-	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), s.ServiceEndpoint)
-	if cosServiceEndpoint != "" {
-		log.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
-		serviceEndpoint = cosServiceEndpoint
-	}
-
-	cosOptions := cos.ServiceOptions{
-		Options: &cosSession.Options{
-			Config: aws.Config{
-				Endpoint: ptr.To(serviceEndpoint),
-				Region:   ptr.To(region),
-			},
-		},
-	}
-
-	cosClient, err := cos.NewServiceWithHMAC(cosOptions, accessKeyID, secretAccessKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HMAC COS client: %w", err)
-	}
-
-	return cosClient, nil
 }
 
 // bootstrapDataKey returns the COS object key for this machine's bootstrap data.

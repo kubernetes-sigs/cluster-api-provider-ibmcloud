@@ -67,6 +67,9 @@ func (s stubClientBuilder) GetResourceManagerClient(_ context.Context, _ powervs
 func (s stubClientBuilder) GetCOSClient(_ context.Context, _ powervsscope.COSClientOptions) (cos.Cos, error) {
 	return nil, nil
 }
+func (s stubClientBuilder) GetHMACCOSClient(_ context.Context, _ powervsscope.HMACCOSClientOptions) (cos.Cos, error) {
+	return nil, nil
+}
 
 var (
 	testEnv *helpers.TestEnvironment

@@ -25,12 +25,9 @@ import (
 
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
-	"github.com/IBM-Cloud/power-go-client/ibmpisession"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
-	"github.com/IBM/ibm-cos-sdk-go/aws"
 	"github.com/IBM/ibm-cos-sdk-go/aws/awserr"
-	cosSession "github.com/IBM/ibm-cos-sdk-go/aws/session"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
 	tgapiv1 "github.com/IBM/networking-go-sdk/transitgatewayapisv1"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
@@ -66,12 +63,21 @@ import (
 // vpcSubnetIPVersion4 defines the IP v4 string used for VPC Subnet generation.
 var vpcSubnetIPVersion4 = "ipv4"
 
+// ResourceNotFound is the string representing an error when a resource is not found in IBM Cloud.
+type ResourceNotFound string
+
 // networkConnectionType represents network connection type in transit gateway.
 type networkConnectionType string
 
 var (
 	powervsNetworkConnectionType = networkConnectionType("power_virtual_server")
 	vpcNetworkConnectionType     = networkConnectionType("vpc")
+
+	// ResourceNotFoundCode indicates the http status code when a resource does not exist.
+	ResourceNotFoundCode = 404
+
+	// DHCPServerNotFound is the error returned when a DHCP server is not found.
+	DHCPServerNotFound = ResourceNotFound("dhcp server does not exist")
 )
 
 // powerEdgeRouter is identifier for PER.
@@ -89,26 +95,6 @@ const (
 	cosHMACAccessKeyField = "access_key_id"
 	cosHMACSecretKeyField = "secret_access_key"
 )
-
-// ClientOptions contains generic configurations required to build IBM Cloud clients.
-type ClientOptions struct {
-	Authenticator   core.Authenticator
-	Zone            string
-	WorkspaceID     string
-	VPCRegion       string
-	ServiceEndpoint []endpoints.ServiceEndpoint
-	Debug           bool
-}
-
-// COSClientOptions carries the parameters needed to construct a COS client.
-// These are kept separate from ClientOptions because they depend on runtime
-// Status fields (COS instance ID, bucket region) that are not known at scope
-// construction time for non-machine scopes.
-type COSClientOptions struct {
-	InstanceID      string
-	BucketRegion    string
-	ServiceEndpoint []endpoints.ServiceEndpoint
-}
 
 // ClusterScopeParams defines the input parameters used to create a new ClusterScope.
 type ClusterScopeParams struct {
@@ -145,148 +131,6 @@ type ClusterScope struct {
 	Cluster           *clusterv1.Cluster
 	IBMPowerVSCluster *infrav1.IBMPowerVSCluster
 	ServiceEndpoint   []endpoints.ServiceEndpoint
-}
-
-// ClientBuilder defines the contract for constructing IBM Cloud service clients.
-// This interface enables clean dependency injection and robust mocking for tests.
-type ClientBuilder interface {
-	GetAuthenticator(ctx context.Context) (core.Authenticator, error)
-	GetPowerVSClient(ctx context.Context, options ClientOptions) (powervs.PowerVS, error)
-	GetVPCClient(ctx context.Context, options ClientOptions) (vpc.Vpc, error)
-	GetTransitGatewayClient(ctx context.Context, options ClientOptions) (transitgateway.TransitGateway, error)
-	GetResourceControllerClient(ctx context.Context, options ClientOptions) (resourcecontroller.ResourceController, error)
-	GetResourceManagerClient(ctx context.Context, options ClientOptions) (resourcemanager.ResourceManager, error)
-	GetCOSClient(ctx context.Context, options COSClientOptions) (cos.Cos, error)
-}
-
-// ProdClientBuilder is the production implementation of the ClientBuilder interface.
-type ProdClientBuilder struct{}
-
-// GetAuthenticator returns an IBM Cloud authenticator using default env/file credentials.
-func (b ProdClientBuilder) GetAuthenticator(_ context.Context) (core.Authenticator, error) {
-	return authenticator.GetAuthenticator()
-}
-
-// GetPowerVSClient constructs a production PowerVS client for the given options.
-func (b ProdClientBuilder) GetPowerVSClient(ctx context.Context, opts ClientOptions) (powervs.PowerVS, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	piOptions := powervs.ServiceOptions{
-		IBMPIOptions: &ibmpisession.IBMPIOptions{
-			Debug:         opts.Debug,
-			Zone:          opts.Zone,
-			Authenticator: opts.Authenticator,
-		},
-		WorkspaceID: opts.WorkspaceID,
-	}
-
-	powerVSServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.PowerVS), opts.ServiceEndpoint)
-	if powerVSServiceEndpoint != "" {
-		log.V(3).Info("Overriding the default PowerVS endpoint", "endpoint", powerVSServiceEndpoint)
-		piOptions.URL = powerVSServiceEndpoint
-	}
-
-	return powervs.NewService(ctx, piOptions)
-}
-
-// GetVPCClient constructs a production VPC client for the given options.
-func (b ProdClientBuilder) GetVPCClient(_ context.Context, opts ClientOptions) (vpc.Vpc, error) {
-	if opts.Debug {
-		core.SetLoggingLevel(core.LevelDebug)
-	}
-
-	if opts.VPCRegion == "" {
-		return nil, fmt.Errorf("failed to create VPC client: VPC region is not set")
-	}
-
-	svcEndpoint := endpoints.FetchVPCEndpoint(opts.VPCRegion, opts.ServiceEndpoint)
-	return vpc.NewService(svcEndpoint)
-}
-
-// GetTransitGatewayClient constructs a production Transit Gateway client for the given options.
-func (b ProdClientBuilder) GetTransitGatewayClient(ctx context.Context, opts ClientOptions) (transitgateway.TransitGateway, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	tgOptions := &tgapiv1.TransitGatewayApisV1Options{
-		Authenticator: opts.Authenticator,
-	}
-
-	tgServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.TransitGateway), opts.ServiceEndpoint)
-	if tgServiceEndpoint != "" {
-		log.V(3).Info("Overriding the default TransitGateway endpoint", "endpoint", tgServiceEndpoint)
-		tgOptions.URL = tgServiceEndpoint
-	}
-
-	return transitgateway.NewService(tgOptions)
-}
-
-// GetResourceControllerClient constructs a production Resource Controller client for the given options.
-func (b ProdClientBuilder) GetResourceControllerClient(ctx context.Context, opts ClientOptions) (resourcecontroller.ResourceController, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	rcOptions := resourcecontroller.ServiceOptions{
-		ResourceControllerV2Options: &resourcecontrollerv2.ResourceControllerV2Options{
-			Authenticator: opts.Authenticator,
-		},
-	}
-
-	rcEndpoint := endpoints.FetchEndpoints(string(endpoints.RC), opts.ServiceEndpoint)
-	if rcEndpoint != "" {
-		log.V(3).Info("Overriding the default Resource Controller endpoint", "endpoint", rcEndpoint)
-		rcOptions.URL = rcEndpoint
-	}
-
-	return resourcecontroller.NewService(rcOptions)
-}
-
-// GetResourceManagerClient constructs a production Resource Manager client for the given options.
-func (b ProdClientBuilder) GetResourceManagerClient(ctx context.Context, opts ClientOptions) (resourcemanager.ResourceManager, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	rmOptions := &resourcemanagerv2.ResourceManagerV2Options{
-		Authenticator: opts.Authenticator,
-	}
-
-	rmEndpoint := endpoints.FetchEndpoints(string(endpoints.RM), opts.ServiceEndpoint)
-	if rmEndpoint != "" {
-		log.Info("Overriding the default Resource Manager endpoint:", "endpoint", rmEndpoint)
-		rmOptions.URL = rmEndpoint
-	}
-
-	return resourcemanager.NewService(rmOptions)
-}
-
-// GetCOSClient constructs a production COS client for the given options.
-func (b ProdClientBuilder) GetCOSClient(ctx context.Context, opts COSClientOptions) (cos.Cos, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	props, err := authenticator.GetProperties()
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch service properties: %w", err)
-	}
-	apiKey := props["APIKEY"]
-	if apiKey == "" {
-		return nil, fmt.Errorf("IBM Cloud API key is not provided, set IBMCLOUD_API_KEY environmental variable")
-	}
-
-	serviceEndpoint := fmt.Sprintf("s3.%s.%s", opts.BucketRegion, cosURLDomain)
-
-	cosServiceEndpoint := endpoints.FetchEndpoints(string(endpoints.COS), opts.ServiceEndpoint)
-	if cosServiceEndpoint != "" {
-		log.V(3).Info("Overriding the default COS endpoint", "cosEndpoint", cosServiceEndpoint)
-		serviceEndpoint = cosServiceEndpoint
-	}
-
-	cosOptions := cos.ServiceOptions{
-		Options: &cosSession.Options{
-			Config: aws.Config{
-				Endpoint: ptr.To(serviceEndpoint),
-				Region:   ptr.To(opts.BucketRegion),
-			},
-		},
-	}
-
-	return cos.NewService(cosOptions, apiKey, opts.InstanceID)
 }
 
 // NewPowerVSClusterScope creates a new ClusterScope from the supplied parameters.
