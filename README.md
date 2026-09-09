@@ -50,7 +50,7 @@ This provider's versions are compatible with the following versions of Cluster A
 | v0.1.x _(EOL)_                  | ✓           |             |             |
 | v0.2.x – v0.3.x _(EOL)_        |             | ✓           |             |
 | v0.[4-13].x _(EOL)_             |             | ✓           |             |
-| **v0.[14-15].x, main** ✅       |             |             | ✓           |
+| **v0.[14-16].x, main** ✅       |             |             | ✓           |
 
 See the [Version Support Policy][capibm-versions] for the full release matrix, Kubernetes
 version compatibility, and API lifecycle details.

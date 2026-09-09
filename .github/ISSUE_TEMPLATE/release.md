@@ -15,7 +15,8 @@ After every CAPIBM major version release:
 - [ ] [Update release support data in docs](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/docs/book/src/developer/release-support-guidelines.md)
 - [ ] [Update docs with reference to latest release](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/README.md#compatibility-with-cluster-api-and-kubernetes-versions)
 - [ ] Update and add documentation link for new release branch in Netlify
-- [ ] Update capibmadm tool to the latest version after each new release
+- [ ] [Update capibmadm tool to the latest version after each new release](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/docs/book/src/topics/capibmadm/index.md)
+- [ ] Update IBM Cloud CLI and Power IAAS plugin versions in [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh) (`IBMCLOUD_CLI_VERSION`, `POWER_PLUGIN_VERSION`)
 - [ ] Add new presubmit job for latest release branch in [kubernetes/test-infra](https://github.com/kubernetes/test-infra/tree/master/config/jobs/kubernetes-sigs/cluster-api-provider-ibmcloud)
     - [ ] Update kubekins-e2e image to relevent Kubernetes version
 - [ ] Add E2E CI jobs for latest release branch in [ppc64le-cloud/test-infra](https://github.com/ppc64le-cloud/test-infra/blob/master/config/jobs/periodic/cluster-api-provider-ibmcloud/test-e2e-capi-ibmcloud-periodics.yaml)

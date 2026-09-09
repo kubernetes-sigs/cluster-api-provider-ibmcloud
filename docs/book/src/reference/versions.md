@@ -23,15 +23,16 @@ CAPIBM follows the same support model as upstream CAPI:
 
 | CAPIBM Release | PowerVS API | VPC API | Status |
 |:---------------|:------------|:--------|:-------|
-| **v0.15.x** (main) | v1beta3 | v1beta2 | ✅ N — Standard support |
-| **v0.14.x** | v1beta3 | v1beta2 | ✅ N-1 — Standard support |
-| **v0.13.x** | v1beta2 | v1beta2 | 🔧 N-2 — Maintenance mode (EOL when v0.16.0 is released) |
+| **v0.16.x** (main) | v1beta3 | v1beta2 | ✅ N — Standard support |
+| **v0.15.x** | v1beta3 | v1beta2 | ✅ N-1 — Standard support |
+| **v0.14.x** | v1beta3 | v1beta2 | 🔧 N-2 — Maintenance mode (EOL when v0.17.0 is released) |
 
 <details>
 <summary>EOL releases (click to expand)</summary>
 
 | CAPIBM Release | PowerVS API | VPC API | EOL Since |
 |:---------------|:------------|:--------|:----------|
+| v0.13.x | v1beta2 | v1beta2 | 2026-09-09 (v0.16.0 release) |
 | v0.12.x | v1beta2 | v1beta2 | 2026-05-18 (v0.14.0 release) |
 | v0.11.x | v1beta2 | v1beta2 | 2025-12-15 (v0.13.0 release) |
 | v0.10.x | v1beta2 | v1beta2 | 2025-09-04 (v0.12.0 release) |
@@ -56,12 +57,12 @@ Both providers (PowerVS and VPC) ship in the same binary and share the same CAPI
 
 | CAPIBM Release | Compatible CAPI Version |
 |:---------------|:------------------------|
-| v0.[14-15].x, main | CAPI v1beta2 (v1.11.x – v1.13.x+) |
+| v0.[14-16].x, main | CAPI v1beta2 (v1.11.x – v1.13.x+) |
 | v0.[4-13].x | CAPI v1beta1 (v1.1.x – v1.10.x) |
 | v0.2.x – v0.3.x | CAPI v1beta1 (v1.1.x – v1.10.x) |
 | v0.1.x | CAPI v1alpha4 (v0.4) |
 
-> **Current stable:** CAPIBM `main` / v0.15.x targets **CAPI v1beta2**, which corresponds to
+> **Current stable:** CAPIBM `main` / v0.16.x targets **CAPI v1beta2**, which corresponds to
 > CAPI releases `v1.11.x`, `v1.12.x`, and `v1.13.x`.
 
 See the official [Cluster API version support page][capi-versions] for CAPI's own support
@@ -82,7 +83,7 @@ listed CAPI minors for each CAPIBM release line.
 
 | CAPIBM Release | CAPI Version | Combined Management Cluster Kubernetes Range |
 |:---------------|:-------------|:---------------------------------------------|
-| v0.[14-15].x, main | v1.11.x – v1.13.x | Kubernetes v1.29 – v1.35 |
+| v0.[14-16].x, main | v1.11.x – v1.13.x | Kubernetes v1.29 – v1.35 |
 | v0.[4-13].x | v1.1.x – v1.10.x | Kubernetes v1.20 – v1.32 |
 
 ### Workload Cluster
@@ -127,8 +128,8 @@ track, currently ahead of the VPC provider.
 
 | API Version | Provider Releases | Storage | Served | Status |
 |:------------|:------------------|:--------|:-------|:-------|
-| **v1beta3** | v0.[14-15].x, main | ✅ Yes (hub) | ✅ Yes | Current stable |
-| **v1beta2** | v0.[4-14].x | No | ✅ Yes (until v0.17) | Deprecated — see removal roadmap below |
+| **v1beta3** | v0.[14-16].x, main | ✅ Yes (hub) | ✅ Yes | Current stable |
+| **v1beta2** | v0.[4-15].x | No | ✅ Yes (until v0.17) | Deprecated — see removal roadmap below |
 | **v1beta1** | v0.2.x – v0.3.x | No | No | EOL since 2023-02-09 |
 | **v1alpha4** | v0.1.x | No | No | EOL |
 
@@ -173,7 +174,7 @@ track, currently at v1beta2.
 
 | API Version | Provider Releases | Hub / Spoke | Supported Until |
 |:------------|:------------------|:------------|:----------------|
-| **v1beta2** | v0.[4-15].x, main | Hub (current storage version) | TBD (current stable) |
+| **v1beta2** | v0.[4-16].x, main | Hub (current storage version) | TBD (current stable) |
 | **v1beta1** | v0.2.x – v0.3.x | Spoke (conversion to v1beta2) | EOL since 2023-02-09 |
 | **v1alpha4** | v0.1.x | — | EOL |
 
