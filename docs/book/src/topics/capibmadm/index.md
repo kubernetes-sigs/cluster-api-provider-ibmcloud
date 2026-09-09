@@ -12,17 +12,17 @@ If you are unsure you can determine your computers architecture by running `unam
 
 Download for AMD64:
 ```bash
-curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-linux-amd64" version:"0.12.x"}} -o capibmadm
+curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-linux-amd64" version:"0.15.x"}} -o capibmadm
 ```
 
 Download for ARM64:
 ```bash
-curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-linux-arm64" version:"0.12.x"}} -o capibmadm
+curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-linux-arm64" version:"0.15.x"}} -o capibmadm
 ```
 
 Download for PPC64LE:
 ```bash
-curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-linux-ppc64le" version:"0.12.x"}} -o capibmadm
+curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-linux-ppc64le" version:"0.15.x"}} -o capibmadm
 ```
 Add the execute bit to the binary.
 ```bash
@@ -45,12 +45,12 @@ If you are unsure you can determine your computers architecture by running `unam
 
 Download for AMD64:
 ```bash
-curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-darwin-amd64" version:"0.12.x"}} -o capibmadm
+curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-darwin-amd64" version:"0.15.x"}} -o capibmadm
 ```
 
 Download for M1 CPU ("Apple Silicon") / ARM64:
 ```bash
-curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-darwin-arm64" version:"0.12.x"}} -o capibmadm
+curl -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-darwin-arm64" version:"0.15.x"}} -o capibmadm
 ```
 Add the execute bit to the binary.
 ```bash
@@ -73,13 +73,13 @@ Go to the working directory where you want capibmadm downloaded.
 
 Download the latest release on AMD64; on Windows, type:
 ```powershell
-curl.exe -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-windows-amd64.exe" version:"0.12.x"}} -o capibmadm.exe
+curl.exe -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-windows-amd64.exe" version:"0.15.x"}} -o capibmadm.exe
 ```
 Append or prepend the path of that directory to the `PATH` environment variable.
 
 Download the latest release on ARM64; on Windows, type:
 ```powershell
-curl.exe -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-windows-amd64.exe" version:"0.12.x"}} -o capibmadm.exe
+curl.exe -L {{#releaselink repo:"https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud" gomodule:"sigs.k8s.io/cluster-api-provider-ibmcloud" asset:"capibmadm-windows-amd64.exe" version:"0.15.x"}} -o capibmadm.exe
 ```
 Append or prepend the path of that directory to the `PATH` environment variable.
 
