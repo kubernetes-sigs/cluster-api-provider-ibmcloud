@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	cgrecord "k8s.io/client-go/tools/record"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -496,6 +497,9 @@ func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
 	} else {
 		return nil, fmt.Errorf("error subnet required for load balancer creation")
 	}
+	options.SetProfile(&vpcv1.LoadBalancerProfileIdentityByName{
+		Name: ptr.To(string(*s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Profile)),
+	})
 
 	options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
 		{
