@@ -187,6 +187,11 @@ const (
 	// VPCSecurityGroupReconciliationFailedReason used when an error occurs during VPC reconciliation.
 	VPCSecurityGroupReconciliationFailedReason = "VPCSecurityGroupReconciliationFailed"
 
+	// VPCRoutingTableReadyCondition reports on the successful reconciliation of a VPC Routing Table.
+	VPCRoutingTableReadyCondition clusterv1beta1.ConditionType = "VPCRoutingTableReady"
+	// VPCRoutingTableReconciliationFailedReason used when an error occurs during VPC Routing Table reconciliation.
+	VPCRoutingTableReconciliationFailedReason = "VPCRoutingTableReconciliationFailed"
+
 	// VPCReadyCondition reports on the successful reconciliation of a VPC.
 	VPCReadyCondition clusterv1beta1.ConditionType = "VPCReady"
 	// VPCReconciliationFailedReason used when an error occurs during VPC reconciliation.
@@ -337,6 +342,15 @@ const (
 
 	// VPCLoadBalancerDeletingV1Beta2Reason surfaces when the VPC LoadBalancer is being deleted.
 	VPCLoadBalancerDeletingV1Beta2Reason = clusterv1beta1.DeletingV1Beta2Reason
+
+	// VPCRoutingTableReadyV1Beta2Condition reports on the successful reconciliation of a VPC Routing Table.
+	VPCRoutingTableReadyV1Beta2Condition = "VPCRoutingTableReady"
+
+	// VPCRoutingTableReadyV1Beta2Reason surfaces when the VPC Routing Table is ready.
+	VPCRoutingTableReadyV1Beta2Reason = clusterv1beta1.ReadyV1Beta2Reason
+
+	// VPCRoutingTableNotReadyV1Beta2Reason surfaces when VPC Routing Table is not ready.
+	VPCRoutingTableNotReadyV1Beta2Reason = clusterv1beta1.NotReadyV1Beta2Reason
 
 	// VPCImageReadyV1Beta2Condition reports on the successful reconciliation of a VPC custom image.
 	VPCImageReadyV1Beta2Condition = "VPCImageReady"

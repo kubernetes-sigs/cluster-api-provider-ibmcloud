@@ -382,6 +382,30 @@ func (r *IBMVPCClusterReconciler) reconcileCluster(ctx context.Context, clusterS
 		Reason: infrav1.VPCSubnetReadyV1Beta2Reason,
 	})
 
+	// Reconcile the cluster's VPC Routing Tables.
+	log.Info("Reconciling VPC Routing Tables")
+	if requeue, err := clusterScope.ReconcileRoutingTables(ctx); err != nil {
+		log.Error(err, "failed to reconcile VPC Routing Tables")
+		v1beta1conditions.MarkFalse(clusterScope.IBMVPCCluster, infrav1.VPCRoutingTableReadyCondition, infrav1.VPCRoutingTableReconciliationFailedReason, clusterv1beta1.ConditionSeverityError, "%s", err.Error())
+		v1beta2conditions.Set(clusterScope.IBMVPCCluster, metav1.Condition{
+			Type:    infrav1.VPCRoutingTableReadyV1Beta2Condition,
+			Status:  metav1.ConditionFalse,
+			Reason:  infrav1.VPCRoutingTableNotReadyV1Beta2Reason,
+			Message: err.Error(),
+		})
+		return reconcile.Result{}, err
+	} else if requeue {
+		log.Info("VPC Routing Tables creation is pending, requeueing")
+		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
+	}
+	log.Info("Reconciliation of VPC Routing Tables complete")
+	v1beta1conditions.MarkTrue(clusterScope.IBMVPCCluster, infrav1.VPCRoutingTableReadyCondition)
+	v1beta2conditions.Set(clusterScope.IBMVPCCluster, metav1.Condition{
+		Type:   infrav1.VPCRoutingTableReadyV1Beta2Condition,
+		Status: metav1.ConditionTrue,
+		Reason: infrav1.VPCRoutingTableReadyV1Beta2Reason,
+	})
+
 	// Reconcile the cluster's Security Groups (and Security Group Rules)
 	log.Info("Reconciling Security Groups")
 	if requeue, err := clusterScope.ReconcileSecurityGroups(ctx); err != nil {

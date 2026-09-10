@@ -681,6 +681,111 @@ spec:
                             required:
                             - id
                             type: object
+                          routingTables:
+                            description: routingTables is a set of VPCRoutingTable's
+                              which define the VPC Routing Tables for the cluster's
+                              VPC.
+                            items:
+                              description: VPCRoutingTable defines a VPC Routing Table
+                                to create or reference for the cluster's VPC.
+                              properties:
+                                advertiseRoutesTo:
+                                  description: |-
+                                    advertiseRoutesTo defines the ingress sources to which routes in this routing table will be advertised.
+                                    Allowed values are "transit_gateway" and "direct_link".
+                                  items:
+                                    type: string
+                                  maxItems: 2
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                id:
+                                  description: |-
+                                    id of the Routing Table.
+                                    When specified, the existing routing table is used and no new routing table is created.
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: name of the Routing Table.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                  type: string
+                                routeDirectLinkIngress:
+                                  description: |-
+                                    routeDirectLinkIngress indicates whether this routing table is used to route traffic from Direct Link.
+                                    Only one routing table per VPC may have this set to true.
+                                  type: boolean
+                                routeTransitGatewayIngress:
+                                  description: |-
+                                    routeTransitGatewayIngress indicates whether this routing table routes traffic from Transit Gateway.
+                                    Only one routing table per VPC may have this set to true.
+                                  type: boolean
+                                routeVPCZoneIngress:
+                                  description: |-
+                                    routeVPCZoneIngress indicates whether this routing table routes traffic from subnets in other zones.
+                                    Only one routing table per VPC may have this set to true.
+                                  type: boolean
+                                routes:
+                                  description: |-
+                                    routes defines the set of routes to create in the routing table.
+                                    Routes are only created when the routing table is created by the controller (i.e., no id is provided).
+                                  items:
+                                    description: VPCRoutingTableRoute defines a route
+                                      within a VPC Routing Table.
+                                    properties:
+                                      action:
+                                        description: action defines the action to
+                                          perform with a packet matching this route.
+                                        enum:
+                                        - delegate
+                                        - delegate_vpc
+                                        - deliver
+                                        - drop
+                                        type: string
+                                      destination:
+                                        description: |-
+                                          destination is the destination CIDR for the route.
+                                          The host identifier in the CIDR must be zero.
+                                        minLength: 1
+                                        type: string
+                                      name:
+                                        description: |-
+                                          name is an optional name for the route.
+                                          If unspecified, IBM Cloud will generate a name.
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                        type: string
+                                      nextHop:
+                                        description: |-
+                                          nextHop is the next-hop IP address for routes with action deliver.
+                                          Must be a unicast IP address within a subnet in the routing table's VPC.
+                                        type: string
+                                      zone:
+                                        description: zone is the name of the availability
+                                          zone to apply the route to.
+                                        minLength: 1
+                                        type: string
+                                    required:
+                                    - action
+                                    - destination
+                                    - zone
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: nextHop must be set when action is
+                                        deliver
+                                      rule: 'self.action == ''deliver'' ? has(self.nextHop)
+                                        : true'
+                                    - message: nextHop must not be set unless action
+                                        is deliver
+                                      rule: 'self.action != ''deliver'' ? !has(self.nextHop)
+                                        : true'
+                                  type: array
+                              type: object
+                              x-kubernetes-validations:
+                              - message: an id or name must be provided
+                                rule: has(self.id) || has(self.name)
+                            type: array
                           securityGroups:
                             description: securityGroups is a set of VPCSecurityGroup's
                               which define the VPC Security Groups that manage traffic
