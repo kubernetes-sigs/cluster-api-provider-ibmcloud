@@ -4977,6 +4977,38 @@ func TestCreateDHCPServer(t *testing.T) {
 		g.Expect(dhcpID).To(Equal("dhcp-id"))
 		g.Expect(netID).To(Equal("net-id"))
 	})
+
+	t.Run("When CreateDHCPServer succeeds with CloudConnectionID set", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		cloudConnID := "cloud-conn-uuid-1234"
+		clusterScope := ClusterScope{
+			IBMPowerVSClient: mockPowerVS,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					Network: infrav1.NetworkSource{
+						Provision: infrav1.NetworkProvisionConfig{
+							DHCPServer: infrav1.DHCPServer{
+								CloudConnectionID: cloudConnID,
+							},
+						},
+					},
+				},
+			},
+		}
+		dhcpServer := &models.DHCPServer{
+			ID:      ptr.To("dhcp-id-2"),
+			Network: &models.DHCPServerNetwork{ID: ptr.To("net-id-2"), Name: ptr.To("net-name-2")},
+		}
+		mockPowerVS.EXPECT().CreateDHCPServer(gomock.Any(), gomock.Cond(func(x *models.DHCPServerCreate) bool {
+			return x != nil && x.CloudConnectionID != nil && *x.CloudConnectionID == cloudConnID
+		})).Return(dhcpServer, nil)
+		dhcpID, netID, err := clusterScope.createDHCPServer(ctx, "my-dhcp-2")
+		g.Expect(err).To(BeNil())
+		g.Expect(dhcpID).To(Equal("dhcp-id-2"))
+		g.Expect(netID).To(Equal("net-id-2"))
+	})
 }
 
 func TestReconcileVPC(t *testing.T) {
