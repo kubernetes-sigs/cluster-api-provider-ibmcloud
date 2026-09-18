@@ -485,6 +485,7 @@ func autoConvert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(in *v1beta3.DHCPServer
 		return err
 	}
 	// WARNING: in.Snat requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.DHCPSnatPolicy vs *bool)
+	// WARNING: in.CloudConnectionID requires manual conversion: does not exist in peer-type
 	return nil
 }
 
