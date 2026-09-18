@@ -795,6 +795,7 @@ func autoConvert_v1beta2_VPCLoadBalancerSpec_To_v1beta1_VPCLoadBalancerSpec(in *
 	// WARNING: in.BackendPools requires manual conversion: does not exist in peer-type
 	// WARNING: in.SecurityGroups requires manual conversion: does not exist in peer-type
 	// WARNING: in.Subnets requires manual conversion: does not exist in peer-type
+	// WARNING: in.Profile requires manual conversion: does not exist in peer-type
 	return nil
 }
 

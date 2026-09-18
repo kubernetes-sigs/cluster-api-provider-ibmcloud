@@ -790,6 +790,12 @@ type LoadBalancerProvision struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=15
 	Subnets []ResourceIdentifier `json:"subnets,omitempty"`
+
+	// profile defines the profile to use for this load balancer.
+	// Supported values are "application" and "network-fixed".
+	// When omitted, the IBM Cloud default (application) is used.
+	// +optional
+	Profile *string `json:"profile,omitempty"`
 }
 
 // AdditionalListener defines the desired state of an
