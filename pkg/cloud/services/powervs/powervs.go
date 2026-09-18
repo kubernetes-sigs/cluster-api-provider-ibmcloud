@@ -37,6 +37,7 @@ type PowerVS interface {
 	GetImage(ctx context.Context, id string) (*models.Image, error)
 	DeleteImage(ctx context.Context, id string) error
 	ListImages(ctx context.Context) (*models.Images, error)
+	ListStockImages(ctx context.Context) (*models.Images, error)
 	GetJob(ctx context.Context, id string) (*models.Job, error)
 	DeleteJob(ctx context.Context, id string) error
 
