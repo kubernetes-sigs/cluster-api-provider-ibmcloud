@@ -628,6 +628,11 @@ func (src *IBMPowerVSMachine) ConvertTo(dstRaw conversion.Hub) error {
 	if err != nil {
 		return err
 	}
+	if ok {
+		// Restore the full Image spec from the annotation so that v1beta3-only fields
+		// (e.g. StockImage) are not lost across a hub→spoke→hub round-trip.
+		dst.Spec.Image = restored.Spec.Image
+	}
 	initialization := infrav1.IBMPowerVSMachineInitializationStatus{}
 	clusterv1.Convert_bool_To_Pointer_bool(src.Status.Ready, ok, restored.Status.Initialization.Provisioned, &initialization.Provisioned)
 	if !reflect.DeepEqual(initialization, infrav1.IBMPowerVSMachineInitializationStatus{}) {
@@ -665,6 +670,9 @@ func (src *IBMPowerVSMachineTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	}
 	if ok {
 		dst.Status = restored.Status
+		// Restore the full Image spec from the annotation so that v1beta3-only fields
+		// (e.g. StockImage) are not lost across a hub→spoke→hub round-trip.
+		dst.Spec.Template.Spec.Image = restored.Spec.Template.Spec.Image
 	}
 	return nil
 }
@@ -1020,6 +1028,17 @@ func Convert_v1beta3_IBMPowerVSMachineSpec_To_v1beta2_IBMPowerVSMachineSpec(in *
 		}
 		if in.Image.Reference.Name != "" {
 			out.Image.Name = ptr.To(in.Image.Reference.Name)
+		}
+		out.ImageRef = nil
+	case infrav1.ImageSourceTypeStockImage:
+		// v1beta3 StockImage has no dedicated v1beta2 concept; map the identifier
+		// into the v1beta2 Image field so the controller can still resolve it.
+		out.Image = &IBMPowerVSResourceReference{}
+		if in.Image.StockImage.ID != "" {
+			out.Image.ID = ptr.To(in.Image.StockImage.ID)
+		}
+		if in.Image.StockImage.Name != "" {
+			out.Image.Name = ptr.To(in.Image.StockImage.Name)
 		}
 		out.ImageRef = nil
 	default:

@@ -998,29 +998,45 @@ func hubIBMPowerVSMachineSpec(in *infrav1.IBMPowerVSMachineSpec, c randfill.Cont
 	c.FillNoCustom(in)
 
 	// Constrain Image.Type to valid values and enforce xvalidation rules:
-	// - Reference: must have Reference set, Import must be empty
-	// - Import: must have Import set, Reference must be empty
+	// - Reference:   must have Reference set;  Import and StockImage must be empty
+	// - Import:      must have Import set;      Reference and StockImage must be empty
+	// - StockImage:  must have StockImage set;  Reference and Import must be empty
 	switch in.Image.Type {
 	case infrav1.ImageSourceTypeReference:
 		in.Image.Import = infrav1.ImageReference{}
+		in.Image.StockImage = infrav1.ResourceIdentifier{}
 		// Ensure Reference has at least one identifier
 		if in.Image.Reference.ID == "" && in.Image.Reference.Name == "" {
 			in.Image.Reference.ID = "fuzzed-image-id"
 		}
 	case infrav1.ImageSourceTypeImport:
 		in.Image.Reference = infrav1.ResourceIdentifier{}
+		in.Image.StockImage = infrav1.ResourceIdentifier{}
 		// Ensure Import has a name
 		if in.Image.Import.Name == "" {
 			in.Image.Import.Name = "fuzzed-image-ref"
 		}
+	case infrav1.ImageSourceTypeStockImage:
+		in.Image.Reference = infrav1.ResourceIdentifier{}
+		in.Image.Import = infrav1.ImageReference{}
+		// Ensure StockImage has at least one identifier
+		if in.Image.StockImage.ID == "" && in.Image.StockImage.Name == "" {
+			in.Image.StockImage.ID = "fuzzed-stock-image-id"
+		}
 	default:
-		// Unknown type: pick Reference if there is reference data, Import if there is import data
+		// Unknown type: pick the first type whose field has data, else fall back to Reference
 		if in.Image.Import.Name != "" {
 			in.Image.Type = infrav1.ImageSourceTypeImport
 			in.Image.Reference = infrav1.ResourceIdentifier{}
+			in.Image.StockImage = infrav1.ResourceIdentifier{}
+		} else if in.Image.StockImage.ID != "" || in.Image.StockImage.Name != "" {
+			in.Image.Type = infrav1.ImageSourceTypeStockImage
+			in.Image.Reference = infrav1.ResourceIdentifier{}
+			in.Image.Import = infrav1.ImageReference{}
 		} else if in.Image.Reference.ID != "" || in.Image.Reference.Name != "" {
 			in.Image.Type = infrav1.ImageSourceTypeReference
 			in.Image.Import = infrav1.ImageReference{}
+			in.Image.StockImage = infrav1.ResourceIdentifier{}
 		} else {
 			// Fall back to a minimal Reference image
 			in.Image = infrav1.IBMPowerVSMachineImage{
