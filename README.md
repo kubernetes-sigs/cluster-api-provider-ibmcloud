@@ -45,12 +45,12 @@ cluster on IBM Cloud.
 
 This provider's versions are compatible with the following versions of Cluster API:
 
-| CAPIBM Release                  | Cluster API v1alpha4 (v0.4) | Cluster API v1beta1 (v1.1.x – v1.10.x) | Cluster API v1beta2 (v1.11.x – v1.13.x+) |
+| CAPIBM Release                  | Cluster API v1alpha4 (v0.4) | Cluster API v1beta1 (v1.1.x – v1.10.x) | Cluster API v1beta2 (v1.11.x – v1.12.x+) |
 |:--------------------------------|:-----------:|:-----------:|:-----------:|
 | v0.1.x _(EOL)_                  | ✓           |             |             |
 | v0.2.x – v0.3.x _(EOL)_        |             | ✓           |             |
-| v0.[4-13].x _(EOL)_             |             | ✓           |             |
-| **v0.[14-16].x, main** ✅       |             |             | ✓           |
+| v0.[4-12].x _(EOL)_             |             | ✓           |             |
+| **v0.[13-15].x, main**          |             |             | ✓           |
 
 See the [Version Support Policy][capibm-versions] for the full release matrix, Kubernetes
 version compatibility, and API lifecycle details.
