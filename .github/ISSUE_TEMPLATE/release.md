@@ -12,8 +12,7 @@ title: Release tracker for v<>
 After every CAPIBM major version release:
 - [ ] Update Infrastructure Provider version in [metadata.yaml](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/metadata.yaml) and [e2e test config files](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/tree/main/test/e2e/config)
 - [ ] [Update release branch versions for weekly security scan](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/.github/workflows/weekly-security-scan.yaml#L16)
-- [ ] [Update release support data in docs](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/docs/book/src/developer/release-support-guidelines.md)
-- [ ] [Update docs with reference to latest release](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/README.md#compatibility-with-cluster-api-and-kubernetes-versions)
+- [ ] Update version support policy and compatibility matrix [README.md](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/README.md#compatibility-with-cluster-api-and-kubernetes-versions) and [docs/book/src/reference/versions.md](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/docs/book/src/reference/versions.md)
 - [ ] Update and add documentation link for new release branch in Netlify
 - [ ] [Update capibmadm tool to the latest version after each new release](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/docs/book/src/topics/capibmadm/index.md)
 - [ ] Update IBM Cloud CLI and Power IAAS plugin versions in [ci-e2e.sh](https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/blob/main/hack/scripts/ci/ci-e2e.sh) (`IBMCLOUD_CLI_VERSION`, `POWER_PLUGIN_VERSION`)
