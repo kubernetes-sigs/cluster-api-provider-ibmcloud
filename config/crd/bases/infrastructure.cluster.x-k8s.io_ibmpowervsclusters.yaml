@@ -130,6 +130,25 @@ spec:
                       service
                     type: boolean
                 type: object
+              dhcpSubnet:
+                description: |-
+                  dhcpSubnet contains the configuration for creating a PowerVS network with DHCP natively
+                  enabled (NetworkCreate.EnableDHCP). This is the v1beta2 representation of the v1beta3
+                  DHCPSubnet field and is used to preserve the configuration across version conversion.
+                  Mutually exclusive with dhcpServer.
+                properties:
+                  cidr:
+                    description: cidr is the network CIDR (e.g. 192.168.0.0/24).
+                    type: string
+                  dnsServers:
+                    description: dnsServers is the list of DNS servers for the network.
+                    items:
+                      type: string
+                    type: array
+                  name:
+                    description: name is the name of the PowerVS network to be created.
+                    type: string
+                type: object
               ignition:
                 description: Ignition defined options related to the bootstrapping
                   systems where Ignition is used.
@@ -1654,13 +1673,16 @@ spec:
                 description: network specifies how the PowerVS network should be sourced.
                 properties:
                   provision:
-                    description: provision provides the configuration for the controller
-                      to CREATE a new Network and DHCP Server.
+                    description: |-
+                      provision provides the configuration for the controller to CREATE a new Network.
+                      Exactly one of dhcpServer or dhcpSubnet must be set when type is Provision.
                     minProperties: 1
                     properties:
                       dhcpServer:
-                        description: dhcpServer contains the configuration for the
-                          DHCP server that will be created.
+                        description: |-
+                          dhcpServer contains the configuration for creating a new DHCP server (and its associated
+                          private network) via the PowerVS DHCP service API.
+                          Mutually exclusive with dhcpSubnet.
                         minProperties: 1
                         properties:
                           cidr:
@@ -1692,7 +1714,46 @@ spec:
                             - Disabled
                             type: string
                         type: object
+                      dhcpSubnet:
+                        description: |-
+                          dhcpSubnet contains the configuration for creating a plain PowerVS network with DHCP
+                          natively enabled (NetworkCreate.EnableDHCP). This avoids creating a separate DHCP server
+                          resource and is the preferred approach for new clusters.
+                          Mutually exclusive with dhcpServer.
+                        minProperties: 1
+                        properties:
+                          cidr:
+                            description: cidr is the network CIDR in notation (e.g.
+                              192.168.0.0/24).
+                            maxLength: 49
+                            minLength: 1
+                            pattern: ^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$
+                            type: string
+                          dnsServers:
+                            description: |-
+                              dnsServers is the list of DNS servers for the network.
+                              If omitted, defaults to 127.0.0.1 for private (vlan) networks.
+                            items:
+                              maxLength: 45
+                              type: string
+                            maxItems: 2
+                            type: array
+                            x-kubernetes-list-type: atomic
+                          name:
+                            description: |-
+                              name is the name of the PowerVS network to be created.
+                              If omitted, the name will default to <CLUSTER_NAME>-dhcpsubnet.
+                              Only alphanumeric characters, dashes, and underscores are allowed.
+                            maxLength: 128
+                            minLength: 1
+                            pattern: ^[a-zA-Z0-9-_][a-zA-Z0-9-_]*$
+                            type: string
+                        type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: dhcpServer and dhcpSubnet are mutually exclusive; set
+                        exactly one
+                      rule: '!(has(self.dhcpServer) && has(self.dhcpSubnet))'
                   reference:
                     description: reference tells the controller to look up an EXISTING
                       PowerVS network.
