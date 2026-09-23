@@ -817,6 +817,12 @@ func convertV1beta2NetworkToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMP
 		return nil
 	}
 
+	// DHCPSubnet takes priority over DHCPServer when both are somehow set (shouldn't happen).
+	if in.DHCPSubnet != nil {
+		out.Network.Type = infrav1.SourceTypeProvision
+		return Convert_v1beta2_DHCPSubnet_To_v1beta3_DHCPSubnet(in.DHCPSubnet, &out.Network.Provision.DHCPSubnet, nil)
+	}
+
 	if in.DHCPServer == nil {
 		return nil
 	}
@@ -897,12 +903,24 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 		}
 		out.DHCPServer = nil
 	case infrav1.SourceTypeProvision:
-		// Convert provision to DHCPServer
-		dhcp := &DHCPServer{}
-		if err := Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(&in.Network.Provision.DHCPServer, dhcp, nil); err != nil {
-			return err
+		// If DHCPSubnet fields are set, use the DHCPSubnet path; otherwise fall back to DHCPServer.
+		prov := in.Network.Provision
+		isDHCPSubnetPath := prov.DHCPSubnet.Name != "" || prov.DHCPSubnet.CIDR != "" || len(prov.DHCPSubnet.DNSServers) > 0
+		if isDHCPSubnetPath {
+			sub := &DHCPSubnet{}
+			if err := Convert_v1beta3_DHCPSubnet_To_v1beta2_DHCPSubnet(&prov.DHCPSubnet, sub, nil); err != nil {
+				return err
+			}
+			out.DHCPSubnet = sub
+			out.DHCPServer = nil
+		} else {
+			dhcp := &DHCPServer{}
+			if err := Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(&in.Network.Provision.DHCPServer, dhcp, nil); err != nil {
+				return err
+			}
+			out.DHCPServer = dhcp
+			out.DHCPSubnet = nil
 		}
-		out.DHCPServer = dhcp
 		// Clear network reference when provisioning
 		out.Network.ID = nil
 		out.Network.Name = nil
@@ -1948,6 +1966,36 @@ func Convert_v1beta3_VPCSecurityGroupStatus_To_v1beta2_VPCSecurityGroupStatus(in
 		if in.Rules[i].ID != "" {
 			out.RuleIDs = append(out.RuleIDs, ptr.To(in.Rules[i].ID))
 		}
+	}
+	return nil
+}
+
+// Convert_v1beta2_DHCPSubnet_To_v1beta3_DHCPSubnet handles the conversion from v1beta2 to v1beta3 DHCPSubnet.
+func Convert_v1beta2_DHCPSubnet_To_v1beta3_DHCPSubnet(in *DHCPSubnet, out *infrav1.DHCPSubnet, _ apimachineryconversion.Scope) error {
+	if in.Name != nil {
+		out.Name = *in.Name
+	}
+	if in.Cidr != nil {
+		out.CIDR = *in.Cidr
+	}
+	if len(in.DNSServers) > 0 {
+		out.DNSServers = make([]string, len(in.DNSServers))
+		copy(out.DNSServers, in.DNSServers)
+	}
+	return nil
+}
+
+// Convert_v1beta3_DHCPSubnet_To_v1beta2_DHCPSubnet handles the conversion from v1beta3 to v1beta2 DHCPSubnet.
+func Convert_v1beta3_DHCPSubnet_To_v1beta2_DHCPSubnet(in *infrav1.DHCPSubnet, out *DHCPSubnet, _ apimachineryconversion.Scope) error {
+	if in.Name != "" {
+		out.Name = ptr.To(in.Name)
+	}
+	if in.CIDR != "" {
+		out.Cidr = ptr.To(in.CIDR)
+	}
+	if len(in.DNSServers) > 0 {
+		out.DNSServers = make([]string, len(in.DNSServers))
+		copy(out.DNSServers, in.DNSServers)
 	}
 	return nil
 }

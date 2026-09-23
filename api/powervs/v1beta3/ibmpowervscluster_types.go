@@ -535,17 +535,29 @@ type NetworkSource struct {
 	// +optional
 	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
 
-	// provision provides the configuration for the controller to CREATE a new Network and DHCP Server.
+	// provision provides the configuration for the controller to CREATE a new Network.
+	// Exactly one of dhcpServer or dhcpSubnet must be set when type is Provision.
 	// +optional
 	Provision NetworkProvisionConfig `json:"provision,omitempty,omitzero"`
 }
 
 // NetworkProvisionConfig defines the parameters for creating a new PowerVS Network.
+// Exactly one of dhcpServer or dhcpSubnet must be populated.
 // +kubebuilder:validation:MinProperties=1
+// +kubebuilder:validation:XValidation:rule="!(has(self.dhcpServer) && has(self.dhcpSubnet))",message="dhcpServer and dhcpSubnet are mutually exclusive; set exactly one"
 type NetworkProvisionConfig struct {
-	// dhcpServer contains the configuration for the DHCP server that will be created.
+	// dhcpServer contains the configuration for creating a new DHCP server (and its associated
+	// private network) via the PowerVS DHCP service API.
+	// Mutually exclusive with dhcpSubnet.
 	// +optional
 	DHCPServer DHCPServer `json:"dhcpServer,omitempty,omitzero"`
+
+	// dhcpSubnet contains the configuration for creating a plain PowerVS network with DHCP
+	// natively enabled (NetworkCreate.EnableDHCP). This avoids creating a separate DHCP server
+	// resource and is the preferred approach for new clusters.
+	// Mutually exclusive with dhcpServer.
+	// +optional
+	DHCPSubnet DHCPSubnet `json:"dhcpSubnet,omitempty,omitzero"`
 }
 
 // DHCPServer contains the configuration for a NEW DHCP server.
@@ -577,6 +589,36 @@ type DHCPServer struct {
 	// +optional
 	// +kubebuilder:validation:Enum=Enabled;Disabled
 	Snat DHCPSnatPolicy `json:"snat,omitempty"`
+}
+
+// DHCPSubnet contains the configuration for creating a PowerVS network with DHCP natively
+// enabled via NetworkCreate.EnableDHCP. Unlike DHCPServer, this path does not create a
+// separate DHCP server resource.
+// +kubebuilder:validation:MinProperties=1
+type DHCPSubnet struct {
+	// name is the name of the PowerVS network to be created.
+	// If omitted, the name will default to <CLUSTER_NAME>-dhcpsubnet.
+	// Only alphanumeric characters, dashes, and underscores are allowed.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	// +kubebuilder:validation:Pattern=`^[a-zA-Z0-9-_][a-zA-Z0-9-_]*$`
+	Name string `json:"name,omitempty"`
+
+	// cidr is the network CIDR in notation (e.g. 192.168.0.0/24).
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=49
+	// +kubebuilder:validation:Pattern=`^([0-9]{1,3}\.){3}[0-9]{1,3}($|/[0-9]{1,2})$`
+	CIDR string `json:"cidr,omitempty"`
+
+	// dnsServers is the list of DNS servers for the network.
+	// If omitted, defaults to 127.0.0.1 for private (vlan) networks.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=2
+	// +kubebuilder:validation:items:MaxLength=45
+	DNSServers []string `json:"dnsServers,omitempty"`
 }
 
 // NetworkStatus defines the observed state of the PowerVS network and its associated components.
