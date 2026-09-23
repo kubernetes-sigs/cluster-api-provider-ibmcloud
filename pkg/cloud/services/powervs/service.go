@@ -153,6 +153,11 @@ func (s *Service) GetCosImages(_ context.Context, id string) (*models.Job, error
 	return resp.Payload, nil
 }
 
+// CreateNetwork creates a new network in the Power VS service instance.
+func (s *Service) CreateNetwork(_ context.Context, body *models.NetworkCreate) (*models.Network, error) {
+	return s.networkClient.Create(body)
+}
+
 // ListNetworks returns all the networks in the Power VS service instance.
 func (s *Service) ListNetworks(_ context.Context) (*models.Networks, error) {
 	return s.networkClient.GetAll()
@@ -161,6 +166,11 @@ func (s *Service) ListNetworks(_ context.Context) (*models.Networks, error) {
 // GetNetworkByID returns network corresponding to given id.
 func (s *Service) GetNetworkByID(_ context.Context, id string) (*models.Network, error) {
 	return s.networkClient.Get(id)
+}
+
+// DeleteNetwork deletes the network with the given id from the Power VS service instance.
+func (s *Service) DeleteNetwork(_ context.Context, id string) error {
+	return s.networkClient.Delete(id)
 }
 
 // GetNetworkByName fetches the network with name. If not found, returns nil.
