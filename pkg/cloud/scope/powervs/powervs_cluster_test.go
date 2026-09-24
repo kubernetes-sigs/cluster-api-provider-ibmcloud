@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	infravpcv1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	mockcos "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/cos/mock"
 	mockP "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/powervs/mock"
 	mockRC "sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/resourcecontroller/mock"
@@ -11359,5 +11360,238 @@ func TestCreateVPCSecurityGroupRulesIdempotency(t *testing.T) {
 		ruleIDs, err := clusterScope.createVPCSecurityGroupRules(ctx, specRules, "sg-id", existingRules)
 		g.Expect(err).To(BeNil())
 		g.Expect(ruleIDs).To(Equal([]string{"new-rule-id"}))
+	})
+}
+
+func TestReconcileVPCRoutingTables(t *testing.T) {
+	var (
+		mockVPC  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	rtID   := "rt-id-abc123"
+	rtName := "my-routing-table"
+	vpcID  := "vpc-id-xyz"
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVPC = mock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() {
+		mockCtrl.Finish()
+	}
+
+	t.Run("No routing tables in spec — no-op returns false,nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec:   infrav1.IBMPowerVSClusterSpec{},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Routing table has neither id nor name — returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("VPC ID not in status — returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{Name: ptr.To(rtName)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{},
+			},
+		}
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Lookup by ID — GetVPCRoutingTable returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{ID: ptr.To(rtID)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTable(gomock.Any()).Return(nil, nil, errors.New("api error"))
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Lookup by ID — routing table is stable, returns ready=true no requeue", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{ID: ptr.To(rtID)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		stableState := string(vpcv1.RoutingTableLifecycleStateStableConst)
+		mockVPC.EXPECT().GetVPCRoutingTable(gomock.Any()).Return(&vpcv1.RoutingTable{
+			ID:             ptr.To(rtID),
+			Name:           ptr.To(rtName),
+			LifecycleState: ptr.To(stableState),
+		}, nil, nil)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables).To(HaveLen(1))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables[0].Ready).To(BeTrue())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables[0].ID).To(Equal(rtID))
+	})
+
+	t.Run("Lookup by ID — routing table is pending, returns requeue=true", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{ID: ptr.To(rtID)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTable(gomock.Any()).Return(&vpcv1.RoutingTable{
+			ID:             ptr.To(rtID),
+			Name:           ptr.To(rtName),
+			LifecycleState: ptr.To("pending"),
+		}, nil, nil)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables[0].Ready).To(BeFalse())
+	})
+
+	t.Run("Lookup by name — GetVPCRoutingTableByName returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{Name: ptr.To(rtName)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, errors.New("lookup error"))
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Lookup by name — routing table exists and is stable", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{Name: ptr.To(rtName)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		stableState := string(vpcv1.RoutingTableLifecycleStateStableConst)
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(&vpcv1.RoutingTable{
+			ID:             ptr.To(rtID),
+			Name:           ptr.To(rtName),
+			LifecycleState: ptr.To(stableState),
+		}, nil)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables).To(HaveLen(1))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables[0].Name).To(Equal(rtName))
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables[0].Ready).To(BeTrue())
+	})
+
+	t.Run("Lookup by name — not found, CreateVPCRoutingTable returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{Name: ptr.To(rtName)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, nil)
+		mockVPC.EXPECT().CreateVPCRoutingTable(gomock.Any()).Return(nil, nil, errors.New("create failed"))
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Lookup by name — not found, created successfully, requeue=true", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infravpcv1beta2.VPCRoutingTable{{Name: ptr.To(rtName)}},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, nil)
+		mockVPC.EXPECT().CreateVPCRoutingTable(gomock.Any()).Return(&vpcv1.RoutingTable{
+			ID:   ptr.To(rtID),
+			Name: ptr.To(rtName),
+		}, nil, nil)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+		// Status is nil for newly-created table (populated on next reconcile)
+		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables).To(BeEmpty())
 	})
 }

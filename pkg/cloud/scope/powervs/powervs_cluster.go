@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 
 	infrav1 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3"
+	infravpcv1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/endpoints"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/accounts"
 	"sigs.k8s.io/cluster-api-provider-ibmcloud/pkg/cloud/services/authenticator"
@@ -1930,6 +1931,152 @@ func (s *ClusterScope) checkLoadBalancerState(ctx context.Context, lb vpcv1.Load
 		log.V(3).Info("Load balancer is in updating state")
 	}
 	return false
+}
+
+// ReconcileVPCRoutingTables evaluates user intent and reconciles all VPC routing tables.
+// It is a no-op when no routing tables are specified in the spec.
+func (s *ClusterScope) ReconcileVPCRoutingTables(ctx context.Context) (bool, error) {
+	if len(s.IBMPowerVSCluster.Spec.VPCRoutingTables) == 0 {
+		return false, nil
+	}
+
+	vpcID := s.IBMPowerVSCluster.Status.VPC.ID
+	if vpcID == "" {
+		return false, fmt.Errorf("VPC ID not available in status; VPC must be reconciled before routing tables")
+	}
+
+	requeue := false
+	var updatedStatus []infrav1.VPCRoutingTableStatus
+
+	for _, rt := range s.IBMPowerVSCluster.Spec.VPCRoutingTables {
+		status, requiresRequeue, err := s.reconcileVPCRoutingTable(ctx, vpcID, rt)
+		if err != nil {
+			return false, err
+		}
+		if requiresRequeue {
+			requeue = true
+		}
+		if status != nil {
+			updatedStatus = append(updatedStatus, *status)
+		}
+	}
+
+	s.IBMPowerVSCluster.Status.VPCRoutingTables = updatedStatus
+	return requeue, nil
+}
+
+// reconcileVPCRoutingTable reconciles a single VPC Routing Table for an IBMPowerVSCluster.
+// It looks up by ID then name, creates if absent, and returns the status and whether a requeue is needed.
+func (s *ClusterScope) reconcileVPCRoutingTable(ctx context.Context, vpcID string, routingTable infravpcv1beta2.VPCRoutingTable) (*infrav1.VPCRoutingTableStatus, bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	if routingTable.ID == nil && routingTable.Name == nil {
+		return nil, false, fmt.Errorf("routing table has no id or name; one is required")
+	}
+
+	// Look up by ID if provided.
+	if routingTable.ID != nil {
+		rtDetails, _, err := s.IBMVPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
+			VPCID: &vpcID,
+			ID:    routingTable.ID,
+		})
+		if err != nil {
+			return nil, false, fmt.Errorf("error retrieving routing table by id %s: %w", *routingTable.ID, err)
+		}
+		if rtDetails == nil || rtDetails.ID == nil {
+			return nil, false, fmt.Errorf("routing table with id %s not found", *routingTable.ID)
+		}
+		ready := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
+		return &infrav1.VPCRoutingTableStatus{
+			ID:    *rtDetails.ID,
+			Name:  ptr.Deref(rtDetails.Name, ""),
+			Ready: ready,
+		}, !ready, nil
+	}
+
+	// Look up by name.
+	rtDetails, err := s.IBMVPCClient.GetVPCRoutingTableByName(vpcID, *routingTable.Name)
+	if err != nil {
+		return nil, false, fmt.Errorf("error retrieving routing table by name %s: %w", *routingTable.Name, err)
+	}
+	if rtDetails != nil {
+		ready := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
+		return &infrav1.VPCRoutingTableStatus{
+			ID:    *rtDetails.ID,
+			Name:  ptr.Deref(rtDetails.Name, ""),
+			Ready: ready,
+		}, !ready, nil
+	}
+
+	// Not found — create it.
+	log.V(3).Info("creating VPC routing table", "name", *routingTable.Name)
+	if err := s.createVPCRoutingTable(ctx, vpcID, routingTable); err != nil {
+		return nil, false, err
+	}
+	log.V(3).Info("VPC routing table created, requeueing to await stable state", "name", *routingTable.Name)
+	// Return nil status here; next reconcile will populate it via the lookup-by-name path above.
+	return nil, true, nil
+}
+
+// createVPCRoutingTable creates a new VPC Routing Table using the provided spec.
+func (s *ClusterScope) createVPCRoutingTable(ctx context.Context, vpcID string, routingTable infravpcv1beta2.VPCRoutingTable) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	options := &vpcv1.CreateVPCRoutingTableOptions{
+		VPCID: &vpcID,
+		Name:  routingTable.Name,
+	}
+	if routingTable.RouteDirectLinkIngress != nil {
+		options.RouteDirectLinkIngress = routingTable.RouteDirectLinkIngress
+	}
+	if routingTable.RouteTransitGatewayIngress != nil {
+		options.RouteTransitGatewayIngress = routingTable.RouteTransitGatewayIngress
+	}
+	if routingTable.RouteVPCZoneIngress != nil {
+		options.RouteVPCZoneIngress = routingTable.RouteVPCZoneIngress
+	}
+	if len(routingTable.AdvertiseRoutesTo) > 0 {
+		options.AdvertiseRoutesTo = routingTable.AdvertiseRoutesTo
+	}
+	if len(routingTable.Routes) > 0 {
+		routes, err := buildRoutingTableRoutes(routingTable.Routes)
+		if err != nil {
+			return fmt.Errorf("error building routing table routes: %w", err)
+		}
+		options.Routes = routes
+	}
+
+	rtDetails, _, err := s.IBMVPCClient.CreateVPCRoutingTable(options)
+	if err != nil {
+		log.V(3).Error(err, "error creating VPC routing table", "name", routingTable.Name)
+		return fmt.Errorf("error creating VPC routing table: %w", err)
+	}
+	if rtDetails == nil || rtDetails.ID == nil {
+		return fmt.Errorf("nil response creating VPC routing table %v", routingTable.Name)
+	}
+	return nil
+}
+
+// buildRoutingTableRoutes converts VPCRoutingTableRoute spec entries to IBM Cloud SDK RoutePrototype values.
+func buildRoutingTableRoutes(routes []infravpcv1beta2.VPCRoutingTableRoute) ([]vpcv1.RoutePrototype, error) {
+	sdkRoutes := make([]vpcv1.RoutePrototype, 0, len(routes))
+	for _, r := range routes {
+		route := vpcv1.RoutePrototype{
+			Action:      ptr.To(r.Action),
+			Destination: ptr.To(r.Destination),
+			Name:        r.Name,
+			Zone: &vpcv1.ZoneIdentityByName{
+				Name: ptr.To(r.Zone),
+			},
+		}
+		if r.NextHop != nil {
+			route.NextHop = &vpcv1.RouteNextHopPrototypeRouteNextHopIPRouteNextHopIPUnicastIP{
+				Address: r.NextHop,
+			}
+		}
+		sdkRoutes = append(sdkRoutes, route)
+	}
+	return sdkRoutes, nil
 }
 
 // ReconcileVPCSecurityGroups evaluates user intent and reconciles all VPC security groups.
