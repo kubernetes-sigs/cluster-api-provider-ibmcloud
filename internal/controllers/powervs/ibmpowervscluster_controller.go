@@ -355,6 +355,23 @@ func (r *IBMPowerVSClusterReconciler) reconcileVPCResources(ctx context.Context,
 	res.conditions = append(res.conditions, condition)
 	res.legacy = append(res.legacy, legacyCondition)
 
+	// reconcile VPC routing tables
+	log.Info("Reconciling VPC routing tables")
+	if requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx); err != nil {
+		condition, legacyCondition := r.buildConditions(infrav1.VPCRoutingTableReadyCondition, infrav1.VPCRoutingTableReadyV1Beta2Condition, metav1.ConditionFalse, infrav1.VPCRoutingTableReconciliationFailedReason, infrav1.VPCRoutingTableReconciliationFailedV1Beta2Reason, err.Error())
+		res.conditions = append(res.conditions, condition)
+		res.legacy = append(res.legacy, legacyCondition)
+		res.err = fmt.Errorf("failed to reconcile VPC routing tables: %w", err)
+		return res
+	} else if requeue {
+		log.Info("VPC routing table creation is pending")
+		res.requeue = true
+		return res
+	}
+	condition, legacyCondition = r.buildConditions(infrav1.VPCRoutingTableReadyCondition, infrav1.VPCRoutingTableReadyV1Beta2Condition, metav1.ConditionTrue, infrav1.VPCRoutingTableReadyReason, "", "")
+	res.conditions = append(res.conditions, condition)
+	res.legacy = append(res.legacy, legacyCondition)
+
 	// reconcile VPC security group
 	log.Info("Reconciling VPC security group")
 	if err := clusterScope.ReconcileVPCSecurityGroups(ctx); err != nil {

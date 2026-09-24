@@ -22,6 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	clusterv1 "sigs.k8s.io/cluster-api/api/core/v1beta2"
+
+	infravpcv1beta2 "sigs.k8s.io/cluster-api-provider-ibmcloud/api/vpc/v1beta2"
 )
 
 // ClusterTopology defines the external access architecture of the cluster.
@@ -166,6 +168,12 @@ type IBMPowerVSClusterSpec struct {
 	// +kubebuilder:validation:MaxItems=50
 	LoadBalancers []LoadBalancerSource `json:"loadBalancers,omitempty"`
 
+	// vpcRoutingTables defines the VPC Routing Tables that should exist or be created for the cluster's VPC.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
+	VPCRoutingTables []infravpcv1beta2.VPCRoutingTable `json:"vpcRoutingTables,omitempty"`
+
 	// vpcSecurityGroups defines the VPC Security Groups that should exist or be created.
 	// +optional
 	// +listType=atomic
@@ -230,6 +238,13 @@ type IBMPowerVSClusterStatus struct {
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=50
 	LoadBalancers []LoadBalancerStatus `json:"loadBalancers,omitempty"`
+
+	// vpcRoutingTables tracks the observed state of VPC Routing Tables for the cluster.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	VPCRoutingTables []VPCRoutingTableStatus `json:"vpcRoutingTables,omitempty"`
 
 	// vpcSecurityGroups tracks the live observed states of all managed or referenced VPC Security Groups.
 	// +optional
@@ -1256,6 +1271,25 @@ type VPCSecurityGroupRuleStatus struct {
 	// +kubebuilder:validation:MaxLength=64
 	// +kubebuilder:validation:Pattern=^[-0-9a-z_]+$
 	ID string `json:"id,omitempty"`
+}
+
+// VPCRoutingTableStatus tracks the observed state of a VPC Routing Table.
+type VPCRoutingTableStatus struct {
+	// id is the unique cloud identifier for this routing table.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	ID string `json:"id,omitempty"`
+
+	// name is the name of the routing table.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Name string `json:"name,omitempty"`
+
+	// ready indicates whether the routing table has reached a stable (active) state.
+	// +optional
+	Ready bool `json:"ready,omitempty"`
 }
 
 // GetConditions returns the observations of the operational state of the IBMPowerVSCluster resource.

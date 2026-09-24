@@ -462,6 +462,9 @@ func (s *ClusterScopeV2) GetServiceName(resourceType infrav1.ResourceType) *stri
 	case infrav1.ResourceTypeLoadBalancerPool:
 		// Generate a generic load balancer pool name based off the cluster name, which can be extended as necessary (for LB).
 		return ptr.To(fmt.Sprintf("%s-lbpool", s.IBMVPCCluster.Name))
+	case infrav1.ResourceTypeRoutingTable:
+		// Generate a generic routing table name based off the cluster name.
+		return ptr.To(fmt.Sprintf("%s-rt", s.IBMVPCCluster.Name))
 	default:
 		s.V(3).Info("unsupported resource type", "resourceType", resourceType)
 	}
@@ -613,6 +616,18 @@ func (s *ClusterScopeV2) SetResourceStatus(resourceType infrav1.ResourceType, re
 			securityGroup.Set(*resource)
 		} else {
 			s.IBMVPCCluster.Status.Network.SecurityGroups[*resource.Name] = resource
+		}
+	case infrav1.ResourceTypeRoutingTable:
+		if s.NetworkStatus() == nil {
+			s.IBMVPCCluster.Status.Network = &infrav1.VPCNetworkStatus{}
+		}
+		if s.IBMVPCCluster.Status.Network.RoutingTables == nil {
+			s.IBMVPCCluster.Status.Network.RoutingTables = make(map[string]*infrav1.ResourceStatus)
+		}
+		if routingTable, ok := s.IBMVPCCluster.Status.Network.RoutingTables[*resource.Name]; ok {
+			routingTable.Set(*resource)
+		} else {
+			s.IBMVPCCluster.Status.Network.RoutingTables[*resource.Name] = resource
 		}
 	default:
 		s.V(3).Info("unsupported resource type", "resourceType", resourceType)
@@ -1251,6 +1266,204 @@ func (s *ClusterScopeV2) findOrCreatePublicGateway(ctx context.Context, zone str
 	}
 
 	return publicGatewayDetails, nil
+}
+
+// ReconcileRoutingTables reconciles the VPC Routing Tables defined in the cluster spec.
+// Routing tables are reconciled after subnets so that they exist before any subnet attachment is attempted.
+func (s *ClusterScopeV2) ReconcileRoutingTables(ctx context.Context) (bool, error) {
+	// If no Routing Tables were specified, there is nothing to reconcile.
+	if len(s.NetworkSpec().RoutingTables) == 0 {
+		return false, nil
+	}
+
+	requeue := false
+	for _, routingTable := range s.NetworkSpec().RoutingTables {
+		if requiresRequeue, err := s.reconcileRoutingTable(ctx, routingTable); err != nil {
+			return false, fmt.Errorf("error failed reconciling routing table: %w", err)
+		} else if requiresRequeue {
+			requeue = true
+		}
+	}
+	return requeue, nil
+}
+
+// reconcileRoutingTable reconciles a single VPC Routing Table.
+// It checks if the routing table exists (by ID or name), creates it if necessary, and updates the cluster status.
+func (s *ClusterScopeV2) reconcileRoutingTable(ctx context.Context, routingTable infrav1.VPCRoutingTable) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	if routingTable.ID == nil && routingTable.Name == nil {
+		return false, fmt.Errorf("error routing table has no id or name, one is required")
+	}
+
+	// Check status first; if already tracked, verify it still exists and update status.
+	if s.NetworkStatus() != nil && s.NetworkStatus().RoutingTables != nil {
+		var rtName string
+		if routingTable.Name != nil {
+			rtName = *routingTable.Name
+		}
+		if existing, ok := s.NetworkStatus().RoutingTables[rtName]; ok && existing != nil {
+			rtDetails, _, err := s.VPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
+				VPCID: func() *string {
+					id, _ := s.GetVPCID()
+					return id
+				}(),
+				ID: &existing.ID,
+			})
+			if err != nil {
+				return false, fmt.Errorf("error retrieving existing routing table %s: %w", existing.ID, err)
+			}
+			if rtDetails == nil {
+				return false, fmt.Errorf("error failed to find existing routing table with id %s", existing.ID)
+			}
+			requeue := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState != string(vpcv1.RoutingTableLifecycleStateStableConst)
+			s.SetResourceStatus(infrav1.ResourceTypeRoutingTable, &infrav1.ResourceStatus{
+				ID:    *rtDetails.ID,
+				Name:  rtDetails.Name,
+				Ready: !requeue,
+			})
+			return requeue, nil
+		}
+	}
+
+	// If an ID was specified, look up by ID.
+	if routingTable.ID != nil {
+		vpcID, err := s.GetVPCID()
+		if err != nil {
+			return false, fmt.Errorf("error retrieving vpc id for routing table lookup: %w", err)
+		}
+		rtDetails, _, err := s.VPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
+			VPCID: vpcID,
+			ID:    routingTable.ID,
+		})
+		if err != nil {
+			return false, fmt.Errorf("error retrieving routing table by id %s: %w", *routingTable.ID, err)
+		}
+		if rtDetails == nil {
+			return false, fmt.Errorf("error failed to find routing table with id %s", *routingTable.ID)
+		}
+		requeue := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState != string(vpcv1.RoutingTableLifecycleStateStableConst)
+		s.SetResourceStatus(infrav1.ResourceTypeRoutingTable, &infrav1.ResourceStatus{
+			ID:    *rtDetails.ID,
+			Name:  rtDetails.Name,
+			Ready: !requeue,
+		})
+		return requeue, nil
+	}
+
+	// Attempt lookup by name.
+	vpcID, err := s.GetVPCID()
+	if err != nil {
+		return false, fmt.Errorf("error retrieving vpc id for routing table lookup: %w", err)
+	}
+	if vpcID == nil {
+		return false, fmt.Errorf("error vpc id not available for routing table lookup")
+	}
+	rtDetails, err := s.VPCClient.GetVPCRoutingTableByName(*vpcID, *routingTable.Name)
+	if err != nil {
+		return false, fmt.Errorf("error retrieving routing table by name %s: %w", *routingTable.Name, err)
+	}
+	if rtDetails != nil {
+		requeue := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState != string(vpcv1.RoutingTableLifecycleStateStableConst)
+		s.SetResourceStatus(infrav1.ResourceTypeRoutingTable, &infrav1.ResourceStatus{
+			ID:    *rtDetails.ID,
+			Name:  rtDetails.Name,
+			Ready: !requeue,
+		})
+		return requeue, nil
+	}
+
+	// Routing table not found — create it.
+	log.V(3).Info("creating routing table", "routingTableName", routingTable.Name)
+	if err := s.createRoutingTable(ctx, *vpcID, routingTable); err != nil {
+		return false, err
+	}
+	log.V(3).Info("successfully created routing table", "routingTableName", routingTable.Name)
+	// Requeue to wait for the routing table to become stable.
+	return true, nil
+}
+
+// createRoutingTable creates a new VPC Routing Table using the provided spec.
+func (s *ClusterScopeV2) createRoutingTable(ctx context.Context, vpcID string, routingTable infrav1.VPCRoutingTable) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	options := &vpcv1.CreateVPCRoutingTableOptions{
+		VPCID: &vpcID,
+		Name:  routingTable.Name,
+	}
+	if routingTable.RouteDirectLinkIngress != nil {
+		options.RouteDirectLinkIngress = routingTable.RouteDirectLinkIngress
+	}
+	if routingTable.RouteTransitGatewayIngress != nil {
+		options.RouteTransitGatewayIngress = routingTable.RouteTransitGatewayIngress
+	}
+	if routingTable.RouteVPCZoneIngress != nil {
+		options.RouteVPCZoneIngress = routingTable.RouteVPCZoneIngress
+	}
+	if len(routingTable.AdvertiseRoutesTo) > 0 {
+		options.AdvertiseRoutesTo = routingTable.AdvertiseRoutesTo
+	}
+
+	// Build any routes that were specified.
+	if len(routingTable.Routes) > 0 {
+		routes, err := s.buildRoutingTableRoutes(routingTable.Routes)
+		if err != nil {
+			return fmt.Errorf("error building routing table routes: %w", err)
+		}
+		options.Routes = routes
+	}
+
+	rtDetails, _, err := s.VPCClient.CreateVPCRoutingTable(options)
+	if err != nil {
+		log.V(3).Error(err, "error creating routing table", "routingTableName", routingTable.Name)
+		return fmt.Errorf("error failed to create routing table: %w", err)
+	}
+	if rtDetails == nil || rtDetails.ID == nil {
+		return fmt.Errorf("error failed creating routing table %s: nil response", func() string {
+			if routingTable.Name != nil {
+				return *routingTable.Name
+			}
+			return ""
+		}())
+	}
+
+	// Routing tables are not immediately stable; set ready=false and requeue.
+	s.SetResourceStatus(infrav1.ResourceTypeRoutingTable, &infrav1.ResourceStatus{
+		ID:    *rtDetails.ID,
+		Name:  rtDetails.Name,
+		Ready: false,
+	})
+
+	// Tag the routing table with the cluster name.
+	if rtDetails.CRN != nil {
+		if err := s.TagResource(s.IBMVPCCluster.Name, *rtDetails.CRN); err != nil {
+			return fmt.Errorf("error failed to tag routing table %s: %w", *rtDetails.ID, err)
+		}
+	}
+
+	return nil
+}
+
+// buildRoutingTableRoutes converts the API route prototypes from the cluster spec to the IBM Cloud SDK format.
+func (s *ClusterScopeV2) buildRoutingTableRoutes(routes []infrav1.VPCRoutingTableRoute) ([]vpcv1.RoutePrototype, error) {
+	sdkRoutes := make([]vpcv1.RoutePrototype, 0, len(routes))
+	for _, r := range routes {
+		route := vpcv1.RoutePrototype{
+			Action:      ptr.To(r.Action),
+			Destination: ptr.To(r.Destination),
+			Name:        r.Name,
+			Zone: &vpcv1.ZoneIdentityByName{
+				Name: ptr.To(r.Zone),
+			},
+		}
+		if r.NextHop != nil {
+			route.NextHop = &vpcv1.RouteNextHopPrototypeRouteNextHopIPRouteNextHopIPUnicastIP{
+				Address: r.NextHop,
+			}
+		}
+		sdkRoutes = append(sdkRoutes, route)
+	}
+	return sdkRoutes, nil
 }
 
 // ReconcileSecurityGroups will attempt to reconcile the defined SecurityGroups and their SecurityGroupRules. Our best option is to perform a first set of passes, creating all the SecurityGroups first, then reconcile the SecurityGroupRules after that, as the SecuirtyGroupRules could be dependent on an IBM Cloud Security Group that must be created first.
