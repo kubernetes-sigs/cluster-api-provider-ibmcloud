@@ -118,7 +118,9 @@ type VPCLoadBalancerSpec struct {
 type VPCLoadBalancerProfile string
 
 const (
-	VPCLoadBalancerProfileApplication  VPCLoadBalancerProfile = "application"
+	// VPCLoadBalancerProfileApplication is the application load balancer profile.
+	VPCLoadBalancerProfileApplication VPCLoadBalancerProfile = "application"
+	// VPCLoadBalancerProfileNetworkFixed is the network-fixed load balancer profile.
 	VPCLoadBalancerProfileNetworkFixed VPCLoadBalancerProfile = "network-fixed"
 )
 

@@ -398,6 +398,9 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 					in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePrivate {
 					in.LoadBalancers[i].Provision.Type = infrav1.LoadBalancerTypePrivate
 				}
+				// Profile is a v1beta3-only field; v1beta2 has no Profile concept.
+				// It does not survive the round-trip so clear it here.
+				in.LoadBalancers[i].Provision.Profile = ""
 				if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
 					in.LoadBalancers[i].Provision.AdditionalListeners = nil
 				}
@@ -428,6 +431,9 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 						in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePrivate {
 						in.LoadBalancers[i].Provision.Type = infrav1.LoadBalancerTypePrivate
 					}
+					// Profile is a v1beta3-only field; v1beta2 has no Profile concept.
+					// It does not survive the round-trip so clear it here.
+					in.LoadBalancers[i].Provision.Profile = ""
 					if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
 						in.LoadBalancers[i].Provision.AdditionalListeners = nil
 					}

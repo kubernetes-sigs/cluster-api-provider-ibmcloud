@@ -497,9 +497,11 @@ func (s *ClusterScope) CreateLoadBalancer() (*vpcv1.LoadBalancer, error) {
 	} else {
 		return nil, fmt.Errorf("error subnet required for load balancer creation")
 	}
-	options.SetProfile(&vpcv1.LoadBalancerProfileIdentityByName{
-		Name: ptr.To(string(*s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Profile)),
-	})
+	if s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Profile != nil {
+		options.SetProfile(&vpcv1.LoadBalancerProfileIdentityByName{
+			Name: ptr.To(string(*s.IBMVPCCluster.Spec.ControlPlaneLoadBalancer.Profile)),
+		})
+	}
 
 	options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
 		{
