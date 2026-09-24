@@ -2049,6 +2049,13 @@ func (s *ClusterScopeV2) createLoadBalancer(ctx context.Context, loadBalancer in
 		ID: &resourceGroupID,
 	})
 
+	// Set the Load Balancer Profile if defined
+	if loadBalancer.Profile != nil && *loadBalancer.Profile != "" {
+		options.SetProfile(&vpcv1.LoadBalancerProfileIdentityByName{
+			Name: ptr.To(string(*loadBalancer.Profile)),
+		})
+	}
+
 	// Build the load balancer's subnets, requiring subnet ID's.
 	subnetIDs, err := s.getLoadBalancerSubnetIDs(loadBalancer)
 	if err != nil {

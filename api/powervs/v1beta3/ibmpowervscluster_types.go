@@ -86,6 +86,18 @@ const (
 	LoadBalancerTypePrivate LoadBalancerType = "Private"
 )
 
+// PowerVSLoadBalancerProfile defines the profile for a VPC Load Balancer used with a PowerVS cluster.
+// +kubebuilder:validation:Enum=application;network-fixed
+type PowerVSLoadBalancerProfile string
+
+const (
+	// PowerVSLoadBalancerProfileApplication is the standard application load balancer profile.
+	PowerVSLoadBalancerProfileApplication PowerVSLoadBalancerProfile = "application"
+
+	// PowerVSLoadBalancerProfileNetworkFixed is the network-fixed (NLB) load balancer profile.
+	PowerVSLoadBalancerProfileNetworkFixed PowerVSLoadBalancerProfile = "network-fixed"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
@@ -790,6 +802,12 @@ type LoadBalancerProvision struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=15
 	Subnets []ResourceIdentifier `json:"subnets,omitempty"`
+
+	// profile defines the profile to use for this load balancer.
+	// Supported values are "application" and "network-fixed".
+	// When omitted, the IBM Cloud default (application) is used.
+	// +optional
+	Profile PowerVSLoadBalancerProfile `json:"profile,omitempty"`
 }
 
 // AdditionalListener defines the desired state of an
