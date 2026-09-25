@@ -54,13 +54,6 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	DHCPServer *DHCPServer `json:"dhcpServer,omitempty"`
 
-	// dhcpSubnet contains the configuration for creating a PowerVS network with DHCP natively
-	// enabled (NetworkCreate.EnableDHCP). This is the v1beta2 representation of the v1beta3
-	// DHCPSubnet field and is used to preserve the configuration across version conversion.
-	// Mutually exclusive with dhcpServer.
-	// +optional
-	DHCPSubnet *DHCPSubnet `json:"dhcpSubnet,omitempty"`
-
 	// ControlPlaneEndpoint represents the endpoint used to communicate with the control plane.
 	// +optional
 	ControlPlaneEndpoint clusterv1beta1.APIEndpoint `json:"controlPlaneEndpoint"`
@@ -179,22 +172,6 @@ type DHCPServer struct {
 	// Optional indicates if SNAT will be enabled for DHCP service
 	// +kubebuilder:default=true
 	Snat *bool `json:"snat,omitempty"`
-}
-
-// DHCPSubnet contains the configuration for creating a PowerVS network with DHCP natively
-// enabled via NetworkCreate.EnableDHCP. This is the v1beta2 counterpart of the v1beta3 DHCPSubnet type.
-type DHCPSubnet struct {
-	// name is the name of the PowerVS network to be created.
-	// +optional
-	Name *string `json:"name,omitempty"`
-
-	// cidr is the network CIDR (e.g. 192.168.0.0/24).
-	// +optional
-	Cidr *string `json:"cidr,omitempty"`
-
-	// dnsServers is the list of DNS servers for the network.
-	// +optional
-	DNSServers []string `json:"dnsServers,omitempty"`
 }
 
 // ResourceReference identifies a resource with id.
