@@ -45,6 +45,7 @@ variables:
   KUBERNETES_VERSION: "${KUBERNETES_VERSION:-v1.34.7}"
   # Below variable should be set based on the targeted environment
   SERVICE_ENDPOINT: "${SERVICE_ENDPOINT:-}"
+  IBMCLOUD_STAGING: "${IBMCLOUD_STAGING:-}"
   CUSTOM_KIND_NODE_IMAGE: ${CUSTOM_KIND_NODE_IMAGE:-}""
   # Cluster Addons
   CNI: "${PWD}/test/e2e/data/cni/calico/calico.yaml"
