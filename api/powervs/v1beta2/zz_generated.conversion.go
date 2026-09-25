@@ -240,11 +240,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddConversionFunc((*DHCPSubnet)(nil), (*v1beta3.DHCPSubnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta2_DHCPSubnet_To_v1beta3_DHCPSubnet(a.(*DHCPSubnet), b.(*v1beta3.DHCPSubnet), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddConversionFunc((*IBMPowerVSClusterSpec)(nil), (*v1beta3.IBMPowerVSClusterSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(a.(*IBMPowerVSClusterSpec), b.(*v1beta3.IBMPowerVSClusterSpec), scope)
 	}); err != nil {
@@ -357,11 +352,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddConversionFunc((*v1beta3.DHCPServer)(nil), (*DHCPServer)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(a.(*v1beta3.DHCPServer), b.(*DHCPServer), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddConversionFunc((*v1beta3.DHCPSubnet)(nil), (*DHCPSubnet)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta3_DHCPSubnet_To_v1beta2_DHCPSubnet(a.(*v1beta3.DHCPSubnet), b.(*DHCPSubnet), scope)
 	}); err != nil {
 		return err
 	}
@@ -498,24 +488,6 @@ func autoConvert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(in *v1beta3.DHCPServer
 	return nil
 }
 
-func autoConvert_v1beta2_DHCPSubnet_To_v1beta3_DHCPSubnet(in *DHCPSubnet, out *v1beta3.DHCPSubnet, s conversion.Scope) error {
-	if err := v1.Convert_Pointer_string_To_string(&in.Name, &out.Name, s); err != nil {
-		return err
-	}
-	// WARNING: in.Cidr requires manual conversion: does not exist in peer-type
-	out.DNSServers = *(*[]string)(unsafe.Pointer(&in.DNSServers))
-	return nil
-}
-
-func autoConvert_v1beta3_DHCPSubnet_To_v1beta2_DHCPSubnet(in *v1beta3.DHCPSubnet, out *DHCPSubnet, s conversion.Scope) error {
-	if err := v1.Convert_string_To_Pointer_string(&in.Name, &out.Name, s); err != nil {
-		return err
-	}
-	// WARNING: in.CIDR requires manual conversion: does not exist in peer-type
-	out.DNSServers = *(*[]string)(unsafe.Pointer(&in.DNSServers))
-	return nil
-}
-
 func autoConvert_v1beta2_IBMPowerVSCluster_To_v1beta3_IBMPowerVSCluster(in *IBMPowerVSCluster, out *v1beta3.IBMPowerVSCluster, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(&in.Spec, &out.Spec, s); err != nil {
@@ -596,7 +568,6 @@ func autoConvert_v1beta2_IBMPowerVSClusterSpec_To_v1beta3_IBMPowerVSClusterSpec(
 		return err
 	}
 	// WARNING: in.DHCPServer requires manual conversion: does not exist in peer-type
-	// WARNING: in.DHCPSubnet requires manual conversion: does not exist in peer-type
 	if err := Convert_v1beta1_APIEndpoint_To_v1beta3_APIEndpoint(&in.ControlPlaneEndpoint, &out.ControlPlaneEndpoint, s); err != nil {
 		return err
 	}

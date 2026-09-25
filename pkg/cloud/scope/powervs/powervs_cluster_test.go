@@ -1584,7 +1584,7 @@ func TestDeleteCOSInstance(t *testing.T) {
 	})
 }
 
-func TestDeleteDHCPServer(t *testing.T) {
+func TestDeleteDHCPNetwork(t *testing.T) {
 	var (
 		mockPowerVS *mockP.MockPowerVS
 		mockCtrl    *gomock.Controller
@@ -1603,7 +1603,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 		t.Cleanup(teardown)
 
 		clusterScope := ClusterScope{IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{}}
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(BeNil())
 	})
 	t.Run("When PowerVS service instance is created by controller", func(t *testing.T) {
@@ -1626,7 +1626,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 				},
 			},
 		}}
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(BeNil())
 	})
 
@@ -1640,7 +1640,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 				Network: infrav1.NetworkStatus{},
 			},
 		}}
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(BeNil())
 	})
 	t.Run("When the DHCP server is not found", func(t *testing.T) {
@@ -1669,7 +1669,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 			IBMPowerVSClient: mockPowerVS,
 		}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("dhcp server does not exist"))
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(BeNil())
 	})
 	t.Run("When GetDHCPServer returns error", func(t *testing.T) {
@@ -1698,7 +1698,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 			IBMPowerVSClient: mockPowerVS,
 		}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("error getting dhcp server"))
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(MatchError(ContainSubstring("error getting dhcp server")))
 	})
 	t.Run("When DeleteDHCPServer returns error", func(t *testing.T) {
@@ -1729,7 +1729,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 		dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpServerID")}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
 		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any(), gomock.Any()).Return(fmt.Errorf("error deleting dhcp server"))
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err.Error()).To(Equal("failed to delete DHCP server: error deleting dhcp server"))
 	})
 	t.Run("When DHCP server deletion is successful", func(t *testing.T) {
@@ -1760,7 +1760,7 @@ func TestDeleteDHCPServer(t *testing.T) {
 		dhcpServer := &models.DHCPServerDetail{ID: ptr.To("dhcpServerID")}
 		mockPowerVS.EXPECT().GetDHCPServer(gomock.Any(), gomock.Any()).Return(dhcpServer, nil)
 		mockPowerVS.EXPECT().DeleteDHCPServer(gomock.Any(), gomock.Any()).Return(nil)
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(BeNil())
 	})
 }
@@ -8623,8 +8623,8 @@ func TestReconcileCOSInstanceMissingBranches(t *testing.T) {
 	}
 }
 
-// TestDeleteDHCPServerMissingBranches covers uncovered branches in DeleteDHCPServer.
-func TestDeleteDHCPServerMissingBranches(t *testing.T) {
+// TestDeleteDHCPNetworkMissingBranches covers uncovered branches in DeleteDHCPNetwork.
+func TestDeleteDHCPNetworkMissingBranches(t *testing.T) {
 	testCases := []struct {
 		name        string
 		setupScope  func(t *testing.T) *ClusterScope
@@ -8747,7 +8747,7 @@ func TestDeleteDHCPServerMissingBranches(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := NewWithT(t)
 			scope := tc.setupScope(t)
-			err := scope.DeleteDHCPServer(ctx)
+			err := scope.DeleteDHCPNetwork(ctx)
 			if tc.expectedErr != "" {
 				g.Expect(err).To(HaveOccurred())
 				g.Expect(err.Error()).To(ContainSubstring(tc.expectedErr))
@@ -11388,7 +11388,8 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{
+							Type: infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{
 								Name: "my-dhcp-subnet",
 								CIDR: "192.168.10.0/24",
 							},
@@ -11421,7 +11422,8 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{Name: "my-dhcp-subnet"},
+							Type:       infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{Name: "my-dhcp-subnet"},
 						},
 					},
 				},
@@ -11448,7 +11450,8 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{
+							Type: infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{
 								Name:       "my-dhcp-subnet",
 								CIDR:       "192.168.10.0/24",
 								DNSServers: []string{"8.8.8.8"},
@@ -11465,7 +11468,7 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 		)
 		requeue, err := clusterScope.reconcileNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(BeNil())
-		g.Expect(requeue).To(BeFalse()) // Network is immediately active — no requeue needed
+		g.Expect(requeue).To(BeTrue()) // Requeue once to verify network via fast-path
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.Network.ID).To(Equal("new-net-id"))
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.Network.Name).To(Equal("my-dhcp-subnet"))
 	})
@@ -11483,7 +11486,8 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{Name: "my-dhcp-subnet"},
+							Type:       infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{Name: "my-dhcp-subnet"},
 						},
 					},
 				},
@@ -11511,7 +11515,8 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{Name: "my-dhcp-subnet"},
+							Type:       infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{Name: "my-dhcp-subnet"},
 						},
 					},
 				},
@@ -11537,8 +11542,9 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
+							Type: infrav1.NetworkProvisionTypeDHCPSubnet,
 							// Only CIDR set — Name will be auto-generated from cluster name
-							DHCPSubnet: infrav1.DHCPSubnet{CIDR: "10.0.0.0/24"},
+							DHCPSubnet: infrav1.DHCPSubnetConfig{CIDR: "10.0.0.0/24"},
 						},
 					},
 				},
@@ -11552,13 +11558,13 @@ func TestReconcileNetworkProvisionDHCPSubnet(t *testing.T) {
 		)
 		requeue, err := clusterScope.reconcileNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(BeNil())
-		g.Expect(requeue).To(BeFalse())
+		g.Expect(requeue).To(BeTrue()) // Requeue once to verify network via fast-path
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.Network.ID).To(Equal("auto-net-id"))
 	})
 }
 
-// TestDeleteNetworkDHCPSubnet tests the deleteNetworkDHCPSubnet function.
-func TestDeleteNetworkDHCPSubnet(t *testing.T) {
+// TestDeleteNetworkProvisionDHCPSubnet tests the deleteNetworkProvisionDHCPSubnet function.
+func TestDeleteNetworkProvisionDHCPSubnet(t *testing.T) {
 	var (
 		mockPowerVS *mockP.MockPowerVS
 		mockCtrl    *gomock.Controller
@@ -11583,7 +11589,7 @@ func TestDeleteNetworkDHCPSubnet(t *testing.T) {
 				},
 			},
 		}
-		err := clusterScope.deleteNetworkDHCPSubnet(ctx)
+		err := clusterScope.deleteNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(BeNil())
 	})
 
@@ -11601,7 +11607,7 @@ func TestDeleteNetworkDHCPSubnet(t *testing.T) {
 			},
 		}
 		mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), "net-id-gone").Return(nil, fmt.Errorf("network not found: 404"))
-		err := clusterScope.deleteNetworkDHCPSubnet(ctx)
+		err := clusterScope.deleteNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(BeNil())
 	})
 
@@ -11619,7 +11625,7 @@ func TestDeleteNetworkDHCPSubnet(t *testing.T) {
 			},
 		}
 		mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), "net-id").Return(nil, fmt.Errorf("internal server error"))
-		err := clusterScope.deleteNetworkDHCPSubnet(ctx)
+		err := clusterScope.deleteNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(MatchError(ContainSubstring("internal server error")))
 	})
 
@@ -11637,7 +11643,7 @@ func TestDeleteNetworkDHCPSubnet(t *testing.T) {
 			},
 		}
 		mockPowerVS.EXPECT().GetNetworkByID(gomock.Any(), "net-id").Return(nil, nil)
-		err := clusterScope.deleteNetworkDHCPSubnet(ctx)
+		err := clusterScope.deleteNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(BeNil())
 	})
 
@@ -11658,7 +11664,7 @@ func TestDeleteNetworkDHCPSubnet(t *testing.T) {
 			&models.Network{NetworkID: ptr.To("net-id"), Name: ptr.To("my-dhcp-subnet")}, nil,
 		)
 		mockPowerVS.EXPECT().DeleteNetwork(gomock.Any(), "net-id").Return(fmt.Errorf("delete API error"))
-		err := clusterScope.deleteNetworkDHCPSubnet(ctx)
+		err := clusterScope.deleteNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(MatchError(ContainSubstring("delete API error")))
 	})
 
@@ -11679,14 +11685,14 @@ func TestDeleteNetworkDHCPSubnet(t *testing.T) {
 			&models.Network{NetworkID: ptr.To("net-id"), Name: ptr.To("my-dhcp-subnet")}, nil,
 		)
 		mockPowerVS.EXPECT().DeleteNetwork(gomock.Any(), "net-id").Return(nil)
-		err := clusterScope.deleteNetworkDHCPSubnet(ctx)
+		err := clusterScope.deleteNetworkProvisionDHCPSubnet(ctx)
 		g.Expect(err).To(BeNil())
 	})
 }
 
-// TestDeleteDHCPServerDHCPSubnetPath verifies that DeleteDHCPServer dispatches to
-// deleteNetworkDHCPSubnet when the spec uses the DHCPSubnet provision path.
-func TestDeleteDHCPServerDHCPSubnetPath(t *testing.T) {
+// TestDeleteDHCPNetworkDHCPSubnetPath verifies that DeleteDHCPNetwork dispatches to
+// deleteNetworkProvisionDHCPSubnet when the spec uses the DHCPSubnet provision path.
+func TestDeleteDHCPNetworkDHCPSubnetPath(t *testing.T) {
 	var (
 		mockPowerVS *mockP.MockPowerVS
 		mockCtrl    *gomock.Controller
@@ -11698,7 +11704,7 @@ func TestDeleteDHCPServerDHCPSubnetPath(t *testing.T) {
 	}
 	teardown := func() { mockCtrl.Finish() }
 
-	t.Run("When DHCPSubnet path is configured, DeleteDHCPServer calls deleteNetworkDHCPSubnet", func(t *testing.T) {
+	t.Run("When DHCPSubnet path is configured, DeleteDHCPNetwork calls deleteNetworkProvisionDHCPSubnet", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -11710,7 +11716,8 @@ func TestDeleteDHCPServerDHCPSubnetPath(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{Name: "my-dhcp-subnet"},
+							Type:       infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{Name: "my-dhcp-subnet"},
 						},
 					},
 					Workspace: infrav1.WorkspaceSource{Type: infrav1.SourceTypeReference},
@@ -11724,7 +11731,7 @@ func TestDeleteDHCPServerDHCPSubnetPath(t *testing.T) {
 			&models.Network{NetworkID: ptr.To("net-id"), Name: ptr.To("my-dhcp-subnet")}, nil,
 		)
 		mockPowerVS.EXPECT().DeleteNetwork(gomock.Any(), "net-id").Return(nil)
-		err := clusterScope.DeleteDHCPServer(ctx)
+		err := clusterScope.DeleteDHCPNetwork(ctx)
 		g.Expect(err).To(BeNil())
 	})
 }
@@ -11755,7 +11762,8 @@ func TestReconcileNetworkProvisionDHCPSubnetPath(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{Name: "test-subnet"},
+							Type:       infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{Name: "test-subnet"},
 						},
 					},
 				},
@@ -11769,7 +11777,7 @@ func TestReconcileNetworkProvisionDHCPSubnetPath(t *testing.T) {
 		)
 		requeue, err := clusterScope.reconcileNetworkProvision(ctx)
 		g.Expect(err).To(BeNil())
-		g.Expect(requeue).To(BeFalse())
+		g.Expect(requeue).To(BeTrue()) // Requeue once to verify network via fast-path
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.Network.ID).To(Equal("subnet-net-id"))
 	})
 
@@ -11787,7 +11795,8 @@ func TestReconcileNetworkProvisionDHCPSubnetPath(t *testing.T) {
 					Network: infrav1.NetworkSource{
 						Type: infrav1.SourceTypeProvision,
 						Provision: infrav1.NetworkProvisionConfig{
-							DHCPSubnet: infrav1.DHCPSubnet{Name: "test-subnet"},
+							Type:       infrav1.NetworkProvisionTypeDHCPSubnet,
+							DHCPSubnet: infrav1.DHCPSubnetConfig{Name: "test-subnet"},
 						},
 					},
 				},

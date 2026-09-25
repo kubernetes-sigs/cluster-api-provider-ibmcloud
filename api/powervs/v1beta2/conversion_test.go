@@ -219,21 +219,28 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 		in.Network.Provision = infrav1.NetworkProvisionConfig{}
 	case infrav1.SourceTypeProvision:
 		in.Network.Reference = infrav1.ResourceIdentifier{}
-		// DHCPSubnet and DHCPServer are mutually exclusive. If both are fuzzed, keep only one.
-		// Priority: DHCPSubnet if it has any field set; else DHCPServer.
-		isDHCPSubnet := in.Network.Provision.DHCPSubnet.Name != "" ||
-			in.Network.Provision.DHCPSubnet.CIDR != "" ||
-			len(in.Network.Provision.DHCPSubnet.DNSServers) > 0
-		if isDHCPSubnet {
-			// DHCPSubnet path: clear DHCPServer
+		// Ensure the ProvisionType discriminant is valid.
+		switch in.Network.Provision.Type {
+		case infrav1.NetworkProvisionTypeDHCPServer:
+			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnetConfig{}
+			// Normalize empty DNSServers to nil
+			if in.Network.Provision.DHCPServer.CIDR == "" {
+				in.Network.Provision.DHCPServer.CIDR = ""
+			}
+		case infrav1.NetworkProvisionTypeDHCPSubnet:
 			in.Network.Provision.DHCPServer = infrav1.DHCPServer{}
 			// Normalize empty DNSServers slice to nil
 			if len(in.Network.Provision.DHCPSubnet.DNSServers) == 0 {
 				in.Network.Provision.DHCPSubnet.DNSServers = nil
 			}
-		} else {
-			// DHCPServer path: clear DHCPSubnet
-			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnet{}
+			// DHCPSubnet does not survive v1beta2 round-trip; restrict to DHCPServer
+			// for the hub fuzz test so round-trips are valid.
+			in.Network.Provision.Type = infrav1.NetworkProvisionTypeDHCPServer
+			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnetConfig{}
+		default:
+			// Normalise any unknown type to DHCPServer so the discriminant is valid.
+			in.Network.Provision.Type = infrav1.NetworkProvisionTypeDHCPServer
+			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnetConfig{}
 		}
 	default:
 		in.Network.Type = ""
@@ -666,15 +673,8 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 		in.Network.Name = nil
 	}
 
-	// If Network has ID or Name (reference), both DHCPServer and DHCPSubnet should be nil
+	// If Network has ID or Name (reference), DHCPServer should be nil
 	if (in.Network.ID != nil && *in.Network.ID != "") || (in.Network.Name != nil && *in.Network.Name != "") {
-		in.DHCPServer = nil
-		in.DHCPSubnet = nil
-	}
-
-	// DHCPSubnet and DHCPServer are mutually exclusive in v1beta2 as well.
-	// If both are somehow set, DHCPSubnet takes priority (mirrors the v1beta3 conversion logic).
-	if in.DHCPSubnet != nil && in.DHCPServer != nil {
 		in.DHCPServer = nil
 	}
 
@@ -690,24 +690,6 @@ func spokeIBMPowerVSClusterSpec(in *IBMPowerVSClusterSpec, c randfill.Continue) 
 		}
 		if in.DHCPServer.DNSServer != nil && *in.DHCPServer.DNSServer == "" {
 			in.DHCPServer.DNSServer = nil
-		}
-	}
-
-	// Normalize DHCPSubnet: empty pointer string fields → nil; empty DNSServers → nil
-	if in.DHCPSubnet != nil {
-		if in.DHCPSubnet.Name != nil && *in.DHCPSubnet.Name == "" {
-			in.DHCPSubnet.Name = nil
-		}
-		if in.DHCPSubnet.Cidr != nil && *in.DHCPSubnet.Cidr == "" {
-			in.DHCPSubnet.Cidr = nil
-		}
-		if len(in.DHCPSubnet.DNSServers) == 0 {
-			in.DHCPSubnet.DNSServers = nil
-		}
-		// If all fields are nil/empty, set DHCPSubnet to nil so the round-trip
-		// produces an empty NetworkProvisionConfig (no DHCPSubnet path triggered).
-		if in.DHCPSubnet.Name == nil && in.DHCPSubnet.Cidr == nil && len(in.DHCPSubnet.DNSServers) == 0 {
-			in.DHCPSubnet = nil
 		}
 	}
 

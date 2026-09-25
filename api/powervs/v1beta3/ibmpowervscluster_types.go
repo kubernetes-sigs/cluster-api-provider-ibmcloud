@@ -63,6 +63,19 @@ const (
 	DHCPSnatPolicyDisabled DHCPSnatPolicy = "Disabled"
 )
 
+// NetworkProvisionType defines how a new PowerVS Network is provisioned.
+type NetworkProvisionType string
+
+const (
+	// NetworkProvisionTypeDHCPServer creates a dedicated DHCP Server and its managed private network
+	// via the PowerVS DHCP service API.
+	NetworkProvisionTypeDHCPServer NetworkProvisionType = "DHCPServer"
+
+	// NetworkProvisionTypeDHCPSubnet creates a plain PowerVS network with DHCP natively enabled
+	// (NetworkCreate.EnableDHCP). No separate DHCP server resource is created.
+	NetworkProvisionTypeDHCPSubnet NetworkProvisionType = "DHCPSubnet"
+)
+
 // TransitGatewayRouting defines the routing behavior for the Transit Gateway.
 type TransitGatewayRouting string
 
@@ -542,22 +555,28 @@ type NetworkSource struct {
 }
 
 // NetworkProvisionConfig defines the parameters for creating a new PowerVS Network.
-// Exactly one of dhcpServer or dhcpSubnet must be populated.
-// +kubebuilder:validation:MinProperties=1
-// +kubebuilder:validation:XValidation:rule="!(has(self.dhcpServer) && has(self.dhcpSubnet))",message="dhcpServer and dhcpSubnet are mutually exclusive; set exactly one"
+// +kubebuilder:validation:XValidation:rule="self.type == 'DHCPServer' ? has(self.dhcpServer) : !has(self.dhcpServer)",message="dhcpServer configuration is required when type is DHCPServer, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'DHCPSubnet' ? has(self.dhcpSubnet) : !has(self.dhcpSubnet)",message="dhcpSubnet configuration is required when type is DHCPSubnet, and forbidden otherwise"
 type NetworkProvisionConfig struct {
+	// type defines how the network is provisioned.
+	// DHCPServer creates a dedicated DHCP Server and its managed private network.
+	// DHCPSubnet creates a plain PowerVS network with DHCP natively enabled (no separate DHCP server resource).
+	// +required
+	// +kubebuilder:validation:Enum=DHCPServer;DHCPSubnet
+	Type NetworkProvisionType `json:"type,omitempty"`
+
 	// dhcpServer contains the configuration for creating a new DHCP server (and its associated
 	// private network) via the PowerVS DHCP service API.
-	// Mutually exclusive with dhcpSubnet.
+	// Required when type is DHCPServer; forbidden otherwise.
 	// +optional
 	DHCPServer DHCPServer `json:"dhcpServer,omitempty,omitzero"`
 
 	// dhcpSubnet contains the configuration for creating a plain PowerVS network with DHCP
 	// natively enabled (NetworkCreate.EnableDHCP). This avoids creating a separate DHCP server
 	// resource and is the preferred approach for new clusters.
-	// Mutually exclusive with dhcpServer.
+	// Required when type is DHCPSubnet; forbidden otherwise.
 	// +optional
-	DHCPSubnet DHCPSubnet `json:"dhcpSubnet,omitempty,omitzero"`
+	DHCPSubnet DHCPSubnetConfig `json:"dhcpSubnet,omitempty,omitzero"`
 }
 
 // DHCPServer contains the configuration for a NEW DHCP server.
@@ -591,11 +610,11 @@ type DHCPServer struct {
 	Snat DHCPSnatPolicy `json:"snat,omitempty"`
 }
 
-// DHCPSubnet contains the configuration for creating a PowerVS network with DHCP natively
+// DHCPSubnetConfig contains the configuration for creating a PowerVS network with DHCP natively
 // enabled via NetworkCreate.EnableDHCP. Unlike DHCPServer, this path does not create a
 // separate DHCP server resource.
 // +kubebuilder:validation:MinProperties=1
-type DHCPSubnet struct {
+type DHCPSubnetConfig struct {
 	// name is the name of the PowerVS network to be created.
 	// If omitted, the name will default to <CLUSTER_NAME>-dhcpsubnet.
 	// Only alphanumeric characters, dashes, and underscores are allowed.
