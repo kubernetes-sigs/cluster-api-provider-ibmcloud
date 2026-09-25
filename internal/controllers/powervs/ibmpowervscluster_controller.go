@@ -471,14 +471,14 @@ func (r *IBMPowerVSClusterReconciler) reconcileDelete(ctx context.Context, clust
 		return reconcile.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
-	log.Info("Deleting DHCP server")
+	log.Info("Deleting provisioned DHCP network")
 	conditions.Set(clusterScope.IBMPowerVSCluster, metav1.Condition{
 		Type:   infrav1.NetworkReadyCondition,
 		Status: metav1.ConditionFalse,
 		Reason: infrav1.NetworkDeletingReason,
 	})
-	if err := clusterScope.DeleteDHCPServer(ctx); err != nil {
-		allErrs = append(allErrs, fmt.Errorf("failed to delete DHCP server: %w", err))
+	if err := clusterScope.DeleteDHCPNetwork(ctx); err != nil {
+		allErrs = append(allErrs, fmt.Errorf("failed to delete provisioned DHCP network: %w", err))
 	}
 
 	log.Info("Deleting PowerVS workspace")

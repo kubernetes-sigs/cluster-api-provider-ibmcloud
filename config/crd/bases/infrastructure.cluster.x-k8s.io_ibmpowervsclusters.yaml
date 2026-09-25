@@ -130,25 +130,6 @@ spec:
                       service
                     type: boolean
                 type: object
-              dhcpSubnet:
-                description: |-
-                  dhcpSubnet contains the configuration for creating a PowerVS network with DHCP natively
-                  enabled (NetworkCreate.EnableDHCP). This is the v1beta2 representation of the v1beta3
-                  DHCPSubnet field and is used to preserve the configuration across version conversion.
-                  Mutually exclusive with dhcpServer.
-                properties:
-                  cidr:
-                    description: cidr is the network CIDR (e.g. 192.168.0.0/24).
-                    type: string
-                  dnsServers:
-                    description: dnsServers is the list of DNS servers for the network.
-                    items:
-                      type: string
-                    type: array
-                  name:
-                    description: name is the name of the PowerVS network to be created.
-                    type: string
-                type: object
               ignition:
                 description: Ignition defined options related to the bootstrapping
                   systems where Ignition is used.
@@ -1676,13 +1657,12 @@ spec:
                     description: |-
                       provision provides the configuration for the controller to CREATE a new Network.
                       Exactly one of dhcpServer or dhcpSubnet must be set when type is Provision.
-                    minProperties: 1
                     properties:
                       dhcpServer:
                         description: |-
                           dhcpServer contains the configuration for creating a new DHCP server (and its associated
                           private network) via the PowerVS DHCP service API.
-                          Mutually exclusive with dhcpSubnet.
+                          Required when type is DHCPServer; forbidden otherwise.
                         minProperties: 1
                         properties:
                           cidr:
@@ -1719,7 +1699,7 @@ spec:
                           dhcpSubnet contains the configuration for creating a plain PowerVS network with DHCP
                           natively enabled (NetworkCreate.EnableDHCP). This avoids creating a separate DHCP server
                           resource and is the preferred approach for new clusters.
-                          Mutually exclusive with dhcpServer.
+                          Required when type is DHCPSubnet; forbidden otherwise.
                         minProperties: 1
                         properties:
                           cidr:
@@ -1749,11 +1729,27 @@ spec:
                             pattern: ^[a-zA-Z0-9-_][a-zA-Z0-9-_]*$
                             type: string
                         type: object
+                      type:
+                        description: |-
+                          type defines how the network is provisioned.
+                          DHCPServer creates a dedicated DHCP Server and its managed private network.
+                          DHCPSubnet creates a plain PowerVS network with DHCP natively enabled (no separate DHCP server resource).
+                        enum:
+                        - DHCPServer
+                        - DHCPSubnet
+                        type: string
+                    required:
+                    - type
                     type: object
                     x-kubernetes-validations:
-                    - message: dhcpServer and dhcpSubnet are mutually exclusive; set
-                        exactly one
-                      rule: '!(has(self.dhcpServer) && has(self.dhcpSubnet))'
+                    - message: dhcpServer configuration is required when type is DHCPServer,
+                        and forbidden otherwise
+                      rule: 'self.type == ''DHCPServer'' ? has(self.dhcpServer) :
+                        !has(self.dhcpServer)'
+                    - message: dhcpSubnet configuration is required when type is DHCPSubnet,
+                        and forbidden otherwise
+                      rule: 'self.type == ''DHCPSubnet'' ? has(self.dhcpSubnet) :
+                        !has(self.dhcpSubnet)'
                   reference:
                     description: reference tells the controller to look up an EXISTING
                       PowerVS network.
