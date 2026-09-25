@@ -83,7 +83,8 @@ func validateIBMVPCCluster(vpcCluster *infrav1.IBMVPCCluster) (admission.Warning
 }
 
 func validateIBMVPCClusterControlPlane(vpcCluster *infrav1.IBMVPCCluster) *field.Error {
-	if vpcCluster.Spec.ControlPlaneEndpoint.Host == "" && vpcCluster.Spec.ControlPlaneLoadBalancer == nil {
+	hasNetworkLoadBalancer := vpcCluster.Spec.Network != nil && len(vpcCluster.Spec.Network.LoadBalancers) > 0
+	if vpcCluster.Spec.ControlPlaneEndpoint.Host == "" && vpcCluster.Spec.ControlPlaneLoadBalancer == nil && !hasNetworkLoadBalancer {
 		return field.Invalid(field.NewPath(""), "", "One of - ControlPlaneEndpoint or ControlPlaneLoadBalancer must be specified")
 	}
 	return nil
