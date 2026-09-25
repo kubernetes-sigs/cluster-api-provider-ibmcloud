@@ -693,24 +693,27 @@ func (s *ClusterScope) ReconcileNetwork(ctx context.Context) (bool, error) {
 			return false, fmt.Errorf("failed to fetch network by ID: %w", err)
 		}
 
-		// If we provisioned this network via DHCP, ensure the DHCP server is fully active
-		if cluster.Spec.Network.Type == infrav1.SourceTypeProvision {
-			dhcpServerID := cluster.Status.Network.DHCPServer.ID
-			if dhcpServerID == "" {
-				log.Info("Recovering state: Network ID is present but DHCP Server ID is missing in status. Requeuing to resolve", "networkID", networkID)
-				return true, nil
-			}
+		// Reference networks and DHCPSubnet networks don't create a separate DHCP server resource.
+		if cluster.Spec.Network.Type != infrav1.SourceTypeProvision || s.isDHCPSubnetProvisioned() {
+			return false, nil
+		}
 
-			log.V(3).Info("Verifying provisioned DHCP server state", "dhcpServerID", dhcpServerID)
-			active, err := s.isDHCPServerActive(ctx)
-			if err != nil {
-				return false, fmt.Errorf("failed to check if DHCP server is active: %w", err)
-			}
+		// For provisioned DHCPServer networks, ensure the DHCP server is fully active.
+		dhcpServerID := cluster.Status.Network.DHCPServer.ID
+		if dhcpServerID == "" {
+			log.Info("Recovering state: Network ID is present but DHCP Server ID is missing in status. Requeuing to resolve", "networkID", networkID)
+			return true, nil
+		}
 
-			if !active {
-				log.V(3).Info("DHCP server is still building")
-				return true, nil // requeue and wait
-			}
+		log.V(3).Info("Verifying provisioned DHCP server state", "dhcpServerID", dhcpServerID)
+		active, err := s.isDHCPServerActive(ctx)
+		if err != nil {
+			return false, fmt.Errorf("failed to check if DHCP server is active: %w", err)
+		}
+
+		if !active {
+			log.V(3).Info("DHCP server is still building")
+			return true, nil // requeue and wait
 		}
 
 		// Network is resolved and ready!
@@ -774,8 +777,26 @@ func (s *ClusterScope) reconcileNetworkReference(ctx context.Context) (bool, err
 	return true, nil // requeue so the fast-path verifies it
 }
 
-// reconcileNetworkProvision handles the logic when the controller must create a new DHCP server and Network.
+// isDHCPSubnetProvisioned returns true when the cluster was configured to use the DHCPSubnet
+// provisioning path (NetworkProvisionTypeDHCPSubnet). Used to discriminate between the two
+// network-provision sub-paths without field-sniffing.
+func (s *ClusterScope) isDHCPSubnetProvisioned() bool {
+	return s.IBMPowerVSCluster.Spec.Network.Provision.Type == infrav1.NetworkProvisionTypeDHCPSubnet
+}
+
+// reconcileNetworkProvision routes to the correct network-provisioning sub-handler based on
+// the explicit ProvisionType discriminant set by the user in NetworkProvisionConfig.
 func (s *ClusterScope) reconcileNetworkProvision(ctx context.Context) (bool, error) {
+	switch s.IBMPowerVSCluster.Spec.Network.Provision.Type {
+	case infrav1.NetworkProvisionTypeDHCPSubnet:
+		return s.reconcileNetworkProvisionDHCPSubnet(ctx)
+	default:
+		return s.reconcileNetworkProvisionDHCPServer(ctx)
+	}
+}
+
+// reconcileNetworkProvisionDHCPServer handles the logic when the controller must create a new DHCP server and Network.
+func (s *ClusterScope) reconcileNetworkProvisionDHCPServer(ctx context.Context) (bool, error) {
 	log := ctrl.LoggerFrom(ctx)
 	dhcpSpec := s.IBMPowerVSCluster.Spec.Network.Provision.DHCPServer
 
@@ -827,6 +848,63 @@ func (s *ClusterScope) reconcileNetworkProvision(ctx context.Context) (bool, err
 	s.IBMPowerVSCluster.Status.Network.DHCPServer.ID = dhcpServerID
 
 	return true, nil // Requeue to wait for it to become ACTIVE
+}
+
+// reconcileNetworkProvisionDHCPSubnet handles direct PowerVS network creation with EnableDHCP=true.
+// Unlike the DHCP server path this creates only a network resource — no separate DHCP server object.
+func (s *ClusterScope) reconcileNetworkProvisionDHCPSubnet(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	spec := s.IBMPowerVSCluster.Spec.Network.Provision.DHCPSubnet
+
+	// 1. Determine the network name
+	networkName := spec.Name
+	if networkName == "" {
+		networkName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeDHCPSubnet, "")
+	}
+
+	// 2. Idempotency check: look up by name before creating
+	existing, err := s.IBMPowerVSClient.GetNetworkByName(ctx, networkName)
+	if err != nil {
+		return false, fmt.Errorf("failed to check for existing DHCP subnet network %q: %w", networkName, err)
+	}
+	if existing != nil && existing.NetworkID != nil && existing.Name != nil {
+		log.Info("Recovered previously provisioned DHCP subnet network", "networkID", *existing.NetworkID, "networkName", *existing.Name)
+		s.IBMPowerVSCluster.Status.Network.ID = *existing.NetworkID
+		s.IBMPowerVSCluster.Status.Network.Name = *existing.Name
+		return false, nil
+	}
+
+	// 3. Build and issue the CreateNetwork request with EnableDHCP=true
+	body := &models.NetworkCreate{
+		Name:       networkName,
+		Type:       ptr.To("vlan"), // DHCP subnets are always private (vlan) networks
+		EnableDHCP: ptr.To(true),
+	}
+	if spec.CIDR != "" {
+		body.Cidr = spec.CIDR
+	}
+	if len(spec.DNSServers) > 0 {
+		body.DNSServers = spec.DNSServers
+	}
+
+	log.Info("Provisioning new DHCP subnet network", "name", networkName)
+	network, err := s.IBMPowerVSClient.CreateNetwork(ctx, body)
+	if err != nil {
+		return false, fmt.Errorf("failed to provision DHCP subnet network %q: %w", networkName, err)
+	}
+	if network == nil || network.NetworkID == nil || network.Name == nil {
+		return false, fmt.Errorf("created DHCP subnet network returned nil or incomplete response")
+	}
+
+	log.Info("Successfully provisioned DHCP subnet network", "networkID", *network.NetworkID, "networkName", *network.Name)
+
+	s.IBMPowerVSCluster.Status.Network.ID = *network.NetworkID
+	s.IBMPowerVSCluster.Status.Network.Name = *network.Name
+
+	// Requeue once: the fast-path in ReconcileNetwork will call GetNetworkByID to confirm the
+	// network is visible before marking it ready. PowerVS NetworkCreate is synchronous in practice,
+	// but a single requeue is cheap insurance against eventual-consistency delays.
+	return true, nil
 }
 
 // isDHCPServerActive checks if the DHCP server status is active.
@@ -3207,31 +3285,44 @@ func (s *ClusterScope) deleteTransitGatewayConnections(ctx context.Context, tg *
 	return false, nil
 }
 
-// DeleteDHCPServer deletes the DHCP server if it was provisioned by the controller.
-func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
+// DeleteDHCPNetwork deletes provisioned network resources (DHCP server or DHCP subnet network)
+// based on the cluster configuration.
+func (s *ClusterScope) DeleteDHCPNetwork(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	// 1. Check if we provisioned this network
 	if s.IBMPowerVSCluster.Spec.Network.Type != infrav1.SourceTypeProvision {
-		log.Info("Skipping DHCP server deletion as network is in Reference mode")
+		log.Info("Skipping network deletion as network is in Reference mode")
 		return nil
 	}
 
 	// 2. If the controller owns the workspace, deleting the workspace cascades
-	// and destroys the DHCP server internally
+	// and destroys all network resources internally
 	if s.IBMPowerVSCluster.Spec.Workspace.Type == infrav1.SourceTypeProvision {
-		log.Info("Skipping separate DHCP server deletion as PowerVS workspace is being deleted by the controller (cascading delete)")
+		log.Info("Skipping separate network deletion as PowerVS workspace is being deleted by the controller (cascading delete)")
 		return nil
 	}
 
-	// 3. Get DHCP server ID saved in status
+	// 3. Delegate to the specific provisioner deletion handler
+	if s.isDHCPSubnetProvisioned() {
+		return s.deleteNetworkProvisionDHCPSubnet(ctx)
+	}
+
+	return s.deleteNetworkProvisionDHCPServer(ctx)
+}
+
+// deleteNetworkProvisionDHCPServer deletes the standalone DHCP server created by the controller.
+func (s *ClusterScope) deleteNetworkProvisionDHCPServer(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	// 1. Get DHCP server ID saved in status
 	dhcpID := s.IBMPowerVSCluster.Status.Network.DHCPServer.ID
 	if dhcpID == "" {
 		log.Info("DHCP server ID not found in status, nothing to delete")
 		return nil
 	}
 
-	// 4. Fetch the server to verify it exists
+	// 2. Fetch the server to verify it exists
 	server, err := s.IBMPowerVSClient.GetDHCPServer(ctx, dhcpID)
 	if err != nil {
 		// If it's a 404, we're already done!
@@ -3242,10 +3333,43 @@ func (s *ClusterScope) DeleteDHCPServer(ctx context.Context) error {
 		return fmt.Errorf("failed to fetch DHCP server: %w", err)
 	}
 
-	// 5. Issue the delete command
+	// 3. Issue the delete command
 	log.Info("Deleting provisioned DHCP server", "dhcpServerID", *server.ID)
 	if err = s.IBMPowerVSClient.DeleteDHCPServer(ctx, *server.ID); err != nil {
 		return fmt.Errorf("failed to delete DHCP server: %w", err)
+	}
+
+	return nil
+}
+
+// deleteNetworkProvisionDHCPSubnet tears down a PowerVS network that was provisioned directly via
+// NetworkCreate (the DHCPSubnet path), using the network ID stored in Status.
+func (s *ClusterScope) deleteNetworkProvisionDHCPSubnet(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	networkID := s.IBMPowerVSCluster.Status.Network.ID
+	if networkID == "" {
+		log.Info("DHCP subnet network ID not found in status, nothing to delete")
+		return nil
+	}
+
+	// Verify existence before attempting delete; treat a 404 as already deleted.
+	network, err := s.IBMPowerVSClient.GetNetworkByID(ctx, networkID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "404") {
+			log.Info("DHCP subnet network no longer exists in IBM Cloud", "networkID", networkID)
+			return nil
+		}
+		return fmt.Errorf("failed to fetch DHCP subnet network %q: %w", networkID, err)
+	}
+	if network == nil {
+		log.Info("DHCP subnet network not found in IBM Cloud", "networkID", networkID)
+		return nil
+	}
+
+	log.Info("Deleting provisioned DHCP subnet network", "networkID", networkID)
+	if err = s.IBMPowerVSClient.DeleteNetwork(ctx, networkID); err != nil {
+		return fmt.Errorf("failed to delete DHCP subnet network %q: %w", networkID, err)
 	}
 
 	return nil

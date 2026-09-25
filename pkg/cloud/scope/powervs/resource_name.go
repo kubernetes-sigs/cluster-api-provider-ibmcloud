@@ -46,6 +46,9 @@ const (
 	// Note: IBM Cloud derives the associated network name via dhcpNetworkName(); this type
 	// controls only the DHCP server resource name itself.
 	ResourceTypeDHCP ResourceType = "dhcp"
+	// ResourceTypeDHCPSubnet is a PowerVS network provisioned directly with EnableDHCP=true.
+	// This avoids creating a separate DHCP server resource.
+	ResourceTypeDHCPSubnet ResourceType = "dhcpsubnet"
 	// ResourceTypeCOS is a Cloud Object Storage service instance.
 	ResourceTypeCOS ResourceType = "cos"
 	// ResourceTypeCOSBucket is a COS bucket inside a COS instance.

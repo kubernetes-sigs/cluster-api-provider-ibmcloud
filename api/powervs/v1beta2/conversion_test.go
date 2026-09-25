@@ -219,12 +219,37 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 		in.Network.Provision = infrav1.NetworkProvisionConfig{}
 	case infrav1.SourceTypeProvision:
 		in.Network.Reference = infrav1.ResourceIdentifier{}
+		// Ensure the ProvisionType discriminant is valid.
+		switch in.Network.Provision.Type {
+		case infrav1.NetworkProvisionTypeDHCPServer:
+			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnetConfig{}
+			// Normalize empty DNSServers to nil
+			if in.Network.Provision.DHCPServer.CIDR == "" {
+				in.Network.Provision.DHCPServer.CIDR = ""
+			}
+		case infrav1.NetworkProvisionTypeDHCPSubnet:
+			in.Network.Provision.DHCPServer = infrav1.DHCPServer{}
+			// Normalize empty DNSServers slice to nil
+			if len(in.Network.Provision.DHCPSubnet.DNSServers) == 0 {
+				in.Network.Provision.DHCPSubnet.DNSServers = nil
+			}
+			// DHCPSubnet does not survive v1beta2 round-trip; restrict to DHCPServer
+			// for the hub fuzz test so round-trips are valid.
+			in.Network.Provision.Type = infrav1.NetworkProvisionTypeDHCPServer
+			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnetConfig{}
+		default:
+			// Normalise any unknown type to DHCPServer so the discriminant is valid.
+			in.Network.Provision.Type = infrav1.NetworkProvisionTypeDHCPServer
+			in.Network.Provision.DHCPSubnet = infrav1.DHCPSubnetConfig{}
+		}
 	default:
 		in.Network.Type = ""
 		in.Network.Reference = infrav1.ResourceIdentifier{}
 		in.Network.Provision = infrav1.NetworkProvisionConfig{}
 	}
 
+	// DHCPServer.Name is not preserved through v1beta2 (the v1beta2 DHCPServer.Name is
+	// regenerated from the cluster name on reconcile and is not stored in the spec).
 	in.Network.Provision.DHCPServer.Name = ""
 
 	switch in.TransitGateway.Type {

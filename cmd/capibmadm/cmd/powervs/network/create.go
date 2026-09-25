@@ -42,6 +42,7 @@ type networkCreateOptions struct {
 	dnsServers      []string
 	gateway         string
 	jumbo           bool
+	enableDHCP      bool
 	ipAddressRanges []string
 }
 
@@ -56,6 +57,7 @@ export IBMCLOUD_API_KEY=<api-key>
 Public network: capibmadm powervs network create --public --service-instance-id <service-instance-id> --zone <zone>
 Private network: capibmadm powervs network create --private --cidr <cidr> --service-instance-id <service-instance-id> --zone <zone>
 Private network with ip address ranges: capibmadm powervs network create --private --cidr <cidr> --ip-ranges <start-ip>-<end-ip>,<start-ip>-<end-ip> --service-instance-id <service-instance-id> --zone <zone>
+Private network with DHCP enabled: capibmadm powervs network create --private --cidr <cidr> --enable-dhcp --service-instance-id <service-instance-id> --zone <zone>
 `,
 	}
 
@@ -68,6 +70,7 @@ Private network with ip address ranges: capibmadm powervs network create --priva
 	cmd.Flags().StringSliceVar(&netCreateOption.dnsServers, "dns-servers", []string{"8.8.8.8", "9.9.9.9"}, "Comma separated list of DNS Servers to use")
 	cmd.Flags().StringSliceVar(&netCreateOption.ipAddressRanges, "ip-ranges", []string{}, "Comma separated IP Address Ranges")
 	cmd.Flags().BoolVar(&netCreateOption.jumbo, "jumbo", false, "Enable MTU Jumbo Network")
+	cmd.Flags().BoolVar(&netCreateOption.enableDHCP, "enable-dhcp", false, "Enable DHCP on the network")
 
 	// both cannot be provided, default is public
 	cmd.MarkFlagsMutuallyExclusive("private", "public")
@@ -108,6 +111,10 @@ func createNetwork(ctx context.Context, netCreateOption networkCreateOptions) er
 		DNSServers: netCreateOption.dnsServers,
 		Gateway:    netCreateOption.gateway,
 		Jumbo:      netCreateOption.jumbo,
+	}
+
+	if netCreateOption.enableDHCP {
+		body.EnableDHCP = &netCreateOption.enableDHCP
 	}
 
 	var ipAddressRanges []*models.IPAddressRange
