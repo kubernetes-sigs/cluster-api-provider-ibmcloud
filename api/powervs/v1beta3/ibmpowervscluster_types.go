@@ -94,7 +94,8 @@ const (
 	// PowerVSLoadBalancerProfileApplication is the standard application load balancer profile.
 	PowerVSLoadBalancerProfileApplication PowerVSLoadBalancerProfile = "application"
 
-	// PowerVSLoadBalancerProfileNetworkFixed is the network-fixed (NLB) load balancer profile.
+	// PowerVSLoadBalancerProfileNetworkFixed is the network load balancer (NLB) profile.
+	// The value "network-fixed" matches the IBM Cloud VPC Load Balancer API profile name directly.
 	PowerVSLoadBalancerProfileNetworkFixed PowerVSLoadBalancerProfile = "network-fixed"
 )
 
