@@ -129,6 +129,11 @@ const (
 	// NetworkReconciliationFailedReason used when an error occurs during network reconciliation.
 	NetworkReconciliationFailedReason = "NetworkReconciliationFailed"
 
+	// VPCRoutingTableReadyCondition reports on the successful reconciliation of VPC Routing Tables.
+	VPCRoutingTableReadyCondition = "VPCRoutingTableReady"
+	// VPCRoutingTableReconciliationFailedReason used when an error occurs during VPC Routing Table reconciliation.
+	VPCRoutingTableReconciliationFailedReason = "VPCRoutingTableReconciliationFailed"
+
 	// VPCSecurityGroupReadyCondition reports on the successful reconciliation of a VPC.
 	VPCSecurityGroupReadyCondition = "VPCSecurityGroupReady"
 	// VPCSecurityGroupReconciliationFailedReason used when an error occurs during VPC reconciliation.
@@ -222,6 +227,15 @@ const (
 
 	// VPCSubnetDeletingReason surfaces when the VPC subnet is being deleted.
 	VPCSubnetDeletingReason = clusterv1.DeletingReason
+
+	// VPCRoutingTableReadyReason surfaces when the VPC routing table is ready.
+	VPCRoutingTableReadyReason = clusterv1.ReadyReason
+
+	// VPCRoutingTableNotReadyReason surfaces when the VPC routing table is not ready.
+	VPCRoutingTableNotReadyReason = clusterv1.NotReadyReason
+
+	// VPCRoutingTableDeletingReason surfaces when the VPC routing table is being deleted.
+	VPCRoutingTableDeletingReason = clusterv1.DeletingReason
 
 	// VPCSecurityGroupReadyReason surfaces when the VPC security group is ready.
 	VPCSecurityGroupReadyReason = clusterv1.ReadyReason
