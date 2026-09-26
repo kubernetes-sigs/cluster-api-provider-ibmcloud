@@ -87,6 +87,65 @@ const (
 	TransitGatewayRoutingGlobal TransitGatewayRouting = "Global"
 )
 
+// RoutingTableIngressPolicy defines whether a routing table ingress source is enabled.
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type RoutingTableIngressPolicy string
+
+const (
+	// RoutingTableIngressPolicyEnabled indicates ingress from this source is enabled.
+	RoutingTableIngressPolicyEnabled RoutingTableIngressPolicy = "Enabled"
+	// RoutingTableIngressPolicyDisabled indicates ingress from this source is disabled.
+	RoutingTableIngressPolicyDisabled RoutingTableIngressPolicy = "Disabled"
+)
+
+// RouteAdvertisePolicy defines whether a route is advertised to connected networks.
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type RouteAdvertisePolicy string
+
+const (
+	// RouteAdvertisePolicyEnabled indicates the route is advertised to connected networks.
+	RouteAdvertisePolicyEnabled RouteAdvertisePolicy = "Enabled"
+	// RouteAdvertisePolicyDisabled indicates the route is not advertised.
+	RouteAdvertisePolicyDisabled RouteAdvertisePolicy = "Disabled"
+)
+
+// VPCRoutingTableRouteAction defines the action to perform with a packet matching a route.
+// +kubebuilder:validation:Enum=delegate;delegate_vpc;deliver;drop
+type VPCRoutingTableRouteAction string
+
+const (
+	// VPCRoutingTableRouteActionDelegate delegates the packet to the system's built-in routing.
+	VPCRoutingTableRouteActionDelegate VPCRoutingTableRouteAction = "delegate"
+	// VPCRoutingTableRouteActionDelegateVPC delegates the packet to the VPC's built-in routing.
+	VPCRoutingTableRouteActionDelegateVPC VPCRoutingTableRouteAction = "delegate_vpc"
+	// VPCRoutingTableRouteActionDeliver delivers the packet to the next hop.
+	VPCRoutingTableRouteActionDeliver VPCRoutingTableRouteAction = "deliver"
+	// VPCRoutingTableRouteActionDrop drops the packet.
+	VPCRoutingTableRouteActionDrop VPCRoutingTableRouteAction = "drop"
+)
+
+// VPCRoutingTableReadyStatus represents the ready state of a VPC Routing Table.
+// +kubebuilder:validation:Enum=Ready;NotReady
+type VPCRoutingTableReadyStatus string
+
+const (
+	// VPCRoutingTableReadyStatusReady indicates the routing table has reached a stable (active) state.
+	VPCRoutingTableReadyStatusReady VPCRoutingTableReadyStatus = "Ready"
+	// VPCRoutingTableReadyStatusNotReady indicates the routing table is not yet in a stable state.
+	VPCRoutingTableReadyStatusNotReady VPCRoutingTableReadyStatus = "NotReady"
+)
+
+// AdvertiseRouteTarget defines the ingress sources to which routes in a routing table will be advertised.
+// +kubebuilder:validation:Enum=transit_gateway;direct_link
+type AdvertiseRouteTarget string
+
+const (
+	// AdvertiseRouteTargetTransitGateway advertises routes to Transit Gateway.
+	AdvertiseRouteTargetTransitGateway AdvertiseRouteTarget = "transit_gateway"
+	// AdvertiseRouteTargetDirectLink advertises routes to Direct Link.
+	AdvertiseRouteTargetDirectLink AdvertiseRouteTarget = "direct_link"
+)
+
 // LoadBalancerType defines the network visibility of the VPC Load Balancer.
 // +kubebuilder:validation:Enum=Public;Private
 type LoadBalancerType string
@@ -179,6 +238,12 @@ type IBMPowerVSClusterSpec struct {
 	// +kubebuilder:validation:MaxItems=50
 	LoadBalancers []LoadBalancerSource `json:"loadBalancers,omitempty"`
 
+	// vpcRoutingTables defines the VPC Routing Tables that should exist or be created for the cluster's VPC.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
+	VPCRoutingTables []VPCRoutingTable `json:"vpcRoutingTables,omitempty"`
+
 	// vpcSecurityGroups defines the VPC Security Groups that should exist or be created.
 	// +optional
 	// +listType=atomic
@@ -243,6 +308,13 @@ type IBMPowerVSClusterStatus struct {
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=50
 	LoadBalancers []LoadBalancerStatus `json:"loadBalancers,omitempty"`
+
+	// vpcRoutingTables tracks the observed state of VPC Routing Tables for the cluster.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	VPCRoutingTables []VPCRoutingTableStatus `json:"vpcRoutingTables,omitempty"`
 
 	// vpcSecurityGroups tracks the live observed states of all managed or referenced VPC Security Groups.
 	// +optional
@@ -1317,6 +1389,114 @@ type VPCSecurityGroupRuleStatus struct {
 	// +kubebuilder:validation:MaxLength=64
 	// +kubebuilder:validation:Pattern=^[-0-9a-z_]+$
 	ID string `json:"id,omitempty"`
+}
+
+// VPCRoutingTableRoute defines a route within a VPC Routing Table.
+// +kubebuilder:validation:XValidation:rule="self.action == 'deliver' ? has(self.nextHop) : true",message="nextHop must be set when action is deliver"
+// +kubebuilder:validation:XValidation:rule="self.action != 'deliver' ? !has(self.nextHop) : true",message="nextHop must not be set unless action is deliver"
+type VPCRoutingTableRoute struct {
+	// action defines the action to perform with a packet matching this route.
+	// +required
+	Action VPCRoutingTableRouteAction `json:"action,omitempty"`
+
+	// destination is the destination CIDR for the route.
+	// The host identifier in the CIDR must be zero.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=128
+	// +required
+	Destination string `json:"destination,omitempty"`
+
+	// name is an optional name for the route.
+	// If unspecified, IBM Cloud will generate a name.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// nextHop is the next-hop IP address for routes with action deliver.
+	// Must be a unicast IP address within a subnet in the routing table's VPC.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=39
+	// +optional
+	NextHop string `json:"nextHop,omitempty"`
+
+	// zone is the name of the availability zone to apply the route to.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +required
+	Zone string `json:"zone,omitempty"`
+
+	// advertise controls whether this route is advertised to the ingress sources
+	// configured on the routing table (e.g. Transit Gateway).
+	// When omitted, the IBM Cloud API defaults to Disabled.
+	// +optional
+	Advertise RouteAdvertisePolicy `json:"advertise,omitempty"`
+}
+
+// VPCRoutingTable defines a VPC Routing Table to create or reference for the cluster's VPC.
+// +kubebuilder:validation:XValidation:rule="has(self.id) || has(self.name)",message="an id or name must be provided"
+type VPCRoutingTable struct {
+	// id of the Routing Table.
+	// When specified, the existing routing table is used and no new routing table is created.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// name of the Routing Table.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// routes defines the set of routes to create in the routing table.
+	// Routes are only created when the routing table is created by the controller (i.e., no id is provided).
+	// +optional
+	// +kubebuilder:validation:MaxItems=200
+	// +listType=atomic
+	Routes []VPCRoutingTableRoute `json:"routes,omitempty"`
+
+	// routeDirectLinkIngress defines whether this routing table routes traffic from Direct Link.
+	// Only one routing table per VPC may have this set to Enabled.
+	// +optional
+	RouteDirectLinkIngress RoutingTableIngressPolicy `json:"routeDirectLinkIngress,omitempty"`
+
+	// routeTransitGatewayIngress defines whether this routing table routes traffic from Transit Gateway.
+	// Only one routing table per VPC may have this set to Enabled.
+	// +optional
+	RouteTransitGatewayIngress RoutingTableIngressPolicy `json:"routeTransitGatewayIngress,omitempty"`
+
+	// routeVPCZoneIngress defines whether this routing table routes traffic from subnets in other zones.
+	// Only one routing table per VPC may have this set to Enabled.
+	// +optional
+	RouteVPCZoneIngress RoutingTableIngressPolicy `json:"routeVPCZoneIngress,omitempty"`
+
+	// advertiseRoutesTo defines the ingress sources to which routes in this routing table will be advertised.
+	// +optional
+	// +kubebuilder:validation:MaxItems=2
+	// +listType=set
+	AdvertiseRoutesTo []AdvertiseRouteTarget `json:"advertiseRoutesTo,omitempty"`
+}
+
+// VPCRoutingTableStatus tracks the observed state of a VPC Routing Table.
+type VPCRoutingTableStatus struct {
+	// id is the unique cloud identifier for this routing table.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	ID string `json:"id,omitempty"`
+
+	// name is the name of the routing table.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Name string `json:"name,omitempty"`
+
+	// ready indicates whether the routing table has reached a stable (active) state.
+	// +optional
+	Ready VPCRoutingTableReadyStatus `json:"ready,omitempty"`
 }
 
 // GetConditions returns the observations of the operational state of the IBMPowerVSCluster resource.
