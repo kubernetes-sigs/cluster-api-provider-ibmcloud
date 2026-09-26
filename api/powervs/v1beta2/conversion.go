@@ -446,6 +446,7 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.VPC = restored.Spec.VPC
 		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
 		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
+		dst.Spec.VPCRoutingTables = restored.Spec.VPCRoutingTables
 		dst.Spec.COSInstance = restored.Spec.COSInstance
 		// If Type was lost (v1beta2 annotation has no Type field), infer it from provision/reference data
 		if dst.Spec.COSInstance.Type == "" {
@@ -459,8 +460,11 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Status.VPC = restored.Status.VPC
 		dst.Status.VPCSubnets = restored.Status.VPCSubnets
 		dst.Status.LoadBalancers = restored.Status.LoadBalancers
+		dst.Status.VPCRoutingTables = restored.Status.VPCRoutingTables
+		if len(dst.Status.VPCRoutingTables) == 0 {
+			dst.Status.VPCRoutingTables = nil
+		}
 		dst.Status.COSInstance = restored.Status.COSInstance
-		dst.Annotations = restored.Annotations
 	}
 
 	// Preserve empty/unknown topology when the legacy annotation is absent.
@@ -488,6 +492,13 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta3_IBMPowerVSCluster_To_v1beta2_IBMPowerVSCluster(src, dst, nil); err != nil {
 		return err
 	}
+	// Normalize empty slices to nil so JSON round-trip is stable.
+	if len(src.Spec.VPCRoutingTables) == 0 {
+		src.Spec.VPCRoutingTables = nil
+	}
+	if len(src.Status.VPCRoutingTables) == 0 {
+		src.Status.VPCRoutingTables = nil
+	}
 
 	// Map the v1beta3 Topology explicit enum back to the v1beta2 annotation.
 	// Preserve empty/unknown hub topology by not forcing the legacy annotation state.
@@ -503,37 +514,10 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 	}
 
-	restored := &IBMPowerVSCluster{
-		Spec: IBMPowerVSClusterSpec{
-			VPC:           dst.Spec.VPC,
-			VPCSubnets:    dst.Spec.VPCSubnets,
-			LoadBalancers: dst.Spec.LoadBalancers,
-			CosInstance:   dst.Spec.CosInstance,
-			Ignition:      dst.Spec.Ignition,
-		},
-		Status: IBMPowerVSClusterStatus{
-			VPC:           dst.Status.VPC,
-			VPCSubnet:     dst.Status.VPCSubnet,
-			LoadBalancers: dst.Status.LoadBalancers,
-			COSInstance:   dst.Status.COSInstance,
-		},
-	}
-	if err := utilconversion.MarshalData(restored, dst); err != nil {
+	// Marshal the full v1beta3 source into the annotation so hub-only fields
+	// (e.g. VPCRoutingTables, VPCSecurityGroups) survive a hub→spoke→hub round-trip.
+	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
-	}
-
-	if ok, err := utilconversion.UnmarshalData(dst, restored); err != nil {
-		return err
-	} else if ok {
-		dst.Spec.VPC = restored.Spec.VPC
-		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
-		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
-		dst.Spec.CosInstance = restored.Spec.CosInstance
-		dst.Spec.Ignition = restored.Spec.Ignition
-		dst.Status.VPC = restored.Status.VPC
-		dst.Status.VPCSubnet = restored.Status.VPCSubnet
-		dst.Status.LoadBalancers = restored.Status.LoadBalancers
-		dst.Status.COSInstance = restored.Status.COSInstance
 	}
 
 	// Fix annotation discrepancy during round-trip
@@ -577,33 +561,10 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta3_IBMPowerVSClusterTemplate_To_v1beta2_IBMPowerVSClusterTemplate(src, dst, nil); err != nil {
 		return err
 	}
-	restored := &IBMPowerVSClusterTemplate{
-		Spec: IBMPowerVSClusterTemplateSpec{
-			Template: IBMPowerVSClusterTemplateResource{
-				ObjectMeta: dst.Spec.Template.ObjectMeta,
-				Spec: IBMPowerVSClusterSpec{
-					VPC:           dst.Spec.Template.Spec.VPC,
-					VPCSubnets:    dst.Spec.Template.Spec.VPCSubnets,
-					LoadBalancers: dst.Spec.Template.Spec.LoadBalancers,
-					CosInstance:   dst.Spec.Template.Spec.CosInstance,
-					Ignition:      dst.Spec.Template.Spec.Ignition,
-				},
-			},
-		},
-	}
-	if err := utilconversion.MarshalData(restored, dst); err != nil {
+	// Marshal the full v1beta3 source so hub-only fields (e.g. VPCRoutingTables)
+	// survive a hub→spoke→hub round-trip.
+	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
-	}
-
-	if ok, err := utilconversion.UnmarshalData(dst, restored); err != nil {
-		return err
-	} else if ok {
-		dst.Spec.Template.ObjectMeta = restored.Spec.Template.ObjectMeta
-		dst.Spec.Template.Spec.VPC = restored.Spec.Template.Spec.VPC
-		dst.Spec.Template.Spec.VPCSubnets = restored.Spec.Template.Spec.VPCSubnets
-		dst.Spec.Template.Spec.LoadBalancers = restored.Spec.Template.Spec.LoadBalancers
-		dst.Spec.Template.Spec.CosInstance = restored.Spec.Template.Spec.CosInstance
-		dst.Spec.Template.Spec.Ignition = restored.Spec.Template.Spec.Ignition
 	}
 
 	if len(dst.Annotations) == 0 {

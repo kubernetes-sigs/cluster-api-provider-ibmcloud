@@ -546,6 +546,72 @@ func (s *Service) GetVolume(options *vpcv1.GetVolumeOptions) (result *vpcv1.Volu
 	return s.vpcService.GetVolume(options)
 }
 
+// CreateVPCRoutingTable creates a new VPC routing table.
+func (s *Service) CreateVPCRoutingTable(options *vpcv1.CreateVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	return s.vpcService.CreateVPCRoutingTable(options)
+}
+
+// DeleteVPCRoutingTable deletes a VPC routing table.
+func (s *Service) DeleteVPCRoutingTable(options *vpcv1.DeleteVPCRoutingTableOptions) (*core.DetailedResponse, error) {
+	return s.vpcService.DeleteVPCRoutingTable(options)
+}
+
+// GetVPCRoutingTable retrieves a VPC routing table by ID.
+func (s *Service) GetVPCRoutingTable(options *vpcv1.GetVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	return s.vpcService.GetVPCRoutingTable(options)
+}
+
+// ListVPCRoutingTables lists the routing tables for a VPC.
+func (s *Service) ListVPCRoutingTables(options *vpcv1.ListVPCRoutingTablesOptions) (*vpcv1.RoutingTableCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListVPCRoutingTables(options)
+}
+
+// GetVPCRoutingTableByName looks up a VPC routing table by name within the given VPC.
+// Returns nil if no routing table with that name is found.
+func (s *Service) GetVPCRoutingTableByName(vpcID string, name string) (*vpcv1.RoutingTable, error) {
+	var result *vpcv1.RoutingTable
+	f := func(start string) (bool, string, error) {
+		options := &vpcv1.ListVPCRoutingTablesOptions{
+			VPCID: &vpcID,
+		}
+		if start != "" {
+			options.Start = &start
+		}
+		collection, _, err := s.vpcService.ListVPCRoutingTables(options)
+		if err != nil {
+			return false, "", err
+		}
+		if collection == nil {
+			return true, "", nil
+		}
+		for i := range collection.RoutingTables {
+			rt := &collection.RoutingTables[i]
+			if rt.Name != nil && *rt.Name == name {
+				result = rt
+				return true, "", nil
+			}
+		}
+		if collection.Next != nil && collection.Next.Href != nil && *collection.Next.Href != "" {
+			return false, *collection.Next.Href, nil
+		}
+		return true, "", nil
+	}
+	if err := paging.Helper(f); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// GetSubnetRoutingTable retrieves the routing table attached to a subnet.
+func (s *Service) GetSubnetRoutingTable(options *vpcv1.GetSubnetRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	return s.vpcService.GetSubnetRoutingTable(options)
+}
+
+// ReplaceSubnetRoutingTable replaces the routing table attached to a subnet.
+func (s *Service) ReplaceSubnetRoutingTable(options *vpcv1.ReplaceSubnetRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+	return s.vpcService.ReplaceSubnetRoutingTable(options)
+}
+
 // NewService returns a new VPC Service.
 func NewService(svcEndpoint string) (Vpc, error) {
 	service := &Service{}

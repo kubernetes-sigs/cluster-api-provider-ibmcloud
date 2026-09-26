@@ -464,6 +464,19 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 			}
 		}
 	}
+
+	if len(in.VPCRoutingTables) == 0 {
+		in.VPCRoutingTables = nil
+	} else {
+		for i := range in.VPCRoutingTables {
+			if len(in.VPCRoutingTables[i].Routes) == 0 {
+				in.VPCRoutingTables[i].Routes = nil
+			}
+			if len(in.VPCRoutingTables[i].AdvertiseRoutesTo) == 0 {
+				in.VPCRoutingTables[i].AdvertiseRoutesTo = nil
+			}
+		}
+	}
 }
 
 func spokeIBMPowerVSClusterStatus(in *IBMPowerVSClusterStatus, c randfill.Continue) {
