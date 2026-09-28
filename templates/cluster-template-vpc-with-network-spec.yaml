@@ -49,8 +49,7 @@ spec:
     securityGroups:
     - name: ${CLUSTER_NAME}-lb-sg
       rules:
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: tcp
           portRange:
@@ -58,8 +57,7 @@ spec:
             maximumPort: 6443
           remotes:
           - remoteType: any
-      - action: allow
-        direction: outbound
+      - direction: outbound
         destination:
           protocol: tcp
           portRange:
@@ -70,8 +68,7 @@ spec:
             securityGroupName: ${CLUSTER_NAME}-controlplane-sg
     - name: ${CLUSTER_NAME}-controlplane-sg
       rules:
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: tcp
           portRange:
@@ -80,8 +77,7 @@ spec:
           remotes:
           - remoteType: sg
             securityGroupName: ${CLUSTER_NAME}-lb-sg
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: tcp
           portRange:
@@ -90,8 +86,7 @@ spec:
           remotes:
           - remoteType: cidr
             cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: tcp
           portRange:
@@ -104,8 +99,7 @@ spec:
       # For a production cluster, drop this rule and add only your CNI's required ports instead
       # (e.g. Calico VXLAN udp/4789 + Typha tcp/5473). The rules above are the Kubernetes baseline;
       # this broad rule trades tight security for easy try-outs.
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: any
           remotes:
@@ -113,16 +107,14 @@ spec:
             cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
           - remoteType: cidr
             cidrSubnetName: ${CLUSTER_NAME}-worker-subnet
-      - action: allow
-        direction: outbound
+      - direction: outbound
         destination:
           protocol: any
           remotes:
           - remoteType: any
     - name: ${CLUSTER_NAME}-worker-sg
       rules:
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: tcp
           portRange:
@@ -131,8 +123,7 @@ spec:
           remotes:
           - remoteType: cidr
             cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: tcp
           portRange:
@@ -143,8 +134,7 @@ spec:
             cidrSubnetName: ${CLUSTER_NAME}-worker-subnet
       # Convenience rule: allow ALL traffic between cluster nodes (see the note on the control-plane SG).
       # For a production cluster, drop this rule and use your CNI's specific ports instead.
-      - action: allow
-        direction: inbound
+      - direction: inbound
         source:
           protocol: any
           remotes:
@@ -152,8 +142,7 @@ spec:
             cidrSubnetName: ${CLUSTER_NAME}-controlplane-subnet
           - remoteType: cidr
             cidrSubnetName: ${CLUSTER_NAME}-worker-subnet
-      - action: allow
-        direction: outbound
+      - direction: outbound
         destination:
           protocol: any
           remotes:
