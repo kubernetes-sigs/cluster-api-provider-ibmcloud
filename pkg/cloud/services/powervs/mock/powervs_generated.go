@@ -101,6 +101,21 @@ func (mr *MockPowerVSMockRecorder) CreateInstance(ctx, body any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstance", reflect.TypeOf((*MockPowerVS)(nil).CreateInstance), ctx, body)
 }
 
+// CreateNetwork mocks base method.
+func (m *MockPowerVS) CreateNetwork(ctx context.Context, body *models.NetworkCreate) (*models.Network, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateNetwork", ctx, body)
+	ret0, _ := ret[0].(*models.Network)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateNetwork indicates an expected call of CreateNetwork.
+func (mr *MockPowerVSMockRecorder) CreateNetwork(ctx, body any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNetwork", reflect.TypeOf((*MockPowerVS)(nil).CreateNetwork), ctx, body)
+}
+
 // DeleteDHCPServer mocks base method.
 func (m *MockPowerVS) DeleteDHCPServer(ctx context.Context, id string) error {
 	m.ctrl.T.Helper()
@@ -155,6 +170,20 @@ func (m *MockPowerVS) DeleteJob(ctx context.Context, id string) error {
 func (mr *MockPowerVSMockRecorder) DeleteJob(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteJob", reflect.TypeOf((*MockPowerVS)(nil).DeleteJob), ctx, id)
+}
+
+// DeleteNetwork mocks base method.
+func (m *MockPowerVS) DeleteNetwork(ctx context.Context, id string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteNetwork", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteNetwork indicates an expected call of DeleteNetwork.
+func (mr *MockPowerVSMockRecorder) DeleteNetwork(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNetwork", reflect.TypeOf((*MockPowerVS)(nil).DeleteNetwork), ctx, id)
 }
 
 // GetCosImages mocks base method.
