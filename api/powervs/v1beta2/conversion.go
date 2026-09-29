@@ -822,6 +822,7 @@ func convertV1beta2NetworkToV1beta3(in *IBMPowerVSClusterSpec, out *infrav1.IBMP
 	}
 
 	out.Network.Type = infrav1.SourceTypeProvision
+	out.Network.Provision.Type = infrav1.NetworkProvisionTypeDHCPServer
 	return Convert_v1beta2_DHCPServer_To_v1beta3_DHCPServer(in.DHCPServer, &out.Network.Provision.DHCPServer, nil)
 }
 
@@ -897,12 +898,19 @@ func Convert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(in *
 		}
 		out.DHCPServer = nil
 	case infrav1.SourceTypeProvision:
-		// Convert provision to DHCPServer
-		dhcp := &DHCPServer{}
-		if err := Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(&in.Network.Provision.DHCPServer, dhcp, nil); err != nil {
-			return err
+		// Use the explicit ProvisionType discriminant to route to the correct path.
+		// Note: v1beta2 only supports the DHCPServer path; DHCPSubnet is a v1beta3-only feature
+		prov := in.Network.Provision
+		if prov.Type != infrav1.NetworkProvisionTypeDHCPSubnet {
+			dhcp := &DHCPServer{}
+			if err := Convert_v1beta3_DHCPServer_To_v1beta2_DHCPServer(&in.Network.Provision.DHCPServer, dhcp, nil); err != nil {
+				return err
+			}
+			out.DHCPServer = dhcp
+		} else {
+			// DHCPSubnet is v1beta3-only — nothing to store in v1beta2 spoke.
+			out.DHCPServer = nil
 		}
-		out.DHCPServer = dhcp
 		// Clear network reference when provisioning
 		out.Network.ID = nil
 		out.Network.Name = nil
