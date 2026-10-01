@@ -1459,6 +1459,17 @@ spec:
                                 - round_robin
                                 - weighted_round_robin
                                 type: string
+                              failsafePolicy:
+                                description: |-
+                                  failsafePolicy defines the action to take when all members of the pool are unhealthy.
+                                  For route-mode network load balancers, use "bypass" to send traffic directly to member IPs.
+                                  When omitted, the IBM Cloud default for the load balancer profile is used.
+                                enum:
+                                - bypass
+                                - drop
+                                - fail
+                                - forward
+                                type: string
                               healthMonitor:
                                 description: healthMonitor defines the backend pool's
                                   health monitor.
@@ -1548,6 +1559,24 @@ spec:
                           minLength: 1
                           pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                           type: string
+                        profile:
+                          description: |-
+                            profile defines the profile to use for this load balancer.
+                            Supported values are "application" and "network-fixed".
+                            When omitted, the IBM Cloud default (application) is used.
+                          enum:
+                          - application
+                          - network-fixed
+                          type: string
+                        routeMode:
+                          description: |-
+                            routeMode enables routing mode on the load balancer, making it act as a Layer 3
+                            next-hop router rather than a load balancer. Only valid when profile is "network-fixed".
+                            Required when using the load balancer as a VNF next-hop for a VPC routing table route.
+                          enum:
+                          - Enabled
+                          - Disabled
+                          type: string
                         securityGroups:
                           description: securityGroups defines the Security Groups
                             to attach to the load balancer.
@@ -1610,6 +1639,10 @@ spec:
                           - Private
                           type: string
                       type: object
+                      x-kubernetes-validations:
+                      - message: routeMode can only be enabled when profile is network-fixed
+                        rule: '!has(self.routeMode) || self.routeMode != ''Enabled''
+                          || (has(self.profile) && self.profile == ''network-fixed'')'
                     reference:
                       description: reference contains the information to identify
                         an existing Load Balancer.
