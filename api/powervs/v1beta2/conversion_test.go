@@ -423,6 +423,13 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 					in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePrivate {
 					in.LoadBalancers[i].Provision.Type = infrav1.LoadBalancerTypePrivate
 				}
+				// Profile, RouteMode, and FailsafePolicy are v1beta3-only fields; v1beta2 has no concept of them.
+				// They do not survive the round-trip so clear them here.
+				in.LoadBalancers[i].Provision.Profile = ""
+				in.LoadBalancers[i].Provision.RouteMode = ""
+				for j := range in.LoadBalancers[i].Provision.BackendPools {
+					in.LoadBalancers[i].Provision.BackendPools[j].FailsafePolicy = ""
+				}
 				if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
 					in.LoadBalancers[i].Provision.AdditionalListeners = nil
 				}
@@ -453,8 +460,18 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 						in.LoadBalancers[i].Provision.Type != infrav1.LoadBalancerTypePrivate {
 						in.LoadBalancers[i].Provision.Type = infrav1.LoadBalancerTypePrivate
 					}
+					// Profile, RouteMode, and FailsafePolicy are v1beta3-only fields; v1beta2 has no concept of them.
+					// They do not survive the round-trip so clear them here.
+					in.LoadBalancers[i].Provision.Profile = ""
+					in.LoadBalancers[i].Provision.RouteMode = ""
+					for j := range in.LoadBalancers[i].Provision.BackendPools {
+						in.LoadBalancers[i].Provision.BackendPools[j].FailsafePolicy = ""
+					}
 					if len(in.LoadBalancers[i].Provision.AdditionalListeners) == 0 {
 						in.LoadBalancers[i].Provision.AdditionalListeners = nil
+					}
+					if len(in.LoadBalancers[i].Provision.BackendPools) == 0 {
+						in.LoadBalancers[i].Provision.BackendPools = nil
 					}
 					if in.LoadBalancers[i].Provision.Name == "" {
 						in.LoadBalancers[i].Type = ""

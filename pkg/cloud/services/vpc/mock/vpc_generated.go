@@ -120,6 +120,38 @@ func (mr *MockVpcMockRecorder) CreateLoadBalancer(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateLoadBalancer", reflect.TypeOf((*MockVpc)(nil).CreateLoadBalancer), options)
 }
 
+// CreateLoadBalancerListener mocks base method.
+func (m *MockVpc) CreateLoadBalancerListener(options *vpcv1.CreateLoadBalancerListenerOptions) (*vpcv1.LoadBalancerListener, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateLoadBalancerListener", options)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancerListener)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateLoadBalancerListener indicates an expected call of CreateLoadBalancerListener.
+func (mr *MockVpcMockRecorder) CreateLoadBalancerListener(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateLoadBalancerListener", reflect.TypeOf((*MockVpc)(nil).CreateLoadBalancerListener), options)
+}
+
+// CreateLoadBalancerPool mocks base method.
+func (m *MockVpc) CreateLoadBalancerPool(options *vpcv1.CreateLoadBalancerPoolOptions) (*vpcv1.LoadBalancerPool, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateLoadBalancerPool", options)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancerPool)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateLoadBalancerPool indicates an expected call of CreateLoadBalancerPool.
+func (mr *MockVpcMockRecorder) CreateLoadBalancerPool(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateLoadBalancerPool", reflect.TypeOf((*MockVpc)(nil).CreateLoadBalancerPool), options)
+}
+
 // CreateLoadBalancerPoolMember mocks base method.
 func (m *MockVpc) CreateLoadBalancerPoolMember(options *vpcv1.CreateLoadBalancerPoolMemberOptions) (*vpcv1.LoadBalancerPoolMember, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -712,6 +744,22 @@ func (mr *MockVpcMockRecorder) ListKeys(options any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListKeys", reflect.TypeOf((*MockVpc)(nil).ListKeys), options)
 }
 
+// ListLoadBalancerListeners mocks base method.
+func (m *MockVpc) ListLoadBalancerListeners(options *vpcv1.ListLoadBalancerListenersOptions) (*vpcv1.LoadBalancerListenerCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLoadBalancerListeners", options)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancerListenerCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListLoadBalancerListeners indicates an expected call of ListLoadBalancerListeners.
+func (mr *MockVpcMockRecorder) ListLoadBalancerListeners(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLoadBalancerListeners", reflect.TypeOf((*MockVpc)(nil).ListLoadBalancerListeners), options)
+}
+
 // ListLoadBalancerPoolMembers mocks base method.
 func (m *MockVpc) ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoolMembersOptions) (*vpcv1.LoadBalancerPoolMemberCollection, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
@@ -726,6 +774,22 @@ func (m *MockVpc) ListLoadBalancerPoolMembers(options *vpcv1.ListLoadBalancerPoo
 func (mr *MockVpcMockRecorder) ListLoadBalancerPoolMembers(options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLoadBalancerPoolMembers", reflect.TypeOf((*MockVpc)(nil).ListLoadBalancerPoolMembers), options)
+}
+
+// ListLoadBalancerPools mocks base method.
+func (m *MockVpc) ListLoadBalancerPools(options *vpcv1.ListLoadBalancerPoolsOptions) (*vpcv1.LoadBalancerPoolCollection, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListLoadBalancerPools", options)
+	ret0, _ := ret[0].(*vpcv1.LoadBalancerPoolCollection)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ListLoadBalancerPools indicates an expected call of ListLoadBalancerPools.
+func (mr *MockVpcMockRecorder) ListLoadBalancerPools(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListLoadBalancerPools", reflect.TypeOf((*MockVpc)(nil).ListLoadBalancerPools), options)
 }
 
 // ListLoadBalancers mocks base method.

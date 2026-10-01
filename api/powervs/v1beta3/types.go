@@ -167,6 +167,27 @@ var (
 	LoadBalancerListenerProtocolUDP LoadBalancerListenerProtocol = vpcv1.LoadBalancerListenerProtocolUDPConst
 )
 
+// LoadBalancerBackendPoolFailsafePolicy describes the failsafe policy action for a load balancer backend pool.
+// +kubebuilder:validation:Enum=bypass;drop;fail;forward
+type LoadBalancerBackendPoolFailsafePolicy string
+
+var (
+	// LoadBalancerBackendPoolFailsafePolicyBypass bypasses members and sends requests directly to their destination IPs.
+	// Only valid when the load balancer has route_mode enabled.
+	LoadBalancerBackendPoolFailsafePolicyBypass LoadBalancerBackendPoolFailsafePolicy = vpcv1.LoadBalancerPoolFailsafePolicyActionBypassConst
+
+	// LoadBalancerBackendPoolFailsafePolicyDrop drops requests. Only valid when pool protocol is tcp.
+	LoadBalancerBackendPoolFailsafePolicyDrop LoadBalancerBackendPoolFailsafePolicy = vpcv1.LoadBalancerPoolFailsafePolicyActionDropConst
+
+	// LoadBalancerBackendPoolFailsafePolicyFail fails requests with an HTTP 503 status code.
+	// Only valid when pool protocol is http or https.
+	LoadBalancerBackendPoolFailsafePolicyFail LoadBalancerBackendPoolFailsafePolicy = vpcv1.LoadBalancerPoolFailsafePolicyActionFailConst
+
+	// LoadBalancerBackendPoolFailsafePolicyForward forwards requests to the target pool.
+	// Only valid when pool protocol is http or https.
+	LoadBalancerBackendPoolFailsafePolicyForward LoadBalancerBackendPoolFailsafePolicy = vpcv1.LoadBalancerPoolFailsafePolicyActionForwardConst
+)
+
 // LoadBalancerBackendPoolHealthMonitorType describes the backend pool's health check protocol type.
 // +kubebuilder:validation:Enum=http;https;tcp
 type LoadBalancerBackendPoolHealthMonitorType string

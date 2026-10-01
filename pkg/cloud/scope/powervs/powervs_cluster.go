@@ -1811,6 +1811,15 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 			if isReady := s.checkLoadBalancerState(ctx, *loadBalancer); !isReady {
 				log.V(3).Info("LoadBalancer is still not Active", "loadBalancerName", lbName, "state", *loadBalancer.ProvisioningStatus)
 				isAnyLoadBalancerNotReady = true
+			} else if provision.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled {
+				// LB is active; ensure the bypass pool and portless listener exist.
+				requeue, err := s.reconcileRouteModeLoadBalancerResources(ctx, *loadBalancer.ID, provision)
+				if err != nil {
+					return false, fmt.Errorf("failed to reconcile route-mode resources for load balancer %s: %w", lbName, err)
+				}
+				if requeue {
+					isAnyLoadBalancerNotReady = true
+				}
 			}
 
 			s.SetLoadBalancerStatus(ctx, lbName, infrav1.LoadBalancerStatus{
@@ -1830,6 +1839,17 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 		if lbStatus != nil {
 			log.V(3).Info("Found load balancer in cloud", "loadBalancerID", lbStatus.ID)
 			s.SetLoadBalancerStatus(ctx, lbName, *lbStatus)
+			// If this is a route-mode LB found by name (first pass after creation), reconcile its resources.
+			if provision.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled &&
+				lbStatus.State == infrav1.LoadBalancerStateActive {
+				requeue, err := s.reconcileRouteModeLoadBalancerResources(ctx, lbStatus.ID, provision)
+				if err != nil {
+					return false, fmt.Errorf("failed to reconcile route-mode resources for load balancer %s: %w", lbName, err)
+				}
+				if requeue {
+					isAnyLoadBalancerNotReady = true
+				}
+			}
 			continue
 		}
 
@@ -1926,6 +1946,18 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 		ID: &resourceGroupID,
 	})
 
+	// Set the Load Balancer Profile if defined
+	if prov.Profile != "" {
+		options.SetProfile(&vpcv1.LoadBalancerProfileIdentityByName{
+			Name: ptr.To(string(prov.Profile)),
+		})
+	}
+
+	// Enable routing mode when requested — required for network-fixed LBs acting as VNF next-hops
+	if prov.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled {
+		options.SetRouteMode(true)
+	}
+
 	if len(s.IBMPowerVSCluster.Status.VPCSubnets) == 0 {
 		return nil, fmt.Errorf("no VPC subnets are present in cluster status for load balancer creation")
 	}
@@ -1940,42 +1972,47 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 		options.Subnets = append(options.Subnets, subnet)
 	}
 
-	options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
-		{
-			Algorithm:     core.StringPtr("round_robin"),
-			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
-			Name:          core.StringPtr(fmt.Sprintf("%s-pool-%d", lbName, s.APIServerPort())),
-			Protocol:      core.StringPtr("tcp"),
-		},
-	})
-
-	options.SetListeners([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
-		{
-			Protocol: core.StringPtr("tcp"),
-			Port:     core.Int64Ptr(int64(s.APIServerPort())),
-			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
-				Name: core.StringPtr(fmt.Sprintf("%s-pool-%d", lbName, s.APIServerPort())),
+	// Route-mode NLBs act as L3 next-hop routers — pools and listeners with fixed ports are
+	// not valid at creation time and the IBM Cloud API rejects them. The backend pool with
+	// Bypass failsafe policy and portless listener are configured separately post-creation.
+	if prov.RouteMode != infrav1.PowerVSLoadBalancerRouteModeEnabled {
+		options.SetPools([]vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
+			{
+				Algorithm:     core.StringPtr("round_robin"),
+				HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
+				Name:          core.StringPtr(fmt.Sprintf("%s-pool-%d", lbName, s.APIServerPort())),
+				Protocol:      core.StringPtr("tcp"),
 			},
-		},
-	})
+		})
 
-	for _, additionalListener := range prov.AdditionalListeners {
-		pool := vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
-			Algorithm:     core.StringPtr("round_robin"),
-			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
-			Name:          ptr.To(fmt.Sprintf("additional-pool-%d", additionalListener.Port)),
-			Protocol:      core.StringPtr("tcp"),
-		}
-		options.Pools = append(options.Pools, pool)
-
-		listener := vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
-			Protocol: core.StringPtr("tcp"),
-			Port:     core.Int64Ptr(additionalListener.Port),
-			DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
-				Name: ptr.To(fmt.Sprintf("additional-pool-%d", additionalListener.Port)),
+		options.SetListeners([]vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
+			{
+				Protocol: core.StringPtr("tcp"),
+				Port:     core.Int64Ptr(int64(s.APIServerPort())),
+				DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
+					Name: core.StringPtr(fmt.Sprintf("%s-pool-%d", lbName, s.APIServerPort())),
+				},
 			},
+		})
+
+		for _, additionalListener := range prov.AdditionalListeners {
+			pool := vpcv1.LoadBalancerPoolPrototypeLoadBalancerContext{
+				Algorithm:     core.StringPtr("round_robin"),
+				HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{Delay: core.Int64Ptr(5), MaxRetries: core.Int64Ptr(2), Timeout: core.Int64Ptr(2), Type: core.StringPtr("tcp")},
+				Name:          ptr.To(fmt.Sprintf("additional-pool-%d", additionalListener.Port)),
+				Protocol:      core.StringPtr("tcp"),
+			}
+			options.Pools = append(options.Pools, pool)
+
+			listener := vpcv1.LoadBalancerListenerPrototypeLoadBalancerContext{
+				Protocol: core.StringPtr("tcp"),
+				Port:     core.Int64Ptr(additionalListener.Port),
+				DefaultPool: &vpcv1.LoadBalancerPoolIdentityByName{
+					Name: ptr.To(fmt.Sprintf("additional-pool-%d", additionalListener.Port)),
+				},
+			}
+			options.Listeners = append(options.Listeners, listener)
 		}
-		options.Listeners = append(options.Listeners, listener)
 	}
 
 	log.V(5).Info("Creating load balancer", "options", options)
@@ -1991,6 +2028,129 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 		State:    lbState,
 		Hostname: ptr.Deref(loadBalancer.Hostname, ""),
 	}, nil
+}
+
+// reconcileRouteModeLoadBalancerResources creates the backend pool (with Bypass failsafe policy) and
+// front-end listener for a route-mode network load balancer, post-creation.
+//
+// Route-mode NLBs act as L3 next-hop routers. The IBM Cloud API rejects pools and listeners at LB
+// creation time, so they must be added once the LB reaches active state. This function is idempotent:
+// it checks for existing pools/listeners before issuing any create calls. It returns (true, nil) when
+// a write was issued and a requeue is needed, (false, nil) when everything is already in place.
+func (s *ClusterScope) reconcileRouteModeLoadBalancerResources(ctx context.Context, lbID string, prov infrav1.LoadBalancerProvision) (requeue bool, err error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	// --- Pools ---
+	// Route-mode NLBs support multiple backend pools but only a single front-end listener.
+	poolsResp, _, err := s.IBMVPCClient.ListLoadBalancerPools(&vpcv1.ListLoadBalancerPoolsOptions{
+		LoadBalancerID: &lbID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to list pools for route-mode load balancer %s: %w", lbID, err)
+	}
+
+	// Build a set of existing pool names for idempotency checks.
+	existingPools := make(map[string]string) // name → ID
+	for _, p := range poolsResp.Pools {
+		if p.Name != nil && p.ID != nil {
+			existingPools[*p.Name] = *p.ID
+		}
+	}
+
+	// Determine the pools to create — from spec if provided, otherwise one default bypass pool.
+	specPools := prov.BackendPools
+	if len(specPools) == 0 {
+		specPools = []infrav1.LoadBalancerBackendPool{
+			{
+				Name:           fmt.Sprintf("%s-pool", prov.Name),
+				FailsafePolicy: infrav1.LoadBalancerBackendPoolFailsafePolicyBypass,
+				Algorithm:      infrav1.LoadBalancerBackendPoolAlgorithmRoundRobin,
+				Protocol:       infrav1.LoadBalancerBackendPoolProtocolTCP,
+				HealthMonitor: infrav1.LoadBalancerHealthMonitor{
+					Delay: 5, Retries: 2, Timeout: 2,
+					Type: infrav1.LoadBalancerBackendPoolHealthMonitorTypeTCP,
+				},
+			},
+		}
+	}
+
+	for _, specPool := range specPools {
+		poolName := specPool.Name
+		if poolName == "" {
+			poolName = fmt.Sprintf("%s-pool", prov.Name)
+		}
+		if _, exists := existingPools[poolName]; exists {
+			log.V(3).Info("Backend pool already exists, skipping", "loadBalancerID", lbID, "poolName", poolName)
+			continue
+		}
+
+		failsafeAction := string(infrav1.LoadBalancerBackendPoolFailsafePolicyBypass)
+		if specPool.FailsafePolicy != "" {
+			failsafeAction = string(specPool.FailsafePolicy)
+		}
+
+		log.Info("Creating backend pool for route-mode load balancer", "loadBalancerID", lbID, "poolName", poolName, "failsafePolicy", failsafeAction)
+		pool, _, err := s.IBMVPCClient.CreateLoadBalancerPool(&vpcv1.CreateLoadBalancerPoolOptions{
+			LoadBalancerID: &lbID,
+			Algorithm:      core.StringPtr(string(specPool.Algorithm)),
+			Protocol:       core.StringPtr(string(specPool.Protocol)),
+			HealthMonitor: &vpcv1.LoadBalancerPoolHealthMonitorPrototype{
+				Delay:      core.Int64Ptr(specPool.HealthMonitor.Delay),
+				MaxRetries: core.Int64Ptr(specPool.HealthMonitor.Retries),
+				Timeout:    core.Int64Ptr(specPool.HealthMonitor.Timeout),
+				Type:       core.StringPtr(string(specPool.HealthMonitor.Type)),
+			},
+			FailsafePolicy: &vpcv1.LoadBalancerPoolFailsafePolicyPrototype{
+				Action: core.StringPtr(failsafeAction),
+			},
+			Name: core.StringPtr(poolName),
+		})
+		if err != nil {
+			return false, fmt.Errorf("failed to create backend pool %s for route-mode load balancer %s: %w", poolName, lbID, err)
+		}
+		log.Info("Created backend pool for route-mode load balancer", "loadBalancerID", lbID, "poolID", *pool.ID, "poolName", *pool.Name)
+		existingPools[*pool.Name] = *pool.ID
+		// LB is now update_pending after each pool write; requeue to let it settle.
+		return true, nil
+	}
+
+	// Use the first pool as the listener's default pool (the single listener covers all ports).
+	var poolID, poolName string
+	for name, id := range existingPools {
+		poolID = id
+		poolName = name
+		break
+	}
+
+	// --- Listener ---
+	listenersResp, _, err := s.IBMVPCClient.ListLoadBalancerListeners(&vpcv1.ListLoadBalancerListenersOptions{
+		LoadBalancerID: &lbID,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to list listeners for route-mode load balancer %s: %w", lbID, err)
+	}
+
+	if len(listenersResp.Listeners) == 0 {
+		log.Info("Creating front-end listener for route-mode load balancer", "loadBalancerID", lbID, "defaultPool", poolName)
+		_, _, err := s.IBMVPCClient.CreateLoadBalancerListener(&vpcv1.CreateLoadBalancerListenerOptions{
+			LoadBalancerID: &lbID,
+			Protocol:       core.StringPtr(string(infrav1.LoadBalancerListenerProtocolTCP)),
+			// Route-mode listeners must span the full port range (1–65535) rather than a fixed port.
+			PortMin: core.Int64Ptr(1),
+			PortMax: core.Int64Ptr(65535),
+			DefaultPool: &vpcv1.LoadBalancerPoolIdentityLoadBalancerPoolIdentityByID{
+				ID: &poolID,
+			},
+		})
+		if err != nil {
+			return false, fmt.Errorf("failed to create front-end listener for route-mode load balancer %s: %w", lbID, err)
+		}
+		log.Info("Created front-end listener for route-mode load balancer", "loadBalancerID", lbID, "defaultPool", poolName)
+		return true, nil
+	}
+
+	log.V(3).Info("Route-mode load balancer pool and listener already exist, nothing to do", "loadBalancerID", lbID)
+	return false, nil
 }
 
 // checkLoadBalancerState checks the state of a VPC load balancer.

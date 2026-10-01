@@ -184,6 +184,26 @@ func (s *Service) GetLoadBalancer(options *vpcv1.GetLoadBalancerOptions) (*vpcv1
 	return s.vpcService.GetLoadBalancer(options)
 }
 
+// CreateLoadBalancerPool creates a new load balancer pool.
+func (s *Service) CreateLoadBalancerPool(options *vpcv1.CreateLoadBalancerPoolOptions) (*vpcv1.LoadBalancerPool, *core.DetailedResponse, error) {
+	return s.vpcService.CreateLoadBalancerPool(options)
+}
+
+// ListLoadBalancerPools returns all pools for a load balancer.
+func (s *Service) ListLoadBalancerPools(options *vpcv1.ListLoadBalancerPoolsOptions) (*vpcv1.LoadBalancerPoolCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListLoadBalancerPools(options)
+}
+
+// CreateLoadBalancerListener creates a new listener on a load balancer.
+func (s *Service) CreateLoadBalancerListener(options *vpcv1.CreateLoadBalancerListenerOptions) (*vpcv1.LoadBalancerListener, *core.DetailedResponse, error) {
+	return s.vpcService.CreateLoadBalancerListener(options)
+}
+
+// ListLoadBalancerListeners returns all listeners for a load balancer.
+func (s *Service) ListLoadBalancerListeners(options *vpcv1.ListLoadBalancerListenersOptions) (*vpcv1.LoadBalancerListenerCollection, *core.DetailedResponse, error) {
+	return s.vpcService.ListLoadBalancerListeners(options)
+}
+
 // CreateLoadBalancerPoolMember creates a new member and adds the member to the pool.
 func (s *Service) CreateLoadBalancerPoolMember(options *vpcv1.CreateLoadBalancerPoolMemberOptions) (*vpcv1.LoadBalancerPoolMember, *core.DetailedResponse, error) {
 	return s.vpcService.CreateLoadBalancerPoolMember(options)

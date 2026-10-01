@@ -108,14 +108,32 @@ func validateIBMPowerVSClusterLoadBalancers(cluster *infrav1.IBMPowerVSCluster) 
 		return allErrs
 	}
 
+	hasPublic := false
+	hasRouteMode := false
 	for _, loadBalancer := range cluster.Spec.LoadBalancers {
-		if loadBalancer.Type == infrav1.SourceTypeProvision &&
-			(loadBalancer.Provision.Type == infrav1.LoadBalancerTypePublic || loadBalancer.Provision.Type == "") {
-			return allErrs
+		if loadBalancer.Type != infrav1.SourceTypeProvision {
+			continue
+		}
+		// A route-mode LB is a private VNF next-hop, not an API server endpoint.
+		// It does not serve as the API server endpoint, so skip it for the public check.
+		if loadBalancer.Provision.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled {
+			hasRouteMode = true
+			continue
+		}
+		if loadBalancer.Provision.Type == infrav1.LoadBalancerTypePublic || loadBalancer.Provision.Type == "" {
+			hasPublic = true
 		}
 	}
 
-	return append(allErrs, field.Invalid(field.NewPath("spec").Child("loadBalancers"), cluster.Spec.LoadBalancers, "at least one load balancer must be public"))
+	// If every provisioned LB is route-mode, the cluster is using the outbound
+	// routing topology — skip the public LB requirement.
+	if hasRouteMode && !hasPublic {
+		return allErrs
+	}
+	if !hasPublic {
+		return append(allErrs, field.Invalid(field.NewPath("spec").Child("loadBalancers"), cluster.Spec.LoadBalancers, "at least one load balancer must be public"))
+	}
+	return allErrs
 }
 
 func validateIBMPowerVSClusterLoadBalancerNames(cluster *infrav1.IBMPowerVSCluster) (allErrs field.ErrorList) {
