@@ -961,6 +961,57 @@ func TestIBMPowerVSClusterLoadBalancers(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			// A private network-fixed LB with routeMode: Enabled → should succeed even though there is no public LB.
+			name: "Should allow a private route-mode NLB with no public LB",
+			powervsCluster: func() *infrav1.IBMPowerVSCluster {
+				spec := baseSpec()
+				spec.LoadBalancers = []infrav1.LoadBalancerSource{
+					{
+						Type: infrav1.SourceTypeProvision,
+						Provision: infrav1.LoadBalancerProvision{
+							Name:      "nlb-route-mode",
+							Type:      infrav1.LoadBalancerTypePrivate,
+							Profile:   infrav1.PowerVSLoadBalancerProfileNetworkFixed,
+							RouteMode: infrav1.PowerVSLoadBalancerRouteModeEnabled,
+						},
+					},
+				}
+				return &infrav1.IBMPowerVSCluster{Spec: spec}
+			}(),
+			wantErr: false,
+		},
+		{
+			// A private LB + a route-mode NLB, but no public LB → should pass.
+			// This is the mixed-list scenario that exposed the early-return bug:
+			// the old code would hit the private LB first (not route-mode, not public),
+			// fall through, then early-return on the route-mode LB — passing by accident
+			// only when route-mode appeared second. The fix scans all LBs before deciding.
+			name: "Should allow when private LB and route-mode NLB exist but no public LB",
+			powervsCluster: func() *infrav1.IBMPowerVSCluster {
+				spec := baseSpec()
+				spec.LoadBalancers = []infrav1.LoadBalancerSource{
+					{
+						Type: infrav1.SourceTypeProvision,
+						Provision: infrav1.LoadBalancerProvision{
+							Name: "private-lb",
+							Type: infrav1.LoadBalancerTypePrivate,
+						},
+					},
+					{
+						Type: infrav1.SourceTypeProvision,
+						Provision: infrav1.LoadBalancerProvision{
+							Name:      "nlb-route-mode",
+							Type:      infrav1.LoadBalancerTypePrivate,
+							Profile:   infrav1.PowerVSLoadBalancerProfileNetworkFixed,
+							RouteMode: infrav1.PowerVSLoadBalancerRouteModeEnabled,
+						},
+					},
+				}
+				return &infrav1.IBMPowerVSCluster{Spec: spec}
+			}(),
+			wantErr: false,
+		},
+		{
 			// At least one public load balancer → should succeed.
 			name: "Should allow when at least one public load balancer is configured",
 			powervsCluster: func() *infrav1.IBMPowerVSCluster {

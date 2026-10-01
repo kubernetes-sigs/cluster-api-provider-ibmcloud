@@ -86,6 +86,32 @@ const (
 	LoadBalancerTypePrivate LoadBalancerType = "Private"
 )
 
+// PowerVSLoadBalancerProfile defines the profile for a VPC Load Balancer used with a PowerVS cluster.
+// +kubebuilder:validation:Enum=application;network-fixed
+type PowerVSLoadBalancerProfile string
+
+const (
+	// PowerVSLoadBalancerProfileApplication is the standard application load balancer profile.
+	PowerVSLoadBalancerProfileApplication PowerVSLoadBalancerProfile = "application"
+
+	// PowerVSLoadBalancerProfileNetworkFixed is the network load balancer (NLB) profile.
+	// The value "network-fixed" matches the IBM Cloud VPC Load Balancer API profile name directly.
+	PowerVSLoadBalancerProfileNetworkFixed PowerVSLoadBalancerProfile = "network-fixed"
+)
+
+// PowerVSLoadBalancerRouteMode defines whether routing mode is enabled on a VPC Load Balancer.
+// +kubebuilder:validation:Enum=Enabled;Disabled
+type PowerVSLoadBalancerRouteMode string
+
+const (
+	// PowerVSLoadBalancerRouteModeEnabled enables routing mode on the load balancer, making it
+	// act as a Layer 3 next-hop router rather than a standard load balancer.
+	PowerVSLoadBalancerRouteModeEnabled PowerVSLoadBalancerRouteMode = "Enabled"
+
+	// PowerVSLoadBalancerRouteModeDisabled disables routing mode on the load balancer.
+	PowerVSLoadBalancerRouteModeDisabled PowerVSLoadBalancerRouteMode = "Disabled"
+)
+
 func init() {
 	objectTypes = append(objectTypes, &IBMPowerVSCluster{}, &IBMPowerVSClusterList{})
 }
@@ -751,6 +777,7 @@ type LoadBalancerSource struct {
 
 // LoadBalancerProvision holds the configuration for a new VPC Load Balancer.
 // +kubebuilder:validation:MinProperties=1
+// +kubebuilder:validation:XValidation:rule="!has(self.routeMode) || self.routeMode != 'Enabled' || (has(self.profile) && self.profile == 'network-fixed')",message="routeMode can only be enabled when profile is network-fixed"
 type LoadBalancerProvision struct {
 	// name sets the name of the VPC load balancer.
 	// If omitted, the system will dynamically create it.
@@ -790,6 +817,18 @@ type LoadBalancerProvision struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=15
 	Subnets []ResourceIdentifier `json:"subnets,omitempty"`
+
+	// profile defines the profile to use for this load balancer.
+	// Supported values are "application" and "network-fixed".
+	// When omitted, the IBM Cloud default (application) is used.
+	// +optional
+	Profile PowerVSLoadBalancerProfile `json:"profile,omitempty"`
+
+	// routeMode enables routing mode on the load balancer, making it act as a Layer 3
+	// next-hop router rather than a load balancer. Only valid when profile is "network-fixed".
+	// Required when using the load balancer as a VNF next-hop for a VPC routing table route.
+	// +optional
+	RouteMode PowerVSLoadBalancerRouteMode `json:"routeMode,omitempty"`
 }
 
 // AdditionalListener defines the desired state of an
@@ -839,6 +878,12 @@ type LoadBalancerBackendPool struct {
 	// protocol defines the protocol to use for the Backend Pool.
 	// +required
 	Protocol LoadBalancerBackendPoolProtocol `json:"protocol,omitempty"`
+
+	// failsafePolicy defines the action to take when all members of the pool are unhealthy.
+	// For route-mode network load balancers, use "bypass" to send traffic directly to member IPs.
+	// When omitted, the IBM Cloud default for the load balancer profile is used.
+	// +optional
+	FailsafePolicy LoadBalancerBackendPoolFailsafePolicy `json:"failsafePolicy,omitempty"`
 }
 
 // LoadBalancerHealthMonitor defines the desired state of a Health Monitor resource for a VPC Load Balancer Backend Pool.
