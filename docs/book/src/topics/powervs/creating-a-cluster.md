@@ -39,7 +39,7 @@ IBMPOWERVS_SSHKEY_NAME="my-pub-key" \
 IBMPOWERVS_VIP="192.168.167.6" \
 IBMPOWERVS_VIP_EXTERNAL="163.68.65.6" \
 IBMPOWERVS_VIP_CIDR="29" \
-IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams10-1-34-7" \
+IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams10-1-35-9" \
 IBMPOWERVS_WORKSPACE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
 IBMPOWERVS_NETWORK_NAME="capi-test" \
 IBMACCOUNT_ID="ibm-accountid" \
@@ -47,7 +47,7 @@ IBMPOWERVS_REGION="osa" \
 IBMPOWERVS_ZONE="osa21" \
 BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
 clusterctl generate cluster ibm-powervs-1 \
-  --kubernetes-version v1.34.7 \
+  --kubernetes-version v1.35.9 \
   --target-namespace default \
   --control-plane-machine-count=3 \
   --worker-machine-count=1 \
@@ -92,7 +92,7 @@ IBMPOWERVS_SSHKEY_NAME="my-pub-key" \
 IBMPOWERVS_VIP="192.168.167.6" \
 IBMPOWERVS_VIP_EXTERNAL="163.68.65.6" \
 IBMPOWERVS_VIP_CIDR="29" \
-IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams10-1-34-7" \
+IBMPOWERVS_IMAGE_NAME="capibm-powervs-centos-streams10-1-35-9" \
 IBMPOWERVS_WORKSPACE_ID="3229a94c-af54-4212-bf60-6202b6fd0a07" \
 IBMPOWERVS_NETWORK_NAME="capi-test" \
 IBMACCOUNT_ID="ibm-accountid" \
@@ -100,7 +100,7 @@ IBMPOWERVS_REGION="osa" \
 IBMPOWERVS_ZONE="osa21" \
 BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
 clusterctl generate cluster ibm-powervs-1 \
-  --kubernetes-version v1.34.7 \
+  --kubernetes-version v1.35.9 \
   --target-namespace default \
   --control-plane-machine-count=3 \
   --worker-machine-count=1 \
@@ -174,16 +174,16 @@ ibm-powervs-1   Provisioned
 ```console
 kubectl get kubeadmcontrolplane
 NAME                          INITIALIZED   API SERVER AVAILABLE   VERSION   REPLICAS   READY   UPDATED   UNAVAILABLE
-ibm-powervs-1-control-plane   true          true                   v1.34.7   3          3       3
+ibm-powervs-1-control-plane   true          true                   v1.35.9   3          3       3
 ```
 
 **Machines**
 ```console
 kubectl get machines
 NAME                                   PROVIDERID                                                         PHASE     VERSION
-ibm-powervs-1-control-plane-vzz47      ibmpowervs://ibm-powervs-1/ibm-powervs-1-control-plane-rg6xv      Running   v1.34.7
-ibm-powervs-1-md-0-5444cfcbcd-6gg5z   ibmpowervs://ibm-powervs-1/ibm-powervs-1-md-0-dbxb7               Running   v1.34.7
-ibm-powervs-1-md-0-5444cfcbcd-7kr9x   ibmpowervs://ibm-powervs-1/ibm-powervs-1-md-0-k7blr               Running   v1.34.7
+ibm-powervs-1-control-plane-vzz47      ibmpowervs://ibm-powervs-1/ibm-powervs-1-control-plane-rg6xv      Running   v1.35.9
+ibm-powervs-1-md-0-5444cfcbcd-6gg5z   ibmpowervs://ibm-powervs-1/ibm-powervs-1-md-0-dbxb7               Running   v1.35.9
+ibm-powervs-1-md-0-5444cfcbcd-7kr9x   ibmpowervs://ibm-powervs-1/ibm-powervs-1-md-0-k7blr               Running   v1.35.9
 ```
 
 ## Deploy a CNI
@@ -201,7 +201,7 @@ kubectl apply -f https://docs.projectcalico.org/v3.15/manifests/calico.yaml
 ```console
 kubectl get nodes
 NAME                                STATUS   ROLES           AGE   VERSION
-ibm-powervs-1-control-plane-rg6xv   Ready    control-plane   41h   v1.34.7
-ibm-powervs-1-md-0-4dc5c            Ready    <none>          41h   v1.34.7
-ibm-powervs-1-md-0-dbxb7            Ready    <none>          20h   v1.34.7
+ibm-powervs-1-control-plane-rg6xv   Ready    control-plane   41h   v1.35.9
+ibm-powervs-1-md-0-4dc5c            Ready    <none>          41h   v1.35.9
+ibm-powervs-1-md-0-dbxb7            Ready    <none>          20h   v1.35.9
 ```
