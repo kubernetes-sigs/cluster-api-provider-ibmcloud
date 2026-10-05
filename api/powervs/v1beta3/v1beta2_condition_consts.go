@@ -36,6 +36,11 @@ const (
 	// VPCRoutingTableReconciliationFailedV1Beta2Reason used when an error occurs during VPC Routing Table reconciliation.
 	VPCRoutingTableReconciliationFailedV1Beta2Reason = "VPCRoutingTableReconciliationFailed"
 
+	// VPCPublicGatewayReadyV1Beta2Condition reports on the successful reconciliation of VPC Public Gateways.
+	VPCPublicGatewayReadyV1Beta2Condition clusterv1.ConditionType = "VPCPublicGatewayReady"
+	// VPCPublicGatewayReconciliationFailedV1Beta2Reason used when an error occurs during VPC Public Gateway reconciliation.
+	VPCPublicGatewayReconciliationFailedV1Beta2Reason = "VPCPublicGatewayReconciliationFailed"
+
 	// VPCSecurityGroupReadyV1Beta2Condition reports on the successful reconciliation of a VPC.
 	VPCSecurityGroupReadyV1Beta2Condition clusterv1.ConditionType = "VPCSecurityGroupReady"
 	// VPCSecurityGroupReconciliationFailedV1Beta2Reason used when an error occurs during VPC reconciliation.

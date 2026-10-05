@@ -1650,6 +1650,27 @@ spec:
                                   pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
                                   type: string
                               type: object
+                            publicGateway:
+                              description: |-
+                                publicGateway specifies the VPC Public Gateway to attach to this subnet.
+                                Can be identified by name or id.
+                              minProperties: 1
+                              properties:
+                                id:
+                                  description: id of the resource.
+                                  maxLength: 64
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: name of the resource.
+                                  maxLength: 128
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of id or name must be specified
+                                rule: '(has(self.id) ? 1 : 0) + (has(self.name) ?
+                                  1 : 0) == 1'
                             reference:
                               description: reference contains the information to identify
                                 an existing VPC Subnet.
@@ -1953,6 +1974,78 @@ spec:
                             Provision, and forbidden otherwise
                           rule: 'self.type == ''Provision'' ? has(self.provision)
                             : !has(self.provision)'
+                      vpcPublicGateways:
+                        description: |-
+                          vpcPublicGateways defines the VPC Public Gateways that should exist or be created for the cluster's VPC.
+                          A public gateway provides outbound internet access to resources in a subnet. One gateway is required
+                          per zone in which subnets need outbound access.
+                        items:
+                          description: |-
+                            VPCPublicGateway defines a VPC Public Gateway to create or reference for the cluster's VPC.
+                            A public gateway provides outbound internet access for resources in a subnet; one is needed per zone.
+                          properties:
+                            provision:
+                              description: provision contains the configuration for
+                                provisioning a new VPC Public Gateway.
+                              minProperties: 1
+                              properties:
+                                name:
+                                  description: name of the VPC Public Gateway to be
+                                    created.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                  type: string
+                              type: object
+                            reference:
+                              description: reference contains the information to identify
+                                an existing VPC Public Gateway.
+                              minProperties: 1
+                              properties:
+                                id:
+                                  description: id of the resource.
+                                  maxLength: 64
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: name of the resource.
+                                  maxLength: 128
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of id or name must be specified
+                                rule: '(has(self.id) ? 1 : 0) + (has(self.name) ?
+                                  1 : 0) == 1'
+                            type:
+                              description: type defines whether to use an existing
+                                VPC Public Gateway or provision a new one.
+                              enum:
+                              - Reference
+                              - Provision
+                              type: string
+                            zone:
+                              description: |-
+                                zone is the IBM Cloud VPC zone in which the public gateway resides or should be created.
+                                Required when type is Provision.
+                              maxLength: 63
+                              minLength: 1
+                              type: string
+                          required:
+                          - type
+                          type: object
+                          x-kubernetes-validations:
+                          - message: reference configuration is required when type
+                              is Reference, and forbidden otherwise
+                            rule: 'self.type == ''Reference'' ? has(self.reference)
+                              : !has(self.reference)'
+                          - message: provision configuration is required when type
+                              is Provision, and forbidden otherwise
+                            rule: 'self.type == ''Provision'' ? has(self.provision)
+                              : !has(self.provision)'
+                        maxItems: 10
+                        type: array
+                        x-kubernetes-list-type: atomic
                       vpcRoutingTables:
                         description: vpcRoutingTables defines the VPC Routing Tables
                           that should exist or be created for the cluster's VPC.
