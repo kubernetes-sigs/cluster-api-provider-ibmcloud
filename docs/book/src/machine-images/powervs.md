@@ -28,6 +28,7 @@ These images include a built-in DHCP client configuration required by the [LoadB
 
 | Region | Bucket | Object | Kubernetes Version |
 |--------|--------|--------|--------------------|
+| us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-35-9-dhcp.ova.gz][centos-streams10-1-35-9-dhcp] | 1.35.9 |
 | us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz][centos-streams10-1-34-7-dhcp] | 1.34.7 |
 
 Set `COS_BUCKET_NAME`, `COS_BUCKET_REGION`, and `COS_OBJECT_NAME` to the values from this table when using `--flavor=powervs-create-infra`.
@@ -36,8 +37,7 @@ Set `COS_BUCKET_NAME`, `COS_BUCKET_REGION`, and `COS_OBJECT_NAME` to the values 
 
 [streams10-1-35-9]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-35-9-150500-1-1-1791128145.ova.gz
 [streams10-1-34-7]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-34-7-150500-1-1-1778144615.ova.gz
+[centos-streams10-1-35-9-dhcp]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-35-9-dhcp.ova.gz
 [centos-streams10-1-34-7-dhcp]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz
-[centos-streams9-1-32-3]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-32-3-1746768746.ova.gz
-[centos-streams9-1-29-3]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-29-3-1719470782.ova.gz
 
 [image-builder]: https://github.com/kubernetes-sigs/image-builder

@@ -125,7 +125,7 @@ CAPIBM provisions the full infrastructure stack and uses a VPC Load Balancer for
 | `IBMPOWERVS_SSHKEY_NAME` | SSH key name to inject into VMs |
 | `COS_BUCKET_REGION` | Region of the COS bucket containing the boot image (e.g. `us-south`) |
 | `COS_BUCKET_NAME` | COS bucket name (e.g. `power-oss-bucket`) |
-| `COS_OBJECT_NAME` | DHCP-enabled image object name (e.g. `capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz`) |
+| `COS_OBJECT_NAME` | DHCP-enabled image object name (e.g. `capibm-powervs-centos-streams10-1-35-9-dhcp.ova.gz`) |
 | `IBMACCOUNT_ID` | Your IBM Cloud account ID — see [Account settings](https://cloud.ibm.com/account/settings) |
 | `IBMPOWERVS_REGION` | PowerVS region (e.g. `wdc`) — see [Regions-Zones Mapping](../../reference/regions-zones-mapping.md) |
 | `IBMPOWERVS_ZONE` | PowerVS zone (e.g. `wdc06`) — see [Regions-Zones Mapping](../../reference/regions-zones-mapping.md) |
@@ -140,7 +140,7 @@ IBMCLOUD_API_KEY=<API_KEY> \
 IBMPOWERVS_SSHKEY_NAME="my-ssh-key" \
 COS_BUCKET_REGION="us-south" \
 COS_BUCKET_NAME="power-oss-bucket" \
-COS_OBJECT_NAME="capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz" \
+COS_OBJECT_NAME="capibm-powervs-centos-streams10-1-35-9-dhcp.ova.gz" \
 IBMACCOUNT_ID="<account_id>" \
 IBMPOWERVS_REGION="wdc" \
 IBMPOWERVS_ZONE="wdc06" \
@@ -148,7 +148,7 @@ IBMVPC_REGION="us-east" \
 IBM_RESOURCE_GROUP="ibm-resource-group" \
 BASE64_API_KEY=$(echo -n $IBMCLOUD_API_KEY | base64) \
 clusterctl generate cluster capi-powervs \
-  --kubernetes-version v1.34.7 \
+  --kubernetes-version v1.35.9 \
   --target-namespace default \
   --control-plane-machine-count=3 \
   --worker-machine-count=1 \
