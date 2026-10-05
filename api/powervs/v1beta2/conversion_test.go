@@ -113,6 +113,11 @@ func hubIBMPowerVSClusterStatus(in *infrav1.IBMPowerVSClusterStatus, c randfill.
 	if len(in.LoadBalancers) == 0 {
 		in.LoadBalancers = nil
 	}
+	// VPCPublicGateways is a v1beta3-only status field; v1beta2 has no equivalent.
+	// It does not survive a hub→spoke→hub round-trip, so normalise to nil.
+	if len(in.VPCPublicGateways) == 0 {
+		in.VPCPublicGateways = nil
+	}
 	for i := range in.VPCSubnets {
 		if in.VPCSubnets[i].ID == "" || in.VPCSubnets[i].Name == "" {
 			in.VPCSubnets = nil
@@ -493,6 +498,11 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 				in.VPCRoutingTables[i].Provision.AdvertiseRoutesTo = nil
 			}
 		}
+	}
+	// VPCPublicGateways is a v1beta3-only field; v1beta2 has no concept of it.
+	// Normalize empty slices to nil so the fuzz round-trip remains stable.
+	if len(in.VPCPublicGateways) == 0 {
+		in.VPCPublicGateways = nil
 	}
 }
 

@@ -49,6 +49,8 @@ const (
 	// ResourceTypeDHCPSubnet is a PowerVS network provisioned directly with EnableDHCP=true.
 	// This avoids creating a separate DHCP server resource.
 	ResourceTypeDHCPSubnet ResourceType = "dhcpsubnet"
+	// ResourceTypePublicGateway is a VPC Public Gateway resource.
+	ResourceTypePublicGateway ResourceType = "publicgateway"
 	// ResourceTypeCOS is a Cloud Object Storage service instance.
 	ResourceTypeCOS ResourceType = "cos"
 	// ResourceTypeCOSBucket is a COS bucket inside a COS instance.

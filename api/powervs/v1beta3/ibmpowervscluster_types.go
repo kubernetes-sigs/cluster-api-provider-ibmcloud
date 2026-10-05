@@ -270,6 +270,14 @@ type IBMPowerVSClusterSpec struct {
 	// +kubebuilder:validation:MaxItems=10
 	VPCRoutingTables []VPCRoutingTableSource `json:"vpcRoutingTables,omitempty"`
 
+	// vpcPublicGateways defines the VPC Public Gateways that should exist or be created for the cluster's VPC.
+	// A public gateway provides outbound internet access to resources in a subnet. One gateway is required
+	// per zone in which subnets need outbound access.
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
+	VPCPublicGateways []VPCPublicGateway `json:"vpcPublicGateways,omitempty"`
+
 	// vpcSecurityGroups defines the VPC Security Groups that should exist or be created.
 	// +optional
 	// +listType=atomic
@@ -341,6 +349,13 @@ type IBMPowerVSClusterStatus struct {
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=10
 	VPCRoutingTables []VPCRoutingTableStatus `json:"vpcRoutingTables,omitempty"`
+
+	// vpcPublicGateways tracks the observed state of VPC Public Gateways for the cluster.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	VPCPublicGateways []VPCPublicGatewayStatus `json:"vpcPublicGateways,omitempty"`
 
 	// vpcSecurityGroups tracks the live observed states of all managed or referenced VPC Security Groups.
 	// +optional
@@ -855,6 +870,11 @@ type VPCSubnetSource struct {
 	// provision contains the configuration for provisioning a new VPC Subnet.
 	// +optional
 	Provision VPCSubnetProvision `json:"provision,omitempty,omitzero"`
+
+	// publicGateway specifies the VPC Public Gateway to attach to this subnet.
+	// Can be identified by name or id.
+	// +optional
+	PublicGateway ResourceIdentifier `json:"publicGateway,omitempty,omitzero"`
 }
 
 // VPCSubnetProvision holds the configuration for a new VPC Subnet.
@@ -888,6 +908,10 @@ type VPCSubnetStatus struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
 	Zone string `json:"zone,omitempty"`
+
+	// publicGateway is the observed Public Gateway attached to this subnet.
+	// +optional
+	PublicGateway VPCPublicGatewayStatus `json:"publicGateway,omitempty,omitzero"`
 }
 
 // LoadBalancerSource defines how the IBM Cloud VPC Load Balancer is sourced.
@@ -1565,6 +1589,64 @@ type VPCRoutingTableStatus struct {
 	// ready indicates whether the routing table has reached a stable (active) state.
 	// +optional
 	Ready VPCRoutingTableReadyStatus `json:"ready,omitempty"`
+}
+
+// VPCPublicGateway defines a VPC Public Gateway to create or reference for the cluster's VPC.
+// A public gateway provides outbound internet access for resources in a subnet; one is needed per zone.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+type VPCPublicGateway struct {
+	// type defines whether to use an existing VPC Public Gateway or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	Type SourceType `json:"type,omitempty"`
+
+	// zone is the IBM Cloud VPC zone in which the public gateway resides or should be created.
+	// Required when type is Provision.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Zone string `json:"zone,omitempty"`
+
+	// reference contains the information to identify an existing VPC Public Gateway.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// provision contains the configuration for provisioning a new VPC Public Gateway.
+	// +optional
+	Provision VPCPublicGatewayProvision `json:"provision,omitempty,omitzero"`
+}
+
+// VPCPublicGatewayProvision holds the configuration for creating a new VPC Public Gateway.
+// +kubebuilder:validation:MinProperties=1
+type VPCPublicGatewayProvision struct {
+	// name of the VPC Public Gateway to be created.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
+	// +optional
+	Name string `json:"name,omitempty"`
+}
+
+// VPCPublicGatewayStatus tracks the observed state of a VPC Public Gateway.
+type VPCPublicGatewayStatus struct {
+	// id is the unique cloud identifier for this public gateway.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=64
+	ID string `json:"id,omitempty"`
+
+	// name is the name of the public gateway.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Name string `json:"name,omitempty"`
+
+	// zone is the IBM Cloud VPC zone where the gateway resides.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
+	Zone string `json:"zone,omitempty"`
 }
 
 // GetConditions returns the observations of the operational state of the IBMPowerVSCluster resource.
