@@ -653,6 +653,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterSpec_To_v1beta2_IBMPowerVSClusterSpec(
 	} else {
 		out.LoadBalancers = nil
 	}
+	// WARNING: in.VPCRoutingTables requires manual conversion: does not exist in peer-type
 	if in.VPCSecurityGroups != nil {
 		in, out := &in.VPCSecurityGroups, &out.VPCSecurityGroups
 		*out = make([]VPCSecurityGroup, len(*in))
@@ -716,6 +717,7 @@ func autoConvert_v1beta3_IBMPowerVSClusterStatus_To_v1beta2_IBMPowerVSClusterSta
 	// WARNING: in.VPC requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.VPCStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	// WARNING: in.VPCSubnets requires manual conversion: does not exist in peer-type
 	// WARNING: in.LoadBalancers requires manual conversion: inconvertible types ([]sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.LoadBalancerStatus vs map[string]sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.VPCLoadBalancerStatus)
+	// WARNING: in.VPCRoutingTables requires manual conversion: does not exist in peer-type
 	// WARNING: in.VPCSecurityGroups requires manual conversion: inconvertible types ([]sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.VPCSecurityGroupStatus vs map[string]sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.VPCSecurityGroupStatus)
 	// WARNING: in.COSInstance requires manual conversion: inconvertible types (sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta3.COSInstanceStatus vs *sigs.k8s.io/cluster-api-provider-ibmcloud/api/powervs/v1beta2.ResourceReference)
 	// WARNING: in.Deprecated requires manual conversion: does not exist in peer-type

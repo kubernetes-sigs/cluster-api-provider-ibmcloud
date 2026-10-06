@@ -16,7 +16,9 @@ limitations under the License.
 
 package v1beta2
 
-import "github.com/IBM/vpc-go-sdk/vpcv1"
+import (
+	"github.com/IBM/vpc-go-sdk/vpcv1"
+)
 
 const (
 	// CIDRBlockAny is the CIDRBlock representing any allowable destination/source IP.
