@@ -2170,6 +2170,180 @@ func (s *ClusterScope) checkLoadBalancerState(ctx context.Context, lb vpcv1.Load
 	return false
 }
 
+// ReconcileVPCRoutingTables evaluates user intent and reconciles all VPC routing tables.
+// It is a no-op when no routing tables are specified in the spec.
+func (s *ClusterScope) ReconcileVPCRoutingTables(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	if len(s.IBMPowerVSCluster.Spec.VPCRoutingTables) == 0 {
+		return false, nil
+	}
+
+	vpcID := s.IBMPowerVSCluster.Status.VPC.ID
+	if vpcID == "" {
+		log.V(3).Info("VPC ID not yet available in status, requeuing")
+		return true, nil
+	}
+
+	requeue := false
+	var updatedStatus []infrav1.VPCRoutingTableStatus
+
+	for _, rt := range s.IBMPowerVSCluster.Spec.VPCRoutingTables {
+		status, requiresRequeue, err := s.reconcileVPCRoutingTable(ctx, vpcID, rt)
+		if err != nil {
+			return false, err
+		}
+		if requiresRequeue {
+			requeue = true
+		}
+		if status != nil {
+			updatedStatus = append(updatedStatus, *status)
+		}
+	}
+
+	s.IBMPowerVSCluster.Status.VPCRoutingTables = updatedStatus
+	return requeue, nil
+}
+
+// reconcileVPCRoutingTable reconciles a single VPC Routing Table for an IBMPowerVSCluster.
+// It looks up by ID then name, creates if absent, and returns the status and whether a requeue is needed.
+func (s *ClusterScope) reconcileVPCRoutingTable(ctx context.Context, vpcID string, routingTable infrav1.VPCRoutingTable) (*infrav1.VPCRoutingTableStatus, bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	if routingTable.ID == "" && routingTable.Name == "" {
+		return nil, false, fmt.Errorf("routing table has no id or name; one is required")
+	}
+
+	// Look up by ID if provided.
+	if routingTable.ID != "" {
+		rtDetails, _, err := s.IBMVPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
+			VPCID: &vpcID,
+			ID:    &routingTable.ID,
+		})
+		if err != nil {
+			return nil, false, fmt.Errorf("error retrieving routing table by id %s: %w", routingTable.ID, err)
+		}
+		if rtDetails == nil || rtDetails.ID == nil {
+			return nil, false, fmt.Errorf("routing table with id %s not found", routingTable.ID)
+		}
+		stable := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
+		readyStatus := infrav1.VPCRoutingTableReadyStatusNotReady
+		if stable {
+			readyStatus = infrav1.VPCRoutingTableReadyStatusReady
+		}
+		return &infrav1.VPCRoutingTableStatus{
+			ID:    *rtDetails.ID,
+			Name:  ptr.Deref(rtDetails.Name, ""),
+			Ready: readyStatus,
+		}, !stable, nil
+	}
+
+	// Look up by name.
+	rtDetails, err := s.IBMVPCClient.GetVPCRoutingTableByName(vpcID, routingTable.Name)
+	if err != nil {
+		return nil, false, fmt.Errorf("error retrieving routing table by name %s: %w", routingTable.Name, err)
+	}
+	if rtDetails != nil {
+		stable := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
+		readyStatus := infrav1.VPCRoutingTableReadyStatusNotReady
+		if stable {
+			readyStatus = infrav1.VPCRoutingTableReadyStatusReady
+		}
+		return &infrav1.VPCRoutingTableStatus{
+			ID:    *rtDetails.ID,
+			Name:  ptr.Deref(rtDetails.Name, ""),
+			Ready: readyStatus,
+		}, !stable, nil
+	}
+
+	// Not found — create it.
+	log.V(3).Info("Creating VPC routing table", "name", routingTable.Name)
+	if err := s.createVPCRoutingTable(ctx, vpcID, routingTable); err != nil {
+		return nil, false, err
+	}
+	log.V(3).Info("VPC routing table created, requeueing to await stable state", "name", routingTable.Name)
+	// Return nil status here; next reconcile will populate it via the lookup-by-name path above.
+	return nil, true, nil
+}
+
+// createVPCRoutingTable creates a new VPC Routing Table using the provided spec.
+func (s *ClusterScope) createVPCRoutingTable(ctx context.Context, vpcID string, routingTable infrav1.VPCRoutingTable) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	options := &vpcv1.CreateVPCRoutingTableOptions{
+		VPCID: &vpcID,
+		Name:  &routingTable.Name,
+	}
+	switch routingTable.RouteDirectLinkIngress {
+	case infrav1.RoutingTableIngressPolicyEnabled:
+		options.RouteDirectLinkIngress = ptr.To(true)
+	case infrav1.RoutingTableIngressPolicyDisabled:
+		options.RouteDirectLinkIngress = ptr.To(false)
+	}
+	switch routingTable.RouteTransitGatewayIngress {
+	case infrav1.RoutingTableIngressPolicyEnabled:
+		options.RouteTransitGatewayIngress = ptr.To(true)
+	case infrav1.RoutingTableIngressPolicyDisabled:
+		options.RouteTransitGatewayIngress = ptr.To(false)
+	}
+	switch routingTable.RouteVPCZoneIngress {
+	case infrav1.RoutingTableIngressPolicyEnabled:
+		options.RouteVPCZoneIngress = ptr.To(true)
+	case infrav1.RoutingTableIngressPolicyDisabled:
+		options.RouteVPCZoneIngress = ptr.To(false)
+	}
+	if len(routingTable.AdvertiseRoutesTo) > 0 {
+		targets := make([]string, len(routingTable.AdvertiseRoutesTo))
+		for i, t := range routingTable.AdvertiseRoutesTo {
+			targets[i] = string(t)
+		}
+		options.AdvertiseRoutesTo = targets
+	}
+	if len(routingTable.Routes) > 0 {
+		options.Routes = buildRoutingTableRoutes(routingTable.Routes)
+	}
+
+	rtDetails, _, err := s.IBMVPCClient.CreateVPCRoutingTable(options)
+	if err != nil {
+		log.V(3).Error(err, "error creating VPC routing table", "name", routingTable.Name)
+		return fmt.Errorf("error creating VPC routing table: %w", err)
+	}
+	if rtDetails == nil || rtDetails.ID == nil {
+		return fmt.Errorf("nil response creating VPC routing table %s", routingTable.Name)
+	}
+	return nil
+}
+
+// buildRoutingTableRoutes converts VPCRoutingTableRoute spec entries to IBM Cloud SDK RoutePrototype values.
+func buildRoutingTableRoutes(routes []infrav1.VPCRoutingTableRoute) []vpcv1.RoutePrototype {
+	sdkRoutes := make([]vpcv1.RoutePrototype, 0, len(routes))
+	for _, r := range routes {
+		route := vpcv1.RoutePrototype{
+			Action:      ptr.To(string(r.Action)),
+			Destination: ptr.To(r.Destination),
+			Zone: &vpcv1.ZoneIdentityByName{
+				Name: ptr.To(r.Zone),
+			},
+		}
+		if r.Name != "" {
+			route.Name = &r.Name
+		}
+		if r.NextHop != "" {
+			route.NextHop = &vpcv1.RouteNextHopPrototypeRouteNextHopIPRouteNextHopIPUnicastIP{
+				Address: ptr.To(r.NextHop),
+			}
+		}
+		switch r.Advertise {
+		case infrav1.RouteAdvertisePolicyEnabled:
+			route.Advertise = ptr.To(true)
+		case infrav1.RouteAdvertisePolicyDisabled:
+			route.Advertise = ptr.To(false)
+		}
+		sdkRoutes = append(sdkRoutes, route)
+	}
+	return sdkRoutes
+}
+
 // ReconcileVPCSecurityGroups evaluates user intent and reconciles all VPC security groups.
 func (s *ClusterScope) ReconcileVPCSecurityGroups(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
@@ -3053,6 +3227,57 @@ func (s *ClusterScope) DeleteVPCSecurityGroups(ctx context.Context) error {
 		}
 
 		log.Info("VPC security group successfully deleted", "securityGroupID", sgStatus.ID, "securityGroupName", sgStatus.Name)
+	}
+
+	return nil
+}
+
+// DeleteVPCRoutingTables deletes controller-provisioned VPC routing tables tracked in status.
+// Referenced (not provisioned) routing tables are skipped.
+func (s *ClusterScope) DeleteVPCRoutingTables(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	// Build the set of names the controller provisioned.
+	managed := make(map[string]bool)
+	for _, rt := range s.IBMPowerVSCluster.Spec.VPCRoutingTables {
+		if rt.ID == "" && rt.Name != "" {
+			// Only Provision-style entries (no pre-existing ID) are controller-owned.
+			managed[rt.Name] = true
+		}
+	}
+
+	vpcID := s.IBMPowerVSCluster.Status.VPC.ID
+
+	for _, rtStatus := range s.IBMPowerVSCluster.Status.VPCRoutingTables {
+		if !managed[rtStatus.Name] {
+			log.Info("Skipping VPC routing table deletion — referenced, not managed by controller", "routingTableName", rtStatus.Name)
+			continue
+		}
+
+		// Verify it still exists.
+		rt, resp, err := s.IBMVPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
+			VPCID: &vpcID,
+			ID:    &rtStatus.ID,
+		})
+		if err != nil {
+			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
+				log.Info("VPC routing table already deleted from cloud", "routingTableID", rtStatus.ID)
+				continue
+			}
+			return fmt.Errorf("failed to fetch VPC routing table '%s' during deletion: %w", rtStatus.ID, err)
+		}
+		if rt == nil || rt.ID == nil {
+			continue
+		}
+
+		log.V(3).Info("Deleting VPC routing table", "routingTableID", rtStatus.ID, "routingTableName", rtStatus.Name)
+		if _, err := s.IBMVPCClient.DeleteVPCRoutingTable(&vpcv1.DeleteVPCRoutingTableOptions{
+			VPCID: &vpcID,
+			ID:    &rtStatus.ID,
+		}); err != nil {
+			return fmt.Errorf("failed to delete VPC routing table '%s': %w", rtStatus.ID, err)
+		}
+		log.Info("VPC routing table deleted", "routingTableID", rtStatus.ID, "routingTableName", rtStatus.Name)
 	}
 
 	return nil
