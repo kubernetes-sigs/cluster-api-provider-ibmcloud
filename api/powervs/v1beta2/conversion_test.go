@@ -486,11 +486,11 @@ func hubIBMPowerVSClusterSpec(in *infrav1.IBMPowerVSClusterSpec, c randfill.Cont
 		in.VPCRoutingTables = nil
 	} else {
 		for i := range in.VPCRoutingTables {
-			if len(in.VPCRoutingTables[i].Routes) == 0 {
-				in.VPCRoutingTables[i].Routes = nil
+			if len(in.VPCRoutingTables[i].Provision.Routes) == 0 {
+				in.VPCRoutingTables[i].Provision.Routes = nil
 			}
-			if len(in.VPCRoutingTables[i].AdvertiseRoutesTo) == 0 {
-				in.VPCRoutingTables[i].AdvertiseRoutesTo = nil
+			if len(in.VPCRoutingTables[i].Provision.AdvertiseRoutesTo) == 0 {
+				in.VPCRoutingTables[i].Provision.AdvertiseRoutesTo = nil
 			}
 		}
 	}

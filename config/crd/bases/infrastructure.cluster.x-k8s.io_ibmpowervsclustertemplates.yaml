@@ -1957,134 +1957,171 @@ spec:
                         description: vpcRoutingTables defines the VPC Routing Tables
                           that should exist or be created for the cluster's VPC.
                         items:
-                          description: VPCRoutingTable defines a VPC Routing Table
-                            to create or reference for the cluster's VPC.
+                          description: VPCRoutingTableSource defines a VPC Routing
+                            Table that should exist or be created for the cluster's
+                            VPC.
                           properties:
-                            advertiseRoutesTo:
-                              description: advertiseRoutesTo defines the ingress sources
-                                to which routes in this routing table will be advertised.
-                              items:
-                                description: AdvertiseRouteTarget defines the ingress
-                                  sources to which routes in a routing table will
-                                  be advertised.
-                                enum:
-                                - transit_gateway
-                                - direct_link
-                                type: string
-                              maxItems: 2
-                              type: array
-                              x-kubernetes-list-type: set
-                            id:
-                              description: |-
-                                id of the Routing Table.
-                                When specified, the existing routing table is used and no new routing table is created.
-                              maxLength: 64
-                              minLength: 1
-                              type: string
-                            name:
-                              description: name of the Routing Table.
-                              maxLength: 63
-                              minLength: 1
-                              pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
-                              type: string
-                            routeDirectLinkIngress:
-                              description: |-
-                                routeDirectLinkIngress defines whether this routing table routes traffic from Direct Link.
-                                Only one routing table per VPC may have this set to Enabled.
-                              enum:
-                              - Enabled
-                              - Disabled
-                              type: string
-                            routeTransitGatewayIngress:
-                              description: |-
-                                routeTransitGatewayIngress defines whether this routing table routes traffic from Transit Gateway.
-                                Only one routing table per VPC may have this set to Enabled.
-                              enum:
-                              - Enabled
-                              - Disabled
-                              type: string
-                            routeVPCZoneIngress:
-                              description: |-
-                                routeVPCZoneIngress defines whether this routing table routes traffic from subnets in other zones.
-                                Only one routing table per VPC may have this set to Enabled.
-                              enum:
-                              - Enabled
-                              - Disabled
-                              type: string
-                            routes:
-                              description: |-
-                                routes defines the set of routes to create in the routing table.
-                                Routes are only created when the routing table is created by the controller (i.e., no id is provided).
-                              items:
-                                description: VPCRoutingTableRoute defines a route
-                                  within a VPC Routing Table.
-                                properties:
-                                  action:
-                                    description: action defines the action to perform
-                                      with a packet matching this route.
+                            provision:
+                              description: provision contains the configuration for
+                                provisioning a new Routing Table.
+                              minProperties: 1
+                              properties:
+                                advertiseRoutesTo:
+                                  description: advertiseRoutesTo defines the ingress
+                                    sources to which routes in this routing table
+                                    will be advertised.
+                                  items:
+                                    description: AdvertiseRouteTarget defines the
+                                      ingress sources to which routes in a routing
+                                      table will be advertised.
                                     enum:
-                                    - delegate
-                                    - delegate_vpc
-                                    - deliver
-                                    - drop
+                                    - transit_gateway
+                                    - direct_link
                                     type: string
-                                  advertise:
+                                  maxItems: 2
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                name:
+                                  description: |-
+                                    name of the Routing Table to be created.
+                                    If omitted, IBM Cloud will generate a name.
+                                  maxLength: 63
+                                  minLength: 1
+                                  pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                  type: string
+                                routeDirectLinkIngress:
+                                  description: |-
+                                    routeDirectLinkIngress defines whether this routing table routes traffic from Direct Link.
+                                    Only one routing table per VPC may have this set to Enabled.
+                                  enum:
+                                  - Enabled
+                                  - Disabled
+                                  type: string
+                                routeTransitGatewayIngress:
+                                  description: |-
+                                    routeTransitGatewayIngress defines whether this routing table routes traffic from Transit Gateway.
+                                    Only one routing table per VPC may have this set to Enabled.
+                                  enum:
+                                  - Enabled
+                                  - Disabled
+                                  type: string
+                                routeVPCZoneIngress:
+                                  description: |-
+                                    routeVPCZoneIngress defines whether this routing table routes traffic from subnets in other zones.
+                                    Only one routing table per VPC may have this set to Enabled.
+                                  enum:
+                                  - Enabled
+                                  - Disabled
+                                  type: string
+                                routes:
+                                  description: routes defines the set of routes to
+                                    create in the routing table.
+                                  items:
                                     description: |-
-                                      advertise controls whether this route is advertised to the ingress sources
-                                      configured on the routing table (e.g. Transit Gateway).
-                                      When omitted, the IBM Cloud API defaults to Disabled.
-                                    enum:
-                                    - Enabled
-                                    - Disabled
-                                    type: string
-                                  destination:
-                                    description: |-
-                                      destination is the destination CIDR for the route.
-                                      The host identifier in the CIDR must be zero.
-                                    maxLength: 128
-                                    minLength: 1
-                                    type: string
-                                  name:
-                                    description: |-
-                                      name is an optional name for the route.
-                                      If unspecified, IBM Cloud will generate a name.
-                                    maxLength: 63
-                                    minLength: 1
-                                    pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
-                                    type: string
-                                  nextHop:
-                                    description: |-
-                                      nextHop is the next-hop IP address for routes with action deliver.
-                                      Must be a unicast IP address within a subnet in the routing table's VPC.
-                                    maxLength: 39
-                                    minLength: 1
-                                    type: string
-                                  zone:
-                                    description: zone is the name of the availability
-                                      zone to apply the route to.
-                                    maxLength: 63
-                                    minLength: 1
-                                    type: string
-                                required:
-                                - action
-                                - destination
-                                - zone
-                                type: object
-                                x-kubernetes-validations:
-                                - message: nextHop must be set when action is deliver
-                                  rule: 'self.action == ''deliver'' ? has(self.nextHop)
-                                    : true'
-                                - message: nextHop must not be set unless action is
-                                    deliver
-                                  rule: 'self.action != ''deliver'' ? !has(self.nextHop)
-                                    : true'
-                              maxItems: 200
-                              type: array
-                              x-kubernetes-list-type: atomic
+                                      VPCRoutingTableRoute defines a route within a VPC Routing Table.
+                                      If action is deliver and nextHop is omitted, the controller will resolve it automatically
+                                      from the first private IP of a provisioned load balancer in the cluster status.
+                                    properties:
+                                      action:
+                                        description: action defines the action to
+                                          perform with a packet matching this route.
+                                        enum:
+                                        - delegate
+                                        - delegate_vpc
+                                        - deliver
+                                        - drop
+                                        type: string
+                                      advertise:
+                                        description: |-
+                                          advertise controls whether this route is advertised to the ingress sources
+                                          configured on the routing table (e.g. Transit Gateway).
+                                          When omitted, the IBM Cloud API defaults to Disabled.
+                                        enum:
+                                        - Enabled
+                                        - Disabled
+                                        type: string
+                                      destination:
+                                        description: |-
+                                          destination is the destination CIDR for the route.
+                                          The host identifier in the CIDR must be zero.
+                                        maxLength: 128
+                                        minLength: 1
+                                        type: string
+                                      name:
+                                        description: |-
+                                          name is an optional name for the route.
+                                          If unspecified, IBM Cloud will generate a name.
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$
+                                        type: string
+                                      nextHop:
+                                        description: |-
+                                          nextHop is the next-hop IP address for routes with action deliver.
+                                          Must be a unicast IP address within a subnet in the routing table's VPC.
+                                        maxLength: 39
+                                        minLength: 1
+                                        type: string
+                                      zone:
+                                        description: zone is the name of the availability
+                                          zone to apply the route to.
+                                        maxLength: 63
+                                        minLength: 1
+                                        type: string
+                                    required:
+                                    - action
+                                    - destination
+                                    - zone
+                                    type: object
+                                    x-kubernetes-validations:
+                                    - message: nextHop must not be set unless action
+                                        is deliver
+                                      rule: 'self.action != ''deliver'' ? !has(self.nextHop)
+                                        : true'
+                                  maxItems: 200
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                              type: object
+                            reference:
+                              description: |-
+                                reference contains the information to identify an existing Routing Table.
+                                The controller will look up the routing table but will not manage its routes.
+                              minProperties: 1
+                              properties:
+                                id:
+                                  description: id of the resource.
+                                  maxLength: 64
+                                  minLength: 1
+                                  type: string
+                                name:
+                                  description: name of the resource.
+                                  maxLength: 128
+                                  minLength: 1
+                                  type: string
+                              type: object
+                              x-kubernetes-validations:
+                              - message: exactly one of id or name must be specified
+                                rule: '(has(self.id) ? 1 : 0) + (has(self.name) ?
+                                  1 : 0) == 1'
+                            type:
+                              description: type defines whether to use an existing
+                                Routing Table or provision a new one.
+                              enum:
+                              - Reference
+                              - Provision
+                              type: string
+                          required:
+                          - type
                           type: object
                           x-kubernetes-validations:
-                          - message: an id or name must be provided
-                            rule: has(self.id) || has(self.name)
+                          - message: reference configuration is required when type
+                              is Reference, and forbidden otherwise
+                            rule: 'self.type == ''Reference'' ? has(self.reference)
+                              : !has(self.reference)'
+                          - message: provision configuration is required when type
+                              is Provision, and forbidden otherwise
+                            rule: 'self.type == ''Provision'' ? has(self.provision)
+                              : !has(self.provision)'
                         maxItems: 10
                         type: array
                         x-kubernetes-list-type: atomic
