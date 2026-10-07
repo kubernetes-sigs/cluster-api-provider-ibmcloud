@@ -268,7 +268,7 @@ type IBMPowerVSClusterSpec struct {
 	// +optional
 	// +listType=atomic
 	// +kubebuilder:validation:MaxItems=10
-	VPCRoutingTables []VPCRoutingTable `json:"vpcRoutingTables,omitempty"`
+	VPCRoutingTables []VPCRoutingTableSource `json:"vpcRoutingTables,omitempty"`
 
 	// vpcSecurityGroups defines the VPC Security Groups that should exist or be created.
 	// +optional
@@ -1083,6 +1083,16 @@ type LoadBalancerStatus struct {
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=253
 	Hostname string `json:"hostname,omitempty"`
+
+	// privateIPs contains the private IP addresses assigned to this load balancer.
+	// The first entry is used as the next-hop IP for VPC routing table routes when
+	// no explicit nextHop is provided in the route spec.
+	// +optional
+	// +listType=set
+	// +kubebuilder:validation:MaxItems=100
+	// +kubebuilder:validation:items:MinLength=1
+	// +kubebuilder:validation:items:MaxLength=39
+	PrivateIPs []string `json:"privateIPs,omitempty"`
 }
 
 // COSInstanceSource defines how the IBM Cloud COS instance is sourced.
@@ -1437,7 +1447,8 @@ type VPCSecurityGroupRuleStatus struct {
 }
 
 // VPCRoutingTableRoute defines a route within a VPC Routing Table.
-// +kubebuilder:validation:XValidation:rule="self.action == 'deliver' ? has(self.nextHop) : true",message="nextHop must be set when action is deliver"
+// If action is deliver and nextHop is omitted, the controller will resolve it automatically
+// from the first private IP of a provisioned load balancer in the cluster status.
 // +kubebuilder:validation:XValidation:rule="self.action != 'deliver' ? !has(self.nextHop) : true",message="nextHop must not be set unless action is deliver"
 type VPCRoutingTableRoute struct {
 	// action defines the action to perform with a packet matching this route.
@@ -1479,17 +1490,30 @@ type VPCRoutingTableRoute struct {
 	Advertise RouteAdvertisePolicy `json:"advertise,omitempty"`
 }
 
-// VPCRoutingTable defines a VPC Routing Table to create or reference for the cluster's VPC.
-// +kubebuilder:validation:XValidation:rule="has(self.id) || has(self.name)",message="an id or name must be provided"
-type VPCRoutingTable struct {
-	// id of the Routing Table.
-	// When specified, the existing routing table is used and no new routing table is created.
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=64
-	// +optional
-	ID string `json:"id,omitempty"`
+// VPCRoutingTableSource defines a VPC Routing Table that should exist or be created for the cluster's VPC.
+// +kubebuilder:validation:XValidation:rule="self.type == 'Reference' ? has(self.reference) : !has(self.reference)",message="reference configuration is required when type is Reference, and forbidden otherwise"
+// +kubebuilder:validation:XValidation:rule="self.type == 'Provision' ? has(self.provision) : !has(self.provision)",message="provision configuration is required when type is Provision, and forbidden otherwise"
+type VPCRoutingTableSource struct {
+	// type defines whether to use an existing Routing Table or provision a new one.
+	// +required
+	// +kubebuilder:validation:Enum=Reference;Provision
+	Type SourceType `json:"type,omitempty"`
 
-	// name of the Routing Table.
+	// reference contains the information to identify an existing Routing Table.
+	// The controller will look up the routing table but will not manage its routes.
+	// +optional
+	Reference ResourceIdentifier `json:"reference,omitempty,omitzero"`
+
+	// provision contains the configuration for provisioning a new Routing Table.
+	// +optional
+	Provision VPCRoutingTableProvision `json:"provision,omitempty,omitzero"`
+}
+
+// VPCRoutingTableProvision holds the configuration for creating a new VPC Routing Table.
+// +kubebuilder:validation:MinProperties=1
+type VPCRoutingTableProvision struct {
+	// name of the Routing Table to be created.
+	// If omitted, IBM Cloud will generate a name.
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
 	// +kubebuilder:validation:Pattern=`^([a-z]|[a-z][-a-z0-9]*[a-z0-9])$`
@@ -1497,7 +1521,6 @@ type VPCRoutingTable struct {
 	Name string `json:"name,omitempty"`
 
 	// routes defines the set of routes to create in the routing table.
-	// Routes are only created when the routing table is created by the controller (i.e., no id is provided).
 	// +optional
 	// +kubebuilder:validation:MaxItems=200
 	// +listType=atomic
