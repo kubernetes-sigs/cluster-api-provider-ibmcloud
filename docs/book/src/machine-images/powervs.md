@@ -15,6 +15,7 @@ CAPIBM requires a machine boot image to be available in your PowerVS workspace. 
 
 | Region | Bucket | Object | Kubernetes Version |
 |--------|--------|--------|--------------------|
+| us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-35-9.ova.gz][streams10-1-35-9] | 1.35.9 |
 | us-south | power-oss-bucket | [capibm-powervs-centos-streams10-1-34-7.ova.gz][streams10-1-34-7] | 1.34.7 |
 
 To import a standard image manually into your workspace, see [capibmadm powervs image import](../topics/capibmadm/powervs/image.md#1-capibmadm-powervs-image-import).
@@ -33,11 +34,8 @@ Set `COS_BUCKET_NAME`, `COS_BUCKET_REGION`, and `COS_OBJECT_NAME` to the values 
 
 ---
 
+[streams10-1-35-9]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-35-9-150500-1-1-1791128145.ova.gz
 [streams10-1-34-7]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-34-7-150500-1-1-1778144615.ova.gz
-[streams9-1-33-1]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-33-1-1751454774.ova.gz
-[streams9-1-32-3]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-32-3-1747820578.ova.gz
-[streams9-1-31-0]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-31-0-1737533452.ova.gz
-[streams9-1-30-0]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-30-0-1737523124.ova.gz
 [centos-streams10-1-34-7-dhcp]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams10-1-34-7-dhcp.ova.gz
 [centos-streams9-1-32-3]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-32-3-1746768746.ova.gz
 [centos-streams9-1-29-3]: https://power-oss-bucket.s3.us-south.cloud-object-storage.appdomain.cloud/capibm-powervs-centos-streams9-1-29-3-1719470782.ova.gz
