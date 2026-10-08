@@ -20,7 +20,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.27.0
 	github.com/go-logr/logr v1.4.4
-	github.com/go-openapi/strfmt v0.27.2
+	github.com/go-openapi/strfmt v0.27.3
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.33.0
