@@ -447,6 +447,7 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Spec.VPCSubnets = restored.Spec.VPCSubnets
 		dst.Spec.LoadBalancers = restored.Spec.LoadBalancers
 		dst.Spec.VPCRoutingTables = restored.Spec.VPCRoutingTables
+		dst.Spec.VPCPublicGateways = restored.Spec.VPCPublicGateways
 		dst.Spec.COSInstance = restored.Spec.COSInstance
 		// If Type was lost (v1beta2 annotation has no Type field), infer it from provision/reference data
 		if dst.Spec.COSInstance.Type == "" {
@@ -463,6 +464,10 @@ func (src *IBMPowerVSCluster) ConvertTo(dstRaw conversion.Hub) error {
 		dst.Status.VPCRoutingTables = restored.Status.VPCRoutingTables
 		if len(dst.Status.VPCRoutingTables) == 0 {
 			dst.Status.VPCRoutingTables = nil
+		}
+		dst.Status.VPCPublicGateways = restored.Status.VPCPublicGateways
+		if len(dst.Status.VPCPublicGateways) == 0 {
+			dst.Status.VPCPublicGateways = nil
 		}
 		dst.Status.COSInstance = restored.Status.COSInstance
 	}
@@ -515,7 +520,7 @@ func (dst *IBMPowerVSCluster) ConvertFrom(srcRaw conversion.Hub) error {
 	}
 
 	// Marshal the full v1beta3 source into the annotation so hub-only fields
-	// (e.g. VPCRoutingTables, VPCSecurityGroups) survive a hub→spoke→hub round-trip.
+	// (e.g. VPCRoutingTables, VPCPublicGateways, VPCSecurityGroups) survive a hub→spoke→hub round-trip.
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err
 	}
@@ -561,7 +566,7 @@ func (dst *IBMPowerVSClusterTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	if err := Convert_v1beta3_IBMPowerVSClusterTemplate_To_v1beta2_IBMPowerVSClusterTemplate(src, dst, nil); err != nil {
 		return err
 	}
-	// Marshal the full v1beta3 source so hub-only fields (e.g. VPCRoutingTables)
+	// Marshal the full v1beta3 source so hub-only fields (e.g. VPCRoutingTables, VPCPublicGateways)
 	// survive a hub→spoke→hub round-trip.
 	if err := utilconversion.MarshalData(src, dst); err != nil {
 		return err

@@ -12285,6 +12285,201 @@ func TestReconcileVPCRoutingTable_NextHopResolution(t *testing.T) {
 
 
 
+func TestReconcileVPCPublicGateways(t *testing.T) {
+	var (
+		mockVPC  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	pgwID := "pgw-id-abc123"
+	pgwName := "my-public-gateway"
+	vpcID := "vpc-id-xyz"
+	rgID := "rg-id-xyz"
+	zone := "us-south-1"
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVPC = mock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() { mockCtrl.Finish() }
+
+	scopeWithRG := func(spec infrav1.IBMPowerVSClusterSpec, vpcStatusID string) *ClusterScope {
+		return &ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: spec,
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPC:           infrav1.VPCStatus{ID: vpcStatusID},
+					ResourceGroup: infrav1.ResourceReference{ID: rgID},
+				},
+			},
+		}
+	}
+
+	t.Run("No public gateways in spec — no-op returns false,nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{}, vpcID)
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("VPC ID not yet in status — requeues without error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeProvision, Zone: zone, Provision: infrav1.VPCPublicGatewayProvision{Name: pgwName}},
+			},
+		}, "")
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+	})
+
+	t.Run("Public gateway has unknown type — returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{{}},
+		}, vpcID)
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Reference by ID — GetPublicGateway returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: pgwID}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetPublicGateway(gomock.Any()).Return(nil, nil, errors.New("api error"))
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Reference by ID — gateway found, status populated", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: pgwID}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+			Zone: &vpcv1.ZoneReference{Name: ptr.To(zone)},
+		}, &core.DetailedResponse{StatusCode: 200}, nil)
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways).To(HaveLen(1))
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways[0].ID).To(Equal(pgwID))
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways[0].Zone).To(Equal(zone))
+	})
+
+	t.Run("Reference by name — GetVPCPublicGatewayByName returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{Name: pgwName}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(nil, errors.New("lookup error"))
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Reference by name — gateway found, status populated", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{Name: pgwName}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+			Zone: &vpcv1.ZoneReference{Name: ptr.To(zone)},
+		}, nil)
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways).To(HaveLen(1))
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways[0].Name).To(Equal(pgwName))
+	})
+
+	t.Run("Provision — not found, no zone — returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCPublicGatewayProvision{Name: pgwName}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(nil, nil)
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Provision — not found, CreatePublicGateway returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeProvision, Zone: zone, Provision: infrav1.VPCPublicGatewayProvision{Name: pgwName}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(nil, nil)
+		mockVPC.EXPECT().CreatePublicGateway(gomock.Any()).Return(nil, nil, errors.New("create failed"))
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(requeue).To(BeFalse())
+	})
+
+	t.Run("Provision — not found, created successfully", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithRG(infrav1.IBMPowerVSClusterSpec{
+			VPCPublicGateways: []infrav1.VPCPublicGateway{
+				{Type: infrav1.SourceTypeProvision, Zone: zone, Provision: infrav1.VPCPublicGatewayProvision{Name: pgwName}},
+			},
+		}, vpcID)
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(nil, nil)
+		mockVPC.EXPECT().CreatePublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+			Zone: &vpcv1.ZoneReference{Name: ptr.To(zone)},
+		}, &core.DetailedResponse{StatusCode: 201}, nil)
+		requeue, err := scope.ReconcileVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeFalse())
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways).To(HaveLen(1))
+		g.Expect(scope.IBMPowerVSCluster.Status.VPCPublicGateways[0].ID).To(Equal(pgwID))
+	})
+}
+
 func TestDeleteVPCRoutingTables(t *testing.T) {
 	var (
 		mockVpc  *mock.MockVpc
@@ -12387,5 +12582,356 @@ func TestDeleteVPCRoutingTables(t *testing.T) {
 		clusterScope.IBMVPCClient = mockVpc
 		err := clusterScope.DeleteVPCRoutingTables(ctx)
 		g.Expect(err).To(BeNil())
+	})
+}
+
+func TestDeleteVPCPublicGateways(t *testing.T) {
+	var (
+		mockVpc  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVpc = mock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() { mockCtrl.Finish() }
+
+	scopeWithProvisionPGW := func() *ClusterScope {
+		return &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCPublicGateways: []infrav1.VPCPublicGateway{
+						{Type: infrav1.SourceTypeProvision, Provision: infrav1.VPCPublicGatewayProvision{Name: "pgw-test"}},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCPublicGateways: []infrav1.VPCPublicGatewayStatus{
+						{ID: "pgw-id", Name: "pgw-test", Zone: "us-south-1"},
+					},
+				},
+			},
+		}
+	}
+
+	t.Run("When public gateway is referenced (not managed), skip deletion", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		scope.IBMPowerVSCluster.Spec.VPCPublicGateways = []infrav1.VPCPublicGateway{
+			{Type: infrav1.SourceTypeReference, Reference: infrav1.ResourceIdentifier{ID: "pgw-id", Name: "pgw-test"}},
+		}
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When public gateway is not found (404), skip deletion", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		mockVpc.EXPECT().GetPublicGateway(gomock.Any()).Return(nil, &core.DetailedResponse{StatusCode: 404}, errors.New("not found"))
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When GetPublicGateway returns non-404 error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		mockVpc.EXPECT().GetPublicGateway(gomock.Any()).Return(nil, &core.DetailedResponse{StatusCode: 500}, errors.New("server error"))
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When DeletePublicGateway returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		mockVpc.EXPECT().GetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To("pgw-id"),
+			Name: ptr.To("pgw-test"),
+		}, &core.DetailedResponse{StatusCode: 200}, nil)
+		mockVpc.EXPECT().DeletePublicGateway(gomock.Any()).Return(&core.DetailedResponse{}, errors.New("delete failed"))
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).ToNot(BeNil())
+	})
+
+	t.Run("When DeletePublicGateway succeeds", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		mockVpc.EXPECT().GetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To("pgw-id"),
+			Name: ptr.To("pgw-test"),
+		}, &core.DetailedResponse{StatusCode: 200}, nil)
+		mockVpc.EXPECT().DeletePublicGateway(gomock.Any()).Return(&core.DetailedResponse{}, nil)
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When public gateway is attached to a subnet, unsets public gateway before deleting", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		scope.IBMPowerVSCluster.Status.VPCSubnets = []infrav1.VPCSubnetStatus{
+			{
+				ID:   "subnet-1",
+				Name: "my-subnet",
+				PublicGateway: infrav1.VPCPublicGatewayStatus{
+					ID:   "pgw-id",
+					Name: "pgw-test",
+				},
+			},
+		}
+		mockVpc.EXPECT().GetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To("pgw-id"),
+			Name: ptr.To("pgw-test"),
+		}, &core.DetailedResponse{StatusCode: 200}, nil)
+		mockVpc.EXPECT().UnsetSubnetPublicGateway(gomock.Any()).Return(&core.DetailedResponse{}, nil)
+		mockVpc.EXPECT().DeletePublicGateway(gomock.Any()).Return(&core.DetailedResponse{}, nil)
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When Reference-type subnet has public gateway attached, detaches but does not delete gateway", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSubnets: []infrav1.VPCSubnetSource{
+						{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID:   "subnet-ref-id",
+								Name: "ref-subnet",
+							},
+							PublicGateway: infrav1.ResourceIdentifier{
+								ID:   "pgw-ref-id",
+								Name: "pgw-ref",
+							},
+						},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCSubnets: []infrav1.VPCSubnetStatus{
+						{
+							ID:   "subnet-ref-id",
+							Name: "ref-subnet",
+							PublicGateway: infrav1.VPCPublicGatewayStatus{
+								ID:   "pgw-ref-id",
+								Name: "pgw-ref",
+							},
+						},
+					},
+				},
+			},
+		}
+		// Only UnsetSubnetPublicGateway should be called — no GetPublicGateway or DeletePublicGateway.
+		mockVpc.EXPECT().UnsetSubnetPublicGateway(gomock.Any()).Return(&core.DetailedResponse{}, nil)
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When Reference-type subnet detach returns error, continues without failing", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCSubnets: []infrav1.VPCSubnetSource{
+						{
+							Type: infrav1.SourceTypeReference,
+							Reference: infrav1.ResourceIdentifier{
+								ID:   "subnet-ref-id",
+								Name: "ref-subnet",
+							},
+							PublicGateway: infrav1.ResourceIdentifier{
+								ID:   "pgw-ref-id",
+								Name: "pgw-ref",
+							},
+						},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPCSubnets: []infrav1.VPCSubnetStatus{
+						{
+							ID:   "subnet-ref-id",
+							Name: "ref-subnet",
+							PublicGateway: infrav1.VPCPublicGatewayStatus{
+								ID:   "pgw-ref-id",
+								Name: "pgw-ref",
+							},
+						},
+					},
+				},
+			},
+		}
+		// Error from unset is tolerated (gateway may already be detached).
+		mockVpc.EXPECT().UnsetSubnetPublicGateway(gomock.Any()).Return(&core.DetailedResponse{StatusCode: 404}, errors.New("already detached"))
+		scope.IBMVPCClient = mockVpc
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+
+	t.Run("When Provision-type subnet has no publicGateway in spec, reference detach loop is skipped", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithProvisionPGW()
+		// No VPCSubnets in spec — reference loop has nothing to iterate.
+		scope.IBMVPCClient = mockVpc
+		// Provision PGW has no status entry with a matching gateway, so no calls expected
+		// other than the managed-gateway deletion path which needs GetPublicGateway.
+		mockVpc.EXPECT().GetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To("pgw-id"),
+			Name: ptr.To("pgw-test"),
+		}, &core.DetailedResponse{StatusCode: 200}, nil)
+		mockVpc.EXPECT().DeletePublicGateway(gomock.Any()).Return(&core.DetailedResponse{}, nil)
+		err := scope.DeleteVPCPublicGateways(ctx)
+		g.Expect(err).To(BeNil())
+	})
+}
+
+func TestReconcileSubnetPublicGateway(t *testing.T) {
+	var (
+		mockVPC  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+
+	pgwID := "pgw-id-123"
+	pgwName := "pgw-name-test"
+	subnetID := "subnet-id-123"
+	rgID := "rg-id-xyz"
+
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVPC = mock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() { mockCtrl.Finish() }
+
+	scopeWithStatus := func(pgwStatus []infrav1.VPCPublicGatewayStatus) *ClusterScope {
+		return &ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					ResourceGroup:     infrav1.ResourceReference{ID: rgID},
+					VPCPublicGateways: pgwStatus,
+				},
+			},
+		}
+	}
+
+	t.Run("nil pgwRef with nil currentPGW returns nil, nil", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithStatus(nil)
+		res, err := scope.reconcileSubnetPublicGateway(ctx, subnetID, nil, nil)
+		g.Expect(err).To(BeNil())
+		g.Expect(res).To(BeNil())
+	})
+
+	t.Run("pgwRef by ID already attached to current PGW is idempotent", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithStatus(nil)
+		current := &vpcv1.PublicGatewayReference{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+		}
+		ref := &infrav1.ResourceIdentifier{ID: pgwID, Name: pgwName}
+		res, err := scope.reconcileSubnetPublicGateway(ctx, subnetID, ref, current)
+		g.Expect(err).To(BeNil())
+		g.Expect(res).ToNot(BeNil())
+		g.Expect(res.ID).To(Equal(pgwID))
+	})
+
+	t.Run("pgwRef by Name found in cluster status attaches successfully", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithStatus([]infrav1.VPCPublicGatewayStatus{
+			{ID: pgwID, Name: pgwName},
+		})
+		ref := &infrav1.ResourceIdentifier{Name: pgwName}
+		mockVPC.EXPECT().SetSubnetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+		}, &core.DetailedResponse{}, nil)
+
+		res, err := scope.reconcileSubnetPublicGateway(ctx, subnetID, ref, nil)
+		g.Expect(err).To(BeNil())
+		g.Expect(res).ToNot(BeNil())
+		g.Expect(res.ID).To(Equal(pgwID))
+		g.Expect(res.Name).To(Equal(pgwName))
+	})
+
+	t.Run("pgwRef by Name looked up via API attaches successfully", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithStatus(nil)
+		ref := &infrav1.ResourceIdentifier{Name: pgwName}
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+		}, nil)
+		mockVPC.EXPECT().SetSubnetPublicGateway(gomock.Any()).Return(&vpcv1.PublicGateway{
+			ID:   ptr.To(pgwID),
+			Name: ptr.To(pgwName),
+		}, &core.DetailedResponse{}, nil)
+
+		res, err := scope.reconcileSubnetPublicGateway(ctx, subnetID, ref, nil)
+		g.Expect(err).To(BeNil())
+		g.Expect(res).ToNot(BeNil())
+		g.Expect(res.ID).To(Equal(pgwID))
+	})
+
+	t.Run("pgwRef by Name not found returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithStatus(nil)
+		ref := &infrav1.ResourceIdentifier{Name: pgwName}
+		mockVPC.EXPECT().GetVPCPublicGatewayByName(pgwName, rgID).Return(nil, nil)
+
+		res, err := scope.reconcileSubnetPublicGateway(ctx, subnetID, ref, nil)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(res).To(BeNil())
+	})
+
+	t.Run("SetSubnetPublicGateway returns error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := scopeWithStatus([]infrav1.VPCPublicGatewayStatus{
+			{ID: pgwID, Name: pgwName},
+		})
+		ref := &infrav1.ResourceIdentifier{ID: pgwID}
+		mockVPC.EXPECT().SetSubnetPublicGateway(gomock.Any()).Return(nil, &core.DetailedResponse{}, errors.New("attach failed"))
+
+		res, err := scope.reconcileSubnetPublicGateway(ctx, subnetID, ref, nil)
+		g.Expect(err).ToNot(BeNil())
+		g.Expect(res).To(BeNil())
 	})
 }
