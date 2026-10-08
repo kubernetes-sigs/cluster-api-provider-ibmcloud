@@ -11854,7 +11854,7 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 		g.Expect(requeue).To(BeFalse())
 	})
 
-	t.Run("Routing table has neither id nor name — returns error", func(t *testing.T) {
+	t.Run("Routing table has unsupported type — returns error", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
 		t.Cleanup(teardown)
@@ -11862,7 +11862,7 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -11880,7 +11880,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{Name: rtName}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeProvision,
+						Provision: infrav1.VPCRoutingTableProvision{Name: rtName},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{},
 			},
@@ -11898,7 +11901,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{ID: rtID}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: rtID},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -11917,7 +11923,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{ID: rtID}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: rtID},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -11944,7 +11953,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{ID: rtID}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeReference,
+						Reference: infrav1.ResourceIdentifier{ID: rtID},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -11968,7 +11980,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{Name: rtName}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeProvision,
+						Provision: infrav1.VPCRoutingTableProvision{Name: rtName},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -11987,7 +12002,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{Name: rtName}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeProvision,
+						Provision: infrav1.VPCRoutingTableProvision{Name: rtName},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -12014,7 +12032,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{Name: rtName}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeProvision,
+						Provision: infrav1.VPCRoutingTableProvision{Name: rtName},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -12034,7 +12055,10 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 			IBMVPCClient: mockVPC,
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{{Name: rtName}},
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{{
+						Type:      infrav1.SourceTypeProvision,
+						Provision: infrav1.VPCRoutingTableProvision{Name: rtName},
+					}},
 				},
 				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
 			},
@@ -12051,6 +12075,215 @@ func TestReconcileVPCRoutingTables(t *testing.T) {
 		g.Expect(clusterScope.IBMPowerVSCluster.Status.VPCRoutingTables).To(BeEmpty())
 	})
 }
+
+func TestResolveNextHopFromLB(t *testing.T) {
+	t.Run("No load balancers in status — returns empty string and false", func(t *testing.T) {
+		g := NewWithT(t)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Status: infrav1.IBMPowerVSClusterStatus{},
+			},
+		}
+		ip, ok := scope.resolveNextHopFromLB()
+		g.Expect(ok).To(BeFalse())
+		g.Expect(ip).To(BeEmpty())
+	})
+
+	t.Run("Load balancer in status with no private IPs — returns empty string and false", func(t *testing.T) {
+		g := NewWithT(t)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Status: infrav1.IBMPowerVSClusterStatus{
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{Name: "lb-1", ID: "lb-id-1", PrivateIPs: nil},
+					},
+				},
+			},
+		}
+		ip, ok := scope.resolveNextHopFromLB()
+		g.Expect(ok).To(BeFalse())
+		g.Expect(ip).To(BeEmpty())
+	})
+
+	t.Run("Load balancer in status with private IPs — returns first IP and true", func(t *testing.T) {
+		g := NewWithT(t)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Status: infrav1.IBMPowerVSClusterStatus{
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{Name: "lb-1", ID: "lb-id-1", PrivateIPs: []string{"10.240.0.5", "10.240.0.6"}},
+					},
+				},
+			},
+		}
+		ip, ok := scope.resolveNextHopFromLB()
+		g.Expect(ok).To(BeTrue())
+		g.Expect(ip).To(Equal("10.240.0.5"))
+	})
+
+	t.Run("First LB has no private IPs, second does — returns second LB's first IP", func(t *testing.T) {
+		g := NewWithT(t)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Status: infrav1.IBMPowerVSClusterStatus{
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{Name: "lb-1", ID: "lb-id-1"},
+						{Name: "lb-2", ID: "lb-id-2", PrivateIPs: []string{"10.240.0.9"}},
+					},
+				},
+			},
+		}
+		ip, ok := scope.resolveNextHopFromLB()
+		g.Expect(ok).To(BeTrue())
+		g.Expect(ip).To(Equal("10.240.0.9"))
+	})
+}
+
+func TestReconcileVPCRoutingTable_NextHopResolution(t *testing.T) {
+	var (
+		mockVPC  *mock.MockVpc
+		mockCtrl *gomock.Controller
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVPC = mock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() { mockCtrl.Finish() }
+
+	const (
+		vpcID  = "vpc-nexthop-test"
+		rtName = "rt-nexthop-test"
+		rtID   = "rt-id-nexthop"
+		lbIP   = "10.240.0.5"
+	)
+
+	provisionRT := func(routes []infrav1.VPCRoutingTableRoute) infrav1.VPCRoutingTableSource {
+		return infrav1.VPCRoutingTableSource{
+			Type: infrav1.SourceTypeProvision,
+			Provision: infrav1.VPCRoutingTableProvision{
+				Name:   rtName,
+				Routes: routes,
+			},
+		}
+	}
+
+	t.Run("deliver route with explicit nextHop — used as-is, no LB lookup", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{provisionRT([]infrav1.VPCRoutingTableRoute{
+						{Action: infrav1.VPCRoutingTableRouteActionDeliver, Destination: "0.0.0.0/0", NextHop: "10.1.2.3", Zone: "us-south-1"},
+					})},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, nil)
+		// Expect CreateVPCRoutingTable to be called with the explicit nextHop (no LB lookup needed).
+		mockVPC.EXPECT().CreateVPCRoutingTable(gomock.Any()).DoAndReturn(
+			func(opts *vpcv1.CreateVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+				g.Expect(opts.Routes).To(HaveLen(1))
+				nh, ok := opts.Routes[0].NextHop.(*vpcv1.RouteNextHopPrototypeRouteNextHopIPRouteNextHopIPUnicastIP)
+				g.Expect(ok).To(BeTrue())
+				g.Expect(*nh.Address).To(Equal("10.1.2.3"))
+				return &vpcv1.RoutingTable{ID: ptr.To(rtID), Name: ptr.To(rtName)}, nil, nil
+			},
+		)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+	})
+
+	t.Run("deliver route with empty nextHop, LB has private IP — IP injected and table created", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{provisionRT([]infrav1.VPCRoutingTableRoute{
+						{Action: infrav1.VPCRoutingTableRouteActionDeliver, Destination: "0.0.0.0/0", Zone: "us-south-1"},
+					})},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPC:           infrav1.VPCStatus{ID: vpcID},
+					LoadBalancers: []infrav1.LoadBalancerStatus{{Name: "pvs-rt-test-lb", PrivateIPs: []string{lbIP}}},
+				},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, nil)
+		mockVPC.EXPECT().CreateVPCRoutingTable(gomock.Any()).DoAndReturn(
+			func(opts *vpcv1.CreateVPCRoutingTableOptions) (*vpcv1.RoutingTable, *core.DetailedResponse, error) {
+				g.Expect(opts.Routes).To(HaveLen(1))
+				nh, ok := opts.Routes[0].NextHop.(*vpcv1.RouteNextHopPrototypeRouteNextHopIPRouteNextHopIPUnicastIP)
+				g.Expect(ok).To(BeTrue())
+				g.Expect(*nh.Address).To(Equal(lbIP))
+				return &vpcv1.RoutingTable{ID: ptr.To(rtID), Name: ptr.To(rtName)}, nil, nil
+			},
+		)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+	})
+
+	t.Run("deliver route with empty nextHop, no LBs with private IPs yet — requeues without error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{provisionRT([]infrav1.VPCRoutingTableRoute{
+						{Action: infrav1.VPCRoutingTableRouteActionDeliver, Destination: "0.0.0.0/0", Zone: "us-south-1"},
+					})},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					VPC:           infrav1.VPCStatus{ID: vpcID},
+					LoadBalancers: []infrav1.LoadBalancerStatus{{Name: "pvs-rt-test-lb"}}, // no PrivateIPs yet
+				},
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, nil)
+		// CreateVPCRoutingTable must NOT be called — we requeue to wait for the LB.
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+	})
+
+	t.Run("delegate route with empty nextHop — passed through without LB lookup", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		clusterScope := ClusterScope{
+			IBMVPCClient: mockVPC,
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{provisionRT([]infrav1.VPCRoutingTableRoute{
+						{Action: infrav1.VPCRoutingTableRouteActionDelegate, Destination: "10.0.0.0/8", Zone: "us-south-1"},
+					})},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{VPC: infrav1.VPCStatus{ID: vpcID}},
+				// deliberately no LoadBalancers in status — should not matter for delegate action
+			},
+		}
+		mockVPC.EXPECT().GetVPCRoutingTableByName(vpcID, rtName).Return(nil, nil)
+		mockVPC.EXPECT().CreateVPCRoutingTable(gomock.Any()).Return(
+			&vpcv1.RoutingTable{ID: ptr.To(rtID), Name: ptr.To(rtName)}, nil, nil,
+		)
+		requeue, err := clusterScope.ReconcileVPCRoutingTables(ctx)
+		g.Expect(err).To(BeNil())
+		g.Expect(requeue).To(BeTrue())
+	})
+}
+
+
 
 func TestDeleteVPCRoutingTables(t *testing.T) {
 	var (
@@ -12071,9 +12304,10 @@ func TestDeleteVPCRoutingTables(t *testing.T) {
 		return &ClusterScope{
 			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
 				Spec: infrav1.IBMPowerVSClusterSpec{
-					VPCRoutingTables: []infrav1.VPCRoutingTable{
+					VPCRoutingTables: []infrav1.VPCRoutingTableSource{
 						{
-							Name: "rt-test",
+							Type:      infrav1.SourceTypeProvision,
+							Provision: infrav1.VPCRoutingTableProvision{Name: "rt-test"},
 						},
 					},
 				},
@@ -12092,8 +12326,11 @@ func TestDeleteVPCRoutingTables(t *testing.T) {
 		setup(t)
 		t.Cleanup(teardown)
 		clusterScope := scopeWithProvisionRT()
-		clusterScope.IBMPowerVSCluster.Spec.VPCRoutingTables = []infrav1.VPCRoutingTable{
-			{ID: "rt-id", Name: "rt-test"},
+		clusterScope.IBMPowerVSCluster.Spec.VPCRoutingTables = []infrav1.VPCRoutingTableSource{
+			{
+				Type:      infrav1.SourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{ID: "rt-id", Name: "rt-test"},
+			},
 		}
 		clusterScope.IBMVPCClient = mockVpc
 		err := clusterScope.DeleteVPCRoutingTables(ctx)
