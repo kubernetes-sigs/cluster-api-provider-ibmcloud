@@ -1770,10 +1770,11 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 			}
 
 			s.SetLoadBalancerStatus(ctx, lbName, infrav1.LoadBalancerStatus{
-				Name:     lbName,
-				ID:       *loadBalancer.ID,
-				State:    infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
-				Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+				Name:       lbName,
+				ID:         *loadBalancer.ID,
+				State:      infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
+				Hostname:   ptr.Deref(loadBalancer.Hostname, ""),
+				PrivateIPs: extractPrivateIPs(*loadBalancer),
 			})
 			continue
 		}
@@ -1823,10 +1824,11 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 			}
 
 			s.SetLoadBalancerStatus(ctx, lbName, infrav1.LoadBalancerStatus{
-				Name:     lbName,
-				ID:       *loadBalancer.ID,
-				State:    infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
-				Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+				Name:       lbName,
+				ID:         *loadBalancer.ID,
+				State:      infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
+				Hostname:   ptr.Deref(loadBalancer.Hostname, ""),
+				PrivateIPs: extractPrivateIPs(*loadBalancer),
 			})
 			continue
 		}
@@ -1875,6 +1877,17 @@ func (s *ClusterScope) ReconcileLoadBalancers(ctx context.Context) (bool, error)
 	return true, nil
 }
 
+// extractPrivateIPs returns the list of private IP address strings from a VPC LoadBalancer.
+func extractPrivateIPs(lb vpcv1.LoadBalancer) []string {
+	ips := make([]string, 0, len(lb.PrivateIps))
+	for _, ip := range lb.PrivateIps {
+		if ip.Address != nil {
+			ips = append(ips, *ip.Address)
+		}
+	}
+	return ips
+}
+
 // SetLoadBalancerStatus updates or appends the load balancer status.
 func (s *ClusterScope) SetLoadBalancerStatus(ctx context.Context, name string, status infrav1.LoadBalancerStatus) {
 	log := ctrl.LoggerFrom(ctx)
@@ -1917,10 +1930,11 @@ func (s *ClusterScope) checkLoadBalancer(ctx context.Context, name string) (*inf
 		return nil, nil
 	}
 	return &infrav1.LoadBalancerStatus{
-		Name:     name,
-		ID:       *loadBalancer.ID,
-		State:    infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
-		Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+		Name:       name,
+		ID:         *loadBalancer.ID,
+		State:      infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus),
+		Hostname:   ptr.Deref(loadBalancer.Hostname, ""),
+		PrivateIPs: extractPrivateIPs(*loadBalancer),
 	}, nil
 }
 
@@ -2023,10 +2037,11 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 
 	lbState := infrav1.LoadBalancerState(*loadBalancer.ProvisioningStatus)
 	return &infrav1.LoadBalancerStatus{
-		Name:     lbName,
-		ID:       *loadBalancer.ID,
-		State:    lbState,
-		Hostname: ptr.Deref(loadBalancer.Hostname, ""),
+		Name:       lbName,
+		ID:         *loadBalancer.ID,
+		State:      lbState,
+		Hostname:   ptr.Deref(loadBalancer.Hostname, ""),
+		PrivateIPs: extractPrivateIPs(*loadBalancer),
 	}, nil
 }
 
@@ -2205,111 +2220,174 @@ func (s *ClusterScope) ReconcileVPCRoutingTables(ctx context.Context) (bool, err
 	return requeue, nil
 }
 
-// reconcileVPCRoutingTable reconciles a single VPC Routing Table for an IBMPowerVSCluster.
-// It looks up by ID then name, creates if absent, and returns the status and whether a requeue is needed.
-func (s *ClusterScope) reconcileVPCRoutingTable(ctx context.Context, vpcID string, routingTable infrav1.VPCRoutingTable) (*infrav1.VPCRoutingTableStatus, bool, error) {
-	log := ctrl.LoggerFrom(ctx)
-
-	if routingTable.ID == "" && routingTable.Name == "" {
-		return nil, false, fmt.Errorf("routing table has no id or name; one is required")
-	}
-
-	// Look up by ID if provided.
-	if routingTable.ID != "" {
-		rtDetails, _, err := s.IBMVPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
-			VPCID: &vpcID,
-			ID:    &routingTable.ID,
-		})
-		if err != nil {
-			return nil, false, fmt.Errorf("error retrieving routing table by id %s: %w", routingTable.ID, err)
+// resolveNextHopFromLB returns the first private IP of the first load balancer in status
+// that has at least one private IP. Returns ("", false) when no load balancer with a
+// private IP is available yet — the caller should requeue rather than treat this as an error.
+func (s *ClusterScope) resolveNextHopFromLB() (string, bool) {
+	for _, lb := range s.IBMPowerVSCluster.Status.LoadBalancers {
+		if len(lb.PrivateIPs) > 0 {
+			return lb.PrivateIPs[0], true
 		}
-		if rtDetails == nil || rtDetails.ID == nil {
-			return nil, false, fmt.Errorf("routing table with id %s not found", routingTable.ID)
-		}
-		stable := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
-		readyStatus := infrav1.VPCRoutingTableReadyStatusNotReady
-		if stable {
-			readyStatus = infrav1.VPCRoutingTableReadyStatusReady
-		}
-		return &infrav1.VPCRoutingTableStatus{
-			ID:    *rtDetails.ID,
-			Name:  ptr.Deref(rtDetails.Name, ""),
-			Ready: readyStatus,
-		}, !stable, nil
 	}
-
-	// Look up by name.
-	rtDetails, err := s.IBMVPCClient.GetVPCRoutingTableByName(vpcID, routingTable.Name)
-	if err != nil {
-		return nil, false, fmt.Errorf("error retrieving routing table by name %s: %w", routingTable.Name, err)
-	}
-	if rtDetails != nil {
-		stable := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
-		readyStatus := infrav1.VPCRoutingTableReadyStatusNotReady
-		if stable {
-			readyStatus = infrav1.VPCRoutingTableReadyStatusReady
-		}
-		return &infrav1.VPCRoutingTableStatus{
-			ID:    *rtDetails.ID,
-			Name:  ptr.Deref(rtDetails.Name, ""),
-			Ready: readyStatus,
-		}, !stable, nil
-	}
-
-	// Not found — create it.
-	log.V(3).Info("Creating VPC routing table", "name", routingTable.Name)
-	if err := s.createVPCRoutingTable(ctx, vpcID, routingTable); err != nil {
-		return nil, false, err
-	}
-	log.V(3).Info("VPC routing table created, requeueing to await stable state", "name", routingTable.Name)
-	// Return nil status here; next reconcile will populate it via the lookup-by-name path above.
-	return nil, true, nil
+	return "", false
 }
 
-// createVPCRoutingTable creates a new VPC Routing Table using the provided spec.
-func (s *ClusterScope) createVPCRoutingTable(ctx context.Context, vpcID string, routingTable infrav1.VPCRoutingTable) error {
+// reconcileVPCRoutingTable reconciles a single VPC Routing Table for an IBMPowerVSCluster.
+// It looks up by ID (Reference) or by name (Provision), creates if absent, and returns the status and whether a requeue is needed.
+func (s *ClusterScope) reconcileVPCRoutingTable(ctx context.Context, vpcID string, routingTable infrav1.VPCRoutingTableSource) (*infrav1.VPCRoutingTableStatus, bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	switch routingTable.Type {
+	case infrav1.SourceTypeReference:
+		// Look up the existing routing table by ID or name from the reference.
+		refID := routingTable.Reference.ID
+		refName := routingTable.Reference.Name
+		var rtDetails *vpcv1.RoutingTable
+		var err error
+		if refID != "" {
+			rtDetails, _, err = s.IBMVPCClient.GetVPCRoutingTable(&vpcv1.GetVPCRoutingTableOptions{
+				VPCID: &vpcID,
+				ID:    &refID,
+			})
+			if err != nil {
+				return nil, false, fmt.Errorf("error retrieving routing table by id %s: %w", refID, err)
+			}
+			if rtDetails == nil || rtDetails.ID == nil {
+				return nil, false, fmt.Errorf("routing table with id %s not found", refID)
+			}
+		} else {
+			rtDetails, err = s.IBMVPCClient.GetVPCRoutingTableByName(vpcID, refName)
+			if err != nil {
+				return nil, false, fmt.Errorf("error retrieving routing table by name %s: %w", refName, err)
+			}
+			if rtDetails == nil || rtDetails.ID == nil {
+				return nil, false, fmt.Errorf("routing table with name %s not found", refName)
+			}
+		}
+		stable := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
+		readyStatus := infrav1.VPCRoutingTableReadyStatusNotReady
+		if stable {
+			readyStatus = infrav1.VPCRoutingTableReadyStatusReady
+		}
+		return &infrav1.VPCRoutingTableStatus{
+			ID:    *rtDetails.ID,
+			Name:  ptr.Deref(rtDetails.Name, ""),
+			Ready: readyStatus,
+		}, !stable, nil
+
+	case infrav1.SourceTypeProvision:
+		// Look up by name first — may already exist from a previous reconcile.
+		rtDetails, err := s.IBMVPCClient.GetVPCRoutingTableByName(vpcID, routingTable.Provision.Name)
+		if err != nil {
+			return nil, false, fmt.Errorf("error retrieving routing table by name %s: %w", routingTable.Provision.Name, err)
+		}
+		if rtDetails != nil {
+			stable := rtDetails.LifecycleState != nil && *rtDetails.LifecycleState == string(vpcv1.RoutingTableLifecycleStateStableConst)
+			readyStatus := infrav1.VPCRoutingTableReadyStatusNotReady
+			if stable {
+				readyStatus = infrav1.VPCRoutingTableReadyStatusReady
+			}
+			return &infrav1.VPCRoutingTableStatus{
+				ID:    *rtDetails.ID,
+				Name:  ptr.Deref(rtDetails.Name, ""),
+				Ready: readyStatus,
+			}, !stable, nil
+		}
+		// Not found — create it.
+		provision, requeue := s.resolveProvisionNextHops(ctx, routingTable.Provision)
+		if requeue {
+			return nil, true, nil
+		}
+		log.V(3).Info("Creating VPC routing table", "name", provision.Name)
+		if err := s.createVPCRoutingTable(ctx, vpcID, provision); err != nil {
+			return nil, false, err
+		}
+		log.V(3).Info("VPC routing table created, requeueing to await stable state", "name", provision.Name)
+		// Return nil status here; next reconcile will populate it via the lookup-by-name path above.
+		return nil, true, nil
+
+	default:
+		return nil, false, fmt.Errorf("unsupported routing table source type %q", routingTable.Type)
+	}
+}
+
+// resolveProvisionNextHops returns a copy of the provision config with any empty nextHop fields
+// on deliver routes filled in from the first available load balancer private IP.
+// Returns requeue=true when deliver routes need a nextHop but no LB private IP is available yet —
+// the caller should requeue rather than treat this as an error.
+func (s *ClusterScope) resolveProvisionNextHops(ctx context.Context, provision infrav1.VPCRoutingTableProvision) (infrav1.VPCRoutingTableProvision, bool) {
+	log := ctrl.LoggerFrom(ctx)
+	needsNextHop := false
+	for _, r := range provision.Routes {
+		if r.Action == infrav1.VPCRoutingTableRouteActionDeliver && r.NextHop == "" {
+			needsNextHop = true
+			break
+		}
+	}
+	if !needsNextHop {
+		return provision, false
+	}
+	ip, ok := s.resolveNextHopFromLB()
+	if !ok {
+		log.V(3).Info("Waiting for load balancer private IP before creating routing table", "routingTable", provision.Name)
+		return provision, true
+	}
+	// Work on a copy of the routes slice so we never mutate the spec.
+	routes := make([]infrav1.VPCRoutingTableRoute, len(provision.Routes))
+	copy(routes, provision.Routes)
+	for i, r := range routes {
+		if r.Action == infrav1.VPCRoutingTableRouteActionDeliver && r.NextHop == "" {
+			routes[i].NextHop = ip
+		}
+	}
+	provision.Routes = routes
+	return provision, false
+}
+
+// createVPCRoutingTable creates a new VPC Routing Table using the provided provision config.
+func (s *ClusterScope) createVPCRoutingTable(ctx context.Context, vpcID string, provision infrav1.VPCRoutingTableProvision) error {
 	log := ctrl.LoggerFrom(ctx)
 
 	options := &vpcv1.CreateVPCRoutingTableOptions{
 		VPCID: &vpcID,
-		Name:  &routingTable.Name,
+		Name:  &provision.Name,
 	}
-	switch routingTable.RouteDirectLinkIngress {
+	switch provision.RouteDirectLinkIngress {
 	case infrav1.RoutingTableIngressPolicyEnabled:
 		options.RouteDirectLinkIngress = ptr.To(true)
 	case infrav1.RoutingTableIngressPolicyDisabled:
 		options.RouteDirectLinkIngress = ptr.To(false)
 	}
-	switch routingTable.RouteTransitGatewayIngress {
+	switch provision.RouteTransitGatewayIngress {
 	case infrav1.RoutingTableIngressPolicyEnabled:
 		options.RouteTransitGatewayIngress = ptr.To(true)
 	case infrav1.RoutingTableIngressPolicyDisabled:
 		options.RouteTransitGatewayIngress = ptr.To(false)
 	}
-	switch routingTable.RouteVPCZoneIngress {
+	switch provision.RouteVPCZoneIngress {
 	case infrav1.RoutingTableIngressPolicyEnabled:
 		options.RouteVPCZoneIngress = ptr.To(true)
 	case infrav1.RoutingTableIngressPolicyDisabled:
 		options.RouteVPCZoneIngress = ptr.To(false)
 	}
-	if len(routingTable.AdvertiseRoutesTo) > 0 {
-		targets := make([]string, len(routingTable.AdvertiseRoutesTo))
-		for i, t := range routingTable.AdvertiseRoutesTo {
+	if len(provision.AdvertiseRoutesTo) > 0 {
+		targets := make([]string, len(provision.AdvertiseRoutesTo))
+		for i, t := range provision.AdvertiseRoutesTo {
 			targets[i] = string(t)
 		}
 		options.AdvertiseRoutesTo = targets
 	}
-	if len(routingTable.Routes) > 0 {
-		options.Routes = buildRoutingTableRoutes(routingTable.Routes)
+	if len(provision.Routes) > 0 {
+		options.Routes = buildRoutingTableRoutes(provision.Routes)
 	}
 
 	rtDetails, _, err := s.IBMVPCClient.CreateVPCRoutingTable(options)
 	if err != nil {
-		log.V(3).Error(err, "error creating VPC routing table", "name", routingTable.Name)
+		log.V(3).Error(err, "error creating VPC routing table", "name", provision.Name)
 		return fmt.Errorf("error creating VPC routing table: %w", err)
 	}
 	if rtDetails == nil || rtDetails.ID == nil {
-		return fmt.Errorf("nil response creating VPC routing table %s", routingTable.Name)
+		return fmt.Errorf("nil response creating VPC routing table %s", provision.Name)
 	}
 	return nil
 }
@@ -3240,9 +3318,8 @@ func (s *ClusterScope) DeleteVPCRoutingTables(ctx context.Context) error {
 	// Build the set of names the controller provisioned.
 	managed := make(map[string]bool)
 	for _, rt := range s.IBMPowerVSCluster.Spec.VPCRoutingTables {
-		if rt.ID == "" && rt.Name != "" {
-			// Only Provision-style entries (no pre-existing ID) are controller-owned.
-			managed[rt.Name] = true
+		if rt.Type == infrav1.SourceTypeProvision {
+			managed[rt.Provision.Name] = true
 		}
 	}
 
