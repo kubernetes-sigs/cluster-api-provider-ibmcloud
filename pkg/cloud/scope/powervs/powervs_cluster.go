@@ -1585,6 +1585,17 @@ func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 				return false, fmt.Errorf("tracked VPC subnet (id: %s) was not found in IBM Cloud", existingStatus.ID)
 			}
 
+			// Reconcile public gateway attachment if configured
+			if subnetSpec.PublicGateway.ID != "" || subnetSpec.PublicGateway.Name != "" {
+				attachedPGW, err := s.reconcileSubnetPublicGateway(ctx, existingStatus.ID, &subnetSpec.PublicGateway, subnetDetails.PublicGateway)
+				if err != nil {
+					return false, err
+				}
+				if attachedPGW != nil {
+					existingStatus.PublicGateway = *attachedPGW
+				}
+			}
+
 			// Subnet is healthy and verified; carry on to the next list entry
 			continue
 		}
@@ -1616,6 +1627,18 @@ func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 			continue
 		}
 
+		var attachedPGW infrav1.VPCPublicGatewayStatus
+		if subnetSpec.PublicGateway.ID != "" || subnetSpec.PublicGateway.Name != "" {
+			var err error
+			pgw, err := s.reconcileSubnetPublicGateway(ctx, *subnetDetails.ID, &subnetSpec.PublicGateway, subnetDetails.PublicGateway)
+			if err != nil {
+				return false, err
+			}
+			if pgw != nil {
+				attachedPGW = *pgw
+			}
+		}
+
 		// Dynamically extract the actual Zone from the cloud payload if available, fallback to spec
 		actualZone := subnetSpec.Zone
 		if subnetDetails.Zone != nil && subnetDetails.Zone.Name != nil {
@@ -1624,9 +1647,10 @@ func (s *ClusterScope) ReconcileVPCSubnets(ctx context.Context) (bool, error) {
 
 		// 6. Update Status array using the new struct
 		s.updateSubnetStatusList(infrav1.VPCSubnetStatus{
-			ID:   *subnetDetails.ID,
-			Name: *subnetDetails.Name,
-			Zone: actualZone,
+			ID:            *subnetDetails.ID,
+			Name:          *subnetDetails.Name,
+			Zone:          actualZone,
+			PublicGateway: attachedPGW,
 		})
 	}
 
@@ -3358,6 +3382,318 @@ func (s *ClusterScope) DeleteVPCRoutingTables(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// ReconcileVPCPublicGateways evaluates user intent and reconciles all VPC public gateways.
+// It is a no-op when no public gateways are specified in the spec.
+func (s *ClusterScope) ReconcileVPCPublicGateways(ctx context.Context) (bool, error) {
+	log := ctrl.LoggerFrom(ctx)
+	if len(s.IBMPowerVSCluster.Spec.VPCPublicGateways) == 0 {
+		return false, nil
+	}
+
+	vpcID := s.IBMPowerVSCluster.Status.VPC.ID
+	if vpcID == "" {
+		log.V(3).Info("VPC ID not yet available in status, requeuing public gateway reconciliation")
+		return true, nil
+	}
+
+	resourceGroupID := s.GetResourceGroupID()
+	if resourceGroupID == "" {
+		return false, fmt.Errorf("resource group ID is empty, cannot reconcile public gateways")
+	}
+
+	requeue := false
+	var updatedStatus []infrav1.VPCPublicGatewayStatus
+
+	for _, pgwSpec := range s.IBMPowerVSCluster.Spec.VPCPublicGateways {
+		status, err := s.reconcileVPCPublicGateway(ctx, vpcID, resourceGroupID, pgwSpec)
+		if err != nil {
+			return false, err
+		}
+		if status != nil {
+			updatedStatus = append(updatedStatus, *status)
+		}
+	}
+
+	s.IBMPowerVSCluster.Status.VPCPublicGateways = updatedStatus
+	return requeue, nil
+}
+
+// reconcileVPCPublicGateway reconciles a single VPC Public Gateway.
+// For Reference type, the existing gateway is looked up and returned.
+// For Provision type, the gateway is looked up by name and created if absent.
+func (s *ClusterScope) reconcileVPCPublicGateway(ctx context.Context, vpcID, resourceGroupID string, pgwSpec infrav1.VPCPublicGateway) (*infrav1.VPCPublicGatewayStatus, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	switch pgwSpec.Type {
+	case infrav1.SourceTypeReference:
+		ref := pgwSpec.Reference
+		if ref.ID != "" {
+			pgw, _, err := s.IBMVPCClient.GetPublicGateway(&vpcv1.GetPublicGatewayOptions{
+				ID: &ref.ID,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("error retrieving public gateway by id %s: %w", ref.ID, err)
+			}
+			if pgw == nil || pgw.ID == nil {
+				return nil, fmt.Errorf("public gateway with id %s not found", ref.ID)
+			}
+			return &infrav1.VPCPublicGatewayStatus{
+				ID:   *pgw.ID,
+				Name: ptr.Deref(pgw.Name, ""),
+				Zone: zoneNameFromPGW(pgw),
+			}, nil
+		}
+		// Reference by name.
+		existing, err := s.IBMVPCClient.GetVPCPublicGatewayByName(ref.Name, resourceGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving public gateway by name %s: %w", ref.Name, err)
+		}
+		if existing == nil || existing.ID == nil {
+			return nil, fmt.Errorf("referenced public gateway with name %q not found", ref.Name)
+		}
+		return &infrav1.VPCPublicGatewayStatus{
+			ID:   *existing.ID,
+			Name: ptr.Deref(existing.Name, ""),
+			Zone: zoneNameFromPGW(existing),
+		}, nil
+
+	case infrav1.SourceTypeProvision:
+		name := pgwSpec.Provision.Name
+		// Look up by name in the resource group — idempotent if already provisioned.
+		existing, err := s.IBMVPCClient.GetVPCPublicGatewayByName(name, resourceGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving public gateway by name %s: %w", name, err)
+		}
+		if existing != nil && existing.ID != nil {
+			return &infrav1.VPCPublicGatewayStatus{
+				ID:   *existing.ID,
+				Name: ptr.Deref(existing.Name, ""),
+				Zone: zoneNameFromPGW(existing),
+			}, nil
+		}
+
+		// Not found — provision it.
+		if pgwSpec.Zone == "" {
+			return nil, fmt.Errorf("zone is required to provision public gateway %q", name)
+		}
+
+		log.V(3).Info("Creating VPC public gateway", "name", name, "zone", pgwSpec.Zone)
+		created, _, err := s.IBMVPCClient.CreatePublicGateway(&vpcv1.CreatePublicGatewayOptions{
+			Name: &name,
+			VPC: &vpcv1.VPCIdentityByID{
+				ID: &vpcID,
+			},
+			Zone: &vpcv1.ZoneIdentityByName{
+				Name: &pgwSpec.Zone,
+			},
+			ResourceGroup: &vpcv1.ResourceGroupIdentityByID{
+				ID: &resourceGroupID,
+			},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error creating VPC public gateway %q: %w", name, err)
+		}
+		if created == nil || created.ID == nil {
+			return nil, fmt.Errorf("nil response creating VPC public gateway %q", name)
+		}
+
+		log.Info("VPC public gateway created", "name", name, "id", *created.ID)
+		return &infrav1.VPCPublicGatewayStatus{
+			ID:   *created.ID,
+			Name: ptr.Deref(created.Name, ""),
+			Zone: zoneNameFromPGW(created),
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown public gateway source type: %s", pgwSpec.Type)
+	}
+}
+
+// zoneNameFromPGW extracts the zone name from a public gateway response, returning empty string if unavailable.
+func zoneNameFromPGW(pgw *vpcv1.PublicGateway) string {
+	if pgw != nil && pgw.Zone != nil && pgw.Zone.Name != nil {
+		return *pgw.Zone.Name
+	}
+	return ""
+}
+
+// resolvePublicGateway resolves a ResourceIdentifier into an ID and Name of a Public Gateway.
+func (s *ClusterScope) resolvePublicGateway(pgwRef infrav1.ResourceIdentifier) (string, string, error) {
+	if pgwRef.ID != "" {
+		return pgwRef.ID, pgwRef.Name, nil
+	}
+	if pgwRef.Name == "" {
+		return "", "", fmt.Errorf("public gateway identifier must specify id or name")
+	}
+
+	// 1. Check cluster status
+	for _, pgw := range s.IBMPowerVSCluster.Status.VPCPublicGateways {
+		if pgw.Name == pgwRef.Name && pgw.ID != "" {
+			return pgw.ID, pgw.Name, nil
+		}
+	}
+
+	// 2. Query VPC by name
+	resourceGroupID := s.GetResourceGroupID()
+	existing, err := s.IBMVPCClient.GetVPCPublicGatewayByName(pgwRef.Name, resourceGroupID)
+	if err != nil {
+		return "", "", fmt.Errorf("failed checking public gateway presence by name %q: %w", pgwRef.Name, err)
+	}
+	if existing != nil && existing.ID != nil {
+		return *existing.ID, ptr.Deref(existing.Name, pgwRef.Name), nil
+	}
+
+	return "", "", fmt.Errorf("public gateway with name %q was not found", pgwRef.Name)
+}
+
+// reconcileSubnetPublicGateway ensures the subnet is attached to the desired public gateway.
+func (s *ClusterScope) reconcileSubnetPublicGateway(ctx context.Context, subnetID string, pgwRef *infrav1.ResourceIdentifier, currentPGW *vpcv1.PublicGatewayReference) (*infrav1.VPCPublicGatewayStatus, error) {
+	log := ctrl.LoggerFrom(ctx)
+	if pgwRef == nil {
+		if currentPGW != nil && currentPGW.ID != nil {
+			return &infrav1.VPCPublicGatewayStatus{
+				ID:   *currentPGW.ID,
+				Name: ptr.Deref(currentPGW.Name, ""),
+			}, nil
+		}
+		return nil, nil
+	}
+
+	targetID, targetName, err := s.resolvePublicGateway(*pgwRef)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve public gateway for subnet %s: %w", subnetID, err)
+	}
+
+	if currentPGW != nil && currentPGW.ID != nil && *currentPGW.ID == targetID {
+		log.V(3).Info("Subnet already attached to public gateway", "subnetID", subnetID, "publicGatewayID", targetID)
+		return &infrav1.VPCPublicGatewayStatus{
+			ID:   targetID,
+			Name: targetName,
+		}, nil
+	}
+
+	log.Info("Attaching public gateway to VPC subnet", "subnetID", subnetID, "publicGatewayID", targetID)
+	options := &vpcv1.SetSubnetPublicGatewayOptions{}
+	options.SetID(subnetID)
+	options.SetPublicGatewayIdentity(&vpcv1.PublicGatewayIdentity{
+		ID: &targetID,
+	})
+	if _, _, err := s.IBMVPCClient.SetSubnetPublicGateway(options); err != nil {
+		return nil, fmt.Errorf("failed to attach public gateway %s to subnet %s: %w", targetID, subnetID, err)
+	}
+
+	log.Info("Public gateway successfully attached to subnet", "subnetID", subnetID, "publicGatewayID", targetID)
+	return &infrav1.VPCPublicGatewayStatus{
+		ID:   targetID,
+		Name: targetName,
+	}, nil
+}
+
+// DeleteVPCPublicGateways deletes controller-provisioned VPC public gateways tracked in status.
+// For Reference-type subnets that had a public gateway attached via VPCSubnetSource.PublicGateway,
+// the attachment is removed but the gateway itself is not deleted (it is not owned by the controller).
+func (s *ClusterScope) DeleteVPCPublicGateways(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	// Detach public gateways from Reference-type subnets.
+	// The controller attached these gateways during reconciliation but does not own them,
+	// so only the attachment is removed — the gateway resource itself is left intact.
+	s.detachReferencedSubnetGateways(ctx)
+
+	// Build the set of names the controller provisioned (Provision-type entries only).
+	managed := make(map[string]bool)
+	for _, pgw := range s.IBMPowerVSCluster.Spec.VPCPublicGateways {
+		if pgw.Type == infrav1.SourceTypeProvision && pgw.Provision.Name != "" {
+			managed[pgw.Provision.Name] = true
+		}
+	}
+
+	for _, pgwStatus := range s.IBMPowerVSCluster.Status.VPCPublicGateways {
+		if !managed[pgwStatus.Name] {
+			log.Info("Skipping VPC public gateway deletion — referenced, not managed by controller", "publicGatewayName", pgwStatus.Name)
+			continue
+		}
+
+		pgw, resp, err := s.IBMVPCClient.GetPublicGateway(&vpcv1.GetPublicGatewayOptions{
+			ID: &pgwStatus.ID,
+		})
+		if err != nil {
+			if resp != nil && resp.StatusCode == ResourceNotFoundCode {
+				log.Info("VPC public gateway already deleted from cloud", "publicGatewayID", pgwStatus.ID)
+				continue
+			}
+			return fmt.Errorf("failed to fetch VPC public gateway '%s' during deletion: %w", pgwStatus.ID, err)
+		}
+		if pgw == nil || pgw.ID == nil {
+			continue
+		}
+
+		// Detach from subnets before deletion.
+		s.detachGatewayFromSubnets(ctx, pgwStatus.ID, pgwStatus.Name)
+
+		log.V(3).Info("Deleting VPC public gateway", "publicGatewayID", pgwStatus.ID, "publicGatewayName", pgwStatus.Name)
+		if _, err := s.IBMVPCClient.DeletePublicGateway(&vpcv1.DeletePublicGatewayOptions{
+			ID: &pgwStatus.ID,
+		}); err != nil {
+			return fmt.Errorf("failed to delete VPC public gateway '%s': %w", pgwStatus.ID, err)
+		}
+		log.Info("VPC public gateway deleted", "publicGatewayID", pgwStatus.ID, "publicGatewayName", pgwStatus.Name)
+	}
+
+	return nil
+}
+
+// detachReferencedSubnetGateways detaches public gateways from Reference-type subnets.
+// The controller attached these gateways during reconciliation but does not own them,
+// so only the attachment is removed — the gateway resource itself is left intact.
+func (s *ClusterScope) detachReferencedSubnetGateways(ctx context.Context) {
+	log := ctrl.LoggerFrom(ctx)
+	for _, subnetSpec := range s.IBMPowerVSCluster.Spec.VPCSubnets {
+		if subnetSpec.Type != infrav1.SourceTypeReference {
+			continue
+		}
+		if subnetSpec.PublicGateway.ID == "" && subnetSpec.PublicGateway.Name == "" {
+			continue
+		}
+		for _, subnetStatus := range s.IBMPowerVSCluster.Status.VPCSubnets {
+			if subnetStatus.ID == "" {
+				continue
+			}
+			if subnetStatus.PublicGateway.ID == "" && subnetStatus.PublicGateway.Name == "" {
+				continue
+			}
+			log.Info("Detaching public gateway from referenced subnet", "subnetID", subnetStatus.ID, "publicGatewayID", subnetStatus.PublicGateway.ID)
+			unsetOptions := &vpcv1.UnsetSubnetPublicGatewayOptions{}
+			unsetOptions.SetID(subnetStatus.ID)
+			if _, err := s.IBMVPCClient.UnsetSubnetPublicGateway(unsetOptions); err != nil {
+				log.V(3).Info("UnsetSubnetPublicGateway on referenced subnet returned error (may already be detached)", "subnetID", subnetStatus.ID, "error", err)
+			}
+		}
+	}
+}
+
+// detachGatewayFromSubnets detaches a specific public gateway (by ID and name) from all
+// subnets that reference it, so the gateway can subsequently be deleted.
+func (s *ClusterScope) detachGatewayFromSubnets(ctx context.Context, gatewayID, gatewayName string) {
+	log := ctrl.LoggerFrom(ctx)
+	for _, subnetStatus := range s.IBMPowerVSCluster.Status.VPCSubnets {
+		if subnetStatus.ID == "" {
+			continue
+		}
+		matches := (subnetStatus.PublicGateway.ID == gatewayID || subnetStatus.PublicGateway.Name == gatewayName) &&
+			(subnetStatus.PublicGateway.ID != "" || subnetStatus.PublicGateway.Name != "")
+		if !matches {
+			continue
+		}
+		log.V(3).Info("Detaching public gateway from subnet before gateway deletion", "subnetID", subnetStatus.ID, "publicGatewayID", gatewayID)
+		unsetOptions := &vpcv1.UnsetSubnetPublicGatewayOptions{}
+		unsetOptions.SetID(subnetStatus.ID)
+		if _, err := s.IBMVPCClient.UnsetSubnetPublicGateway(unsetOptions); err != nil {
+			log.V(3).Info("UnsetSubnetPublicGateway returned error during teardown (may already be detached)", "subnetID", subnetStatus.ID, "error", err)
+		}
+	}
 }
 
 // DeleteLoadBalancer deletes provisioned load balancers.

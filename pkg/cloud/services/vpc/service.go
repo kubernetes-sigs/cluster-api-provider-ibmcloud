@@ -134,6 +134,11 @@ func (s *Service) GetSubnetPublicGateway(options *vpcv1.GetSubnetPublicGatewayOp
 	return s.vpcService.GetSubnetPublicGateway(options)
 }
 
+// GetPublicGateway retrieves a public gateway by ID.
+func (s *Service) GetPublicGateway(options *vpcv1.GetPublicGatewayOptions) (*vpcv1.PublicGateway, *core.DetailedResponse, error) {
+	return s.vpcService.GetPublicGateway(options)
+}
+
 // CreatePublicGateway creates a public gateway for the VPC.
 func (s *Service) CreatePublicGateway(options *vpcv1.CreatePublicGatewayOptions) (*vpcv1.PublicGateway, *core.DetailedResponse, error) {
 	return s.vpcService.CreatePublicGateway(options)

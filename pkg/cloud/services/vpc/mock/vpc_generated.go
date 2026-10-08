@@ -540,6 +540,22 @@ func (mr *MockVpcMockRecorder) GetLoadBalancerPoolByName(loadBalancerID, poolNam
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLoadBalancerPoolByName", reflect.TypeOf((*MockVpc)(nil).GetLoadBalancerPoolByName), loadBalancerID, poolName)
 }
 
+// GetPublicGateway mocks base method.
+func (m *MockVpc) GetPublicGateway(options *vpcv1.GetPublicGatewayOptions) (*vpcv1.PublicGateway, *core.DetailedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPublicGateway", options)
+	ret0, _ := ret[0].(*vpcv1.PublicGateway)
+	ret1, _ := ret[1].(*core.DetailedResponse)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// GetPublicGateway indicates an expected call of GetPublicGateway.
+func (mr *MockVpcMockRecorder) GetPublicGateway(options any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPublicGateway", reflect.TypeOf((*MockVpc)(nil).GetPublicGateway), options)
+}
+
 // GetSecurityGroup mocks base method.
 func (m *MockVpc) GetSecurityGroup(options *vpcv1.GetSecurityGroupOptions) (*vpcv1.SecurityGroup, *core.DetailedResponse, error) {
 	m.ctrl.T.Helper()
