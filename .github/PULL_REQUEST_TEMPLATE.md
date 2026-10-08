@@ -31,3 +31,9 @@ Fixes #
 ```release-note
 
 ```
+
+#### AI usage disclosure:
+
+<!--
+Mention "YES" or "NO". If yes, briefly describe how AI was used.
+-->
