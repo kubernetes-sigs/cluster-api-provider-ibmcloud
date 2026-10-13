@@ -494,16 +494,22 @@ func (s *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (boo
 		})
 	}
 	for index, loadBalancer := range s.IBMPowerVSCluster.Spec.LoadBalancers {
-		if loadBalancer.Type == infrav1.SourceTypeProvision && loadBalancer.Provision.Name == "" {
-			lbType := ResourceTypeLBPublic
-			if loadBalancer.Provision.Type == infrav1.LoadBalancerTypePrivate {
-				lbType = ResourceTypeLBPrivate
+		if loadBalancer.Type == infrav1.SourceTypeProvision {
+			if loadBalancer.Provision.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled {
+				log.V(3).Info("Skipping provisioned route-mode load balancer for machine pool registration", "loadBalancerName", loadBalancer.Provision.Name)
+				continue
 			}
-			qualifier := ""
-			if index > 0 {
-				qualifier = strconv.Itoa(index)
+			if loadBalancer.Provision.Name == "" {
+				lbType := ResourceTypeLBPublic
+				if loadBalancer.Provision.Type == infrav1.LoadBalancerTypePrivate {
+					lbType = ResourceTypeLBPrivate
+				}
+				qualifier := ""
+				if index > 0 {
+					qualifier = strconv.Itoa(index)
+				}
+				loadBalancer.Provision.Name = ResourceName(s.IBMPowerVSCluster.Name, lbType, qualifier)
 			}
-			loadBalancer.Provision.Name = ResourceName(s.IBMPowerVSCluster.Name, lbType, qualifier)
 		}
 		loadBalancers = append(loadBalancers, loadBalancer)
 	}
@@ -541,6 +547,13 @@ func (s *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (boo
 		loadBalancerDetails, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{ID: &lbID})
 		if err != nil {
 			return false, fmt.Errorf("failed to find VPC load balancer details: %w", err)
+		}
+
+		// Skip route-mode load balancers (VNFs / Layer 3 routers). They do not distribute traffic to Kubernetes VMs.
+		// The cloud value is authoritative and also covers Reference-type load balancers, where the spec carries no RouteMode.
+		if ptr.Deref(loadBalancerDetails.RouteMode, false) {
+			log.V(3).Info("Skipping route-mode load balancer for machine pool registration", "loadBalancerName", lbName)
+			continue
 		}
 
 		// Only transient states are safe to skip and retry. A non-transient non-active state
@@ -637,6 +650,13 @@ func (s *MachineScope) CreateVPCLoadBalancerPoolMember(ctx context.Context) (boo
 					log.V(3).Info("Skip adding listener, machine label doesn't match with the listener label selector", "pool", *pool.Name, "IP", internalIP)
 					continue
 				}
+			} else if len(loadBalancerListeners) > 0 {
+				// The LB has Kubernetes-managed listeners but this pool backs none of them
+				// (e.g. a user-created pool on a Reference LB); don't register the machine in it.
+				// When no managed listener was resolved (len == 0), keep the previous behavior
+				// of attempting registration instead of silently skipping every pool.
+				log.V(3).Info("Skipping pool with no associated Kubernetes listener", "pool", *pool.Name, "loadBalancerName", *loadBalancerDetails.Name)
+				continue
 			}
 
 			// If we already wrote to this load balancer this pass, it is now update_pending;

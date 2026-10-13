@@ -2245,9 +2245,23 @@ func (s *ClusterScope) ReconcileVPCRoutingTables(ctx context.Context) (bool, err
 }
 
 // resolveNextHopFromLB returns the first private IP of the first load balancer in status
-// that has at least one private IP. Returns ("", false) when no load balancer with a
-// private IP is available yet — the caller should requeue rather than treat this as an error.
+// that has at least one private IP. Prioritizes route-mode / network-fixed load balancers
+// provisioned for egress routing before falling back to any load balancer with a private IP.
+// Returns ("", false) when no load balancer with a private IP is available yet — the caller
+// should requeue rather than treat this as an error.
 func (s *ClusterScope) resolveNextHopFromLB() (string, bool) {
+	// First preference: find a route-mode or network load balancer provisioned for egress routing.
+	for _, specLB := range s.IBMPowerVSCluster.Spec.LoadBalancers {
+		if specLB.Provision.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled || specLB.Provision.Profile == infrav1.PowerVSLoadBalancerProfileNetworkFixed {
+			for _, statusLB := range s.IBMPowerVSCluster.Status.LoadBalancers {
+				if statusLB.Name == specLB.Provision.Name && len(statusLB.PrivateIPs) > 0 {
+					return statusLB.PrivateIPs[0], true
+				}
+			}
+		}
+	}
+
+	// Fallback: first available load balancer with private IPs.
 	for _, lb := range s.IBMPowerVSCluster.Status.LoadBalancers {
 		if len(lb.PrivateIPs) > 0 {
 			return lb.PrivateIPs[0], true
