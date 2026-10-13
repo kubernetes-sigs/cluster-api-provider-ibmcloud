@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/IBM-Cloud/power-go-client/power/models"
+	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 	"go.uber.org/mock/gomock"
@@ -2352,6 +2353,24 @@ func TestCreateVPCLoadBalancerPoolMember(t *testing.T) {
 		g.Expect(pending).To(BeTrue())
 	})
 
+	t.Run("routeMode enabled on cloud details skips pool registration without error", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		scope := makeScopeWithLBStatus(mockVPC)
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(activeState),
+			RouteMode:          ptr.To(true),
+		}, nil, nil)
+
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(pending).To(BeFalse())
+	})
+
 	t.Run("error when load balancer has no pools", func(t *testing.T) {
 		g := NewWithT(t)
 		setup(t)
@@ -2864,6 +2883,149 @@ func TestCreateVPCLoadBalancerPoolMemberSelectorBranches(t *testing.T) {
 		_, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(ContainSubstring("has no provisioning status"))
+	})
+}
+
+// TestCreateVPCLoadBalancerPoolMemberSkipForeignPoolAndRouteMode covers skipping pools that have no
+// Kubernetes-managed listener and skipping route-mode load balancers.
+func TestCreateVPCLoadBalancerPoolMemberSkipForeignPoolAndRouteMode(t *testing.T) {
+	var (
+		mockCtrl *gomock.Controller
+		mockVPC  *vpcmock.MockVpc
+	)
+	setup := func(t *testing.T) {
+		t.Helper()
+		mockCtrl = gomock.NewController(t)
+		mockVPC = vpcmock.NewMockVpc(mockCtrl)
+	}
+	teardown := func() { mockCtrl.Finish() }
+
+	const (
+		lbID          = "lb-id"
+		lbName        = "foo-cluster-loadbalancer-public"
+		k8sPoolID     = "k8s-pool-id"
+		k8sPoolName   = "k8s-pool"
+		otherPoolID   = "other-pool-id"
+		otherPoolName = "other-pool"
+		listenerID    = "listener-id"
+		internalIP    = "10.0.0.10"
+		activeState   = "active"
+	)
+
+	// Reference-type load balancer, so the spec carries no listener or route-mode information.
+	makeScope := func(vpcClient vpc.Vpc) *MachineScope {
+		pvsMachine := newPowerVSMachine(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true)
+		pvsMachine.Status.Addresses = []clusterv1.MachineAddress{
+			{Type: clusterv1.MachineInternalIP, Address: internalIP},
+		}
+		pvsCluster := newPowerVSCluster(clusterName)
+		pvsCluster.Spec.LoadBalancers = []infrav1.LoadBalancerSource{
+			{
+				Type:      infrav1.SourceTypeReference,
+				Reference: infrav1.ResourceIdentifier{Name: lbName},
+			},
+		}
+		pvsCluster.Status.LoadBalancers = []infrav1.LoadBalancerStatus{{ID: lbID, Name: lbName}}
+		machine := newMachine(machineName)
+		machine.Labels = map[string]string{clusterv1.MachineControlPlaneLabel: ""}
+		return &MachineScope{
+			IBMPowerVSMachine: pvsMachine,
+			IBMPowerVSCluster: pvsCluster,
+			Machine:           machine,
+			IBMVPCClient:      vpcClient,
+		}
+	}
+
+	t.Run("skips pool without a Kubernetes listener and registers only the Kubernetes pool", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		scope := makeScope(mockVPC)
+
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(activeState),
+			// The foreign pool is listed first to prove it is skipped rather than ending the loop.
+			Pools: []vpcv1.LoadBalancerPoolReference{
+				{ID: ptr.To(otherPoolID), Name: ptr.To(otherPoolName)},
+				{ID: ptr.To(k8sPoolID), Name: ptr.To(k8sPoolName)},
+			},
+			Listeners: []vpcv1.LoadBalancerListenerReference{{ID: ptr.To(listenerID)}},
+		}, nil, nil)
+		mockVPC.EXPECT().GetLoadBalancerListener(gomock.Any()).Return(&vpcv1.LoadBalancerListener{
+			ID:          ptr.To(listenerID),
+			Port:        ptr.To(int64(6443)),
+			Protocol:    ptr.To("tcp"),
+			DefaultPool: &vpcv1.LoadBalancerPoolReference{ID: ptr.To(k8sPoolID), Name: ptr.To(k8sPoolName)},
+		}, nil, nil)
+		// Members are listed and created exactly once, and only for the Kubernetes pool.
+		mockVPC.EXPECT().ListLoadBalancerPoolMembers(gomock.Any()).DoAndReturn(
+			func(opts *vpcv1.ListLoadBalancerPoolMembersOptions) (*vpcv1.LoadBalancerPoolMemberCollection, *core.DetailedResponse, error) {
+				g.Expect(*opts.PoolID).To(Equal(k8sPoolID))
+				return &vpcv1.LoadBalancerPoolMemberCollection{Members: []vpcv1.LoadBalancerPoolMember{}}, nil, nil
+			}).Times(1)
+		mockVPC.EXPECT().CreateLoadBalancerPoolMember(gomock.Any()).DoAndReturn(
+			func(opts *vpcv1.CreateLoadBalancerPoolMemberOptions) (*vpcv1.LoadBalancerPoolMember, *core.DetailedResponse, error) {
+				g.Expect(*opts.PoolID).To(Equal(k8sPoolID))
+				g.Expect(*opts.Port).To(Equal(int64(6443)))
+				return &vpcv1.LoadBalancerPoolMember{
+					ID:                 ptr.To("new-member"),
+					ProvisioningStatus: ptr.To(activeState),
+				}, nil, nil
+			}).Times(1)
+
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(pending).To(BeFalse())
+	})
+
+	t.Run("skips route-mode load balancer reported by the cloud", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		scope := makeScope(mockVPC)
+
+		// Only GetLoadBalancer is expected; any listener, member list or create call fails the test.
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Return(&vpcv1.LoadBalancer{
+			ID:                 ptr.To(lbID),
+			Name:               ptr.To(lbName),
+			ProvisioningStatus: ptr.To(activeState),
+			RouteMode:          ptr.To(true),
+			Pools:              []vpcv1.LoadBalancerPoolReference{{ID: ptr.To(k8sPoolID), Name: ptr.To(k8sPoolName)}},
+			Listeners:          []vpcv1.LoadBalancerListenerReference{{ID: ptr.To(listenerID)}},
+		}, nil, nil).Times(1)
+
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(pending).To(BeFalse())
+	})
+
+	t.Run("skips provisioned route-mode load balancer via spec fast-path without API call", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+
+		scope := makeScope(mockVPC)
+		scope.IBMPowerVSCluster.Spec.LoadBalancers = []infrav1.LoadBalancerSource{
+			{
+				Type: infrav1.SourceTypeProvision,
+				Provision: infrav1.LoadBalancerProvision{
+					Name:      lbName,
+					Profile:   infrav1.PowerVSLoadBalancerProfileNetworkFixed,
+					RouteMode: infrav1.PowerVSLoadBalancerRouteModeEnabled,
+				},
+			},
+		}
+
+		// GetLoadBalancer must NOT be called since it was skipped at spec evaluation
+		mockVPC.EXPECT().GetLoadBalancer(gomock.Any()).Times(0)
+
+		pending, err := scope.CreateVPCLoadBalancerPoolMember(ctx)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(pending).To(BeFalse())
 	})
 }
 
