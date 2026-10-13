@@ -12137,6 +12137,41 @@ func TestResolveNextHopFromLB(t *testing.T) {
 		g.Expect(ok).To(BeTrue())
 		g.Expect(ip).To(Equal("10.240.0.9"))
 	})
+
+	t.Run("Multiple LBs in status — prioritizes route-mode NLB over ALB", func(t *testing.T) {
+		g := NewWithT(t)
+		scope := &ClusterScope{
+			IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+				Spec: infrav1.IBMPowerVSClusterSpec{
+					LoadBalancers: []infrav1.LoadBalancerSource{
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name: "cluster-alb",
+							},
+						},
+						{
+							Type: infrav1.SourceTypeProvision,
+							Provision: infrav1.LoadBalancerProvision{
+								Name:      "cluster-nlb",
+								Profile:   infrav1.PowerVSLoadBalancerProfileNetworkFixed,
+								RouteMode: infrav1.PowerVSLoadBalancerRouteModeEnabled,
+							},
+						},
+					},
+				},
+				Status: infrav1.IBMPowerVSClusterStatus{
+					LoadBalancers: []infrav1.LoadBalancerStatus{
+						{Name: "cluster-alb", ID: "alb-id", PrivateIPs: []string{"10.240.0.5", "10.240.0.4"}},
+						{Name: "cluster-nlb", ID: "nlb-id", PrivateIPs: []string{"10.240.0.7", "10.240.0.6"}},
+					},
+				},
+			},
+		}
+		ip, ok := scope.resolveNextHopFromLB()
+		g.Expect(ok).To(BeTrue())
+		g.Expect(ip).To(Equal("10.240.0.7"))
+	})
 }
 
 func TestReconcileVPCRoutingTable_NextHopResolution(t *testing.T) {
