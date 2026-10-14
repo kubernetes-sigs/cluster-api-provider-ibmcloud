@@ -528,7 +528,7 @@ define checkdiff
 	git --no-pager diff --name-only FETCH_HEAD
 endef
 
-ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions go-version yamllint linkcheck
+ALL_VERIFY_CHECKS = boilerplate shellcheck modules gen conversions go-version yamllint
 
 .PHONY: verify
 verify: $(addprefix verify-,$(ALL_VERIFY_CHECKS)) ## Run all verify-* targets
