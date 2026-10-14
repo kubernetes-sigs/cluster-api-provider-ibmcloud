@@ -1,0 +1,22 @@
+name: Verify Markdown links
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    paths:
+      - '**.md'
+
+permissions: {}
+
+jobs:
+  markdown-link-check:
+    name: Verify links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # tag=v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run verify-linkcheck
+        continue-on-error: true
+        run: make verify-linkcheck
