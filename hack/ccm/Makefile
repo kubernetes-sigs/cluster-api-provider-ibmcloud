@@ -20,7 +20,7 @@ REGISTRY=gcr.io/k8s-staging-capi-ibmcloud
 IMG=powervs-cloud-controller-manager
 
 # POWERVS_CLOUD_CONTROLLER_COMMIT can be fetched from here https://github.com/openshift/cloud-provider-powervs/commits/main
-POWERVS_CLOUD_CONTROLLER_COMMIT?=00d531b
+POWERVS_CLOUD_CONTROLLER_COMMIT?=d522403
 TAG?=$(POWERVS_CLOUD_CONTROLLER_COMMIT)
 
 build-image: init-buildx gcloud-auth
