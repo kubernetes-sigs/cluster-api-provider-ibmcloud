@@ -18,7 +18,7 @@ require (
 	github.com/IBM/platform-services-go-sdk v0.103.4
 	github.com/IBM/vpc-go-sdk v0.93.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/coreos/ignition/v2 v2.27.0
+	github.com/coreos/ignition/v2 v2.28.0
 	github.com/go-logr/logr v1.4.4
 	github.com/go-openapi/strfmt v0.27.3
 	github.com/golang-jwt/jwt/v4 v4.5.2
