@@ -102,7 +102,7 @@ spec:
         - name: eviction-hard
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
         name: '{{ v1.local_hostname }}'
-    # PowerVS DHCP lease has no default route, add it from the routers option 
+    # PowerVS DHCP lease has no default route, add it from the routers option
     preKubeadmCommands:
     - 'GW=$(nmcli -t -f DHCP4.OPTION device show | sed -n "s/.*]:routers = //p" | head -1); [ -z "$GW" ] || ip route show default | grep -q . || ip route add default via "$GW"'
     - hostname "{{ v1.local_hostname }}"
@@ -201,7 +201,7 @@ spec:
           - name: eviction-hard
             value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
           name: '{{ v1.local_hostname }}'
-      # PowerVS DHCP lease has no default route, add it from the routers option 
+      # PowerVS DHCP lease has no default route, add it from the routers option
       preKubeadmCommands:
       - 'GW=$(nmcli -t -f DHCP4.OPTION device show | sed -n "s/.*]:routers = //p" | head -1); [ -z "$GW" ] || ip route show default | grep -q . || ip route add default via "$GW"'
       - hostname "{{ v1.local_hostname }}"
