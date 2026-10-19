@@ -45,6 +45,7 @@ spec:
   network:
     type: Provision
     provision:
+      type: DHCPServer
       dhcpServer:
         name: ${CLUSTER_NAME}
   vpc:
@@ -101,7 +102,9 @@ spec:
         - name: eviction-hard
           value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
         name: '{{ v1.local_hostname }}'
+    # PowerVS DHCP lease has no default route, add it from the routers option
     preKubeadmCommands:
+    - 'GW=$(nmcli -t -f DHCP4.OPTION device show | sed -n "s/.*]:routers = //p" | head -1); [ -z "$GW" ] || ip route show default | grep -q . || ip route add default via "$GW"'
     - hostname "{{ v1.local_hostname }}"
     - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
     - echo "127.0.0.1   localhost" >>/etc/hosts
@@ -198,7 +201,9 @@ spec:
           - name: eviction-hard
             value: nodefs.available<0%,nodefs.inodesFree<0%,imagefs.available<0%
           name: '{{ v1.local_hostname }}'
+      # PowerVS DHCP lease has no default route, add it from the routers option
       preKubeadmCommands:
+      - 'GW=$(nmcli -t -f DHCP4.OPTION device show | sed -n "s/.*]:routers = //p" | head -1); [ -z "$GW" ] || ip route show default | grep -q . || ip route add default via "$GW"'
       - hostname "{{ v1.local_hostname }}"
       - echo "::1         ipv6-localhost ipv6-loopback" >/etc/hosts
       - echo "127.0.0.1   localhost" >>/etc/hosts
