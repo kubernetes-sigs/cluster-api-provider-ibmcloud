@@ -324,8 +324,8 @@ func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 		return nil, nil
 	}
 
-	// Case 1: If no load balancers are specified in the spec, it defaults to a single
-	// auto-managed public load balancer using the default service name.
+	// When no load balancers are specified in the spec, a single auto-managed public
+	// load balancer is used with the default service name.
 	if len(cluster.Spec.LoadBalancers) == 0 {
 		defaultName := ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, "")
 
@@ -337,51 +337,88 @@ func (s *ClusterScope) GetPublicLoadBalancerHostName() (*string, error) {
 		return nil, nil
 	}
 
-	// Case 2: Evaluate explicitly configured load balancers to locate the public one.
+	// A provisioned public LB, when declared, is always the external API endpoint.
+	// A route-mode LB is then only an egress next hop and must never be returned, even
+	// while the public LB's hostname is not yet in status. Returning nil makes the
+	// controller requeue instead of publishing a private endpoint.
+	hasPublicLB := false
+	for _, lb := range cluster.Spec.LoadBalancers {
+		if lb.Type == infrav1.SourceTypeProvision && lb.Provision.Type != infrav1.LoadBalancerTypePrivate {
+			hasPublicLB = true
+			break
+		}
+	}
+
+	// Evaluate each explicitly configured load balancer to locate the one acting as
+	// the external API endpoint.
 	for i, lb := range cluster.Spec.LoadBalancers {
-		var targetName string
-
-		switch lb.Type {
-		case infrav1.SourceTypeProvision:
-			// Default to Public if not explicitly overridden to Private
-			if lb.Provision.Type == infrav1.LoadBalancerTypePrivate {
-				continue
-			}
-
-			targetName = lb.Provision.Name
-			if targetName == "" {
-				targetName = ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, strconv.Itoa(i))
-			}
-
-		case infrav1.SourceTypeReference:
-			// For references, resolve the name via ID or use the explicit name provided
-			if lb.Reference.Name != "" {
-				targetName = lb.Reference.Name
-			} else if lb.Reference.ID != "" {
-				// Fallback to a live API fetch if we only have an ID
-				lbDetails, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
-					ID: ptr.To(lb.Reference.ID),
-				})
-				if err != nil {
-					return nil, fmt.Errorf("failed to fetch referenced load balancer (%s) details: %w", lb.Reference.ID, err)
-				}
-				if lbDetails != nil && lbDetails.Name != nil {
-					targetName = *lbDetails.Name
-				}
-			}
+		targetName, err := s.resolveLBTargetName(lb, i, hasPublicLB)
+		if err != nil {
+			return nil, err
+		}
+		if targetName == "" {
+			continue
 		}
 
-		// Search status array for a name match
-		if targetName != "" {
-			for _, lbStatus := range cluster.Status.LoadBalancers {
-				if lbStatus.Name == targetName && lbStatus.Hostname != "" {
-					return ptr.To(lbStatus.Hostname), nil
-				}
+		for _, lbStatus := range cluster.Status.LoadBalancers {
+			if lbStatus.Name == targetName && lbStatus.Hostname != "" {
+				return ptr.To(lbStatus.Hostname), nil
 			}
 		}
 	}
 
 	return nil, nil
+}
+
+// resolveLBTargetName returns the status-map lookup name for a single load balancer
+// entry, or an empty string when the entry should be skipped.
+// For provisioned private load balancers, route-mode entries are included only when
+// no provisioned public load balancer is declared in the spec; plain private load
+// balancers (route mode not enabled) are always skipped.
+func (s *ClusterScope) resolveLBTargetName(lb infrav1.LoadBalancerSource, idx int, hasPublicLB bool) (string, error) {
+	switch lb.Type {
+	case infrav1.SourceTypeProvision:
+		return s.resolveLBProvisionName(lb.Provision, idx, hasPublicLB), nil
+	case infrav1.SourceTypeReference:
+		return s.resolveLBReferenceName(lb.Reference)
+	}
+	return "", nil
+}
+
+// resolveLBProvisionName returns the name for a provisioned load balancer spec entry.
+// Private load balancers without route-mode enabled are skipped (empty string returned).
+// When a public load balancer is declared in the spec, route-mode private load balancers
+// are also skipped so that they do not shadow the public endpoint.
+func (s *ClusterScope) resolveLBProvisionName(provision infrav1.LoadBalancerProvision, idx int, hasPublicLB bool) string {
+	if provision.Type == infrav1.LoadBalancerTypePrivate &&
+		(provision.RouteMode != infrav1.PowerVSLoadBalancerRouteModeEnabled || hasPublicLB) {
+		return ""
+	}
+	if provision.Name != "" {
+		return provision.Name
+	}
+	return ResourceName(s.IBMPowerVSCluster.Name, ResourceTypeLBPublic, strconv.Itoa(idx))
+}
+
+// resolveLBReferenceName resolves the name for a referenced load balancer spec entry.
+// When only an ID is provided, it fetches the name from the VPC API.
+func (s *ClusterScope) resolveLBReferenceName(ref infrav1.ResourceIdentifier) (string, error) {
+	if ref.Name != "" {
+		return ref.Name, nil
+	}
+	if ref.ID == "" {
+		return "", nil
+	}
+	lbDetails, _, err := s.IBMVPCClient.GetLoadBalancer(&vpcv1.GetLoadBalancerOptions{
+		ID: ptr.To(ref.ID),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch referenced load balancer (%s) details: %w", ref.ID, err)
+	}
+	if lbDetails != nil && lbDetails.Name != nil {
+		return *lbDetails.Name, nil
+	}
+	return "", nil
 }
 
 // ValidateZoneSupportsPER checks whether PowerVS zone supports PER capabilities.
@@ -2000,14 +2037,40 @@ func (s *ClusterScope) createLoadBalancer(ctx context.Context, lbName string, pr
 		return nil, fmt.Errorf("no VPC subnets are present in cluster status for load balancer creation")
 	}
 
-	for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnets {
-		if subnet.ID == "" {
-			continue
+	// Route-mode NLBs only support a single subnet in IBM Cloud. Pick the subnet
+	// colocated with the first VPC Public Gateway zone, or fall back to the first available.
+	if prov.RouteMode == infrav1.PowerVSLoadBalancerRouteModeEnabled {
+		var pgwZone string
+		if len(s.IBMPowerVSCluster.Spec.VPCPublicGateways) > 0 {
+			pgwZone = s.IBMPowerVSCluster.Spec.VPCPublicGateways[0].Zone
 		}
-		subnet := &vpcv1.SubnetIdentity{
-			ID: ptr.To(subnet.ID),
+
+		var chosen *vpcv1.SubnetIdentity
+		for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnets {
+			if subnet.ID == "" {
+				continue
+			}
+			if pgwZone != "" && subnet.Zone == pgwZone {
+				chosen = &vpcv1.SubnetIdentity{ID: ptr.To(subnet.ID)}
+				break
+			}
+			if chosen == nil {
+				chosen = &vpcv1.SubnetIdentity{ID: ptr.To(subnet.ID)}
+			}
 		}
-		options.Subnets = append(options.Subnets, subnet)
+		if chosen == nil {
+			return nil, fmt.Errorf("no usable VPC subnet found for route-mode load balancer creation")
+		}
+		options.Subnets = append(options.Subnets, chosen)
+	} else {
+		for _, subnet := range s.IBMPowerVSCluster.Status.VPCSubnets {
+			if subnet.ID == "" {
+				continue
+			}
+			options.Subnets = append(options.Subnets, &vpcv1.SubnetIdentity{
+				ID: ptr.To(subnet.ID),
+			})
+		}
 	}
 
 	// Route-mode NLBs act as L3 next-hop routers — pools and listeners with fixed ports are

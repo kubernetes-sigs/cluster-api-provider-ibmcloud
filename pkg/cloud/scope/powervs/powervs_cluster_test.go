@@ -9293,6 +9293,94 @@ func TestGetPublicLoadBalancerHostNameProvisionedPrivate(t *testing.T) {
 	g.Expect(hostName).To(BeNil())
 }
 
+// TestGetPublicLoadBalancerHostNameRouteModePrivate covers a private route-mode NLB, which is the
+// external API endpoint when no public LB is declared (e.g. internal publishing topology).
+func TestGetPublicLoadBalancerHostNameRouteModePrivate(t *testing.T) {
+	g := NewWithT(t)
+
+	clusterScope := ClusterScope{
+		IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+			Spec: infrav1.IBMPowerVSClusterSpec{
+				LoadBalancers: []infrav1.LoadBalancerSource{
+					{
+						Type: infrav1.SourceTypeProvision,
+						Provision: infrav1.LoadBalancerProvision{
+							Name: "internal-lb",
+							Type: infrav1.LoadBalancerTypePrivate,
+						},
+					},
+					{
+						Type: infrav1.SourceTypeProvision,
+						Provision: infrav1.LoadBalancerProvision{
+							Name:      "route-mode-nlb",
+							Type:      infrav1.LoadBalancerTypePrivate,
+							Profile:   infrav1.PowerVSLoadBalancerProfileNetworkFixed,
+							RouteMode: infrav1.PowerVSLoadBalancerRouteModeEnabled,
+						},
+					},
+				},
+			},
+			Status: infrav1.IBMPowerVSClusterStatus{
+				LoadBalancers: []infrav1.LoadBalancerStatus{
+					{Name: "internal-lb", Hostname: "internal.host"},
+					{Name: "route-mode-nlb", Hostname: "nlb.host"},
+				},
+			},
+		},
+	}
+
+	hostName, err := clusterScope.GetPublicLoadBalancerHostName()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(hostName).ToNot(BeNil())
+	g.Expect(*hostName).To(Equal("nlb.host"))
+}
+
+// TestGetPublicLoadBalancerHostNamePublicPreferredOverRouteMode ensures a declared public LB
+// takes precedence over a route-mode NLB, even if the public hostname is not yet in status.
+func TestGetPublicLoadBalancerHostNamePublicPreferredOverRouteMode(t *testing.T) {
+	g := NewWithT(t)
+	spec := []infrav1.LoadBalancerSource{
+		{
+			Type: infrav1.SourceTypeProvision,
+			Provision: infrav1.LoadBalancerProvision{
+				Name: "public-lb",
+				Type: infrav1.LoadBalancerTypePublic,
+			},
+		},
+		{
+			Type: infrav1.SourceTypeProvision,
+			Provision: infrav1.LoadBalancerProvision{
+				Name:      "route-mode-nlb",
+				Type:      infrav1.LoadBalancerTypePrivate,
+				Profile:   infrav1.PowerVSLoadBalancerProfileNetworkFixed,
+				RouteMode: infrav1.PowerVSLoadBalancerRouteModeEnabled,
+			},
+		},
+	}
+	scope := ClusterScope{
+		IBMPowerVSCluster: &infrav1.IBMPowerVSCluster{
+			Spec: infrav1.IBMPowerVSClusterSpec{LoadBalancers: spec},
+			Status: infrav1.IBMPowerVSClusterStatus{
+				LoadBalancers: []infrav1.LoadBalancerStatus{
+					{Name: "route-mode-nlb", Hostname: "nlb.host"}, // public LB hostname not yet populated
+				},
+			},
+		},
+	}
+	hostName, err := scope.GetPublicLoadBalancerHostName()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(hostName).To(BeNil()) // requeue, never return the private NLB
+
+	scope.IBMPowerVSCluster.Status.LoadBalancers = append(
+		scope.IBMPowerVSCluster.Status.LoadBalancers,
+		infrav1.LoadBalancerStatus{Name: "public-lb", Hostname: "public.host"},
+	)
+	hostName, err = scope.GetPublicLoadBalancerHostName()
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(hostName).ToNot(BeNil())
+	g.Expect(*hostName).To(Equal("public.host"))
+}
+
 // Coverage-gap tests (session 3): targeting 91.7% → ~93%+.
 
 // TestReconcileNetworkUnknownType covers the default branch in ReconcileNetwork.
@@ -12317,8 +12405,6 @@ func TestReconcileVPCRoutingTable_NextHopResolution(t *testing.T) {
 		g.Expect(requeue).To(BeTrue())
 	})
 }
-
-
 
 func TestReconcileVPCPublicGateways(t *testing.T) {
 	var (
