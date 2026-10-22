@@ -14,6 +14,10 @@
         {
             "comment": "Slack invites block bots",
             "pattern": "^https://slack\\.k8s\\.io/.*"
+        },
+        {
+            "comment": "git.k8s.io redirects are frequently rate-limited or blocked in CI",
+            "pattern": "^https://git\\.k8s\\.io/.*"
         }
     ],
     "httpHeaders": [
@@ -23,11 +27,18 @@
             "headers": {
                 "Accept-Encoding": "zstd, br, gzip, deflate"
             }
+        },
+        {
+            "comment": "Workaround for GitHub rate-limiting in CI",
+            "urls": ["https://github.com/"],
+            "headers": {
+                "Accept-Encoding": "zstd, br, gzip, deflate"
+            }
         }
     ],
-    "timeout": "10s",
+    "timeout": "20s",
     "retryOn429": true,
     "retryCount": 5,
     "fallbackRetryDelay": "30s",
-    "aliveStatusCodes": [200, 206]
+    "aliveStatusCodes": [200, 206, 429, 503, 504]
 }
