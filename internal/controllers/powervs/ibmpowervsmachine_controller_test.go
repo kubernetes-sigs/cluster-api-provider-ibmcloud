@@ -25,6 +25,7 @@ import (
 
 	"go.uber.org/mock/gomock"
 
+	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
@@ -324,6 +325,22 @@ func TestIBMPowerVSMachineReconciler_reconcileDelete(t *testing.T) {
 			},
 			expect: func(m *mock.MockPowerVS) {
 				m.EXPECT().DeleteInstance(gomock.Any(), "powervs-instance-id").Return(nil)
+			},
+			checkFinalizer: false,
+		},
+		{
+			name: "Should treat instance not found as successful delete",
+			machine: &infrav1.IBMPowerVSMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:       "test-machine",
+					Finalizers: []string{infrav1.IBMPowerVSMachineFinalizer},
+				},
+				Status: infrav1.IBMPowerVSMachineStatus{
+					InstanceID: "powervs-instance-id",
+				},
+			},
+			expect: func(m *mock.MockPowerVS) {
+				m.EXPECT().DeleteInstance(gomock.Any(), "powervs-instance-id").Return(fmt.Errorf("failed to Delete PVM Instance powervs-instance-id :%w", p_cloud_p_vm_instances.NewPcloudPvminstancesDeleteNotFound()))
 			},
 			checkFinalizer: false,
 		},

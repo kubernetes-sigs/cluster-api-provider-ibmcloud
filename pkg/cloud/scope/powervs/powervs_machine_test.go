@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/platform-services-go-sdk/resourcecontrollerv2"
@@ -1931,6 +1932,17 @@ func TestDeleteMachine(t *testing.T) {
 		mockpowervs.EXPECT().DeleteInstance(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(errors.New("failed to delete machine"))
 		err := scope.DeleteMachine(ctx)
 		g.Expect(err).To(HaveOccurred())
+	})
+
+	t.Run("no error when instance is already deleted", func(t *testing.T) {
+		g := NewWithT(t)
+		setup(t)
+		t.Cleanup(teardown)
+		scope := setupPowerVSMachineScope(clusterName, machineName, ptr.To(pvsImage), ptr.To(pvsNetwork), true, mockpowervs)
+		scope.IBMPowerVSMachine.Status.InstanceID = machineName + idSuffix
+		mockpowervs.EXPECT().DeleteInstance(gomock.Any(), gomock.AssignableToTypeOf(id)).Return(fmt.Errorf("failed to Delete PVM Instance %s :%w", machineName+idSuffix, p_cloud_p_vm_instances.NewPcloudPvminstancesDeleteNotFound()))
+		err := scope.DeleteMachine(ctx)
+		g.Expect(err).To(BeNil())
 	})
 }
 
