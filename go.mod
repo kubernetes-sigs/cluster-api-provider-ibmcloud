@@ -14,13 +14,13 @@ require (
 	github.com/IBM-Cloud/power-go-client v1.17.0
 	github.com/IBM/go-sdk-core/v5 v5.25.1
 	github.com/IBM/ibm-cos-sdk-go v1.15.1
-	github.com/IBM/networking-go-sdk v0.55.3
-	github.com/IBM/platform-services-go-sdk v0.103.4
+	github.com/IBM/networking-go-sdk v0.56.0
+	github.com/IBM/platform-services-go-sdk v0.103.5
 	github.com/IBM/vpc-go-sdk v0.93.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.28.0
 	github.com/go-logr/logr v1.4.4
-	github.com/go-openapi/strfmt v0.27.3
+	github.com/go-openapi/strfmt v0.27.4
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/google/go-cmp v0.7.0
 	github.com/onsi/ginkgo/v2 v2.33.1
