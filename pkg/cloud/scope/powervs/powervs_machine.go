@@ -35,6 +35,7 @@ import (
 	ignV3Types "github.com/coreos/ignition/v2/config/v3_4/types"
 	regionUtil "github.com/ppc64le-cloud/powervs-utils"
 
+	"github.com/IBM-Cloud/power-go-client/power/client/p_cloud_p_vm_instances"
 	"github.com/IBM-Cloud/power-go-client/power/models"
 	"github.com/IBM/ibm-cos-sdk-go/aws"
 	"github.com/IBM/ibm-cos-sdk-go/service/s3"
@@ -428,11 +429,23 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 // DeleteMachine deletes the power vs machine associated with machine instance id and service instance id.
 func (s *MachineScope) DeleteMachine(ctx context.Context) error {
 	if err := s.IBMPowerVSClient.DeleteInstance(ctx, s.IBMPowerVSMachine.Status.InstanceID); err != nil {
+		if isInstanceNotFound(err) {
+			log := ctrl.LoggerFrom(ctx)
+			log.Info("PowerVS instance is already deleted", "instanceID", s.IBMPowerVSMachine.Status.InstanceID)
+			return nil
+		}
 		s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeWarning, "FailedDeleteInstance", "Failed instance deletion - %v", err)
 		return err
 	}
 	s.Recorder.Eventf(s.IBMPowerVSMachine, corev1.EventTypeNormal, "SuccessfulDeleteInstance", "Deleted Instance %q", s.IBMPowerVSMachine.Name)
 	return nil
+}
+
+// isInstanceNotFound reports whether a PowerVS instance delete failed because the instance no longer exists.
+func isInstanceNotFound(err error) bool {
+	var notFound *p_cloud_p_vm_instances.PcloudPvminstancesDeleteNotFound
+	var gone *p_cloud_p_vm_instances.PcloudPvminstancesDeleteGone
+	return errors.As(err, &notFound) || errors.As(err, &gone)
 }
 
 // DeleteMachineIgnition deletes the ignition data associated with the machine.
