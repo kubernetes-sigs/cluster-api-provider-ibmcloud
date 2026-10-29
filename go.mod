@@ -13,7 +13,7 @@ replace (
 require (
 	github.com/IBM-Cloud/power-go-client v1.17.0
 	github.com/IBM/go-sdk-core/v5 v5.25.1
-	github.com/IBM/ibm-cos-sdk-go v1.15.1
+	github.com/IBM/ibm-cos-sdk-go v1.15.2
 	github.com/IBM/networking-go-sdk v0.56.0
 	github.com/IBM/platform-services-go-sdk v0.103.5
 	github.com/IBM/vpc-go-sdk v0.93.0
@@ -85,7 +85,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/analysis v0.23.0 // indirect
