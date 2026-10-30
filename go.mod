@@ -13,8 +13,8 @@ replace (
 require (
 	github.com/IBM-Cloud/power-go-client v1.17.0
 	github.com/IBM/go-sdk-core/v5 v5.25.1
-	github.com/IBM/ibm-cos-sdk-go v1.15.1
-	github.com/IBM/networking-go-sdk v0.56.0
+	github.com/IBM/ibm-cos-sdk-go v1.15.2
+	github.com/IBM/networking-go-sdk v0.56.1
 	github.com/IBM/platform-services-go-sdk v0.103.5
 	github.com/IBM/vpc-go-sdk v0.93.0
 	github.com/blang/semver/v4 v4.0.0
@@ -31,7 +31,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.58.0
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 	golang.org/x/text v0.43.0
 	k8s.io/api v0.36.5
 	k8s.io/apiextensions-apiserver v0.36.5
@@ -85,7 +85,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/analysis v0.23.0 // indirect
