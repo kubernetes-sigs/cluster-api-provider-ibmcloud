@@ -12,10 +12,10 @@ replace (
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.17.0
-	github.com/IBM/go-sdk-core/v5 v5.25.1
-	github.com/IBM/ibm-cos-sdk-go v1.15.1
-	github.com/IBM/networking-go-sdk v0.56.0
-	github.com/IBM/platform-services-go-sdk v0.103.5
+	github.com/IBM/go-sdk-core/v5 v5.25.2
+	github.com/IBM/ibm-cos-sdk-go v1.15.2
+	github.com/IBM/networking-go-sdk v0.56.2
+	github.com/IBM/platform-services-go-sdk v0.103.6
 	github.com/IBM/vpc-go-sdk v0.93.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/ignition/v2 v2.28.0
@@ -31,14 +31,14 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.58.0
-	golang.org/x/net v0.61.0
+	golang.org/x/net v0.62.0
 	golang.org/x/text v0.43.0
-	k8s.io/api v0.36.5
-	k8s.io/apiextensions-apiserver v0.36.5
-	k8s.io/apimachinery v0.36.5
+	k8s.io/api v0.36.6
+	k8s.io/apiextensions-apiserver v0.36.6
+	k8s.io/apimachinery v0.36.6
 	k8s.io/cli-runtime v0.30.14
-	k8s.io/client-go v0.36.5
-	k8s.io/component-base v0.36.5
+	k8s.io/client-go v0.36.6
+	k8s.io/component-base v0.36.6
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	sigs.k8s.io/cluster-api v1.14.0
@@ -85,7 +85,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/analysis v0.23.0 // indirect
@@ -190,10 +190,10 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.36.5 // indirect
+	k8s.io/apiserver v0.36.6 // indirect
 	k8s.io/cluster-bootstrap v0.36.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20260317180543-43fb72c5454a // indirect
-	k8s.io/streaming v0.36.5 // indirect
+	k8s.io/streaming v0.36.6 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/kind v0.32.0 // indirect
