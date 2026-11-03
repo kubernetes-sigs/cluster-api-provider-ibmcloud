@@ -35,6 +35,14 @@ capibmadm powervs network create --name capi-test \
   --zone <ZONE>
 ```
 
+> **Tip:** If you wish to pre-create a private network with native DHCP support enabled, use:
+> ```console
+> capibmadm powervs network create --name capi-test-dhcp \
+>   --private --cidr 192.168.0.0/24 --enable-dhcp \
+>   --service-instance-id <WORKSPACE_ID> \
+>   --zone <ZONE>
+> ```
+
 Output:
 ```console
 Creating PowerVS network service-instance-id="3229a94c-af54-4212-bf60-6202b6fd0a07" zone="osa21"

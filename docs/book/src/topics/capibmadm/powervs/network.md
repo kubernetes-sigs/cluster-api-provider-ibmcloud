@@ -27,6 +27,8 @@ IBMCLOUD_API_KEY: IBM Cloud API key.
 
 --jumbo: Enable MTU Jumbo Network.
 
+--enable-dhcp: Enable native DHCP on the private network (default false). Only supported for private (vlan) networks.
+
 
 #### Example:
 ```shell
@@ -37,6 +39,8 @@ capibmadm powervs network create --public --service-instance-id <service-instanc
 capibmadm powervs network create --private --cidr <cidr> --service-instance-id <service-instance-id> --zone <zone>
 # Private network with ip address ranges:
 capibmadm powervs network create --private --cidr <cidr> --ip-ranges <start-ip>-<end-ip>,<start-ip>-<end-ip> --service-instance-id <service-instance-id> --zone <zone>
+# Private network with native DHCP enabled:
+capibmadm powervs network create --private --cidr <cidr> --enable-dhcp --service-instance-id <service-instance-id> --zone <zone>
 ```
 
 
