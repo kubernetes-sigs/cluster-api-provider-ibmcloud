@@ -1473,6 +1473,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 	// Each defined SecurityGroupRule can have multiple Remotes specified, each signifying a separate Security Group Rule (with the same Action, Direction, etc.)
 	for _, remote := range securityGroupRulePrototype.Remotes {
 		remoteMatch := false
+	existingRuleLoop:
 		for _, existingRuleIntf := range existingSecurityGroupRules.Rules {
 			// Perform analysis of the existingRuleIntf, based on its Protocol type, further analysis is performed based on remaining attributes to find if the specific Rule and Remote match
 			switch reflect.TypeOf(existingRuleIntf).String() {
@@ -1493,7 +1494,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 					// The expectation is that only one IBM Cloud Security Group Rule will match, but if at least one matches the defined SecurityGroupRule, that is sufficient.
 					log.V(3).Info("security group rule any protocol match found")
 					remoteMatch = true
-					break
+					break existingRuleLoop
 				}
 			case infrav1.VPCSecurityGroupRuleProtocolIcmptcpudpType:
 				// If our Remote doesn't define icmp_tcp_udp Protocols, we don't need further checks, move on to next Rule
@@ -1511,7 +1512,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 					// If we found the matching IBM Cloud Security Group Rule for the defined SecurityGroupRule and Remote, we can stop checking IBM Cloud Security Group Rules for this remote and move onto the next remote.
 					log.V(3).Info("security group rule icmp_tcp_udp protocol match found")
 					remoteMatch = true
-					break
+					break existingRuleLoop
 				}
 			case infrav1.VPCSecurityGroupRuleProtocolIcmpType:
 				// If our Remote doesn't define ICMP Protocol, we don't need further checks, move on to next Rule
@@ -1529,7 +1530,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 					// If we found the matching IBM Cloud Security Group Rule for the defined SecurityGroupRule and Remote, we can stop checking IBM Cloud Security Group Rules for this remote and move onto the next remote.
 					log.V(3).Info("security group rule icmp match found")
 					remoteMatch = true
-					break
+					break existingRuleLoop
 				}
 			case infrav1.VPCSecurityGroupRuleProtocolTcpudpType:
 				// If our Remote doesn't define TCP/UDP Protocol, we don't need further checks, move on to next Rule
@@ -1547,7 +1548,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 					// If we found the matching IBM Cloud Security Group Rule for the defined SecurityGroupRule and Remote, we can stop checking IBM Cloud Security Group Rules for this remote and move onto the next remote.
 					log.V(3).Info("security group rule tcp/udp match found")
 					remoteMatch = true
-					break
+					break existingRuleLoop
 				}
 			case infrav1.VPCSecurityGroupRuleProtocolIndividualType:
 				matched := individualSgrRegexp.MatchString(string(securityGroupRulePrototype.Protocol))
@@ -1567,7 +1568,7 @@ func (s *ClusterScopeV2) findOrCreateSecurityGroupRule(ctx context.Context, secu
 					// If we found the matching IBM Cloud Security Group Rule for the defined SecurityGroupRule and Remote, we can stop checking IBM Cloud Security Group Rules for this remote and move onto the next remote.
 					log.V(3).Info("security group rule individual protocol match found", "protocol", string(securityGroupRulePrototype.Protocol))
 					remoteMatch = true
-					break
+					break existingRuleLoop
 				}
 			default:
 				// This is an unexpected IBM Cloud Security Group Rule Prototype, log it and move on
