@@ -13,6 +13,7 @@
   - [PowerVS Cluster](./topics/powervs/index.md)
     - [Prerequisites](./topics/powervs/prerequisites.md)
     - [Creating a cluster](./topics/powervs/creating-a-cluster.md)
+    - [DHCP Subnet & Advanced Networking](./topics/powervs/dhcp-subnet-networking.md)
     - [Using autoscaler with scaling from 0 machines](./topics/powervs/autoscaler-scalling-from-0.md)
 - [capibmadm CLI](./topics/capibmadm/index.md)
   - [PowerVS Commands](./topics/capibmadm/powervs/index.md)

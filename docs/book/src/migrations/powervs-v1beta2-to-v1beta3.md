@@ -225,7 +225,7 @@ spec:
       # id: "network-id-12345"
 ```
 
-**Option B: Provision a New Network with DHCP Server**
+**Option B: Provision a New Network with Native DHCP Subnet**
 ```yaml
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
 kind: IBMPowerVSCluster
@@ -235,6 +235,25 @@ spec:
   network:
     type: Provision
     provision:
+      type: DHCPSubnet
+      dhcpSubnet:
+        name: "my-dhcp-subnet"  # Optional: defaults to <cluster-name>-dhcpsubnet
+        cidr: "192.168.0.0/24"  # Optional: defaults to PowerVS default subnet
+        dnsServers:             # Optional: list of DNS servers
+        - "8.8.8.8"
+```
+
+**Option C: Provision a New Network with Dedicated DHCP Server**
+```yaml
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta3
+kind: IBMPowerVSCluster
+metadata:
+  name: my-cluster
+spec:
+  network:
+    type: Provision
+    provision:
+      type: DHCPServer
       dhcpServer:
         name: "my-dhcp-server"  # Optional: defaults to DHCPSERVER<cluster-name>_Private
         cidr: "192.168.0.0/24"  # Optional: plain string (no longer a pointer)
@@ -243,13 +262,16 @@ spec:
 ```
 
 **Key Points:**
-- The `type` field explicitly declares whether to use an existing or create a new network.
+- The `type` field explicitly declares whether to use an existing (`Reference`) or create a new (`Provision`) network.
+- **Discriminated Union:** When `network.type: Provision`, `network.provision.type` must be set to either `DHCPSubnet` or `DHCPServer`.
+  - `DHCPSubnet` provisions a PowerVS network with native DHCP enabled.
+  - `DHCPServer` provisions a standalone PowerVS DHCP service instance and its managed network.
 - **Network type is immutable:** Once set, `network.type` cannot be changed.
-- The top-level `dhcpServer` field is removed; DHCP configuration is nested under `network.provision.dhcpServer`.
-- SNAT is now an enum (`Enabled`/`Disabled`) instead of a `*bool` pointer.
+- The top-level `dhcpServer` field from v1beta2 is removed; DHCP configuration is nested under `network.provision`.
+- SNAT is now an enum (`Enabled`/`Disabled`) instead of a `*bool` pointer in `DHCPServer`.
 - All DHCP fields (`name`, `cidr`, `dnsServer`) are plain `string` values instead of pointers.
 - The `id` field on DHCPServer (to reference an existing server) has been removed; use `network.type: Reference` instead.
-- DHCP server configuration is only valid when `type: Provision`.
+- DHCP configuration is only valid when `type: Provision`.
 - The controller will only delete networks it created.
 
 ---
@@ -520,8 +542,10 @@ spec:
   loadBalancers:
     - type: Provision
       provision:
-        name: "my-lb"         # Optional: defaults to <cluster-name>-loadbalancer
-        type: Public          # Enum: Public or Private (default: Public)
+        name: "my-lb"               # Optional: defaults to <cluster-name>-loadbalancer
+        type: Public                # Enum: Public or Private (default: Public)
+        profile: application        # Enum: application or network-fixed (NLB)
+        routeMode: Disabled         # Enum: Enabled or Disabled (only when profile is network-fixed)
         additionalListeners:
           - port: 443
             protocol: tcp
@@ -530,30 +554,33 @@ spec:
               matchLabels:
                 role: worker
         backendPools:
-          - name: "my-pool"   # plain string (no longer a pointer)
+          - name: "my-pool"         # plain string (no longer a pointer)
             algorithm: round_robin
             protocol: tcp
+            failsafePolicy: bypass  # Optional: for route-mode NLB
             healthMonitor:
               delay: 10
               retries: 3
               timeout: 5
               type: tcp
-              port: 8080       # plain int64 (no longer a pointer)
-              urlPath: "/healthz" # plain string (no longer a pointer)
+              port: 8080             # plain int64 (no longer a pointer)
+              urlPath: "/healthz"   # plain string (no longer a pointer)
         securityGroups:
-          - id: "sg-id-123"   # ResourceIdentifier: id or name (plain strings)
+          - id: "sg-id-123"         # ResourceIdentifier: id or name (plain strings)
         subnets:
-          - name: "my-subnet" # ResourceIdentifier: id or name (plain strings)
+          - name: "my-subnet"       # ResourceIdentifier: id or name (plain strings)
 ```
 
 **Key Points:**
 - `type` (`Reference` / `Provision`) is now required at the top level of each entry.
 - The flat `id`/`name` fields on a LoadBalancer entry have moved into `reference` (when `type: Reference`).
 - The `public` field (`*bool`) is replaced by `provision.type` enum (`Public` / `Private`), defaulting to `Public`.
+- **Network Load Balancer (NLB) & Route Mode:** `profile` supports `network-fixed`. When `profile: network-fixed`, `routeMode: Enabled` turns the NLB into a Layer 3 VNF router.
 - `securityGroups` and `subnets` now use `ResourceIdentifier` (plain `string` fields) instead of the v1beta2 `VPCResource` struct (pointer fields).
 - `additionalListeners[].defaultPoolName` changed from `*string` (pointer) to a plain `string`.
 - `additionalListeners[].protocol` changed from `*VPCLoadBalancerListenerProtocol` (pointer) to `LoadBalancerListenerProtocol` (value).
 - `backendPools[].name` changed from `*string` (pointer) to a plain `string`.
+- `backendPools[].failsafePolicy` is supported for route-mode NLBs (`bypass`).
 - `healthMonitor.port` changed from `*int64` (pointer) to a plain `int64`.
 - `healthMonitor.urlPath` changed from `*string` (pointer) to a plain `string`.
 - The controller only deletes load balancers it created (`type: Provision`).
