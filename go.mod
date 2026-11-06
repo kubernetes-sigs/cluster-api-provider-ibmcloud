@@ -27,7 +27,7 @@ require (
 	github.com/onsi/gomega v1.44.0
 	github.com/ppc64le-cloud/powervs-utils v0.0.0-20260417184652-84e90bc52f3d
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.58.0
