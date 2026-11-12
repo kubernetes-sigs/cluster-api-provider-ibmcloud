@@ -1,19 +1,12 @@
-# See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
+# See the OWNERS docs at https://go.k8s.io/owners for information on OWNERS files.
 
 approvers:
-- mkumatag
-- Prajyot-Parab
-- Amulyam24
-- Karthik-K-N
-
+  - sig-cluster-lifecycle-leads
+  - cluster-api-provider-ibmcloud-maintainers
 reviewers:
-- mkumatag
-- Prajyot-Parab
-- Amulyam24
-- Karthik-K-N
-- aman4433
-
+  - cluster-api-provider-ibmcloud-maintainers
+  - cluster-api-provider-ibmcloud-reviewers
 emeritus_approvers:
-- xunpan
-- gyliu513
-- jichenjc
+  - gyliu513
+  - jichenjc
+  - xunpan
