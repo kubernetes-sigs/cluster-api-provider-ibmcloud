@@ -115,6 +115,46 @@ clusterctl generate cluster ibm-powervs-1 \
 
 CAPIBM provisions the full infrastructure stack and uses a VPC Load Balancer for control-plane HA. Requires a COS bucket with a DHCP-enabled image — see [LoadBalancer prerequisites](./prerequisites.md#option-2--loadbalancer-additional-prerequisites).
 
+### Network Provisioning Options
+
+When provisioning the cluster network in `LoadBalancer` topology, the `IBMPowerVSCluster` resource supports two provision modes under `spec.network.provision`:
+
+#### 1. DHCPSubnet
+
+Creates a plain PowerVS network with DHCP natively enabled (`EnableDHCP: true`). No separate DHCP server virtual service instance is created, reducing resource usage and provisioning latency.
+
+```yaml
+spec:
+  topology: LoadBalancer
+  network:
+    type: Provision
+    provision:
+      type: DHCPSubnet
+      dhcpSubnet:
+        name: my-cluster-dhcpsubnet  # Optional: defaults to <cluster-name>-dhcpsubnet
+        cidr: 192.168.0.0/24         # Optional: defaults to PowerVS default subnet
+        dnsServers:                  # Optional: defaults to ["127.0.0.1"]
+        - 8.8.8.8
+```
+
+#### 2. DHCPServer
+
+Creates a dedicated PowerVS DHCP server service instance and its managed private network.
+
+```yaml
+spec:
+  topology: LoadBalancer
+  network:
+    type: Provision
+    provision:
+      type: DHCPServer
+      dhcpServer:
+        name: my-dhcp-server         # Optional: defaults to DHCPSERVER<cluster-name>_Private
+        cidr: 192.168.0.0/24         # Optional
+        dnsServer: 8.8.8.8           # Optional
+        snat: Enabled                # Optional: Enabled or Disabled (default: Enabled)
+```
+
 > **Working from main branch?** Replace `--flavor=powervs-create-infra` with `--from=./templates/cluster-template-powervs-create-infra.yaml`.
 
 ### Required variables

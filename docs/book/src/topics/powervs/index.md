@@ -31,6 +31,15 @@ CAPIBM provisions the complete infrastructure stack: PowerVS workspace, VPC, tra
 - Template flavor: `--flavor=powervs-create-infra`
 - Image type required: [DHCP-enabled PowerVS image](../../machine-images/powervs.md#dhcp-enabled-images)
 
+#### Network Provisioning Modes in Option 2
+
+When provisioning a cluster in `LoadBalancer` topology, CAPIBM supports two network provisioning modes via a discriminated union in the API:
+
+1. **`DHCPSubnet` (Recommended):** Creates a plain PowerVS private network with DHCP natively enabled (`EnableDHCP: true`) directly at the PowerVS network layer. This eliminates the need for a dedicated DHCP server virtual service instance, reducing resource consumption, operational complexity, and provisioning time.
+2. **`DHCPServer`:** Provisions a dedicated PowerVS DHCP service instance and its managed private network.
+
+In addition, CAPIBM supports advanced networking configurations including **VPC Routing Tables** (with custom ingress routing, next-hop resolution, and Transit Gateway route advertising), **Network Load Balancers** (NLB in Layer 3 `routeMode`), and **VPC Public Gateways** for outbound internet egress.
+
 > **Note:** All provisioned resource names default to `<cluster-name>-<resource>`. You can override individual names by setting the corresponding environment variables. If a resource with the given name already exists in your account, the controller adopts it instead of creating a new one.
 
 ---
@@ -39,4 +48,5 @@ CAPIBM provisions the complete infrastructure stack: PowerVS workspace, VPC, tra
 
 - [Prerequisites](./prerequisites.md)
 - [Creating a cluster](./creating-a-cluster.md)
+- [DHCP Subnet & Advanced Networking](./dhcp-subnet-networking.md)
 - [Using autoscaler with scaling from 0 machines](./autoscaler-scalling-from-0.md)
