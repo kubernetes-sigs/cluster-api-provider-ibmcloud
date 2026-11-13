@@ -1,0 +1,20 @@
+# See the OWNERS docs at https://go.k8s.io/owners for information on OWNERS files.
+
+aliases:
+  sig-cluster-lifecycle-leads:
+    - fabriziopandini
+    - hakman
+    - justinsb
+    - neolit123
+    - sbueringer
+  cluster-api-provider-ibmcloud-maintainers:
+    - Amulyam24
+    - Karthik-K-N
+    - mkumatag
+    - Prajyot-Parab
+  cluster-api-provider-ibmcloud-reviewers:
+    - aman4433
+    - Amulyam24
+    - Karthik-K-N
+    - mkumatag
+    - Prajyot-Parab
