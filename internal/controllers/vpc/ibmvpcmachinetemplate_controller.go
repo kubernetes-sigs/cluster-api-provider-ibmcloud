@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/IBM/vpc-go-sdk/vpcv1"
 
@@ -98,10 +99,15 @@ func (r *IBMVPCMachineTemplateReconciler) reconcileNormal(ctx context.Context, v
 	log.V(3).Info("Profile Details:", "profileDetails", profileDetails)
 
 	capacity := make(corev1.ResourceList)
-	memory := fmt.Sprintf("%vG", *profileDetails.Memory.(*vpcv1.InstanceProfileMemory).Value)
-	cpu := fmt.Sprintf("%v", *profileDetails.VcpuCount.(*vpcv1.InstanceProfileVcpu).Value)
-	capacity[corev1.ResourceCPU] = resource.MustParse(cpu)
-	capacity[corev1.ResourceMemory] = resource.MustParse(memory)
+	if memGiB, ok := profileMemoryGiB(profileDetails.Memory); ok {
+		capacity[corev1.ResourceMemory] = resource.MustParse(strconv.FormatInt(memGiB, 10) + "G")
+	}
+	if cpus, ok := profileVcpuCount(profileDetails.VcpuCount); ok {
+		capacity[corev1.ResourceCPU] = resource.MustParse(strconv.FormatInt(cpus, 10))
+	}
+	if len(capacity) == 0 {
+		log.V(3).Info("Unable to determine capacity from instance profile", "profile", machineTemplate.Spec.Template.Spec.Profile)
+	}
 
 	log.V(3).Info("Calculated capacity for machine template", "capacity", capacity)
 	if !reflect.DeepEqual(machineTemplate.Status.Capacity, capacity) {
@@ -115,4 +121,59 @@ func (r *IBMVPCMachineTemplateReconciler) reconcileNormal(ctx context.Context, v
 	}
 	log.V(3).Info("Machine template status", "status", machineTemplate.Status)
 	return ctrl.Result{}, nil
+}
+
+// profileMemoryGiB returns the memory in GiB of an instance profile, falling back to the
+// default for enum and range profiles. It returns false if the profile has neither, as is
+// the case for dependent profiles.
+func profileMemoryGiB(memory vpcv1.InstanceProfileMemoryIntf) (int64, bool) {
+	switch m := memory.(type) {
+	case *vpcv1.InstanceProfileMemory:
+		if m != nil && m.Value != nil {
+			return *m.Value, true
+		}
+		if m != nil && m.Default != nil {
+			return *m.Default, true
+		}
+	case *vpcv1.InstanceProfileMemoryFixed:
+		if m != nil && m.Value != nil {
+			return *m.Value, true
+		}
+	case *vpcv1.InstanceProfileMemoryEnum:
+		if m != nil && m.Default != nil {
+			return *m.Default, true
+		}
+	case *vpcv1.InstanceProfileMemoryRange:
+		if m != nil && m.Default != nil {
+			return *m.Default, true
+		}
+	}
+	return 0, false
+}
+
+// profileVcpuCount returns the vCPU count of an instance profile, in the same way as
+// profileMemoryGiB.
+func profileVcpuCount(vcpuCount vpcv1.InstanceProfileVcpuIntf) (int64, bool) {
+	switch v := vcpuCount.(type) {
+	case *vpcv1.InstanceProfileVcpu:
+		if v != nil && v.Value != nil {
+			return *v.Value, true
+		}
+		if v != nil && v.Default != nil {
+			return *v.Default, true
+		}
+	case *vpcv1.InstanceProfileVcpuFixed:
+		if v != nil && v.Value != nil {
+			return *v.Value, true
+		}
+	case *vpcv1.InstanceProfileVcpuEnum:
+		if v != nil && v.Default != nil {
+			return *v.Default, true
+		}
+	case *vpcv1.InstanceProfileVcpuRange:
+		if v != nil && v.Default != nil {
+			return *v.Default, true
+		}
+	}
+	return 0, false
 }

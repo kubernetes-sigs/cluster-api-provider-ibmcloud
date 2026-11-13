@@ -165,6 +165,151 @@ func TestIBMVPCMachineTemplateReconciler_reconcileNormal(t *testing.T) {
 	},
 	)
 
+	t.Run("with enum and range profile", func(tt *testing.T) {
+		g := NewWithT(tt)
+		profileDetails := vpcv1.InstanceProfile{
+			Name: ptr.To("gx2-16x128"),
+			VcpuCount: &vpcv1.InstanceProfileVcpuRange{
+				Type:    ptr.To("range"),
+				Default: ptr.To(int64(4)),
+				Min:     ptr.To(int64(2)),
+				Max:     ptr.To(int64(8)),
+				Step:    ptr.To(int64(2)),
+			},
+			Memory: &vpcv1.InstanceProfileMemoryEnum{
+				Type:    ptr.To("enum"),
+				Default: ptr.To(int64(16)),
+				Values:  []int64{16, 32},
+			},
+		}
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		vPCMachineTemplate := stubVPCMachineTemplate("bx2-4x16")
+
+		expectedCapacity := corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("4"),
+			corev1.ResourceMemory: resource.MustParse("16G"),
+		}
+		createObject(g, &vPCMachineTemplate, ns.Name)
+		defer cleanupObject(g, &vPCMachineTemplate)
+
+		mockController, mockvpc, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		g.Expect(err).To(BeNil())
+		defer func() {
+			g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		}()
+		mockvpc.EXPECT().GetInstanceProfile(gomock.AssignableToTypeOf(&vpcv1.GetInstanceProfileOptions{})).Return(&profileDetails, &core.DetailedResponse{}, nil)
+		_, err = reconciler.reconcileNormal(ctx, mockvpc, vPCMachineTemplate)
+		if err != nil {
+			t.Fatalf("ReconcileNormal is not expected to return an error, error: %v", err)
+		}
+		g.Eventually(func() bool {
+			machineTemplate := &infrav1.IBMVPCMachineTemplate{}
+			key := client.ObjectKey{
+				Name:      vPCMachineTemplate.Name,
+				Namespace: ns.Name,
+			}
+			err = testEnv.Get(ctx, key, machineTemplate)
+			g.Expect(err).To(BeNil())
+			return reflect.DeepEqual(machineTemplate.Status.Capacity, expectedCapacity)
+		}, 10*time.Second).Should(Equal(true))
+	},
+	)
+
+	t.Run("with profile advertising only a default value", func(tt *testing.T) {
+		g := NewWithT(tt)
+		// The SDK unmarshals "memory"/"vcpu_count" into the base model, where
+		// "value" stays nil for enum/range/dependent shaped profiles.
+		profileDetails := vpcv1.InstanceProfile{
+			Name: ptr.To("mx2-8x64"),
+			VcpuCount: &vpcv1.InstanceProfileVcpu{
+				Type:    ptr.To("range"),
+				Default: ptr.To(int64(8)),
+			},
+			Memory: &vpcv1.InstanceProfileMemory{
+				Type:    ptr.To("enum"),
+				Default: ptr.To(int64(64)),
+			},
+		}
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		vPCMachineTemplate := stubVPCMachineTemplate("bx2-4x16")
+
+		expectedCapacity := corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("8"),
+			corev1.ResourceMemory: resource.MustParse("64G"),
+		}
+		createObject(g, &vPCMachineTemplate, ns.Name)
+		defer cleanupObject(g, &vPCMachineTemplate)
+
+		mockController, mockvpc, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		g.Expect(err).To(BeNil())
+		defer func() {
+			g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		}()
+		mockvpc.EXPECT().GetInstanceProfile(gomock.AssignableToTypeOf(&vpcv1.GetInstanceProfileOptions{})).Return(&profileDetails, &core.DetailedResponse{}, nil)
+		_, err = reconciler.reconcileNormal(ctx, mockvpc, vPCMachineTemplate)
+		if err != nil {
+			t.Fatalf("ReconcileNormal is not expected to return an error, error: %v", err)
+		}
+		g.Eventually(func() bool {
+			machineTemplate := &infrav1.IBMVPCMachineTemplate{}
+			key := client.ObjectKey{
+				Name:      vPCMachineTemplate.Name,
+				Namespace: ns.Name,
+			}
+			err = testEnv.Get(ctx, key, machineTemplate)
+			g.Expect(err).To(BeNil())
+			return reflect.DeepEqual(machineTemplate.Status.Capacity, expectedCapacity)
+		}, 10*time.Second).Should(Equal(true))
+	},
+	)
+
+	t.Run("with dependent profile", func(tt *testing.T) {
+		g := NewWithT(tt)
+		// Dependent profiles carry no value or default, so no capacity is reported.
+		profileDetails := vpcv1.InstanceProfile{
+			Name: ptr.To("gx2-16x128x2"),
+			VcpuCount: &vpcv1.InstanceProfileVcpuDependent{
+				Type: ptr.To(vpcv1.InstanceProfileVcpuDependentTypeDependentConst),
+			},
+			Memory: &vpcv1.InstanceProfileMemoryDependent{
+				Type: ptr.To(vpcv1.InstanceProfileMemoryDependentTypeDependentConst),
+			},
+		}
+		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
+		vPCMachineTemplate := stubVPCMachineTemplate("gx2-16x128x2")
+
+		// "capacity" is omitempty, so an empty ResourceList round-trips as nil.
+		expectedCapacity := corev1.ResourceList(nil)
+		createObject(g, &vPCMachineTemplate, ns.Name)
+		defer cleanupObject(g, &vPCMachineTemplate)
+
+		mockController, mockvpc, reconciler := setup(t)
+		t.Cleanup(mockController.Finish)
+		g.Expect(err).To(BeNil())
+		defer func() {
+			g.Expect(testEnv.Cleanup(ctx, ns)).To(Succeed())
+		}()
+		mockvpc.EXPECT().GetInstanceProfile(gomock.AssignableToTypeOf(&vpcv1.GetInstanceProfileOptions{})).Return(&profileDetails, &core.DetailedResponse{}, nil)
+		_, err = reconciler.reconcileNormal(ctx, mockvpc, vPCMachineTemplate)
+		if err != nil {
+			t.Fatalf("ReconcileNormal is not expected to return an error, error: %v", err)
+		}
+		g.Eventually(func() bool {
+			machineTemplate := &infrav1.IBMVPCMachineTemplate{}
+			key := client.ObjectKey{
+				Name:      vPCMachineTemplate.Name,
+				Namespace: ns.Name,
+			}
+			if err := testEnv.Get(ctx, key, machineTemplate); err != nil {
+				return false
+			}
+			return reflect.DeepEqual(machineTemplate.Status.Capacity, expectedCapacity)
+		}, 10*time.Second).Should(Equal(true))
+	},
+	)
+
 	t.Run("with invalid profile ", func(tt *testing.T) {
 		g := NewWithT(tt)
 		ns, err := testEnv.CreateNamespace(ctx, fmt.Sprintf("namespace-%s", util.RandomString(5)))
