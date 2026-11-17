@@ -59,7 +59,7 @@
 
 ### Prepare release notes
 
-1. If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope.
+1. Install the [GitHub CLI](https://cli.github.com/) (`gh`). If you don't have a GitHub token, create one by going to your GitHub settings, in [Personal access tokens](https://github.com/settings/tokens). Make sure you give the token the `repo` scope. `gh auth login` also works.
 
 2. Fetch the latest changes from upstream and check out the `main` branch:
 
@@ -76,20 +76,15 @@
     make release-notes
     ```
 
+    Notes are grouped from the pull request title emoji (`⚠️`, `✨`, `🐛`, `📖`, `🌱`), the same way Cluster API groups release notes by impact. Release-trigger pull requests (`🚀`) are omitted. For a GA release, Dependabot bumps are omitted from the pull request list and reported in the Dependencies section instead. `CHANGELOG/v0.15.2.md` is a sample of the generated output. See `CHANGELOG/README.md`.
+
 4. Review the release notes file generated at `CHANGELOG/<RELEASE_TAG>.md` and make any necessary changes:
 
-  - Move items out of "Uncategorized" into an appropriate section.
+  - Fill in or remove the Highlights placeholder.
+  - Move items out of "Sort these by hand" into an appropriate section. Pull requests without a title emoji land there.
   - Change anything attributed to "k8s-cherrypick-robot" to credit the original author.
   - Fix any typos or other errors.
-  - Add the following section with a link to the full diff:
-      ```md
-      ## The image for this release is:
-      registry.k8s.io/capi-ibmcloud/cluster-api-ibmcloud-controller:<RELEASE_TAG>
-
-      <!-- markdown-link-check-disable-next-line -->
-      Full Changelog: https://github.com/kubernetes-sigs/cluster-api-provider-ibmcloud/compare/v0.9.0...v0.10.0
-      ```
-    Be sure to replace the versions in the URL with the appropriate tags.
+  - Confirm the controller image and full changelog link at the bottom of the file.
 ---
 ### Post release tasks: 
 
