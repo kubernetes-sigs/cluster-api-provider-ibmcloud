@@ -12,7 +12,7 @@ replace (
 
 require (
 	github.com/IBM-Cloud/power-go-client v1.17.0
-	github.com/IBM/go-sdk-core/v5 v5.25.3
+	github.com/IBM/go-sdk-core/v5 v5.25.4
 	github.com/IBM/ibm-cos-sdk-go v1.15.2
 	github.com/IBM/networking-go-sdk v0.56.2
 	github.com/IBM/platform-services-go-sdk v0.103.6
@@ -31,7 +31,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/crypto v0.59.0
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 	golang.org/x/text v0.44.0
 	k8s.io/api v0.36.6
 	k8s.io/apiextensions-apiserver v0.36.6

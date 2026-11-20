@@ -10,8 +10,8 @@ github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c h1:pxW6RcqyfI9/k
 github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/IBM-Cloud/power-go-client v1.17.0 h1:zlVASoThC8hdugGEqSMQnsGjb8j2A6JSMJPK2ed+Pnc=
 github.com/IBM-Cloud/power-go-client v1.17.0/go.mod h1:IoC+bOzXTLLlvw35CgHSUdVOpncKWrMCmIg8w7aBCVs=
-github.com/IBM/go-sdk-core/v5 v5.25.3 h1:dL7r1nLoi3xPtX0MdMl0FA0WAM6E6oz40KIu4LwEloI=
-github.com/IBM/go-sdk-core/v5 v5.25.3/go.mod h1:83BKM+mYr4eUlkiCJWf36wjF7PSdOOAxeIjTfoSCnTg=
+github.com/IBM/go-sdk-core/v5 v5.25.4 h1:Xmlv8hvj6PdJQpPcACHoDOqPGWa3jf6UUWCFAMiE1F4=
+github.com/IBM/go-sdk-core/v5 v5.25.4/go.mod h1:83BKM+mYr4eUlkiCJWf36wjF7PSdOOAxeIjTfoSCnTg=
 github.com/IBM/ibm-cos-sdk-go v1.15.2 h1:5SXCSNgFKAiPINaRtZ+t/eRAD5RLjuDi/apTCl79Z40=
 github.com/IBM/ibm-cos-sdk-go v1.15.2/go.mod h1:+06KEpXznSyE8u3G4Ufgtor1Mnop0odPDvQaZpd9NjY=
 github.com/IBM/networking-go-sdk v0.56.2 h1:H1CwS9Zgfdo9/BJdihTxR4jIJY2CE69sKT2d/LbMMPI=
@@ -397,8 +397,8 @@ golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93 h1:fQsdNF2N+/YewlRZiricy4P1i
 golang.org/x/exp v0.0.0-20251219203646-944ab1f22d93/go.mod h1:EPRbTFwzwjXj9NpYyyrvenVh9Y+GFeEvMNh7Xuz7xgU=
 golang.org/x/mod v0.42.0 h1:ICeL3t2L30ljSPHHxDnR4fqVcBt/zR2zJAb9juavmQg=
 golang.org/x/mod v0.42.0/go.mod h1:u5fzIrRInkL8MaO1cbRkUHT64v303YIT5KEqpNr7jRs=
-golang.org/x/net v0.62.0 h1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=
-golang.org/x/net v0.62.0/go.mod h1:WgDCOTH8iwtB66T4/GfI94AHo/hhdb7Hah9NDseQfiI=
+golang.org/x/net v0.63.0 h1:HCoTmNh9EpD1PpK8gBNFY4gcTY4N+KQEO8ylfIKqFJ0=
+golang.org/x/net v0.63.0/go.mod h1:15JLg3IX1bLjHK264EZQEbIpTiR/KVLuo9CTRWd0pig=
 golang.org/x/oauth2 v0.36.0 h1:peZ/1z27fi9hUOFCAZaHyrpWG5lwe0RJEEEeH0ThlIs=
 golang.org/x/oauth2 v0.36.0/go.mod h1:YDBUJMTkDnJS+A4BP4eZBjCqtokkg1hODuPjwiGPO7Q=
 golang.org/x/sync v0.25.0 h1:dJnifr0nMV8/SBnBvdo4eSGGnrc3O4FFx6IqvtLcmRs=
