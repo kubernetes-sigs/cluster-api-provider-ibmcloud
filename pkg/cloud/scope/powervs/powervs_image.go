@@ -229,7 +229,7 @@ func (s *ImageScope) GetOrImportImage(ctx context.Context) (*models.ImageReferen
 		ImageName:     ptr.To(imageName),
 		BucketName:    ptr.To(imageSpec.Bucket),
 		BucketAccess:  ptr.To(BucketAccess),
-		Region:        ptr.To(imageSpec.Region),
+		Region:        imageSpec.Region,
 		ImageFilename: ptr.To(imageSpec.Object),
 	}
 

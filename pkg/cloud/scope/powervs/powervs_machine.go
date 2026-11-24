@@ -406,7 +406,7 @@ func (s *MachineScope) CreateMachine(ctx context.Context) (*models.PVMInstanceRe
 		SysType:    machineSpec.SystemType,
 		UserData:   userData,
 		Networks: []*models.PVMInstanceAddNetwork{
-			{NetworkID: networkID},
+			{NetworkID: *networkID},
 		},
 	}
 
