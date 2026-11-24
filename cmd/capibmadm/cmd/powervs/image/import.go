@@ -130,7 +130,7 @@ func importimage(ctx context.Context, imageImportOption imageImportOptions) erro
 		ImageName:     &imageImportOption.ImageName,
 		AccessKey:     imageImportOption.AccessKey,
 		SecretKey:     imageImportOption.SecretKey,
-		Region:        &imageImportOption.Region,
+		Region:        imageImportOption.Region,
 		StorageType:   strings.ToLower(imageImportOption.StorageType),
 	}
 	imageClient := powerClient.NewIBMPIImageClient(ctx, sess, options.GlobalOptions.ServiceInstanceID)
