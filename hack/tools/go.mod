@@ -3,8 +3,8 @@ module sigs.k8s.io/cluster-api-provider-ibmcloud/hack/tools
 go 1.26.0
 
 replace (
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.14.0
-	sigs.k8s.io/cluster-api/api => sigs.k8s.io/cluster-api/api v1.14.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.14.4
+	sigs.k8s.io/cluster-api/api => sigs.k8s.io/cluster-api/api v1.14.4
 )
 
 require (
@@ -17,7 +17,7 @@ require (
 	golang.org/x/vuln v1.7.0
 	gotest.tools/gotestsum v1.13.0
 	k8s.io/code-generator v0.36.4
-	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20260730162741-560d4acf507b
+	sigs.k8s.io/cluster-api/hack/tools v0.0.0-20261103082950-4356c154f4a7
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20241202165100-3e6681045387
 	sigs.k8s.io/controller-tools v0.21.0
 	sigs.k8s.io/kustomize/kustomize/v5 v5.8.1
@@ -301,7 +301,7 @@ require (
 	mvdan.cc/unparam v0.0.0-20260823230713-2fa3d841b0c8 // indirect
 	sigs.k8s.io/cluster-api v0.0.0-00010101000000-000000000000 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
-	sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20211028165026-57688c578b5d // indirect
+	sigs.k8s.io/kubebuilder/docs/book/utils v0.0.0-20260611053758-c72b289c1ec8 // indirect
 	sigs.k8s.io/kustomize/api v0.21.1 // indirect
 	sigs.k8s.io/kustomize/cmd/config v0.21.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.21.1 // indirect
