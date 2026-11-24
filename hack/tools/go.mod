@@ -13,6 +13,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/joelanford/go-apidiff v0.8.3
 	github.com/onsi/ginkgo/v2 v2.32.1
+	github.com/saschagrunert/go-modiff v1.3.5
 	go.uber.org/mock v0.6.0
 	golang.org/x/vuln v1.8.0
 	gotest.tools/gotestsum v1.13.0
