@@ -6,8 +6,8 @@ go 1.26.0
 replace (
 	github.com/onsi/ginkgo/v2 => github.com/onsi/ginkgo/v2 v2.32.0
 	github.com/onsi/gomega => github.com/onsi/gomega v1.42.1
-	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.14.0
-	sigs.k8s.io/cluster-api/api => sigs.k8s.io/cluster-api/api v1.14.0
+	sigs.k8s.io/cluster-api => sigs.k8s.io/cluster-api v1.14.4
+	sigs.k8s.io/cluster-api/api => sigs.k8s.io/cluster-api/api v1.14.4
 )
 
 require (
@@ -41,9 +41,9 @@ require (
 	k8s.io/component-base v0.36.6
 	k8s.io/klog/v2 v2.140.0
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
-	sigs.k8s.io/cluster-api v1.14.0
-	sigs.k8s.io/cluster-api/api v1.14.0
-	sigs.k8s.io/cluster-api/test v1.14.0
+	sigs.k8s.io/cluster-api v1.14.4
+	sigs.k8s.io/cluster-api/api v1.14.4
+	sigs.k8s.io/cluster-api/test v1.14.4
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/randfill v1.0.0
 	sigs.k8s.io/yaml v1.6.0
@@ -196,6 +196,6 @@ require (
 	k8s.io/streaming v0.36.6 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
-	sigs.k8s.io/kind v0.32.0 // indirect
+	sigs.k8s.io/kind v0.33.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 )
